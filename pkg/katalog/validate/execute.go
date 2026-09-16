@@ -132,11 +132,6 @@ func (e *executor) run() error {
 		return err
 	}
 
-	// 21. Status types
-	if err := e.validateStatusTypes(); err != nil {
-		return err
-	}
-
 	// 22. Services
 	if err := e.validateService(); err != nil {
 		return err
@@ -299,6 +294,11 @@ func (e *executor) run() error {
 
 	// 54. Events
 	if err := e.validateEventEntries(); err != nil {
+		return err
+	}
+
+	// 55. Emit
+	if err := e.validateEmit(); err != nil {
 		return err
 	}
 

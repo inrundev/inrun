@@ -337,33 +337,6 @@ func validateOneHPARef(crdName, hpaName string, ref orktypes.ScaleTargetRef) err
 	return nil
 }
 
-// validateStatusTypes ensures all declarative status fields declare a valid type.
-func (e *executor) validateStatusTypes() error {
-	for name, crd := range e.k.EnabledCRDs() {
-		if crd.OperatorBox.Status == nil {
-			continue
-		}
-
-		if crd.OperatorBox.Status.HasFields() {
-			for _, f := range crd.OperatorBox.Status.Fields {
-				switch strings.ToLower(f.Type) {
-				case "", "string", "str", "default":
-				case "int", "integer":
-				case "bool", "boolean":
-				case "float", "auto":
-					// valid
-				default:
-					return fmt.Errorf(
-						"%s invalid status field type %q in CRD %q (path: %q):\n"+
-							"  must be one of: string, str, int, integer, bool, boolean, float, auto\n",
-						failureMark(), f.Type, name, f.Path,
-					)
-				}
-			}
-		}
-	}
-	return nil
-}
 
 // validateTeams ensures that a team referenced in a notify: block was declared
 // in notification.teams within this Katalog.
