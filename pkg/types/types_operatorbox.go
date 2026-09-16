@@ -445,15 +445,15 @@ func (r *ReconcilerConfig) Empty() bool   { return r == nil }
 
 // OperatorBoxConfig is the per-CRD configuration block in a Katalog.
 type OperatorBoxConfig struct {
-	// Reconcile is the new consolidated reconciliation block (IN DEVELOPMENT).
-	// Absorbs Reconciler + OnCreate/OnReconcile/OnDelete + providers + normalize + imports + forceConflict.
-	// During migration both Reconcile and the old flat fields are accepted.
-	Reconcile *ReconcileConfig `yaml:"reconcile,omitempty" json:"reconcile,omitempty"`
+	// // Reconcile is the new consolidated reconciliation block (IN DEVELOPMENT).
+	// // Absorbs Reconciler + OnCreate/OnReconcile/OnDelete + providers + normalize + imports + forceConflict.
+	// // During migration both Reconcile and the old flat fields are accepted.
+	// Reconcile *ReconcileConfig `yaml:"reconcile,omitempty" json:"reconcile,omitempty"`
 
-	// Runtime is the new Kordinator-owned operational block (IN DEVELOPMENT).
-	// Absorbs Finalizers + Autoscale + Rollback + CRDEntry-level namespace/protection fields.
-	// During migration both Runtime and the old flat fields are accepted.
-	Runtime *RuntimeConfig `yaml:"runtime,omitempty" json:"runtime,omitempty"`
+	// // Runtime is the new Kordinator-owned operational block (IN DEVELOPMENT).
+	// // Absorbs Finalizers + Autoscale + Rollback + CRDEntry-level namespace/protection fields.
+	// // During migration both Runtime and the old flat fields are accepted.
+	// Runtime *RuntimeConfig `yaml:"runtime,omitempty" json:"runtime,omitempty"`
 
 	// Reconciler declares which implementation runs and how it is tuned.
 	// nil → GenericReconciler with default: true.

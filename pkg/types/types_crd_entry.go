@@ -291,12 +291,12 @@ func (c *CRDEntry) EffectiveOperatorBox(target string) *OperatorBoxConfig {
 				box.Status = c.OperatorBox.Status
 			}
 			// Reconcile and Runtime fall through from CRD-level when absent on the target.
-			if box.Reconcile == nil {
-				box.Reconcile = c.OperatorBox.Reconcile
-			}
-			if box.Runtime == nil {
-				box.Runtime = c.OperatorBox.Runtime
-			}
+			// if box.Reconcile == nil {
+			// 	box.Reconcile = c.OperatorBox.Reconcile
+			// }
+			// if box.Runtime == nil {
+			// 	box.Runtime = c.OperatorBox.Runtime
+			// }
 			box.Reconciler = mergeReconcilerConfig(c.OperatorBox.Reconciler, box.Reconciler)
 			// HookFactory is set at load time on the CRD-level box only.
 			box.HookFactory = c.OperatorBox.HookFactory
