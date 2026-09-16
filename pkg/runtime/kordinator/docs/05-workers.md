@@ -1,172 +1,31 @@
 # 05 — Workers and drain
 
-Workers are the innermost loop of Orkestra. Each worker goroutine runs `runWorkerForGVK` for the lifetime of its CRD's context. The worker's only job is to dequeue items and call `processItemForGVK`.
+Each worker goroutine runs `runWorkerForGVK` for the lifetime of its CRD's context. Every CRD gets its own queue — a slow CRD cannot starve workers for a fast one.
 
 ## The worker loop
 
-```go
-func (k *Kontroller) runWorkerForGVK(ctx context.Context, gvk string, workerID string) {
-    wq, ok := k.queueRegistry.For(gvk)
-    if !ok {
-        wq = k.defaultWorkqueue
-    }
-
-    for {
-        select {
-        case <-ctx.Done():
-            return
-        default:
-            item, shutdown := wq.Queue.Get()
-            if shutdown {
-                return
-            }
-
-            k.crdHealthMap[gvk].MarkWorkerProcessing(workerID)
-            func() {
-                defer wq.Queue.Done(item)
-                k.processItemForGVK(ctx, gvk, item)
-            }()
-            k.crdHealthMap[gvk].MarkWorkerIdle(workerID)
-
-            // Update metrics after each item
-            metrics.SetQueueDepth(gvk, float64(wq.Depth()))
-            if entry, ok := k.katalog.Get(gvk); ok && entry.Informer != nil {
-                metrics.SetResourceCount(gvk, float64(len(entry.Informer.GetIndexer().List())))
-            }
-        }
-    }
-}
-```
-
-`wq.Queue.Done(item)` is called inside a deferred closure — it runs whether `processItemForGVK` returns normally or panics. Without this, a panic would permanently remove an item from the queue without ever marking it done, causing the workqueue's internal bookkeeping to diverge.
-
-The worker exits in two ways: the context is cancelled (`ctx.Done()`), or the queue is shut down (`shutdown == true`). Both paths lead to `return` — the WaitGroup is decremented and the goroutine exits.
+The loop dequeues an item, marks the worker processing, calls `processItemForGVK`, then marks it idle. After each item it updates queue depth and resource count metrics. It exits when the CRD context is cancelled or the queue shuts down.
 
 ## processItemForGVK
 
-`processItemForGVK` resolves the reconciler and calls it. On error, it re-queues the item with rate-limit backoff:
+Handles one reconcile item end-to-end:
 
-```go
-wq.Queue.AddRateLimited(item)
-health.RecordFailure(err.Error())
-```
+1. **Pre-reconcile gate** — evaluates `operatorBox.preReconcile.when/or` conditions. When gated, the item is forgotten (not a failure; health state unaffected).
+2. **`prepare.Prepare`** — normalize, resolver, cross-CRD enrichment, mutation, validation. Returns `nil` when the object is not in cache (deleted between dequeue and here) — silent skip.
+3. **`maintain.Apply`** — applies system labels, annotations, and finalizers.
+4. **`safeReconcile`** — calls `rec.Reconcile(ctx, domain.Request{...})`. Any panic is caught, logged with a stack trace, and converted into a reconcile error. The worker goroutine continues.
+5. **`post.Apply`** — status patch, event emission, runtime annotations. Runs even on reconcile failure.
 
-On success:
+On error the item is re-queued with rate-limit backoff. On success it is forgotten.
 
-```go
-wq.Queue.Forget(item)
-health.RecordSuccess()
-```
+## Autoscale: worker resizing
 
-`Forget` removes the item from the rate-limiter's failure tracking — the next time the same key is enqueued, it starts fresh without exponential backoff penalty.
-
-## Queue and worker count per CRD
-
-Every CRD gets its own queue. Workers for a CRD read only from that CRD's queue. This means a slow CRD (large CRs, slow external API calls) cannot starve workers for a fast CRD.
-
-Worker count is configured per CRD in the Katalog:
-
-```yaml
-spec:
-  crds:
-    website:
-      workers: 5        # 5 goroutines for this CRD
-    route-record:
-      workers: 2
-```
-
-`ResourceKatalog.GetWorkers(gvk, defaultWorkers)` returns the configured count, or the operator-wide default if the CRD does not specify one.
-
-When `autoscale:` is declared, `startCRDWorkers` still starts only
-`baseline.workers` goroutines. When the autoscaler calls `ResizeWorkers(n)` with
-`n > baseline`, `GenericReconciler.ResizeWorkers` calls the injected
-`spawnWorker` closure once per new slot, starting additional goroutines on
-demand. This keeps the initial goroutine count at the baseline rather than
-pre-allocating goroutines for a scale-up that may never occur.
-
-## Semaphore-gated concurrency
-
-For all CRDs, `GenericReconciler.Reconcile` acquires a `ResizableSemaphore`
-before doing any work and releases it when done:
-
-```
-worker goroutine  →  dequeue  →  processItemForGVK  →  rec.Reconcile(ctx, key)
-                                                              │
-                                                     workerSem.Acquire()  ← blocks if at capacity
-                                                     reconcileCore()
-                                                     workerSem.Release()
-```
-
-For non-autoscaled CRDs the semaphore capacity equals the worker count so it is
-always uncontested. For autoscaled CRDs the autoscaler resizes the semaphore
-without touching the goroutines — goroutines blocked at `Acquire` wake up
-immediately on scale-up; excess goroutines finish their current reconcile and
-then block on the next `Acquire` during scale-down.
-
-## Queue depth reporting
-
-After each item, the worker loop type-asserts the reconciler against
-`queueDepthReporter` and calls `ReportQueueDepth`:
-
-```go
-if reporter, ok := rec.(queueDepthReporter); ok {
-    reporter.ReportQueueDepth(int64(wq.Depth()))
-}
-```
-
-This pushes live depth into `AutoMetrics` so `metrics.queueDepth` conditions
-in the autoscaler evaluate against the actual queue state rather than a stale
-snapshot. The interface is defined locally in `worker.go` to avoid importing
-the `reconciler` package.
+When `autoscale:` is declared, `startCRDWorkers` starts only the baseline worker count. The autoscaler calls `kordinatorTarget.ResizeWorkers(n)` to resize the worker pool; this calls the `spawnWorker` closure in `perCRDRuntime` for each new slot. After each item the worker pushes live queue depth into `rt.autoMetrics` so autoscale conditions evaluate against current state.
 
 ## stopCRDWorkers
 
-`stopCRDWorkers` is called during both `deactivateCRD` (runtime) and the shutdown sequence. The order of operations matters:
-
-```go
-// Step 1: cancel the CRD context
-cancel()
-
-// Step 2: shut down the queue
-wq.Queue.ShutDown()
-
-// Step 3: wait for workers to drain
-wg.Wait()  // with drainTimeout
-```
-
-Step 2 is required. A worker that has finished its current item and is blocking on `wq.Queue.Get()` waiting for the next item will never observe the context cancellation from Step 1 — `Get()` does not accept a context. The queue shutdown unblocks `Get()` by returning `shutdown = true`, which causes the worker to exit on the next iteration.
-
-Without Step 2, workers that are idle at shutdown time would hang until a new item arrived or the drain timeout expired.
-
-## Drain timeout
-
-`stopCRDWorkers` waits on the WaitGroup with a configurable timeout:
-
-```go
-select {
-case <-done:
-    logger.Info().Str("gvk", gvk).Msg("workers drained cleanly")
-case <-time.After(k.drainTimeout):
-    logger.Warn().Str("gvk", gvk).
-        Dur("timeout", k.drainTimeout).
-        Msg("drain timeout exceeded — workers may still be running")
-}
-```
-
-The timeout is a safety net, not an execution budget. Normal reconciles finish well within the timeout. The warning fires only when a reconcile is blocked on a slow external API call that does not respect context cancellation. The fix is to ensure all external calls use the context passed to `rec.Reconcile(ctx, req)`.
-
-## Worker state constants
-
-```go
-const (
-    WorkerStateIdle       = "idle"
-    WorkerStateProcessing = "processing"
-    WorkerStateStopped    = "stopped"
-)
-```
-
-These are the values stored in `CRDHealth.workerStates` (a `sync.Map`). The `/katalog/{crd}` handler reads them for the worker breakdown in the response body.
+Cancel CRD context → shut down the queue → wait for workers with a drain timeout. The queue shutdown is required: a worker blocked on `Get()` waiting for the next item does not observe context cancellation; the shutdown unblocks it.
 
 ---
 
-**Next →** [06 — HTTP handlers](06-handlers.md)
+**Next →** [06 — normalize](06-normalize.md)

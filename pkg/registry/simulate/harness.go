@@ -13,6 +13,8 @@ import (
 	orkexternal "github.com/orkspace/orkestra/pkg/external"
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/contract"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
 	"github.com/orkspace/orkestra/pkg/runtime/reconciler"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"github.com/rs/zerolog/log"
@@ -237,7 +239,7 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 			fakeKube,
 			hookBinder,
 			newObjFn,
-			peerRegistry, nil, nil, nil,
+			nil, nil,
 			kat,
 		)
 	}
@@ -249,7 +251,18 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 
 	r = wrapWithGate(r, boxCopy.PreReconcile, kat.Notes, getFromIndexerOrFallback(indexer, key, cr))
 
-	loopResult := runLoop(ctx, r, fakeKube, key, maxCycles)
+	prepInput := prepare.Input{
+		Entry: contract.RegistryEntry{
+			CRD:      effectiveCRDEntry,
+			Informer: informer,
+		},
+		Key:      key,
+		Kat:      kat,
+		Kube:     fakeKube,
+		Registry: peerRegistry,
+	}
+
+	loopResult := runLoop(ctx, r, fakeKube, key, maxCycles, prepInput)
 	loopResult.Notes = result.Notes
 	return loopResult, nil
 }

@@ -1,5 +1,7 @@
 // pkg/reconciler/rollback.go
 //
+//	IN DEVELOPMENT
+//
 // Rollback implementation for GenericReconciler.
 //
 // Three responsibilities:
@@ -315,4 +317,11 @@ func (r *GenericReconciler[PTR]) clearRollback(ctx context.Context, obj PTR) err
 		r.rollbackClearFn()
 	}
 	return nil
+}
+
+// SetRollbackNotifiers injects CRDHealth callbacks for rollback tracking.
+// Called once by kordinator after constructing the reconciler.
+func (r *GenericReconciler[PTR]) SetRollbackNotifiers(onTrigger, onClear func()) {
+	r.rollbackTriggerFn = onTrigger
+	r.rollbackClearFn = onClear
 }

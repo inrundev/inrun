@@ -232,8 +232,8 @@ func (e *executor) run() error {
 		return err
 	}
 
-	// 42. CRD entry labels
-	if err := e.validateCRDEntryLabels(); err != nil {
+	// 42. CRD entry metadata
+	if err := e.validateCRDEntryMetadata(); err != nil {
 		return err
 	}
 

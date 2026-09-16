@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+	"strings"
 	"text/template"
 
 	orktypes "github.com/orkspace/orkestra/pkg/types"
@@ -41,6 +42,12 @@ func validateEmitEventEntry(crdName, name string, entry *orktypes.EmitEventEntry
 	if !orktypes.IsValidEmitEventType(entry.Type) {
 		return fmt.Errorf("%s crd %q: emit.events[%q]: type %q is invalid — valid values: %s",
 			failureMark(), crdName, name, entry.Type, orktypes.EmitEventTypesJoined())
+	}
+	for _, trigger := range entry.On {
+		if !orktypes.IsValidEmitTrigger(string(trigger)) {
+			return fmt.Errorf("%s crd %q: emit.events[%q]: on %q is invalid — valid values: %s",
+				failureMark(), crdName, name, trigger, strings.Join(orktypes.ValidEmitTriggers(), ", "))
+		}
 	}
 	if entry.Reason == "" {
 		return fmt.Errorf("%s crd %q: emit.events[%q]: reason must not be empty",

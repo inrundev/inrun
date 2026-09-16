@@ -32,6 +32,32 @@ func IsValidEmitEventType(t EmitEventType) bool {
 	return false
 }
 
+// EmitTrigger is the reconcile outcome that gates event emission.
+type EmitTrigger string
+
+const (
+	// EmitTriggerAlways fires on every reconcile regardless of outcome. Default when On is empty.
+	EmitTriggerAlways EmitTrigger = "always"
+	// EmitTriggerSuccess fires only when the reconcile returned no error.
+	EmitTriggerSuccess EmitTrigger = "success"
+	// EmitTriggerFailure fires only when the reconcile returned an error.
+	EmitTriggerFailure EmitTrigger = "failure"
+)
+
+// ValidEmitTriggers returns all known EmitTrigger values.
+func ValidEmitTriggers() []string {
+	return []string{string(EmitTriggerAlways), string(EmitTriggerSuccess), string(EmitTriggerFailure)}
+}
+
+// IsValidEmitTrigger reports whether s is a known EmitTrigger value.
+func IsValidEmitTrigger(s string) bool {
+	switch EmitTrigger(s) {
+	case EmitTriggerAlways, EmitTriggerSuccess, EmitTriggerFailure:
+		return true
+	}
+	return false
+}
+
 // EmitEventEntry declares one named event the runtime emits on behalf of this operator.
 // Evaluated in postReconcile using the prepared resolver context.
 type EmitEventEntry struct {
@@ -45,11 +71,38 @@ type EmitEventEntry struct {
 	// against the prepared resolver context.
 	Message string `yaml:"message" json:"message" validate:"required"`
 
+	// On declares which reconcile outcomes trigger this event.
+	// Valid values: always, success, failure. Defaults to always when empty.
+	On []EmitTrigger `yaml:"on,omitempty" json:"on,omitempty"`
+
 	// When declares AND conditions — all must pass for the event to be emitted.
 	When []Condition `yaml:"when,omitempty" json:"when,omitempty"`
 
 	// Or declares OR conditions — any passing condition emits the event.
 	Or []Condition `yaml:"or,omitempty" json:"or,omitempty"`
+}
+
+// EmitOn reports whether this entry should fire given the reconcile outcome.
+// An empty On list is treated as always.
+func (e *EmitEventEntry) EmitOn(reconcileErr error) bool {
+	if len(e.On) == 0 {
+		return true
+	}
+	for _, trigger := range e.On {
+		switch trigger {
+		case EmitTriggerAlways:
+			return true
+		case EmitTriggerSuccess:
+			if reconcileErr == nil {
+				return true
+			}
+		case EmitTriggerFailure:
+			if reconcileErr != nil {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // EmitConfig groups all declarative outputs for an operatorBox.

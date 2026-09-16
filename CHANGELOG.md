@@ -1,3 +1,35 @@
+## v0.7.18 [UNRELEASED]
+
+### Reconciliation preparation moved to kordinator
+
+Normalize, cross-CRD enrichment, mutation, and validation now run in `prepare.Prepare()` inside the kordinator worker loop, before `Reconcile()` is called. `GenericReconciler` is a pure dispatcher — it receives a fully-prepared `domain.Request` and dispatches to hooks or `runTemplateReconcile`. The reconciler no longer owns preparation.
+
+#### Benefit
+
+Every reconciler type — `GenericReconciler`, native `domain.Reconciler` implementations, future types — receives a fully-prepared object automatically. Preparation no longer needs to be wired per reconciler; adding a new reconciler type does not require duplicating or reimplementing the preparation pipeline.
+
+### Declarative event emission
+
+Declare events on `operatorBox.emit.events` and they fire after every reconcile without reconciler code:
+
+```yaml
+operatorBox:
+  emit:
+    events:
+      synced:
+        reason: Synced
+        message: "{{ .name }} reconciled successfully"
+        type: Normal
+        on: [success]
+      failed:
+        reason: Failed
+        message: "reconcile error: {{ .lastError }}"
+        type: Warning
+        on: [failure]
+```
+
+---
+
 ## v0.7.17 — Queue behaviour, pre-reconcile gating, admission runtime query
 
 ### Breaking: default queue is unlimited

@@ -15,6 +15,7 @@ import (
 
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
+	"github.com/orkspace/orkestra/pkg/konfig"
 	"github.com/orkspace/orkestra/pkg/merger"
 	orke2e "github.com/orkspace/orkestra/pkg/registry/e2e"
 	"github.com/orkspace/orkestra/pkg/registry/simulate"
@@ -713,7 +714,7 @@ func isE2EDoc(path string) bool {
 		Kind string `yaml:"kind"`
 	}
 	_ = yaml.Unmarshal(data, &head)
-	return head.Kind == "E2E"
+	return konfig.IsE2EKind(head.Kind)
 }
 
 // ── Discovery mode ─────────────────────────────────────────────────────────────

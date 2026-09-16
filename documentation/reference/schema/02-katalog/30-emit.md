@@ -22,17 +22,13 @@ spec:
               type: Normal
               reason: Ready
               message: "{{ .spec.name }} is ready"
-              when:
-                - field: .status.phase
-                  equals: Ready
+              on: [success]
 
             DatabaseSyncFailed:
               type: Warning
               reason: SyncFailed
               message: "{{ .spec.name }} failed to sync: {{ .status.lastError }}"
-              when:
-                - field: .status.phase
-                  equals: Failed
+              on: [failure]
 ```
 
 ## `emit` fields
@@ -51,10 +47,11 @@ spec:
 | `type`    | string        | yes      | Kubernetes event type. Must be `Normal` or `Warning`.                                    |
 | `reason`  | string        | yes      | Event reason field. Static string.                                                        |
 | `message` | string        | yes      | Human-readable message. Evaluated as a Go template against the prepared resolver context. |
+| `on`      | `[]string`    | no       | Reconcile outcomes that trigger this event. Valid values: `always`, `success`, `failure`. Defaults to `always` when omitted. |
 | `when`    | `[]Condition` | no       | AND conditions. All must pass for the event to be emitted.                                |
 | `or`      | `[]Condition` | no       | OR conditions. Any passing condition emits the event.                                     |
 
-When neither `when:` nor `or:` is declared, the event is emitted on every reconcile cycle. Kubernetes event deduplication coalesces repeated identical events within the API server's dedup window, but `when:` should almost always be declared to avoid noise.
+`on:` gates by reconcile outcome before condition evaluation. Use `on: [success]` for informational events and `on: [failure]` for warning events. `when:`/`or:` can be combined with `on:` for finer control — both must pass.
 
 ## Condition evaluation
 
@@ -75,9 +72,7 @@ operatorBox:
         type: Warning
         reason: SyncFailed
         message: "{{ .spec.name }} sync failed"
-        when:
-          - field: .status.phase
-            equals: Failed
+        on: [failure]
 ```
 
 ```yaml

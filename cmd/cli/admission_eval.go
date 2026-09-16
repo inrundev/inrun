@@ -5,7 +5,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/orkspace/orkestra/pkg/runtime/reconciler"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"github.com/orkspace/orkestra/pkg/utils"
@@ -115,7 +115,7 @@ func evalAdmissionMutation(obj map[string]interface{}, crd *orktypes.CRDEntry, r
 			}
 		}
 		currentVal, found := orktypes.ResolveScalarField(obj, field)
-		desired, mutType, err := reconciler.ResolveRuleValue(rule, found, currentVal, resolver)
+		desired, mutType, err := prepare.ResolveRuleValue(rule, found, currentVal, resolver)
 		if err != nil || desired == nil {
 			continue
 		}

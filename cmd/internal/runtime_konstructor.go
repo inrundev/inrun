@@ -308,8 +308,6 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 					func() domain.Object {
 						return objCopy.DeepCopyObject().(domain.Object)
 					},
-					ktrlRegistry,     // cross-CRD informer lookup via GetInformerByName
-					crdHealthMap,     // cross-CRD health map via HealthProvider
 					providerRegistry, // aws:, mongodb:, etc. block dispatch
 					pStats,           // per-CRD provider error rate tracking
 					kat,              // Katalog for notification wiring

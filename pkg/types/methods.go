@@ -963,6 +963,11 @@ func (e CRDEntry) HasUserLabels() bool {
 	return len(e.Labels) > 0
 }
 
+// HasUserAnnotations reports whether the CRD entry declares any user-defined annotations.
+func (e CRDEntry) HasUserAnnotations() bool {
+	return len(e.Annotations) > 0
+}
+
 // IsValidProtocol reports whether the provided protocol is valid.
 // Accepted values (case‑insensitive):
 //   - TCP
