@@ -3,7 +3,7 @@
 // Provider dispatch — the engine that connects Katalog declarations to
 // registered provider libraries.
 //
-// This file is called from runTemplateReconcile after all Kubernetes resource
+// Called from runTemplateReconcile after all Kubernetes resource
 // groups (deployments, services, jobs, etc.) have been reconciled. It:
 //
 //  1. Skips immediately if no provider blocks are declared or no providers registered
@@ -13,18 +13,6 @@
 //
 // On CR deletion (finalizer path), runProviderDelete is called instead.
 // It calls provider.Delete for all declarations — no condition filtering.
-//
-// Integration in runTemplateReconcile (after all Kubernetes resource groups):
-//
-//	if err := runProviders(ctx, obj, resolver, rc.ProviderBlocks, providerRegistry, kubeReader); err != nil {
-//	    return fmt.Errorf("providers: %w", err)
-//	}
-//
-// Integration in the finalizer handler:
-//
-//	if err := runProviderDelete(ctx, obj, resolver, rc.ProviderBlocks, providerRegistry, kubeReader); err != nil {
-//	    return fmt.Errorf("provider cleanup: %w", err)
-//	}
 package reconciler
 
 import (

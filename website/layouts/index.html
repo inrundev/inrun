@@ -95,7 +95,7 @@
 
 <span class="token-keyword">func</span> <span class="token-function">NewWebAppReconciler</span>(kube kubeclient.Interface) domain.Reconciler {
   <span class="token-keyword">return</span> domain.<span class="token-function">ReconcilerFrom</span>(&WebAppReconciler{
-    Client: kubeclient.<span class="token-function">ToClient</span>(kube),
+    Client: orkadapter.<span class="token-function">ToClient</span>(kube),
   })
 }</code></pre>
         </div>
@@ -199,7 +199,7 @@
 ) domain.Reconciler {
   <span class="token-keyword">return</span> domain.<span class="token-function">ReconcilerFrom</span>(
     &WebAppReconciler{
-      Client: kubeclient.<span class="token-function">ToClient</span>(kube),
+      Client: orkadapter.<span class="token-function">ToClient</span>(kube),
     },
   )
 }

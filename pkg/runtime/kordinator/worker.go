@@ -9,19 +9,16 @@ import (
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/logger"
 	"github.com/orkspace/orkestra/pkg/metrics"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/maintain"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/post"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/vitals"
 	"github.com/orkspace/orkestra/pkg/runtime/queue"
+	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
-
-// queueDepthReporter is a local interface satisfied by GenericReconciler so the
-// worker loop can push live queue depth into AutoMetrics for autoscale evaluation.
-// Defined here (not imported from reconciler) to avoid import cycles.
-type queueDepthReporter interface {
-	ReportQueueDepth(depth int64)
-}
 
 // Worker that only processes items for a specific GVK
 func (k *Kontroller) runWorkerForGVK(ctx context.Context, gvk string, workerID string) {
@@ -66,13 +63,13 @@ func (k *Kontroller) runWorkerForGVK(ctx context.Context, gvk string, workerID s
 			depth := float64(wq.Depth())
 			metrics.SetQueueDepth(gvk, depth)
 
-			// Push live depth into the reconciler's AutoMetrics so the autoscaler
-			// can read it without an API call. No-op for non-autoscaled CRDs.
+			// Push live depth into AutoMetrics so the autoscaler can read it.
+			// No-op for non-autoscaled CRDs (runtimeMap entry has no autoscaler).
 			k.mu.RLock()
-			rec := k.reconcilers[gvk]
+			rt := k.runtimeMap[gvk]
 			k.mu.RUnlock()
-			if reporter, ok := rec.(queueDepthReporter); ok {
-				reporter.ReportQueueDepth(int64(wq.Depth()))
+			if rt != nil {
+				rt.autoMetrics.SetQueueDepth(int64(wq.Depth()))
 			}
 
 			// Resource count — read from this CRD's informer cache
@@ -139,24 +136,79 @@ func (k *Kontroller) processItemForGVK(ctx context.Context, gvk string, item que
 	// Pre-reconcile gate: evaluate operatorBox.preReconcile.when/or conditions.
 	// The reconciler is never called when conditions are not met — gated state
 	// is idle, not failure; error rate and health state are unaffected.
-	if entry, ok := k.katalog.Get(gvk); ok {
-		if entry.CRD.HasAnyReconcileGate() {
-			obj := k.objectFromCache(entry, item.Key)
+	entry, hasEntry := k.katalog.Get(gvk)
+	if hasEntry && entry.CRD.HasAnyReconcileGate() {
+		obj := k.objectFromCache(entry, item.Key)
+		sentinelMap := wq.Sentinels(item)
+		if gated, reason := k.evaluatePreReconcileCheck(ctx, obj, entry.CRD.Name, sentinelMap); gated {
+			k.crdHealthMap[gvk].RecordGated(reason)
+			wq.Forget(item)
+			return
+		}
+	}
 
-			sentinelMap := wq.Sentinels(item)
+	// Prepare: build the enriched request (normalize, resolver, cross, validation…).
+	// Returns nil when the object is not in cache (deleted between dequeue and here)
+	// or when the namespace guard blocks it — both are silent skips, not errors.
+	var prepared *domain.PreparedRequest
+	var valResult *prepare.ValidationResult
+	if hasEntry {
+		var prepErr error
+		prepared, valResult, prepErr = prepare.Prepare(ctx, prepare.Input{
+			Entry:    entry,
+			Key:      item.Key,
+			Kat:      k.kat,
+			Kube:     k.kube,
+			Registry: k.katalog,
+		})
+		if prepErr != nil {
+			logger.Error().Err(prepErr).Str("gvk", gvk).Str("key", item.Key).Msg("prepare failed")
+			wq.AddRateLimited(item)
+			k.failedReconcile(gvk)
+			return
+		}
+		if prepared == nil {
+			wq.Forget(item)
+			return
+		}
+	}
 
-			if gated, reason := k.evaluatePreReconcileCheck(ctx, obj, entry.CRD.Name, sentinelMap); gated {
-				k.crdHealthMap[gvk].RecordGated(reason)
-				wq.Forget(item)
-				return
-			}
+	// Maintain: apply labels, annotations, and finalizers before reconcile.
+	if hasEntry && prepared != nil {
+		box := prepare.BoxFrom(prepared)
+		resolver := prepared.Context.(*orktmpl.Resolver)
+		if maintErr := maintain.Apply(ctx, maintain.Input{
+			CRD:      entry.CRD,
+			Kat:      k.kat,
+			Kube:     k.kube,
+			Recorder: k.event,
+		}, prepared.Object, box, resolver); maintErr != nil {
+			logger.Error().Err(maintErr).Str("gvk", gvk).Str("key", item.Key).Msg("maintain failed")
+			wq.AddRateLimited(item)
+			k.failedReconcile(gvk)
+			return
 		}
 	}
 
 	// safeReconcile catches panics
-	result, err := k.safeReconcile(rec, k.crdHealthMap[gvk], ctx, item.Key, gvk)
-	if err != nil {
-		logger.Error().Err(err).Str("gvk", gvk).Str("key", item.Key).Msg("reconcile failed")
+	result, reconcileErr := k.safeReconcile(rec, k.crdHealthMap[gvk], ctx, item.Key, gvk, prepared)
+
+	// Post: status patch + emit — always runs, even on reconcile failure.
+	if hasEntry && prepared != nil {
+		box := prepare.BoxFrom(prepared)
+		resolver := prepared.Context.(*orktmpl.Resolver)
+		health := k.crdHealthMap[gvk]
+		post.Apply(ctx, post.Input{
+			CRD:        entry.CRD,
+			Kube:       k.kube,
+			Recorder:   k.event,
+			MetricsMap: health.GetAutoMetrics(),
+			HealthMap:  health.HealthAsMap(),
+		}, prepared.Object, resolver, box, reconcileErr, toPostValResult(valResult))
+	}
+
+	if reconcileErr != nil {
+		logger.Error().Err(reconcileErr).Str("gvk", gvk).Str("key", item.Key).Msg("reconcile failed")
 		wq.AddRateLimited(item)
 		k.failedReconcile(gvk)
 		return
@@ -196,6 +248,7 @@ func (k *Kontroller) safeReconcile(
 	ctx context.Context,
 	key string,
 	gvk string,
+	prepared *domain.PreparedRequest,
 ) (result domain.Result, err error) {
 
 	// Track how long this reconcile took.
@@ -237,6 +290,7 @@ func (k *Kontroller) safeReconcile(
 	result, err = rec.Reconcile(ctx, domain.Request{
 		Key:            key,
 		NamespacedName: apitypes.NamespacedName{Namespace: ns, Name: name},
+		Prepared:       prepared,
 	})
 	if err != nil {
 		// Update CRD health state and metrics.
@@ -250,4 +304,30 @@ func (k *Kontroller) safeReconcile(
 	k.successReconcile(gvk)
 	metrics.RecordReconcile(gvk, "success")
 	return result, nil
+}
+
+// toPostValResult converts a prepare.ValidationResult to the post package's
+// equivalent type for status condition writing.
+func toPostValResult(v *prepare.ValidationResult) *post.ValidationResult {
+	if v == nil {
+		return nil
+	}
+	r := &post.ValidationResult{Deny: v.Deny}
+	for _, viol := range v.Violations {
+		r.Violations = append(r.Violations, post.ValidationViolation{
+			Field:   viol.Field,
+			Rule:    viol.Rule,
+			Value:   viol.Value,
+			Message: viol.Message,
+		})
+	}
+	for _, w := range v.Warnings {
+		r.Warnings = append(r.Warnings, post.ValidationViolation{
+			Field:   w.Field,
+			Rule:    w.Rule,
+			Value:   w.Value,
+			Message: w.Message,
+		})
+	}
+	return r
 }

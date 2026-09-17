@@ -2,13 +2,12 @@
 //
 // Execution order (each step can reference all previous steps):
 //
-//  1. Recieve NewResolver        → .spec.*, .status.*, .metadata.*
-//  2. r.readCross     			  → .cross.<crd>.status.* (informer cache, zero API calls)
-//  3. runExternal        	      → .external.<n>.status, .body (HTTP calls)
-//  4. forEach expand             → N sources from N-element list fields
-//  5. onCreate groups            → deployments, services, secrets, configmaps, ...
-//  6. onReconcile groups
-//  7. runProviders               → aws:, mongodb:, ... (external infra)
+//  1. Receive resolver (already enriched with cross, normalized) from PreparedRequest
+//  2. runExternal        	      → .external.<n>.status, .body (HTTP calls)
+//  3. forEach expand             → N sources from N-element list fields
+//  4. onCreate groups            → deployments, services, secrets, configmaps, ...
+//  5. onReconcile groups
+//  6. runProviders               → aws:, mongodb:, ... (external infra)
 package reconciler
 
 import (
@@ -19,11 +18,9 @@ import (
 	"github.com/orkspace/orkestra/pkg/children"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
 	"github.com/orkspace/orkestra/pkg/runtime/runners"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"k8s.io/client-go/tools/cache"
 )
 
 // runTemplateReconcile interprets the Katalog's onCreate and onReconcile blocks.
@@ -35,27 +32,11 @@ func (r *GenericReconciler[PTR]) runTemplateReconcile(ctx context.Context, resol
 		return resolver, fmt.Errorf("kubeclient not found in context")
 	}
 
-	// Step 1: We now receive a base resolver (already normalized) from reconcileImpl.
-	// All subsequent steps (cross, git, external, docker, resources, providers)
-	// enrich this resolver in-place.
+	// Step 1: resolver received from PreparedRequest already carries cross data.
+	// All subsequent steps (git, external, docker, resources, providers) enrich it.
 	var err error
 
-	// Step 2: cross-CRD observation
-	// Reads from sibling CRD informer caches via r.katalogRegistry — zero API calls.
-	// Must run first so git, docker, external calls, and resources can reference .cross.*
-	if len(box.Cross) > 0 {
-		crossData := r.readCross(ctx, obj, box.Cross, resolver)
-		logger.FromContext(ctx).Debug().
-			Str("observer", obj.GetName()).
-			Int("cross_entries", len(crossData)).
-			Interface("cross_keys", crossDataKeys(crossData)).
-			Msg("cross: resolver enrichment")
-		if len(crossData) > 0 {
-			resolver = resolver.WithCross(crossData)
-		}
-	}
-
-	// Step 3: Git hook
+	// Step 2: Git hook
 	// Runs before external calls so URLs, tokens, and payloads can reference .git.commit,
 	// .git.changed, and .git.path. Git is a declarative precondition for pipelines.
 	if t := box.OnReconcile; t != nil && t.Git != nil {
@@ -71,7 +52,7 @@ func (r *GenericReconciler[PTR]) runTemplateReconcile(ctx context.Context, resol
 		}
 	}
 
-	// Step 4: external HTTP calls
+	// Step 3: external HTTP calls
 	// Runs after Git so external URLs can embed commit hashes or paths.
 	if t := box.OnReconcile; t != nil && len(t.External) > 0 {
 		resolver, err = runExternal(ctx, r.crd.GVKString(), resolver, t.External, r.kube.Clientset())
@@ -86,7 +67,7 @@ func (r *GenericReconciler[PTR]) runTemplateReconcile(ctx context.Context, resol
 		}
 	}
 
-	// Step 5: Docker hook
+	// Step 4: Docker hook
 	// Runs after external so build/push can use tokens or metadata from external calls.
 	if t := box.OnReconcile; t != nil && t.Docker != nil {
 		resolver, err = runDocker(ctx, r.crd.GVKString(), resolver, t.Docker)
@@ -101,21 +82,21 @@ func (r *GenericReconciler[PTR]) runTemplateReconcile(ctx context.Context, resol
 		}
 	}
 
-	// Step 6: onCreate resource groups (update=false)
+	// Step 5: onCreate resource groups (update=false)
 	if t := box.OnCreate; t != nil {
 		if err := r.runResourceGroup(ctx, kube, resolver, obj, t, false); err != nil {
 			return resolver, err
 		}
 	}
 
-	// Step 7: onReconcile resource groups (update=true)
+	// Step 6: onReconcile resource groups (update=true)
 	if t := box.OnReconcile; t != nil {
 		if err := r.runResourceGroup(ctx, kube, resolver, obj, t, true); err != nil {
 			return resolver, err
 		}
 	}
 
-	// Step 8: provider dispatch
+	// Step 7: provider dispatch
 	if len(box.ProviderBlocks) > 0 && r.providerRegistry != nil && r.providerRegistry.Len() > 0 {
 		kubeReader := &kubeReaderAdapter{kube: kube}
 		if err := runProviders(ctx, obj, resolver, box.ProviderBlocks, r.providerRegistry, kubeReader, r.providerStats); err != nil {
@@ -138,7 +119,7 @@ func (r *GenericReconciler[PTR]) runResourceGroup(
 ) error {
 	// Guard closure — captures r for access to CRD config.
 	// nil-safe: if CRD has no restrictions, guard is a no-op.
-	guard := r.namespaceGuardFunc(ctx, obj)
+	guard := r.namespaceGuardFunc()
 
 	labelMgr := orklabels.NewManager(orklabels.Config{
 		Standalone:                r.kat.IsStandaloneGateway(),
@@ -254,7 +235,7 @@ func (r *GenericReconciler[PTR]) runTemplateOnDelete(ctx context.Context, resolv
 		return fmt.Errorf("kubeclient not found in context")
 	}
 
-	guard := r.namespaceGuardFunc(ctx, obj)
+	guard := r.namespaceGuardFunc()
 
 	if t := box.OnDelete; t != nil {
 		if t.Ordered {
@@ -283,178 +264,4 @@ func (r *GenericReconciler[PTR]) runTemplateOnDelete(ctx context.Context, resolv
 	}
 
 	return nil
-}
-
-func crossDataKeys(m map[string]interface{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-// readCross reads cross-CRD observations for all declared cross: entries.
-// Returns the map injected via resolver.WithCross().
-//
-// Resolution priority per declaration:
-//  1. Informer cache via r.katalogRegistry — zero API calls, same-binary CRDs
-//  2. HTTP endpoint — cross-binary or cross-cluster (raw endpoint or ONCOP host inference)
-//  3. Not-found result — when neither path is available
-//
-// Within the informer path, finding the informer and finding the CR are separate steps:
-//   - IsCRDBased: informer looked up by CRD name
-//   - IsLabelBased: informer looked up by decl.LabelSelector (CRD-entry labelSelector in registry)
-//   - selector.IsNameBased: CR found by namespace/name key
-//   - selector.MatchLabels: CR found by scanning instance labels in the informer
-//   - neither selector: first CR matching decl.LabelSelector (label-based decl only)
-func (r *GenericReconciler[PTR]) readCross(
-	ctx context.Context,
-	obj domain.Object,
-	decls []orktypes.CrossCRDDeclaration,
-	resolver *orktmpl.Resolver,
-) map[string]interface{} {
-	if len(decls) == 0 {
-		return nil
-	}
-
-	log := logger.FromContext(ctx)
-	result := make(map[string]interface{}, len(decls))
-
-	for _, decl := range decls {
-		as := decl.As
-		if as == "" {
-			as = decl.CRD
-		}
-
-		name, _ := resolver.Resolve(decl.Selector.Name)
-		namespace, _ := resolver.Resolve(decl.Selector.Namespace)
-		if namespace == "" {
-			namespace = obj.GetNamespace()
-		}
-
-		// Step 1: find the informer. decl.LabelSelector keys the registry (CRD-entry labelSelector);
-		// decl.CRD keys by name. These are mutually exclusive per ork validate.
-		var inf cache.SharedIndexInformer
-		if r.katalogRegistry != nil {
-			switch {
-			case decl.IsCRDBased():
-				if i, found := r.katalogRegistry.GetInformerByName(decl.CRD); found {
-					inf = i
-				}
-			case decl.IsLabelBased():
-				for k, v := range decl.LabelSelector {
-					if i, found := r.katalogRegistry.GetInformerByLabelSelector(k, v); found {
-						inf = i
-						break
-					}
-				}
-			}
-		}
-
-		// Step 2: find the CR within the informer.
-		if inf != nil {
-			// CrossAccess is only meaningful for CRD-named declarations.
-			var crossAccess *bool
-			if decl.IsCRDBased() {
-				crossAccess = r.katalogRegistry.GetCrossAccessByName(decl.CRD)
-			}
-
-			sel := decl.Selector
-			var data map[string]interface{}
-			switch {
-			case !sel.MatchLabels.Empty():
-				// selector.matchLabels filters CR instances within the informer by their labels.
-				for k, v := range sel.MatchLabels {
-					data = ReadCrossFromInformerByLabel(inf.GetIndexer(), k, v)
-					break
-				}
-			case decl.IsLabelBased():
-				// Label-based decl with no CR selector — first CR matching the decl label.
-				for k, v := range decl.LabelSelector {
-					data = ReadCrossFromInformerByLabel(inf.GetIndexer(), k, v)
-					break
-				}
-			case sel.IsNameBased():
-				// Name is the precision tool — used when label identity is insufficient.
-				data = ReadCrossFromInformerByName(inf.GetIndexer(), crossKey(namespace, name), crossAccess)
-			}
-
-			if data != nil {
-				result[as] = data
-				log.Debug().
-					Str("crd", decl.CRD).
-					Str("as", as).
-					Msg("cross: read from informer cache")
-				continue
-			}
-
-			log.Warn().
-				Str("crd", decl.CRD).
-				Str("as", as).
-				Msg("cross: informer found but CR not matched")
-		} else if r.katalogRegistry != nil {
-			log.Warn().
-				Str("crd", decl.CRD).
-				Str("as", as).
-				Msg("cross: CRD not found in registry — trying HTTP")
-		}
-
-		// Step 3: HTTP fallback (cross-binary or cross-cluster).
-		if decl.HasSource() {
-			// 3a: raw endpoint — non-Orkestra operators or arbitrary JSON APIs.
-			if decl.Source.HasEndpoint() {
-				src := *decl.Source
-				src.Endpoint, _ = resolver.Resolve(decl.Source.Endpoint)
-				data := fetchCrossViaHTTP(ctx, r.kube.Clientset(), &src)
-				if data != nil {
-					result[as] = data
-					log.Debug().
-						Str("crd", decl.CRD).
-						Str("as", as).
-						Str("endpoint", src.Endpoint).
-						Msg("cross: read via raw endpoint")
-					continue
-				}
-				log.Warn().
-					Str("crd", decl.CRD).
-					Str("endpoint", src.Endpoint).
-					Msg("cross: raw endpoint returned nil")
-			}
-
-			// 3b: ONCOP host inference — Orkestra-native operators.
-			if decl.Source.HasHost() {
-				src := *decl.Source
-				src.Endpoint = orktypes.BuildONCOPURL(decl)
-				data := fetchCrossViaHTTP(ctx, r.kube.Clientset(), &src)
-				if data != nil {
-					result[as] = data
-					log.Debug().
-						Str("crd", decl.CRD).
-						Str("as", as).
-						Str("endpoint", src.Endpoint).
-						Msg("cross: read via ONCOP host")
-					continue
-				}
-				log.Warn().
-					Str("crd", decl.CRD).
-					Str("endpoint", src.Endpoint).
-					Msg("cross: ONCOP endpoint returned nil")
-			}
-		}
-
-		// Step 4: not found.
-		result[as] = map[string]interface{}{
-			"found":     "false",
-			"name":      name,
-			"namespace": namespace,
-			"status":    map[string]interface{}{},
-			"spec":      map[string]interface{}{},
-		}
-		log.Debug().
-			Str("crd", decl.CRD).
-			Str("as", as).
-			Msg("cross: not found — empty result")
-	}
-
-	return result
 }

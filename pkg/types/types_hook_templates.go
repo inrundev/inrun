@@ -1,36 +1,9 @@
 // pkg/types/types_hook_templates.go
 package types
 
-// ── HookTemplates ─────────────────────────────────────────────────────────────
-// Declares the complete set of resources Orkestra manages at each lifecycle event.
-// All resource type slices are optional — omit any type you do not need.
-// Resources not declared in HookTemplates are never created, updated, or deleted
-// by Orkestra — they are invisible to the reconciler.
-//
-// All resources created via hook templates receive owner references pointing to
-// the CR. This means Kubernetes garbage collection handles deletion automatically
-// when the CR is deleted — no onDelete declaration is needed for cleanup in most cases.
-//
-// Lifecycle events:
-//
-//	onCreate
-//	  Runs on every reconcile. Create calls are idempotent — if the resource
-//	  already exists it is skipped without error.
-//	  Declare all long-lived child resources here.
-//	  Resources are created in the order declared within each type slice.
-//
-//	onReconcile
-//	  Runs on every reconcile, after onCreate.
-//	  Use for drift correction — re-applies desired state when child resources
-//	  have been manually modified, scaled, or deleted outside of Orkestra.
-//	  Omit entirely if onCreate alone is sufficient (no drift correction needed).
-//
-//	onDelete
-//	  Runs when the CR has a DeletionTimestamp set, before Orkestra removes finalizers.
-//	  Use only for resources that need explicit cleanup beyond owner references:
-//	    - External resources not in Kubernetes (cloud provider APIs, DNS records, etc.)
-//	    - Jobs that must complete successfully before the CR can be considered deleted
-//	    - Notification or archival tasks that must run before deletion is finalized
+// HookTemplates declares the child resources Orkestra manages at a lifecycle event.
+// Resources receive owner references — Kubernetes GC handles deletion automatically.
+// All slices are optional; undeclared resources are invisible to the reconciler.
 type HookTemplates struct {
 	Deployments              []DeploymentTemplateSource         `yaml:"deployments,omitempty" json:"deployments,omitempty" validate:"omitempty"`
 	ReplicaSets              []ReplicaSetTemplateSource         `yaml:"replicaSets,omitempty" json:"replicaSets,omitempty" validate:"omitempty"`
@@ -61,24 +34,13 @@ type HookTemplates struct {
 	// Results available as .external.<n>.status, .body, .error
 	External []ExternalCallSpec `yaml:"external,omitempty" json:"external,omitempty"`
 
-	// Git declares optional Git-backed reconcile behaviour for this CRD.
-	//
-	// When configured, Orkestra:
-	//   - Maintains a local working copy of the repository.
-	//   - Periodically checks the target branch for new commits.
-	//   - Enqueues reconciles for all CRs of this type when the branch tip changes.
-	//
-	// This enables declarative, in-cluster CI/CD pipelines where Git acts
-	// as the source of pipeline logic and the CRs provide parameters.
-	//
-	// When omitted, reconcile behaviour is unchanged and no Git traffic
-	// is generated for this CRD.
+	// Git triggers reconciles for all CRs when the target branch tip changes.
+	// Enables Git-driven pipelines where the CR provides parameters and Git provides logic.
+	// IN DEVELOPMENT — not yet active in the runtime.
 	Git *GitHookSpec `yaml:"git,omitempty" json:"git,omitempty"`
 
-	// Docker declares optional Docker-backed reconcile behaviour for this CRD.
-	//
-	// When configured
-	//	- Builds and optionally pushes a docker image
+	// Docker builds and optionally pushes an image as part of reconciliation.
+	// IN DEVELOPMENT — not yet active in the runtime.
 	Docker *DockerHookSpec `yaml:"docker,omitempty" json:"docker,omitempty"`
 
 	// Ordered controls whether deletion happens sequentially with verification.
@@ -98,7 +60,6 @@ type HookTemplates struct {
 	// Defaults to 5m when Ordered is true. Ignored when Ordered is false.
 	Timeout *Duration `yaml:"timeout,omitempty" json:"timeout,omitempty"`
 
-	// TODO with placeholer
 	Volumes                     []PlaceholderSource `yaml:"volumes,omitempty" json:"volumes,omitempty" validate:"omitempty"`
 	VolumeMounts                []PlaceholderSource `yaml:"volumeMounts,omitempty" json:"volumeMounts,omitempty" validate:"omitempty"`
 	ServiceMonitors             []PlaceholderSource `yaml:"serviceMonitors,omitempty" json:"serviceMonitors,omitempty" validate:"omitempty"`
@@ -109,7 +70,6 @@ type HookTemplates struct {
 	PodTemplates                []PlaceholderSource `yaml:"podTemplates,omitempty" json:"podTemplates,omitempty" validate:"omitempty"`
 	DaemonSets                  []PlaceholderSource `yaml:"daemonSets,omitempty" json:"daemonSets,omitempty" validate:"omitempty"`
 
-	// Storage
 	StorageClasses   []PlaceholderSource `yaml:"storageClasses,omitempty" json:"storageClasses,omitempty" validate:"omitempty"`
 	StorageLocations []PlaceholderSource `yaml:"storageLocations,omitempty" json:"storageLocations,omitempty" validate:"omitempty"`
 	StoragePools     []PlaceholderSource `yaml:"storagePools,omitempty" json:"storagePools,omitempty" validate:"omitempty"`
@@ -118,6 +78,5 @@ type HookTemplates struct {
 	StorageVolumes   []PlaceholderSource `yaml:"storageVolumes,omitempty" json:"storageVolumes,omitempty" validate:"omitempty"`
 }
 
-// Placeholder for resources yet to be added to orkestra internal registry
-// pkg/resources
+// PlaceholderSource is a stub for resource types not yet wired into pkg/resources.
 type PlaceholderSource struct{}

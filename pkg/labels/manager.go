@@ -269,6 +269,33 @@ func (m *Manager) EnsureUserLabels(obj domain.Object, extra map[string]string) b
 	return changed
 }
 
+// EnsureUserAnnotations merges user-defined annotations onto obj.
+// Values are expected to have been resolved from templates before this call.
+// Existing keys set by the user are overwritten; keys absent from extra are
+// left untouched. Returns true if any label was added or changed.
+//
+// The caller must persist any change via kube.PatchAnnotations.
+func (m *Manager) EnsureUserAnnotations(obj domain.Object, extra map[string]string) bool {
+	if len(extra) == 0 {
+		return false
+	}
+	ann := obj.GetAnnotations()
+	if ann == nil {
+		ann = make(map[string]string, len(extra))
+	}
+	changed := false
+	for k, v := range extra {
+		if ann[k] != v {
+			ann[k] = v
+			changed = true
+		}
+	}
+	if changed {
+		obj.SetAnnotations(ann)
+	}
+	return changed
+}
+
 // ── Getters ───────────────────────────────────────────────────────────────────
 
 func (m *Manager) IsStandalone() bool {
@@ -297,4 +324,60 @@ func (m *Manager) GetManagedByAnnotation() string {
 
 func (m *Manager) GetManagedSinceAnnotation() string {
 	return m.managedSinceAnnotation
+}
+
+// ── Finalizer helpers ─────────────────────────────────────────────────────────
+// Stateless helpers for in-memory finalizer manipulation on any domain.Object.
+// Safe to import from any layer — no API calls, no configuration required.
+
+func ContainsFinalizer(o domain.Object, finalizer string) bool {
+	for _, f := range o.GetFinalizers() {
+		if f == finalizer {
+			return true
+		}
+	}
+	return false
+}
+
+func AddFinalizer(o domain.Object, finalizer string) (updated bool) {
+	if ContainsFinalizer(o, finalizer) {
+		return false
+	}
+	o.SetFinalizers(append(o.GetFinalizers(), finalizer))
+	return true
+}
+
+func RemoveFinalizer(o domain.Object, finalizer string) (updated bool) {
+	cur := o.GetFinalizers()
+	n := 0
+	for i := range cur {
+		if cur[i] != finalizer {
+			cur[n] = cur[i]
+			n++
+		}
+	}
+	o.SetFinalizers(cur[:n])
+	return n != len(cur)
+}
+
+// EnsureFinalizers adds any finalizers from want that are not already present
+// on obj. Returns true when the object was mutated and needs a patch.
+func EnsureFinalizers(o domain.Object, want []string) (updated bool) {
+	for _, f := range want {
+		if AddFinalizer(o, f) {
+			updated = true
+		}
+	}
+	return updated
+}
+
+// StripFinalizers removes all finalizers in strip from obj.
+// Returns true when the object was mutated and needs a patch.
+func StripFinalizers(o domain.Object, strip []string) (updated bool) {
+	for _, f := range strip {
+		if RemoveFinalizer(o, f) {
+			updated = true
+		}
+	}
+	return updated
 }

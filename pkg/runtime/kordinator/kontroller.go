@@ -50,6 +50,10 @@ type Kontroller struct {
 	reconcilers    map[string]domain.Reconciler
 	crds           []orktypes.CRDEntry
 
+	// runtimeMap holds per-CRD concurrency and autoscale state (semaphore,
+	// AutoMetrics, Autoscaler, resync interval). Populated by startCRDWorkers.
+	runtimeMap map[string]*perCRDRuntime
+
 	// Error rate
 	total  map[string]int
 	failed map[string]int
@@ -89,6 +93,7 @@ func NewKontroller(
 		wgs:              make(map[string]*sync.WaitGroup),
 		reconcilers:      make(map[string]domain.Reconciler),
 		failureThreshold: make(map[string]int),
+		runtimeMap:       make(map[string]*perCRDRuntime),
 	}
 
 	// Load registry entries
