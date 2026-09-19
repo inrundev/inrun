@@ -57,27 +57,27 @@ func TestServeInclude_ClearedAfterExpansion(t *testing.T) {
 func TestValidationInclude_ExpandsRules(t *testing.T) {
 	k := mustParseTestdata(t, "include/validation.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.Validation == nil {
+	if crd == nil || crd.EffectiveValidation() == nil {
 		t.Fatal("platform CRD or Validation is nil")
 	}
 	// 2 included + 1 inline = 3 total
-	if len(crd.Validation.Rules) != 3 {
-		t.Errorf("len(Rules) = %d, want 3", len(crd.Validation.Rules))
+	if len(crd.EffectiveValidation().Rules) != 3 {
+		t.Errorf("len(Rules) = %d, want 3", len(crd.EffectiveValidation().Rules))
 	}
 }
 
 func TestValidationInclude_IncludedRulesFirst(t *testing.T) {
 	k := mustParseTestdata(t, "include/validation.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.Validation == nil {
+	if crd == nil || crd.EffectiveValidation() == nil {
 		t.Fatal("platform CRD or Validation is nil")
 	}
 	// First rule must be the included one (spec.team exists)
-	if got := crd.Validation.Rules[0].Field; got != "spec.team" {
+	if got := crd.EffectiveValidation().Rules[0].Field; got != "spec.team" {
 		t.Errorf("Rules[0].Field = %q, want %q", got, "spec.team")
 	}
 	// Last rule is the inline one (spec.replicas lte)
-	last := crd.Validation.Rules[len(crd.Validation.Rules)-1]
+	last := crd.EffectiveValidation().Rules[len(crd.EffectiveValidation().Rules)-1]
 	if last.Field != "spec.replicas" {
 		t.Errorf("last rule Field = %q, want %q", last.Field, "spec.replicas")
 	}
@@ -86,11 +86,11 @@ func TestValidationInclude_IncludedRulesFirst(t *testing.T) {
 func TestValidationInclude_ClearedAfterExpansion(t *testing.T) {
 	k := mustParseTestdata(t, "include/validation.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.Validation == nil {
+	if crd == nil || crd.EffectiveValidation() == nil {
 		t.Fatal("platform CRD or Validation is nil")
 	}
-	if crd.Validation.Include != "" {
-		t.Errorf("Validation.Include not cleared after expansion, got %q", crd.Validation.Include)
+	if crd.EffectiveValidation().Include != "" {
+		t.Errorf("Validation.Include not cleared after expansion, got %q", crd.EffectiveValidation().Include)
 	}
 }
 
@@ -99,27 +99,27 @@ func TestValidationInclude_ClearedAfterExpansion(t *testing.T) {
 func TestMutationInclude_ExpandsRules(t *testing.T) {
 	k := mustParseTestdata(t, "include/mutation.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.Mutation == nil {
+	if crd == nil || crd.EffectiveMutation() == nil {
 		t.Fatal("platform CRD or Mutation is nil")
 	}
 	// 2 included + 1 inline = 3 total
-	if len(crd.Mutation.Rules) != 3 {
-		t.Errorf("len(Rules) = %d, want 3", len(crd.Mutation.Rules))
+	if len(crd.EffectiveMutation().Rules) != 3 {
+		t.Errorf("len(Rules) = %d, want 3", len(crd.EffectiveMutation().Rules))
 	}
 }
 
 func TestMutationInclude_IncludedRulesFirst(t *testing.T) {
 	k := mustParseTestdata(t, "include/mutation.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.Mutation == nil {
+	if crd == nil || crd.EffectiveMutation() == nil {
 		t.Fatal("platform CRD or Mutation is nil")
 	}
 	// First rule must be the included one (spec.replicas default)
-	if got := crd.Mutation.Rules[0].Field; got != "spec.replicas" {
+	if got := crd.EffectiveMutation().Rules[0].Field; got != "spec.replicas" {
 		t.Errorf("Rules[0].Field = %q, want %q", got, "spec.replicas")
 	}
 	// Last rule is the inline one (spec.logLevel default)
-	last := crd.Mutation.Rules[len(crd.Mutation.Rules)-1]
+	last := crd.EffectiveMutation().Rules[len(crd.EffectiveMutation().Rules)-1]
 	if last.Field != "spec.logLevel" {
 		t.Errorf("last rule Field = %q, want %q", last.Field, "spec.logLevel")
 	}
@@ -128,11 +128,11 @@ func TestMutationInclude_IncludedRulesFirst(t *testing.T) {
 func TestMutationInclude_ClearedAfterExpansion(t *testing.T) {
 	k := mustParseTestdata(t, "include/mutation.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.Mutation == nil {
+	if crd == nil || crd.EffectiveMutation() == nil {
 		t.Fatal("platform CRD or Mutation is nil")
 	}
-	if crd.Mutation.Include != "" {
-		t.Errorf("Mutation.Include not cleared after expansion, got %q", crd.Mutation.Include)
+	if crd.EffectiveMutation().Include != "" {
+		t.Errorf("Mutation.Include not cleared after expansion, got %q", crd.EffectiveMutation().Include)
 	}
 }
 
@@ -141,27 +141,27 @@ func TestMutationInclude_ClearedAfterExpansion(t *testing.T) {
 func TestConversionInclude_ExpandsPaths(t *testing.T) {
 	k := mustParseTestdata(t, "include/conversion.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.Conversion == nil {
+	if crd == nil || crd.EffectiveConversion() == nil {
 		t.Fatal("platform CRD or Conversion is nil")
 	}
 	// 2 included + 1 inline = 3 total
-	if len(crd.Conversion.Paths) != 3 {
-		t.Errorf("len(Paths) = %d, want 3", len(crd.Conversion.Paths))
+	if len(crd.EffectiveConversion().Paths) != 3 {
+		t.Errorf("len(Paths) = %d, want 3", len(crd.EffectiveConversion().Paths))
 	}
 }
 
 func TestConversionInclude_IncludedPathsFirst(t *testing.T) {
 	k := mustParseTestdata(t, "include/conversion.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.Conversion == nil {
+	if crd == nil || crd.EffectiveConversion() == nil {
 		t.Fatal("platform CRD or Conversion is nil")
 	}
 	// First path is from the include file (v1alpha1 → v1)
-	if got := crd.Conversion.Paths[0].From; got != "v1alpha1" {
+	if got := crd.EffectiveConversion().Paths[0].From; got != "v1alpha1" {
 		t.Errorf("Paths[0].From = %q, want %q", got, "v1alpha1")
 	}
 	// Last path is the inline one (v1 → v1alpha1)
-	last := crd.Conversion.Paths[len(crd.Conversion.Paths)-1]
+	last := crd.EffectiveConversion().Paths[len(crd.EffectiveConversion().Paths)-1]
 	if last.From != "v1" {
 		t.Errorf("last path From = %q, want %q", last.From, "v1")
 	}
@@ -170,11 +170,11 @@ func TestConversionInclude_IncludedPathsFirst(t *testing.T) {
 func TestConversionInclude_ClearedAfterExpansion(t *testing.T) {
 	k := mustParseTestdata(t, "include/conversion.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.Conversion == nil {
+	if crd == nil || crd.EffectiveConversion() == nil {
 		t.Fatal("platform CRD or Conversion is nil")
 	}
-	if crd.Conversion.Include != "" {
-		t.Errorf("Conversion.Include not cleared after expansion, got %q", crd.Conversion.Include)
+	if crd.EffectiveConversion().Include != "" {
+		t.Errorf("Conversion.Include not cleared after expansion, got %q", crd.EffectiveConversion().Include)
 	}
 }
 
@@ -183,27 +183,27 @@ func TestConversionInclude_ClearedAfterExpansion(t *testing.T) {
 func TestStatusInclude_ExpandsFields(t *testing.T) {
 	k := mustParseTestdata(t, "include/status.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.OperatorBox.Status == nil {
+	if crd == nil || crd.OperatorBox.EffectiveStatus() == nil {
 		t.Fatal("platform CRD or Status is nil")
 	}
 	// 2 included + 1 inline = 3 total
-	if len(crd.OperatorBox.Status.Fields) != 3 {
-		t.Errorf("len(Fields) = %d, want 3", len(crd.OperatorBox.Status.Fields))
+	if len(crd.OperatorBox.EffectiveStatus().Fields) != 3 {
+		t.Errorf("len(Fields) = %d, want 3", len(crd.OperatorBox.EffectiveStatus().Fields))
 	}
 }
 
 func TestStatusInclude_IncludedFieldsFirst(t *testing.T) {
 	k := mustParseTestdata(t, "include/status.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.OperatorBox.Status == nil {
+	if crd == nil || crd.OperatorBox.EffectiveStatus() == nil {
 		t.Fatal("platform CRD or Status is nil")
 	}
 	// First field is the included one (phase)
-	if got := crd.OperatorBox.Status.Fields[0].Path; got != "phase" {
+	if got := crd.OperatorBox.EffectiveStatus().Fields[0].Path; got != "phase" {
 		t.Errorf("Fields[0].Path = %q, want %q", got, "phase")
 	}
 	// Last field is the inline one (environment)
-	last := crd.OperatorBox.Status.Fields[len(crd.OperatorBox.Status.Fields)-1]
+	last := crd.OperatorBox.EffectiveStatus().Fields[len(crd.OperatorBox.EffectiveStatus().Fields)-1]
 	if last.Path != "environment" {
 		t.Errorf("last field Path = %q, want %q", last.Path, "environment")
 	}
@@ -212,10 +212,10 @@ func TestStatusInclude_IncludedFieldsFirst(t *testing.T) {
 func TestStatusInclude_ClearedAfterExpansion(t *testing.T) {
 	k := mustParseTestdata(t, "include/status.yaml")
 	crd, _ := k.Get("platform")
-	if crd == nil || crd.OperatorBox.Status == nil {
+	if crd == nil || crd.OperatorBox.EffectiveStatus() == nil {
 		t.Fatal("platform CRD or Status is nil")
 	}
-	if crd.OperatorBox.Status.Include != "" {
-		t.Errorf("Status.Include not cleared after expansion, got %q", crd.OperatorBox.Status.Include)
+	if crd.OperatorBox.EffectiveStatus().Include != "" {
+		t.Errorf("Status.Include not cleared after expansion, got %q", crd.OperatorBox.EffectiveStatus().Include)
 	}
 }

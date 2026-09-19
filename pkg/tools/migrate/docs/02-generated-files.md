@@ -43,7 +43,7 @@ spec:
             kind: Config
             on: [create, update, delete]
 
-        reconciler:
+        reconcile:
           default: false
 
           constructor:

@@ -39,42 +39,42 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
+      admission:
+        mutation:
+          mutateFirst: true
+          rules:
+            - field: spec.replicas
+              default: "{{ defaultReplicas }}"
+              valueType: int
 
-      mutation:
-        mutateFirst: true
-        rules:
-          - field: spec.replicas
-            default: "{{ defaultReplicas }}"
-            valueType: int
+        validation:
+          rules:
+            - field: "{{ inBusinessHours }}"
+              equals: "true"
+              action: deny
+              message: "deployments are only allowed during business hours (Mon–Fri 09:00–18:00 UTC)"
 
-      validation:
-        rules:
-          - field: "{{ inBusinessHours }}"
-            equals: "true"
-            action: deny
-            message: "deployments are only allowed during business hours (Mon–Fri 09:00–18:00 UTC)"
+            - field: spec.image
+              prefix: "{{ allowedRegistry }}"
+              action: deny
+              message: "image must be from {{ allowedRegistry }} — got {{ .spec.image }}"
 
-          - field: spec.image
-            prefix: "{{ allowedRegistry }}"
-            action: deny
-            message: "image must be from {{ allowedRegistry }} — got {{ .spec.image }}"
-
-          - field: spec.replicas
-            min: "1"
-            action: deny
-            message: "spec.replicas must be at least 1"
-
+            - field: spec.replicas
+              min: "1"
+              action: deny
+              message: "spec.replicas must be at least 1"
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+              - path: phase
+                value: "Active"
+                when:
+                  - field: "{{ inBusinessHours }}"
+                    equals: "true"
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-            - path: phase
-              value: "Active"
-              when:
-                - field: "{{ inBusinessHours }}"
-                  equals: "true"

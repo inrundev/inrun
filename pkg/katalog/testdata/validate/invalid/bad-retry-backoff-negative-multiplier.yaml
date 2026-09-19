@@ -9,7 +9,7 @@ spec:
     widget:
       crdFile: ../crd.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           queue:
             retryBackoff:
               initial: 500ms

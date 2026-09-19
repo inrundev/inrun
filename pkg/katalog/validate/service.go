@@ -32,7 +32,7 @@ func validateServiceType(e *executor) error {
 
 		// onCreate
 		if crd.HasOnCreate() {
-			for _, s := range crd.OperatorBox.OnCreate.Services {
+			for _, s := range crd.Box().EffectiveOnCreate().Services {
 				if !orktypes.IsValidServiceType(s.Type) {
 					return errInvalidServiceType(s.Type)
 				}
@@ -41,7 +41,7 @@ func validateServiceType(e *executor) error {
 
 		// onReconcile
 		if crd.HasOnReconcile() {
-			for _, s := range crd.OperatorBox.OnReconcile.Services {
+			for _, s := range crd.Box().EffectiveOnReconcile().Services {
 				if !orktypes.IsValidServiceType(s.Type) {
 					return errInvalidServiceType(s.Type)
 				}
@@ -61,7 +61,7 @@ func validateServiceProtocol(e *executor) error {
 
 		// onCreate
 		if crd.HasOnCreate() {
-			for _, s := range crd.OperatorBox.OnCreate.Services {
+			for _, s := range crd.Box().EffectiveOnCreate().Services {
 				if !orktypes.IsValidProtocol(s.Protocol) {
 					return errInvalidProtocol(s.Protocol)
 				}
@@ -70,7 +70,7 @@ func validateServiceProtocol(e *executor) error {
 
 		// onReconcile
 		if crd.HasOnReconcile() {
-			for _, s := range crd.OperatorBox.OnReconcile.Services {
+			for _, s := range crd.Box().EffectiveOnReconcile().Services {
 				if !orktypes.IsValidProtocol(s.Protocol) {
 					return errInvalidProtocol(s.Protocol)
 				}

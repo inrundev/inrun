@@ -28,64 +28,63 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       # ── Mutation ─────────────────────────────────────────────────────────
-      # Runs before validation. Sets replicas default from the note so the
-      # value is present when validation evaluates min/max rules.
-      mutation:
-        mutateFirst: true
-        rules:
-          - field: spec.replicas
-            default: "{{ defaultReplicas }}"
-            valueType: int
+      # ── Admission ────────────────────────────────────────────────────────
+      admission:
+        # Runs before validation. Sets replicas default from the note so the
+        # value is present when validation evaluates min/max rules.
+        mutation:
+          mutateFirst: true
+          rules:
+            - field: spec.replicas
+              default: "{{ defaultReplicas }}"
+              valueType: int
 
-      # ── Validation ───────────────────────────────────────────────────────
-      # Uses notes in both comparison values and messages.
-      validation:
-        rules:
-          # Gate: deployments are only allowed during business hours.
-          # inBusinessHours resolves to "true" or "false" at reconcile time.
-          - field: "{{ inBusinessHours }}"
-            equals: "true"
-            action: deny
-            message: "deployments are only allowed during business hours (Mon–Fri 09:00–18:00 UTC)"
+        # Uses notes in both comparison values and messages.
+        validation:
+          rules:
+            # Gate: deployments are only allowed during business hours.
+            # inBusinessHours resolves to "true" or "false" at reconcile time.
+            - field: "{{ inBusinessHours }}"
+              equals: "true"
+              action: deny
+              message: "deployments are only allowed during business hours (Mon–Fri 09:00–18:00 UTC)"
 
-          # Image must come from the approved registry declared in the note.
-          - field: spec.image
-            prefix: "{{ allowedRegistry }}"
-            action: deny
-            message: "image must be from {{ allowedRegistry }} (got {{ .spec.image }})"
+            # Image must come from the approved registry declared in the note.
+            - field: spec.image
+              prefix: "{{ allowedRegistry }}"
+              action: deny
+              message: "image must be from {{ allowedRegistry }} (got {{ .spec.image }})"
 
-          # Replicas must be at least 1 (already defaulted by mutation above).
-          - field: spec.replicas
-            min: "1"
-            action: deny
-            message: "spec.replicas must be at least 1"
-
+            # Replicas must be at least 1 (already defaulted by mutation above).
+            - field: spec.replicas
+              min: "1"
+              action: deny
+              message: "spec.replicas must be at least 1"
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
+          onReconcile:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+              - path: phase
+                value: "Active"
+                when:
+                  - field: "{{ inBusinessHours }}"
+                    equals: "true"
+              - path: message
+                value: "outside business hours — reconcile will resume when window opens"
+              - path: message
+                value: "running"
+                when:
+                  - field: "{{ inBusinessHours }}"
+                    equals: "true"
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-            - path: phase
-              value: "Active"
-              when:
-                - field: "{{ inBusinessHours }}"
-                  equals: "true"
-            - path: message
-              value: "outside business hours — reconcile will resume when window opens"
-            - path: message
-              value: "running"
-              when:
-                - field: "{{ inBusinessHours }}"
-                  equals: "true"
-
-        onReconcile:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"

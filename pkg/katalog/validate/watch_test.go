@@ -10,7 +10,7 @@ import (
 
 func katalogWithWatch(crdName string, box orktypes.OperatorBoxConfig) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
-		crdName: {OperatorBox: box},
+		crdName: {OperatorBox: &box},
 	})
 }
 

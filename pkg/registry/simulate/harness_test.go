@@ -60,12 +60,13 @@ spec:
         plural: websites
       crdFile: ./crd.yaml
 
-      validation:
-        rules:
-          - field: spec.domain
-            operator: unique
-            message: "spec.domain must be unique across all Website instances"
-            action: deny
+      admission:
+        validation:
+          rules:
+            - field: spec.domain
+              operator: unique
+              message: "spec.domain must be unique across all Website instances"
+              action: deny
 `
 
 // writeUniqueTestKatalog materializes the katalog+CRD fixture used by both

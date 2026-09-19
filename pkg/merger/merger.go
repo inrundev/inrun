@@ -175,37 +175,45 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 		result.Enabled = override.Enabled
 	}
 
-	// ── Runtime tuning (operatorBox.reconciler) ──────────────────────────
+	// ── Runtime tuning (operatorBox.reconcile) ──────────────────────────
 	// Override only when non-zero — zero means "not declared in override"
-	if override.OperatorBox.Reconciler != nil {
-		if result.OperatorBox.Reconciler == nil {
-			result.OperatorBox.Reconciler = &orktypes.ReconcilerConfig{}
+	if override.Box().Reconcile != nil {
+		if result.Box().Reconcile == nil {
+			result.Box().Reconcile = &orktypes.ReconcileConfig{}
 		}
-		ov := override.OperatorBox.Reconciler
+		ov := override.Box().Reconcile
 		if ov.Workers > 0 {
-			result.OperatorBox.Reconciler.Workers = ov.Workers
+			result.Box().Reconcile.Workers = ov.Workers
 		}
 		if ov.Resync.Duration != 0 {
-			result.OperatorBox.Reconciler.Resync = ov.Resync
+			result.Box().Reconcile.Resync = ov.Resync
 		}
 		if ov.Queue.MaxDepth > 0 {
-			result.OperatorBox.Reconciler.Queue.MaxDepth = ov.Queue.MaxDepth
+			result.Box().Reconcile.Queue.MaxDepth = ov.Queue.MaxDepth
 		}
 		if ov.Queue.FailureThreshold > 0 {
-			result.OperatorBox.Reconciler.Queue.FailureThreshold = ov.Queue.FailureThreshold
+			result.Box().Reconcile.Queue.FailureThreshold = ov.Queue.FailureThreshold
 		}
 	}
 
 	// ── Deletion Protection ───────────────────────────────────────────────
-	if override.DeletionProtection != nil {
-		if override.DeletionProtection.ProtectCRD != nil {
-			result.DeletionProtection.ProtectCRD = override.DeletionProtection.ProtectCRD
+	if override.Box().Runtime != nil && override.Box().Runtime.DeletionProtection != nil {
+		ovDp := override.Box().Runtime.DeletionProtection
+		if result.Box().Runtime == nil {
+			result.Box().Runtime = &orktypes.RuntimeConfig{}
 		}
-		if override.DeletionProtection.ProtectCRs != nil {
-			result.DeletionProtection.ProtectCRs = override.DeletionProtection.ProtectCRs
+		if result.Box().Runtime.DeletionProtection == nil {
+			result.Box().Runtime.DeletionProtection = &orktypes.DeletionProtectionOverride{}
 		}
-		if override.DeletionProtection.StrictMode != nil {
-			result.DeletionProtection.StrictMode = override.DeletionProtection.StrictMode
+		dp := result.Box().Runtime.DeletionProtection
+		if ovDp.ProtectCRD != nil {
+			dp.ProtectCRD = ovDp.ProtectCRD
+		}
+		if ovDp.ProtectCRs != nil {
+			dp.ProtectCRs = ovDp.ProtectCRs
+		}
+		if ovDp.StrictMode != nil {
+			dp.StrictMode = ovDp.StrictMode
 		}
 	}
 
@@ -224,13 +232,16 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 	// ── Restricted namespaces — additive ──────────────────────────────────
 	// Restrictions are additive: override adds to base, never removes
 	if override.HasRestrictedNamespaces() {
+		if result.Box().Runtime == nil {
+			result.Box().Runtime = &orktypes.RuntimeConfig{}
+		}
 		seen := map[string]struct{}{}
-		for _, ns := range result.RestrictedNamespaces {
+		for _, ns := range result.Box().Runtime.RestrictedNamespaces {
 			seen[ns] = struct{}{}
 		}
-		for _, ns := range override.RestrictedNamespaces {
+		for _, ns := range override.AllRestrictedNamespaces() {
 			if _, ok := seen[ns]; !ok {
-				result.RestrictedNamespaces = append(result.RestrictedNamespaces, ns)
+				result.Box().Runtime.RestrictedNamespaces = append(result.Box().Runtime.RestrictedNamespaces, ns)
 			}
 		}
 	}
@@ -238,70 +249,97 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 	// ── Allowed namespaces — additive ─────────────────────────────────────
 	// Allowances are additive: override adds to base, never removes
 	if override.HasAllowedNamespaces() {
+		if result.Box().Runtime == nil {
+			result.Box().Runtime = &orktypes.RuntimeConfig{}
+		}
 		seen := map[string]struct{}{}
-		for _, ns := range result.AllowedNamespaces {
+		for _, ns := range result.Box().Runtime.AllowedNamespaces {
 			seen[ns] = struct{}{}
 		}
-		for _, ns := range override.AllowedNamespaces {
+		for _, ns := range override.AllAllowedNamespaces() {
 			if _, ok := seen[ns]; !ok {
-				result.AllowedNamespaces = append(result.AllowedNamespaces, ns)
+				result.Box().Runtime.AllowedNamespaces = append(result.Box().Runtime.AllowedNamespaces, ns)
 			}
 		}
 	}
 
 	// ── Finalizers — additive ─────────────────────────────────────────────
-	if len(override.OperatorBox.Finalizers) > 0 {
+	if overrideFinals := override.Box().EffectiveFinalizers(); len(overrideFinals) > 0 {
+		if result.Box().Runtime == nil {
+			result.Box().Runtime = &orktypes.RuntimeConfig{}
+		}
 		seen := map[string]struct{}{}
-		for _, f := range result.OperatorBox.Finalizers {
+		for _, f := range result.Box().EffectiveFinalizers() {
 			seen[f] = struct{}{}
 		}
-		for _, f := range override.OperatorBox.Finalizers {
+		for _, f := range overrideFinals {
 			if _, ok := seen[f]; !ok {
-				result.OperatorBox.Finalizers = append(
-					result.OperatorBox.Finalizers, f)
+				result.Box().Runtime.Finalizers = append(result.Box().Runtime.Finalizers, f)
 			}
 		}
 	}
 
-	// ── Reconciler config — override only declared blocks ─────────────────
+	// ── Reconcile config — override only declared blocks ──────────────────
 	// If the override declares onCreate, it replaces the base onCreate.
 	// If it doesn't declare it, the base onCreate is preserved.
 	// Same for onReconcile, onDelete, hooks, constructor, status.
-	rc := &result.OperatorBox
+	if override.Box().EffectiveOnCreate() != nil ||
+		override.Box().EffectiveOnReconcile() != nil ||
+		override.Box().EffectiveOnDelete() != nil ||
+		(override.Box().Reconcile != nil && override.Box().Reconcile.HookFactory != nil) ||
+		(override.Box().Reconcile != nil && override.Box().Reconcile.Constructor != nil) {
+		if result.Box().Reconcile == nil {
+			result.Box().Reconcile = &orktypes.ReconcileConfig{}
+		}
+		rc := result.Box().Reconcile
+		if override.Box().EffectiveOnCreate() != nil {
+			rc.OnCreate = override.Box().EffectiveOnCreate()
+		}
+		if override.Box().EffectiveOnReconcile() != nil {
+			rc.OnReconcile = override.Box().EffectiveOnReconcile()
+		}
+		if override.Box().EffectiveOnDelete() != nil {
+			rc.OnDelete = override.Box().EffectiveOnDelete()
+		}
+		if override.Box().Reconcile != nil && override.Box().Reconcile.HookFactory != nil {
+			rc.HookFactory = override.Box().Reconcile.HookFactory
+		}
+		if override.Box().Reconcile != nil && override.Box().Reconcile.Constructor != nil {
+			rc.Constructor = override.Box().Reconcile.Constructor
+		}
+	}
 
-	if override.OperatorBox.OnCreate != nil {
-		rc.OnCreate = override.OperatorBox.OnCreate
-	}
-	if override.OperatorBox.OnReconcile != nil {
-		rc.OnReconcile = override.OperatorBox.OnReconcile
-	}
-	if override.OperatorBox.OnDelete != nil {
-		rc.OnDelete = override.OperatorBox.OnDelete
-	}
-	if override.OperatorBox.HookFactory != nil {
-		rc.HookFactory = override.OperatorBox.HookFactory
-	}
-	if override.OperatorBox.Constructor != nil {
-		rc.Constructor = override.OperatorBox.Constructor
-	}
-	if override.OperatorBox.Status != nil {
-		rc.Status = override.OperatorBox.Status
+	// ── Status — override replaces if declared ────────────────────────────
+	if override.Box().EffectiveStatus() != nil {
+		if result.Box().Emit == nil {
+			result.Box().Emit = &orktypes.EmitConfig{}
+		}
+		result.Box().Emit.Status = override.Box().EffectiveStatus()
 	}
 
 	// ── Validation and mutation — override replaces if declared ───────────
 	// Platform teams may want to add stricter rules in production via the
 	// Komposer. Replacing rather than merging is the safe behaviour —
 	// merging rules from two imports could produce unexpected combinations.
-	if override.Validation != nil {
-		result.Validation = override.Validation
+	if v := override.EffectiveValidation(); v != nil {
+		if result.Admission == nil {
+			result.Admission = &orktypes.AdmissionConfig{}
+		}
+		result.Admission.Validation = v
 	}
-	if override.Mutation != nil {
-		result.Mutation = override.Mutation
+	if m := override.EffectiveMutation(); m != nil {
+		if result.Admission == nil {
+			result.Admission = &orktypes.AdmissionConfig{}
+		}
+		result.Admission.Mutation = m
 	}
 
 	// ── Conversion — override replaces if declared ────────────────────────
-	if override.Conversion != nil {
-		result.Conversion = override.Conversion
+	if cv := override.EffectiveConversion(); cv != nil {
+		if result.Admission == nil {
+			result.Admission = &orktypes.AdmissionConfig{}
+		}
+		result.Admission.Conversion = cv
 	}
 
 	// ── Endpoints ─────────────────────────────────────────────────────────

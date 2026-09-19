@@ -76,17 +76,18 @@ spec:
       crdFile: ./crd.yaml
       crFiles: [./cr.yaml]
       operatorBox:
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
-          services:
-            - name: "{{ .metadata.name }}-svc"
-              port: 80
-              targetPort: "{{ .spec.port }}"
-              reconcile: true
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+            services:
+              - name: "{{ .metadata.name }}-svc"
+                port: 80
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
 ```
 
 ```bash

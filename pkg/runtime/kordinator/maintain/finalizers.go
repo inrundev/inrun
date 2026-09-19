@@ -15,15 +15,19 @@ import (
 
 // applyFinalizers adds or removes finalizers depending on CRDEntry.RemoveFinalizers.
 //
-// Normal operation (RemoveFinalizers=false): ensure all box.Finalizers are present.
-// Force-cleanup mode (RemoveFinalizers=true): strip all box.Finalizers from the object.
+// Normal operation: ensure all effective finalizers are present.
+// Force-cleanup mode (RemoveFinalizers=true): strip all effective finalizers from the object.
 func applyFinalizers(
 	ctx context.Context,
 	in Input,
 	obj domain.Object,
 	box orktypes.OperatorBoxConfig,
 ) error {
-	if in.CRD.RemoveFinalizers {
+	removeFinalizers := in.CRD.OperatorBox.EffectiveRemoveFinalizers()
+	if r := box.Runtime; r != nil && r.RemoveFinalizers {
+		removeFinalizers = true
+	}
+	if removeFinalizers {
 		return stripFinalizers(ctx, in, obj, box)
 	}
 	return ensureFinalizers(ctx, in, obj, box)
@@ -35,16 +39,17 @@ func ensureFinalizers(
 	obj domain.Object,
 	box orktypes.OperatorBoxConfig,
 ) error {
-	if len(box.Finalizers) == 0 {
+	finalizers := box.EffectiveFinalizers()
+	if len(finalizers) == 0 {
 		return nil
 	}
 
 	logger.Debug().
 		Str("name", obj.GetName()).
-		Any("crd finalizers", box.Finalizers).
+		Any("crd finalizers", finalizers).
 		Msgf("checking finalizers: %v", obj.GetFinalizers())
 
-	if !labels.EnsureFinalizers(obj, box.Finalizers) {
+	if !labels.EnsureFinalizers(obj, finalizers) {
 		return nil
 	}
 
@@ -70,7 +75,7 @@ func stripFinalizers(
 		return nil
 	}
 
-	if !labels.StripFinalizers(obj, box.Finalizers) {
+	if !labels.StripFinalizers(obj, box.EffectiveFinalizers()) {
 		return nil
 	}
 

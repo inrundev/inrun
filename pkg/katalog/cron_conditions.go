@@ -11,7 +11,7 @@ func (k *Katalog) CronConditionWarnings() []string {
 	var warnings []string
 	for crdName, crd := range k.EnabledCRDs() {
 		box := crd.OperatorBox
-		for _, ht := range []*orktypes.HookTemplates{box.OnCreate, box.OnReconcile, box.OnDelete} {
+		for _, ht := range []*orktypes.HookTemplates{box.EffectiveOnCreate(), box.EffectiveOnReconcile(), box.EffectiveOnDelete()} {
 			if ht == nil {
 				continue
 			}

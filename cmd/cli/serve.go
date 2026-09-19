@@ -594,7 +594,7 @@ Examples:
 		if namespace != "" && crd.IsNamespaceRestricted() && !crd.IsNamespaceAuthorized(namespace) {
 			printCanIResult(false, token, op, crd, namespace, alias,
 				fmt.Sprintf("namespace %q is not allowed for CRD %q", namespace, crd.Name),
-				crd.AllowedNamespaces)
+				crd.AllAllowedNamespaces())
 			return nil
 		}
 

@@ -18,16 +18,16 @@ import (
 func (e *executor) validateEmit() error {
 	funcMap := buildFuncMapForValidation(e.k.Notes)
 	for crdName, crd := range e.k.EnabledCRDs() {
-		for name, entry := range crd.OperatorBox.EmitEntries() {
+		for name, entry := range crd.Box().EmitEntries() {
 			if err := validateEmitEventEntry(crdName, name, entry, funcMap); err != nil {
 				return err
 			}
 		}
-		if err := validateStatusConfig(crdName, "operatorBox.status", crd.OperatorBox.Status); err != nil {
+		if err := validateStatusConfig(crdName, "operatorBox.status", crd.Box().EffectiveStatus()); err != nil {
 			return err
 		}
-		if crd.OperatorBox.Emit != nil {
-			if err := validateStatusConfig(crdName, "operatorBox.emit.status", crd.OperatorBox.Emit.Status); err != nil {
+		if crd.Box().Emit != nil {
+			if err := validateStatusConfig(crdName, "operatorBox.emit.status", crd.Box().Emit.Status); err != nil {
 				return err
 			}
 		}

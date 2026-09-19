@@ -19,9 +19,11 @@ func katalogWithProfiles(reg orktypes.ProfileRegistry) *executor {
 func katalogWithProfilesAndNP(reg orktypes.ProfileRegistry, crdName string, nps ...orktypes.NetworkPolicyTemplateSource) *executor {
 	k := katalog.NewKatalogForTest(map[string]orktypes.CRDEntry{
 		crdName: {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				OnCreate: &orktypes.HookTemplates{
-					NetworkPolicies: nps,
+			OperatorBox: &orktypes.OperatorBoxConfig{
+				Reconcile: &orktypes.ReconcileConfig{
+					OnCreate: &orktypes.HookTemplates{
+						NetworkPolicies: nps,
+					},
 				},
 			},
 		},
@@ -33,9 +35,11 @@ func katalogWithProfilesAndNP(reg orktypes.ProfileRegistry, crdName string, nps 
 func katalogWithProfilesAndRQ(reg orktypes.ProfileRegistry, crdName string, rqs ...orktypes.ResourceQuotaTemplateSource) *executor {
 	k := katalog.NewKatalogForTest(map[string]orktypes.CRDEntry{
 		crdName: {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				OnCreate: &orktypes.HookTemplates{
-					ResourceQuotas: rqs,
+			OperatorBox: &orktypes.OperatorBoxConfig{
+				Reconcile: &orktypes.ReconcileConfig{
+					OnCreate: &orktypes.HookTemplates{
+						ResourceQuotas: rqs,
+					},
 				},
 			},
 		},

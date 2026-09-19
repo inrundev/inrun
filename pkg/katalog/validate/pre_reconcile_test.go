@@ -16,7 +16,7 @@ func katalogWithPreReconcile(pr orktypes.PreReconcileConfig) *executor {
 				Version: "v1",
 				Group:   "test.orkestra.katalog",
 			},
-			OperatorBox: orktypes.OperatorBoxConfig{
+			OperatorBox: &orktypes.OperatorBoxConfig{
 				PreReconcile: &pr,
 			},
 		},

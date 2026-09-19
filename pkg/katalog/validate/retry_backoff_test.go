@@ -10,8 +10,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func katalogWithRetryBackoff(crdName string, rec *orktypes.ReconcilerConfig, box orktypes.OperatorBoxConfig) *executor {
-	box.Reconciler = rec
+func katalogWithRetryBackoff(crdName string, rec *orktypes.ReconcileConfig, box *orktypes.OperatorBoxConfig) *executor {
+	if rec != nil {
+		if box.Reconcile == nil {
+			box.Reconcile = rec
+		} else {
+			// merge reconcile-level settings into the existing block (preserves OnReconcile etc.)
+			if rec.Resync.Duration != 0 {
+				box.Reconcile.Resync = rec.Resync
+			}
+			if rec.Queue.RetryBackoff != nil || rec.Queue.MaxDepth != 0 {
+				box.Reconcile.Queue = rec.Queue
+			}
+		}
+	}
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		crdName: {OperatorBox: box},
 	})
@@ -22,20 +34,20 @@ func dur(d time.Duration) orktypes.Duration { return orktypes.Duration{Duration:
 // ── queue.retryBackoff ────────────────────────────────────────────────────────
 
 func TestValidateRetryBackoff_NoConfig(t *testing.T) {
-	k := katalogWithRetryBackoff("myapp", nil, orktypes.OperatorBoxConfig{})
+	k := katalogWithRetryBackoff("myapp", nil, &orktypes.OperatorBoxConfig{})
 	assert.NoError(t, k.validateRetryBackoff())
 }
 
 func TestValidateRetryBackoff_ValidShorthand(t *testing.T) {
-	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcilerConfig{
+	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcileConfig{
 		Resync: dur(10 * time.Minute),
 		Queue:  orktypes.Queue{RetryBackoff: &orktypes.RetryBackoffConfig{Initial: dur(5 * time.Second)}},
-	}, orktypes.OperatorBoxConfig{})
+	}, &orktypes.OperatorBoxConfig{})
 	assert.NoError(t, k.validateRetryBackoff())
 }
 
 func TestValidateRetryBackoff_ValidFullForm(t *testing.T) {
-	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcilerConfig{
+	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcileConfig{
 		Resync: dur(10 * time.Minute),
 		Queue: orktypes.Queue{RetryBackoff: &orktypes.RetryBackoffConfig{
 			Initial:     dur(500 * time.Millisecond),
@@ -43,29 +55,29 @@ func TestValidateRetryBackoff_ValidFullForm(t *testing.T) {
 			Multiplier:  2.0,
 			MaxAttempts: 3,
 		}},
-	}, orktypes.OperatorBoxConfig{})
+	}, &orktypes.OperatorBoxConfig{})
 	assert.NoError(t, k.validateRetryBackoff())
 }
 
 func TestValidateRetryBackoff_NegativeMultiplierErrors(t *testing.T) {
-	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcilerConfig{
+	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcileConfig{
 		Queue: orktypes.Queue{RetryBackoff: &orktypes.RetryBackoffConfig{
 			Initial:    dur(500 * time.Millisecond),
 			Multiplier: -1.0,
 		}},
-	}, orktypes.OperatorBoxConfig{})
+	}, &orktypes.OperatorBoxConfig{})
 	err := k.validateRetryBackoff()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "multiplier must be >= 0")
 }
 
 func TestValidateRetryBackoff_MaxLessThanInitialErrors(t *testing.T) {
-	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcilerConfig{
+	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcileConfig{
 		Queue: orktypes.Queue{RetryBackoff: &orktypes.RetryBackoffConfig{
 			Initial: dur(30 * time.Second),
 			Max:     dur(1 * time.Second),
 		}},
-	}, orktypes.OperatorBoxConfig{})
+	}, &orktypes.OperatorBoxConfig{})
 	err := k.validateRetryBackoff()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "max")
@@ -74,7 +86,7 @@ func TestValidateRetryBackoff_MaxLessThanInitialErrors(t *testing.T) {
 
 func TestValidateRetryBackoff_WorstCaseExceedsResyncWarns(t *testing.T) {
 	// maxAttempts=5, initial=10s, multiplier=2 → delays: 10s+20s+40s+80s = 150s > 30s resync
-	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcilerConfig{
+	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcileConfig{
 		Resync: dur(30 * time.Second),
 		Queue: orktypes.Queue{RetryBackoff: &orktypes.RetryBackoffConfig{
 			Initial:     dur(10 * time.Second),
@@ -82,15 +94,15 @@ func TestValidateRetryBackoff_WorstCaseExceedsResyncWarns(t *testing.T) {
 			Multiplier:  2.0,
 			MaxAttempts: 5,
 		}},
-	}, orktypes.OperatorBoxConfig{})
+	}, &orktypes.OperatorBoxConfig{})
 	assert.NoError(t, k.validateRetryBackoff())
 	crd := k.k.EnabledCRDs()["myapp"]
-	assert.Contains(t, crd.Warnings.String(), "worst-case delay")
+	assert.True(t, crd.Warnings.Contains("worst-case delay"))
 }
 
 func TestValidateRetryBackoff_WorstCaseWithinResyncNoWarning(t *testing.T) {
 	// maxAttempts=3, initial=500ms, multiplier=2 → delays: 500ms+1s = 1.5s < 10m resync
-	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcilerConfig{
+	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcileConfig{
 		Resync: dur(10 * time.Minute),
 		Queue: orktypes.Queue{RetryBackoff: &orktypes.RetryBackoffConfig{
 			Initial:     dur(500 * time.Millisecond),
@@ -98,23 +110,25 @@ func TestValidateRetryBackoff_WorstCaseWithinResyncNoWarning(t *testing.T) {
 			Multiplier:  2.0,
 			MaxAttempts: 3,
 		}},
-	}, orktypes.OperatorBoxConfig{})
+	}, &orktypes.OperatorBoxConfig{})
 	assert.NoError(t, k.validateRetryBackoff())
 	crd := k.k.EnabledCRDs()["myapp"]
-	assert.NotContains(t, crd.Warnings.String(), "worst-case delay")
+	assert.False(t, crd.Warnings.Contains("worst-case delay"))
 }
 
 // ── external[].retryBackoff ───────────────────────────────────────────────────
 
 func TestValidateRetryBackoff_ExternalValidShorthand(t *testing.T) {
-	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcilerConfig{
+	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcileConfig{
 		Resync: dur(10 * time.Minute),
-	}, orktypes.OperatorBoxConfig{
-		OnReconcile: &orktypes.HookTemplates{
-			External: []orktypes.ExternalCallSpec{
-				{Name: "health", URL: "http://svc/health", RetryBackoff: &orktypes.RetryBackoffConfig{
-					Initial: dur(1 * time.Second),
-				}},
+	}, &orktypes.OperatorBoxConfig{
+		Reconcile: &orktypes.ReconcileConfig{
+			OnReconcile: &orktypes.HookTemplates{
+				External: []orktypes.ExternalCallSpec{
+					{Name: "health", URL: "http://svc/health", RetryBackoff: &orktypes.RetryBackoffConfig{
+						Initial: dur(1 * time.Second),
+					}},
+				},
 			},
 		},
 	})
@@ -122,12 +136,14 @@ func TestValidateRetryBackoff_ExternalValidShorthand(t *testing.T) {
 }
 
 func TestValidateRetryBackoff_ExternalNegativeMultiplierErrors(t *testing.T) {
-	k := katalogWithRetryBackoff("myapp", nil, orktypes.OperatorBoxConfig{
-		OnReconcile: &orktypes.HookTemplates{
-			External: []orktypes.ExternalCallSpec{
-				{Name: "health", URL: "http://svc/health", RetryBackoff: &orktypes.RetryBackoffConfig{
-					Multiplier: -2.0,
-				}},
+	k := katalogWithRetryBackoff("myapp", nil, &orktypes.OperatorBoxConfig{
+		Reconcile: &orktypes.ReconcileConfig{
+			OnReconcile: &orktypes.HookTemplates{
+				External: []orktypes.ExternalCallSpec{
+					{Name: "health", URL: "http://svc/health", RetryBackoff: &orktypes.RetryBackoffConfig{
+						Multiplier: -2.0,
+					}},
+				},
 			},
 		},
 	})
@@ -137,21 +153,23 @@ func TestValidateRetryBackoff_ExternalNegativeMultiplierErrors(t *testing.T) {
 }
 
 func TestValidateRetryBackoff_ExternalWorstCaseExceedsResyncWarns(t *testing.T) {
-	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcilerConfig{
+	k := katalogWithRetryBackoff("myapp", &orktypes.ReconcileConfig{
 		Resync: dur(5 * time.Second),
-	}, orktypes.OperatorBoxConfig{
-		OnReconcile: &orktypes.HookTemplates{
-			External: []orktypes.ExternalCallSpec{
-				{Name: "db", URL: "postgres://svc/db", RetryBackoff: &orktypes.RetryBackoffConfig{
-					Initial:     dur(3 * time.Second),
-					Max:         dur(1 * time.Minute),
-					Multiplier:  2.0,
-					MaxAttempts: 4,
-				}},
+	}, &orktypes.OperatorBoxConfig{
+		Reconcile: &orktypes.ReconcileConfig{
+			OnReconcile: &orktypes.HookTemplates{
+				External: []orktypes.ExternalCallSpec{
+					{Name: "db", URL: "postgres://svc/db", RetryBackoff: &orktypes.RetryBackoffConfig{
+						Initial:     dur(3 * time.Second),
+						Max:         dur(1 * time.Minute),
+						Multiplier:  2.0,
+						MaxAttempts: 4,
+					}},
+				},
 			},
 		},
 	})
 	assert.NoError(t, k.validateRetryBackoff())
 	crd := k.k.EnabledCRDs()["myapp"]
-	assert.Contains(t, crd.Warnings.String(), "worst-case delay")
+	assert.True(t, crd.Warnings.Contains("worst-case delay"))
 }

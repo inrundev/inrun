@@ -17,44 +17,45 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-safe"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "3"
-              reconcile: true
-              rollingUpdate:
-                profile: safe
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-safe"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "3"
+                reconcile: true
+                rollingUpdate:
+                  profile: safe
 
-            - name: "{{ .metadata.name }}-fast"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "3"
-              reconcile: true
-              rollingUpdate:
-                profile: fast
+              - name: "{{ .metadata.name }}-fast"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "3"
+                reconcile: true
+                rollingUpdate:
+                  profile: fast
 
-            - name: "{{ .metadata.name }}-bg"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "2"
-              reconcile: true
-              rollingUpdate:
-                profile: blue-green
+              - name: "{{ .metadata.name }}-bg"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "2"
+                reconcile: true
+                rollingUpdate:
+                  profile: blue-green
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"

@@ -141,12 +141,16 @@ func (e *executor) validateStatus() {
 		// children.BuiltInMeta returns zero value for unknown kinds (safe).
 		meta := children.BuiltInMeta(crd.APITypes.Kind)
 
-		if meta.SkipStatusSubresource {
-			crd.IgnoreStatusPatch = true
-		}
-
-		if meta.SkipObservedGeneration {
-			crd.IgnoreObservedGeneration = true
+		if meta.SkipStatusSubresource || meta.SkipObservedGeneration {
+			if crd.Box().Runtime == nil {
+				crd.Box().Runtime = &orktypes.RuntimeConfig{}
+			}
+			if meta.SkipStatusSubresource {
+				crd.Box().Runtime.IgnoreStatusPatch = true
+			}
+			if meta.SkipObservedGeneration {
+				crd.Box().Runtime.IgnoreObservedGeneration = true
+			}
 		}
 
 		e.k.EnabledCRDs()[name] = crd
@@ -161,7 +165,7 @@ func (e *executor) validateAutoscalerMetrics() error {
 			continue
 		}
 
-		conds := crd.OperatorBox.Autoscale.Conditions
+		conds := crd.Box().EffectiveAutoscale().Conditions
 
 		for _, c := range conds.Or {
 			if strings.HasPrefix(c.Field, "metrics.") {
@@ -225,7 +229,7 @@ func (e *executor) validateTimeDuration() error {
 			continue
 		}
 		if crd.HasOnCreate() {
-			for _, s := range crd.OperatorBox.OnCreate.Secrets {
+			for _, s := range crd.Box().EffectiveOnCreate().Secrets {
 				if s.RotateAfter != "" {
 					if _, err := parseTimeDuration(s.RotateAfter); err != nil {
 						return durationError(name, s.Name, "rotateAfter", s.RotateAfter, err)
@@ -240,7 +244,7 @@ func (e *executor) validateTimeDuration() error {
 		}
 
 		if crd.HasOnReconcile() {
-			for _, s := range crd.OperatorBox.OnReconcile.Secrets {
+			for _, s := range crd.Box().EffectiveOnReconcile().Secrets {
 				if s.RotateAfter != "" {
 					if _, err := parseTimeDuration(s.RotateAfter); err != nil {
 						return durationError(name, s.Name, "rotateAfter", s.RotateAfter, err)
@@ -278,7 +282,7 @@ func (e *executor) validateHPAReference() error {
 		}
 
 		if crd.HasOnCreate() {
-			for _, h := range crd.OperatorBox.OnCreate.HorizontalPodAutoscalers {
+			for _, h := range crd.Box().EffectiveOnCreate().HorizontalPodAutoscalers {
 				if err := validateOneHPARef(crdName, h.Name, h.ScaleTargetRef); err != nil {
 					return fmt.Errorf(failureMark(), err)
 				}
@@ -286,7 +290,7 @@ func (e *executor) validateHPAReference() error {
 		}
 
 		if crd.HasOnReconcile() {
-			for _, h := range crd.OperatorBox.OnReconcile.HorizontalPodAutoscalers {
+			for _, h := range crd.Box().EffectiveOnReconcile().HorizontalPodAutoscalers {
 				if err := validateOneHPARef(crdName, h.Name, h.ScaleTargetRef); err != nil {
 					return fmt.Errorf(failureMark(), err)
 				}

@@ -29,38 +29,36 @@ spec:
         version: v1alpha1
         kind: App
         plural: apps
-
       # Only allow App CRs in the "production" namespace.
       # Applying an App CR anywhere else is rejected at admission time.
-      allowedNamespaces:
-        - production
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: image
-              value: "{{ .spec.image }}"
-            - path: replicas
-              value: "{{ .spec.replicas }}"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-app"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-app"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
-
-          services:
-            - name: "{{ .metadata.name }}-svc"
-              port: "80"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true
+            services:
+              - name: "{{ .metadata.name }}-svc"
+                port: "80"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
+        runtime:
+          allowedNamespaces:
+            - production
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: image
+                value: "{{ .spec.image }}"
+              - path: replicas
+                value: "{{ .spec.replicas }}"
 
     database:
       apiTypes:
@@ -68,29 +66,27 @@ spec:
         version: v1alpha1
         kind: Database
         plural: databases
-
       # Only allow Database CRs in the "production" namespace.
-      allowedNamespaces:
-        - production
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: engine
-              value: "{{ .spec.engine }}"
-
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-db-config"
-              reconcile: true
-              data:
-                engine: "{{ .spec.engine }}"
-                storageSize: "{{ .spec.storageSize }}"
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-db-config"
+                reconcile: true
+                data:
+                  engine: "{{ .spec.engine }}"
+                  storageSize: "{{ .spec.storageSize }}"
+        runtime:
+          allowedNamespaces:
+            - production
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: engine
+                value: "{{ .spec.engine }}"
 
     cache:
       apiTypes:
@@ -98,28 +94,27 @@ spec:
         version: v1alpha1
         kind: Cache
         plural: caches
-
       # Block Cache CRs from system namespaces.
       # Cache can be applied to any other namespace.
-      restrictedNamespaces:
-        - kube-system
-        - kube-public
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: maxMemory
-              value: "{{ .spec.maxMemory }}"
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-cache-config"
+                reconcile: true
+                data:
+                  maxMemory: "{{ .spec.maxMemory }}"
+                  evictionPolicy: "{{ .spec.evictionPolicy }}"
+        runtime:
+          restrictedNamespaces:
+            - kube-system
+            - kube-public
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: maxMemory
+                value: "{{ .spec.maxMemory }}"
 
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-cache-config"
-              reconcile: true
-              data:
-                maxMemory: "{{ .spec.maxMemory }}"
-                evictionPolicy: "{{ .spec.evictionPolicy }}"

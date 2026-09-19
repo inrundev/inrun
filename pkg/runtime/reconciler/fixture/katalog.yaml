@@ -25,25 +25,25 @@ spec:
         version: v1alpha1
         kind: ReconcilerSuite
         plural: reconcilersuites
-
       operatorBox:
-        onCreate:
-          custom:
-            - apiVersion: reconciler.orkestra.io/v1alpha1
-              kind: ReconcilerProbe
-              metadata:
-                name: probe
-                namespaced: false
-              spec:
-                image: nginx:1.25
-                replicas: 1
-                port: 8080
-                tier: premium
-                schedule: "*/15 * * * *"
-                extraLabels:
-                  - "team=platform"
-                  - "env=ci"
-              hasStatus: false
+        reconcile:
+          onCreate:
+            custom:
+              - apiVersion: reconciler.orkestra.io/v1alpha1
+                kind: ReconcilerProbe
+                metadata:
+                  name: probe
+                  namespaced: false
+                spec:
+                  image: nginx:1.25
+                  replicas: 1
+                  port: 8080
+                  tier: premium
+                  schedule: "*/15 * * * *"
+                  extraLabels:
+                    - "team=platform"
+                    - "env=ci"
+                hasStatus: false
 
     reconciler-probe:
       apiTypes:
@@ -51,54 +51,51 @@ spec:
         version: v1alpha1
         kind: ReconcilerProbe
         plural: reconcilerprobes
+      # ── Admission ─────────────────────────────────────────────────────────
+      admission:
+        validation:
+          rules:
+            - field: spec.replicas
+              greaterThan: 0
+              valueType: integer
+              message: "replicas must be at least 1"
+              action: deny
+            - field: spec.tier
+              operator: in
+              value: "basic,premium"
+              message: "tier must be basic or premium"
+              action: deny
 
-      imports:
-        - motif: ./motifs/core.yaml
-        - motif: ./motifs/policy.yaml
-        - motif: ./motifs/rbac.yaml
-        - motif: ./motifs/workloads.yaml
-        - motif: ./motifs/network.yaml
-        - motif: ./motifs/storage.yaml
-
-      # ── Validation ────────────────────────────────────────────────────────
-      validation:
-        rules:
-          - field: spec.replicas
-            greaterThan: 0
-            valueType: integer
-            message: "replicas must be at least 1"
-            action: deny
-          - field: spec.tier
-            operator: in
-            value: "basic,premium"
-            message: "tier must be basic or premium"
-            action: deny
-
-      # ── Mutation ──────────────────────────────────────────────────────────
-      mutation:
-        rules:
-          - field: spec.image
-            default: "nginx:stable"
-
+        mutation:
+          rules:
+            - field: spec.image
+              default: "nginx:stable"
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 30s
+          imports:
+            - motif: ./motifs/core.yaml
+            - motif: ./motifs/policy.yaml
+            - motif: ./motifs/rbac.yaml
+            - motif: ./motifs/workloads.yaml
+            - motif: ./motifs/network.yaml
+            - motif: ./motifs/storage.yaml
+          onDelete:
+            ordered: true
+            groups:
+              - clusterRoleBindings:
+              - clusterRoles:
+              - persistentVolumes:
+              - deployments:
+              - cronJobs:
+              - jobs:
+              - services:
+              - secrets:
+              - configMaps:
+              - serviceAccounts:
+              - namespaces:
+        emit:
+          status:
+            include: ./status/status.yaml
 
-        onDelete:
-          ordered: true
-          groups:
-            - clusterRoleBindings:
-            - clusterRoles:
-            - persistentVolumes:
-            - deployments:
-            - cronJobs:
-            - jobs:
-            - services:
-            - secrets:
-            - configMaps:
-            - serviceAccounts:
-            - namespaces:
-
-        status:
-          include: ./status/status.yaml

@@ -373,7 +373,7 @@ func TestValidateServeTokenRestrictions_NamespaceAllowed(t *testing.T) {
 					),
 				},
 			},
-			AllowedNamespaces: []string{"staging", "production"},
+			OperatorBox: &orktypes.OperatorBoxConfig{Runtime: &orktypes.RuntimeConfig{AllowedNamespaces: []string{"staging", "production"}}},
 		},
 	})
 	if err := k.validateServeTokenRestrictions(); err != nil {
@@ -393,7 +393,7 @@ func TestValidateServeTokenRestrictions_NamespaceNotAllowed(t *testing.T) {
 					),
 				},
 			},
-			AllowedNamespaces: []string{"staging", "production"},
+			OperatorBox: &orktypes.OperatorBoxConfig{Runtime: &orktypes.RuntimeConfig{AllowedNamespaces: []string{"staging", "production"}}},
 		},
 	})
 	err := k.validateServeTokenRestrictions()
@@ -420,7 +420,7 @@ func TestValidateServeTokenRestrictions_RestrictedNamespace(t *testing.T) {
 					),
 				},
 			},
-			RestrictedNamespaces: []string{"restricted-ns", "blocked"},
+			OperatorBox: &orktypes.OperatorBoxConfig{Runtime: &orktypes.RuntimeConfig{RestrictedNamespaces: []string{"restricted-ns", "blocked"}}},
 		},
 	})
 	err := k.validateServeTokenRestrictions()
@@ -442,7 +442,7 @@ func TestValidateServeTokenRestrictions_MultipleTokens(t *testing.T) {
 					"control-center": perms("*"),
 				},
 			},
-			AllowedNamespaces: []string{"staging", "production"},
+			OperatorBox: &orktypes.OperatorBoxConfig{Runtime: &orktypes.RuntimeConfig{AllowedNamespaces: []string{"staging", "production"}}},
 		},
 	})
 	if err := k.validateServeTokenRestrictions(); err != nil {

@@ -37,6 +37,7 @@ func printCRDValidationLine(k *katalog.Katalog, entry orktypes.CRDEntry) {
 	printKindInfo(entry)
 	printModeResync(entry)
 	printProtectionStatus(entry, k.IsDeletionProtectionEnabled(), strictModeText)
+	printInfo(entry.Info, k.Info)
 	printWarnings(entry.Warnings, k.Warnings)
 }
 
@@ -45,6 +46,9 @@ func printCRDHeader(entry orktypes.CRDEntry) {
 	icon := healthIconReady()
 	if entry.Warnings.HasWarnings() {
 		icon = healthIconWarn()
+	}
+	if entry.Info.HasInfo() {
+		icon = healthIconInfo()
 	}
 	fmt.Printf("%s %s\n", icon, bold(entry.Name))
 }
@@ -86,7 +90,7 @@ func printKindInfo(entry orktypes.CRDEntry) {
 func printModeResync(entry orktypes.CRDEntry) {
 	fmt.Printf("    %s\n", gray(fmt.Sprintf(
 		"mode: %s / workers: %v / resync: %v",
-		entry.Mode, entry.OperatorBox.Reconciler.Workers, entry.OperatorBox.Reconciler.Resync.String(),
+		entry.Mode, entry.SetWorkers(0), entry.SetResync(0).String(),
 	)))
 }
 
@@ -158,6 +162,34 @@ func printWarnings(crdWarnings, katalogWarnings []string) {
 				fmt.Printf("    %s warning: %s\n", yellow("⚠"), gray(line))
 			} else {
 				fmt.Printf("             %s\n", gray(line))
+			}
+		}
+	}
+}
+
+// printInfo prints any informational messages associated with the CRD or Katalog,
+// with proper indentation.
+func printInfo(crdInfo, katalogInfo []string) {
+	// Print CRD-level info
+	for _, msg := range crdInfo {
+		lines := strings.Split(msg, "\n")
+		for i, line := range lines {
+			if i == 0 {
+				fmt.Printf("    %s info: %s\n", blue(infoMark()), gray(line))
+			} else {
+				fmt.Printf("          %s\n", gray(line))
+			}
+		}
+	}
+
+	// Print Katalog-level info
+	for _, msg := range katalogInfo {
+		lines := strings.Split(msg, "\n")
+		for i, line := range lines {
+			if i == 0 {
+				fmt.Printf("    %s info: %s\n", blue(infoMark()), gray(line))
+			} else {
+				fmt.Printf("          %s\n", gray(line))
 			}
 		}
 	}

@@ -11,7 +11,9 @@ spec:
     widget:
       crdFile: ../crd.yaml
       operatorBox:
-        watch:
-          - apiVersion: apps/v1
-            kind: Deployment
-            on: [modified]
+        observe:
+          watch:
+            - apiVersion: apps/v1
+              kind: Deployment
+              on: [modified]
+

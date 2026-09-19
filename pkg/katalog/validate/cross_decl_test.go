@@ -14,7 +14,7 @@ type crdInfo struct {
 	kind    string
 	version string
 	label   map[string]string
-	box     orktypes.OperatorBoxConfig
+	box     *orktypes.OperatorBoxConfig
 }
 
 func crdForTest(info *crdInfo) orktypes.CRDEntry {
@@ -37,12 +37,18 @@ func crdForTest(info *crdInfo) orktypes.CRDEntry {
 	}
 }
 
+func crossBox(decls ...orktypes.CrossCRDDeclaration) *orktypes.OperatorBoxConfig {
+	return &orktypes.OperatorBoxConfig{
+		Observe: &orktypes.Observe{
+			Cross: decls,
+		},
+	}
+}
+
 func TestValidateCrossDecl_Nil(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{},
-			},
+			OperatorBox: crossBox(),
 		},
 	})
 	err := k.validateCrossDecl()
@@ -52,9 +58,7 @@ func TestValidateCrossDecl_Nil(t *testing.T) {
 func TestValidateCrossDecl_ValidWithCRDOnly(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app1"}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app1"}),
 		},
 		"app1": {},
 	})
@@ -65,12 +69,14 @@ func TestValidateCrossDecl_ValidWithCRDOnly(t *testing.T) {
 
 func TestValidateCrossDecl_ValidMultipleWithCRDOnly(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
-		"app": crdForTest(&crdInfo{name: "app", box: orktypes.OperatorBoxConfig{
-			Cross: []orktypes.CrossCRDDeclaration{{CRD: "app1"}, {CRD: "app2"}},
-		}}),
-		"app1": crdForTest(&crdInfo{name: "app1", box: orktypes.OperatorBoxConfig{
-			Cross: []orktypes.CrossCRDDeclaration{{CRD: "app"}, {CRD: "app2"}},
-		}}),
+		"app": crdForTest(&crdInfo{name: "app", box: crossBox(
+			orktypes.CrossCRDDeclaration{CRD: "app1"},
+			orktypes.CrossCRDDeclaration{CRD: "app2"},
+		)}),
+		"app1": crdForTest(&crdInfo{name: "app1", box: crossBox(
+			orktypes.CrossCRDDeclaration{CRD: "app"},
+			orktypes.CrossCRDDeclaration{CRD: "app2"},
+		)}),
 		"app2": crdForTest(&crdInfo{name: "app2"}),
 	})
 	k.k.BuildLookupIndexes()
@@ -82,14 +88,10 @@ func TestValidateCrossDecl_ValidLabelsOnly(t *testing.T) {
 	sel := map[string]string{"test": "hello"}
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{
-					{
-						LabelSelector: sel,
-						As:            "ap",
-					},
-				},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{
+				LabelSelector: sel,
+				As:            "ap",
+			}),
 		},
 		"app1": crdForTest(&crdInfo{label: sel}),
 	})
@@ -103,15 +105,11 @@ func TestValidateCrossDecl_InvalidLabelsAndCRD(t *testing.T) {
 	sel := map[string]string{"test": "hello"}
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{
-					{
-						LabelSelector: sel,
-						As:            "ap",
-						CRD:           "app1",
-					},
-				},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{
+				LabelSelector: sel,
+				As:            "ap",
+				CRD:           "app1",
+			}),
 		},
 		"app1": crdForTest(&crdInfo{label: sel}),
 	})
@@ -126,14 +124,10 @@ func TestValidateCrossDecl_InvalidLabelsOnly(t *testing.T) {
 	sel := map[string]string{"test": "hello"}
 	sel2 := map[string]string{"test": "hello2"}
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
-		"app": crdForTest(&crdInfo{name: "app", box: orktypes.OperatorBoxConfig{
-			Cross: []orktypes.CrossCRDDeclaration{
-				{
-					LabelSelector: sel,
-					As:            "ap",
-				},
-			},
-		}}),
+		"app": crdForTest(&crdInfo{name: "app", box: crossBox(orktypes.CrossCRDDeclaration{
+			LabelSelector: sel,
+			As:            "ap",
+		})}),
 		"app2": crdForTest(&crdInfo{label: sel2}),
 	})
 
@@ -146,9 +140,7 @@ func TestValidateCrossDecl_InvalidLabelsOnly(t *testing.T) {
 func TestValidateCrossDecl_InvalidNoCRDAndLabels(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{As: "no-crd-or-label"}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{As: "no-crd-or-label"}),
 		},
 	})
 	err := k.validateCrossDecl()
@@ -160,13 +152,7 @@ func TestValidateCrossDecl_InvalidLabelsNoAs(t *testing.T) {
 	sel := map[string]string{"test": "hello"}
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{
-					{
-						LabelSelector: sel,
-					},
-				},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{LabelSelector: sel}),
 		},
 		"app1": crdForTest(&crdInfo{label: sel}),
 	})
@@ -179,9 +165,7 @@ func TestValidateCrossDecl_InvalidLabelsNoAs(t *testing.T) {
 func TestValidateCrossDecl_InvalidSelfReferencing(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app"}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app"}),
 		},
 	})
 	err := k.validateCrossDecl()
@@ -189,12 +173,10 @@ func TestValidateCrossDecl_InvalidSelfReferencing(t *testing.T) {
 	assert.ErrorContains(t, err, "cross: a CRD cannot reference itself")
 }
 
-func TestValidateCrossDecl_WithInvalidCRD(t *testing.T) {
+func TestValidateCrossDecl_WithInvalidCRDNoSource(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app-unknown"}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app-unknown"}),
 		},
 	})
 	err := k.validateCrossDecl()
@@ -202,12 +184,30 @@ func TestValidateCrossDecl_WithInvalidCRD(t *testing.T) {
 	assert.ErrorContains(t, err, "\"app-unknown\" not found")
 }
 
+func TestValidateCrossDecl_WithValidSource(t *testing.T) {
+	k := newKatalogExec(map[string]orktypes.CRDEntry{
+		"app": {
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{
+				CRD: "app-unknown",
+				Source: &orktypes.CrossSource{
+					Host:     "http://localhost:8080",
+					Protocol: "cr",
+				},
+			}),
+		},
+	})
+	err := k.validateCrossDecl()
+	assert.NoError(t, err)
+}
+
 func TestValidateCrossDecl_MultipleWithInvalidCRD(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app-unknown"}, {CRD: "app2"}, {CRD: "app-unknown3"}},
-			},
+			OperatorBox: crossBox(
+				orktypes.CrossCRDDeclaration{CRD: "app-unknown"},
+				orktypes.CrossCRDDeclaration{CRD: "app2"},
+				orktypes.CrossCRDDeclaration{CRD: "app-unknown3"},
+			),
 		},
 		"app2": crdForTest(&crdInfo{name: "app2"}),
 	})
@@ -216,12 +216,11 @@ func TestValidateCrossDecl_MultipleWithInvalidCRD(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "\"app-unknown\" not found")
 }
+
 func TestValidateCrossDecl_ValidWithAs(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app1", As: "ap"}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app1", As: "ap"}),
 		},
 		"app1": crdForTest(&crdInfo{name: "app1"}),
 	})
@@ -233,12 +232,10 @@ func TestValidateCrossDecl_ValidWithAs(t *testing.T) {
 func TestValidateCrossDecl_InvalidAs(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{
-					{CRD: "app1", As: "ap/"},
-					{CRD: "app2", As: "ap"},
-				},
-			},
+			OperatorBox: crossBox(
+				orktypes.CrossCRDDeclaration{CRD: "app1", As: "ap/"},
+				orktypes.CrossCRDDeclaration{CRD: "app2", As: "ap"},
+			),
 		},
 		"app1": crdForTest(&crdInfo{name: "app1"}),
 		"app2": crdForTest(&crdInfo{name: "app2"}),
@@ -252,22 +249,18 @@ func TestValidateCrossDecl_InvalidAs(t *testing.T) {
 func TestValidateCrossDecl_InvalidDuplicateAs(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{
-					{CRD: "app1", As: "ap"},
-					{CRD: "app2", As: "ap"},
-				},
-			},
+			OperatorBox: crossBox(
+				orktypes.CrossCRDDeclaration{CRD: "app1", As: "ap"},
+				orktypes.CrossCRDDeclaration{CRD: "app2", As: "ap"},
+			),
 		},
 		"app1": crdForTest(&crdInfo{name: "app1"}),
 		"app2": crdForTest(&crdInfo{name: "app2"}),
 		"web": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{
-					{CRD: "app1", As: "ap"},
-					{CRD: "app2", As: "ap"},
-				},
-			},
+			OperatorBox: crossBox(
+				orktypes.CrossCRDDeclaration{CRD: "app1", As: "ap"},
+				orktypes.CrossCRDDeclaration{CRD: "app2", As: "ap"},
+			),
 		},
 	})
 	k.k.BuildLookupIndexes()
@@ -278,26 +271,18 @@ func TestValidateCrossDecl_InvalidDuplicateAs(t *testing.T) {
 func TestValidateCrossDecl_ValidProtocols(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app4", Source: &orktypes.CrossSource{
-					Protocol: "info",
-				}}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app4", Source: &orktypes.CrossSource{
+				Protocol: "info",
+			}}),
 		},
 		"app1": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app", Source: &orktypes.CrossSource{Protocol: "metrics"}}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app", Source: &orktypes.CrossSource{Protocol: "metrics"}}),
 		},
 		"app2": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app", Source: &orktypes.CrossSource{Protocol: "health"}}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app", Source: &orktypes.CrossSource{Protocol: "health"}}),
 		},
 		"app3": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app", Source: &orktypes.CrossSource{Protocol: "health"}}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app", Source: &orktypes.CrossSource{Protocol: "health"}}),
 		},
 		"app4": {},
 	})
@@ -309,16 +294,12 @@ func TestValidateCrossDecl_ValidProtocols(t *testing.T) {
 func TestValidateCrossDecl_InvalidProtocols(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app4", Source: &orktypes.CrossSource{
-					Protocol: "info",
-				}}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app4", Source: &orktypes.CrossSource{
+				Protocol: "info",
+			}}),
 		},
 		"app1": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app", Source: &orktypes.CrossSource{Protocol: "health-style"}}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app", Source: &orktypes.CrossSource{Protocol: "health-style"}}),
 		},
 		"app2": {},
 		"app4": {},
@@ -329,16 +310,15 @@ func TestValidateCrossDecl_InvalidProtocols(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "invalid ONCOP protocol")
 }
+
 func TestValidateCrossDecl_ValidTokenAuth(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app1", Source: &orktypes.CrossSource{
-					Auth: &orktypes.Auth{
-						Token: "test-token",
-					},
-				}}},
-			},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app1", Source: &orktypes.CrossSource{
+				Auth: &orktypes.Auth{
+					Token: "test-token",
+				},
+			}}),
 		},
 		"app1": crdForTest(&crdInfo{name: "app1"}),
 	})
@@ -350,17 +330,15 @@ func TestValidateCrossDecl_ValidTokenAuth(t *testing.T) {
 func TestValidateCrossDecl_ValidSecretRefAuth(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app1", Source: &orktypes.CrossSource{
-					Auth: &orktypes.Auth{
-						SecretRef: &orktypes.APISecretRef{
-							Name:      "test-token",
-							Namespace: "test-ns",
-							Key:       "new-token",
-						},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app1", Source: &orktypes.CrossSource{
+				Auth: &orktypes.Auth{
+					SecretRef: &orktypes.APISecretRef{
+						Name:      "test-token",
+						Namespace: "test-ns",
+						Key:       "new-token",
 					},
-				}}},
-			},
+				},
+			}}),
 		},
 		"app1": crdForTest(&crdInfo{name: "app1"}),
 	})
@@ -372,18 +350,16 @@ func TestValidateCrossDecl_ValidSecretRefAuth(t *testing.T) {
 func TestValidateCrossDecl_InvalidAuthWithTokenAndSecretRef(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app1", Source: &orktypes.CrossSource{
-					Auth: &orktypes.Auth{
-						Token: "test-token",
-						SecretRef: &orktypes.APISecretRef{
-							Name:      "test-token",
-							Namespace: "test-ns",
-							Key:       "new-token",
-						},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app1", Source: &orktypes.CrossSource{
+				Auth: &orktypes.Auth{
+					Token: "test-token",
+					SecretRef: &orktypes.APISecretRef{
+						Name:      "test-token",
+						Namespace: "test-ns",
+						Key:       "new-token",
 					},
-				}}},
-			},
+				},
+			}}),
 		},
 		"app1": crdForTest(&crdInfo{name: "app1"}),
 	})
@@ -396,16 +372,14 @@ func TestValidateCrossDecl_InvalidAuthWithTokenAndSecretRef(t *testing.T) {
 func TestValidateCrossDecl_InvalidSecretRefAuthNoName(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app1", Source: &orktypes.CrossSource{
-					Auth: &orktypes.Auth{
-						SecretRef: &orktypes.APISecretRef{
-							Namespace: "test-ns",
-							Key:       "new-token",
-						},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app1", Source: &orktypes.CrossSource{
+				Auth: &orktypes.Auth{
+					SecretRef: &orktypes.APISecretRef{
+						Namespace: "test-ns",
+						Key:       "new-token",
 					},
-				}}},
-			},
+				},
+			}}),
 		},
 		"app1": crdForTest(&crdInfo{name: "app1"}),
 	})
@@ -418,16 +392,14 @@ func TestValidateCrossDecl_InvalidSecretRefAuthNoName(t *testing.T) {
 func TestValidateCrossDecl_InvalidSecretRefAuthNoKey(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app1", Source: &orktypes.CrossSource{
-					Auth: &orktypes.Auth{
-						SecretRef: &orktypes.APISecretRef{
-							Name:      "test-token",
-							Namespace: "test-ns",
-						},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app1", Source: &orktypes.CrossSource{
+				Auth: &orktypes.Auth{
+					SecretRef: &orktypes.APISecretRef{
+						Name:      "test-token",
+						Namespace: "test-ns",
 					},
-				}}},
-			},
+				},
+			}}),
 		},
 		"app1": crdForTest(&crdInfo{name: "app1"}),
 	})
@@ -440,16 +412,14 @@ func TestValidateCrossDecl_InvalidSecretRefAuthNoKey(t *testing.T) {
 func TestValidateCrossDecl_WarnAuthWithSecretRefNoNamespace(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				Cross: []orktypes.CrossCRDDeclaration{{CRD: "app1", Source: &orktypes.CrossSource{
-					Auth: &orktypes.Auth{
-						SecretRef: &orktypes.APISecretRef{
-							Name: "test-token",
-							Key:  "new-token",
-						},
+			OperatorBox: crossBox(orktypes.CrossCRDDeclaration{CRD: "app1", Source: &orktypes.CrossSource{
+				Auth: &orktypes.Auth{
+					SecretRef: &orktypes.APISecretRef{
+						Name: "test-token",
+						Key:  "new-token",
 					},
-				}}},
-			},
+				},
+			}}),
 		},
 		"app1": crdForTest(&crdInfo{name: "app1"}),
 	})
@@ -461,5 +431,5 @@ func TestValidateCrossDecl_WarnAuthWithSecretRefNoNamespace(t *testing.T) {
 	if !entry.Warnings.HasWarnings() {
 		t.Fatalf("expected crd to have warning")
 	}
-	assert.Contains(t, entry.Warnings.String(), "Defaults to orkestra namespace")
+	assert.True(t, entry.Warnings.Contains("Defaults to orkestra namespace"))
 }

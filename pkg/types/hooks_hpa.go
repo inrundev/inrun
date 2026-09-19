@@ -68,13 +68,13 @@ func (c *CRDEntry) CollectHPAProfileEntries() []HPAProfileEntry {
 	}
 
 	if c.HasOnCreate() {
-		collect("onCreate", c.OperatorBox.OnCreate)
+		collect("onCreate", c.Box().EffectiveOnCreate())
 	}
 	if c.HasOnReconcile() {
-		collect("onReconcile", c.OperatorBox.OnReconcile)
+		collect("onReconcile", c.Box().EffectiveOnReconcile())
 	}
 	if c.HasOnDelete() {
-		collect("onDelete", c.OperatorBox.OnDelete)
+		collect("onDelete", c.Box().EffectiveOnDelete())
 	}
 
 	return out

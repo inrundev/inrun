@@ -44,11 +44,12 @@ func applyMutation(
 	resolver *orktmpl.Resolver,
 	crd orktypes.CRDEntry,
 ) (*orktmpl.Resolver, error) {
-	if crd.Mutation == nil || len(crd.Mutation.Rules) == 0 {
+	mut := crd.EffectiveMutation()
+	if mut == nil || len(mut.Rules) == 0 {
 		return resolver, nil
 	}
 
-	if calls := crd.Mutation.ReconcileExternal(); len(calls) > 0 {
+	if calls := mut.ReconcileExternal(); len(calls) > 0 {
 		var err error
 		resolver, err = orkexternal.Run(ctx, crd.GVKString(), resolver, calls, kube.Clientset())
 		if err != nil {
@@ -56,7 +57,7 @@ func applyMutation(
 		}
 	}
 
-	_, err := runMutation(ctx, kube, obj, resolver, crd.Mutation, crd.GVR(), crd.GVKString())
+	_, err := runMutation(ctx, kube, obj, resolver, mut, crd.GVR(), crd.GVKString())
 	return resolver, err
 }
 

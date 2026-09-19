@@ -10,9 +10,11 @@ spec:
     widget:
       crdFile: ../crd.yaml
       operatorBox:
-        onCreate:
-          deployments:
+        reconcile:
+          onCreate:
+            deployments:
             - name: "{{ .metadata.name }}-controller"
               image: example.io/widget-controller:latest
               resources:
                 profile: mega
+

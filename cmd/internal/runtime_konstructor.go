@@ -199,7 +199,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 
 		opts := informer.Options{
 			Name:          crd.APITypes.Kind,
-			Resync:        crd.OperatorBox.Reconciler.Resync.Duration,
+			Resync:        crd.SetResync(0),
 			LabelSelector: labelSelector,
 			FieldSelector: fieldSelector,
 		}
@@ -222,8 +222,8 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 					Msg("informer: namespace-scoped watch (Tier 1)")
 			}
 			filter := &informer.NamespaceFilter{
-				AllowedNamespaces:    []string(crd.AllowedNamespaces),
-				RestrictedNamespaces: []string(crd.RestrictedNamespaces),
+				AllowedNamespaces:    []string(crd.AllAllowedNamespaces()),
+				RestrictedNamespaces: []string(crd.AllRestrictedNamespaces()),
 			}
 			infFactory.RegisterNamespaceFilter(gvk, filter)
 			logger.Debug().
@@ -267,7 +267,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			inf = infFactory.For(object, ctx, opts)
 		}
 
-		finalizers = append(finalizers, crd.OperatorBox.Finalizers...)
+		finalizers = append(finalizers, crd.Box().EffectiveFinalizers()...)
 
 		infCopy := inf
 
@@ -284,8 +284,8 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			objCopy := object
 
 			var anyHooks domain.AnyReconcileHooks
-			if crd.OperatorBox.HookFactory != nil {
-				anyHooks = crd.OperatorBox.HookFactory()
+			if r := crd.Box().Reconcile; r != nil && r.HookFactory != nil {
+				anyHooks = r.HookFactory()
 			}
 
 			logger.Debug().Str("gvk", gvk).Msg("wiring GenericReconciler factory")
@@ -335,7 +335,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			}
 
 			factory = func() domain.Reconciler {
-				return crd.OperatorBox.Constructor(ctorKube)
+				return crd.Box().Reconcile.Constructor(ctorKube)
 			}
 		}
 
@@ -426,7 +426,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			)
 			hs.Register(
 				"/katalog/"+crdName+"/cr/",
-				vitals.BuildCRDetailAndEventsHandler(crd, inf, kube, crd.OperatorBox, orkHealth),
+				vitals.BuildCRDetailAndEventsHandler(crd, inf, kube, crd.Box(), orkHealth),
 			)
 		}
 

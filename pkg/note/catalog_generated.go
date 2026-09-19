@@ -1744,7 +1744,7 @@ var BuiltinNotes = []NoteInfo{
 		Name:        "timeUntil",
 		Domain:      "time",
 		Description: "Return a Go duration string representing the time remaining until a timestamp. Returns `\"0s\"` when the timestamp is in the past or unparseable. The primary use is `requeue.after:` — schedule the next reconcile at exactly the right moment for this specific CR.",
-		Example:     "operatorBox:\n  reconciler:\n    requeue:\n      after: \"{{ timeUntil .status.certExpiry }}\"\n      when:\n        - field: status.certExpiry\n          operator: exists\n\nstatus:\n  fields:\n    - path: timeUntilExpiry\n      value: \"{{ timeUntil .status.certExpiry }}\"\n      # → \"719h43m12s\"  (about 30 days)\n      # → \"0s\"          (already expired)",
+		Example:     "operatorBox:\n  reconcile:\n    requeue:\n      after: \"{{ timeUntil .status.certExpiry }}\"\n      when:\n        - field: status.certExpiry\n          operator: exists\n\nstatus:\n  fields:\n    - path: timeUntilExpiry\n      value: \"{{ timeUntil .status.certExpiry }}\"\n      # → \"719h43m12s\"  (about 30 days)\n      # → \"0s\"          (already expired)",
 		Keywords:    []string{"time", "until", "remaining", "duration", "expiry", "cert", "requeue", "schedule"},
 	},
 	{

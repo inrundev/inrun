@@ -10,13 +10,15 @@ import (
 func katalogWithCronCondition(cron string, duration orktypes.Duration) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		"myresource": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				OnReconcile: &orktypes.HookTemplates{
-					Deployments: []orktypes.DeploymentTemplateSource{
-						{
-							Name: "my-app",
-							Conditions: []orktypes.Condition{
-								{Cron: cron, Duration: duration},
+			OperatorBox: &orktypes.OperatorBoxConfig{
+				Reconcile: &orktypes.ReconcileConfig{
+					OnReconcile: &orktypes.HookTemplates{
+						Deployments: []orktypes.DeploymentTemplateSource{
+							{
+								Name: "my-app",
+								Conditions: []orktypes.Condition{
+									{Cron: cron, Duration: duration},
+								},
 							},
 						},
 					},

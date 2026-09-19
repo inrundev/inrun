@@ -116,8 +116,8 @@ func (k *Katalog) Describe(name string) (string, error) {
 	if crd.IsNamespaced() {
 		fmt.Fprintf(b, "Namespace:   %s\n", crd.Namespace)
 	}
-	fmt.Fprintf(b, "Workers:     %d\n", crd.OperatorBox.Reconciler.Workers)
-	fmt.Fprintf(b, "Resync:      %s\n", crd.OperatorBox.Reconciler.Resync.String())
+	fmt.Fprintf(b, "Workers:     %d\n", crd.SetWorkers(0))
+	fmt.Fprintf(b, "Resync:      %s\n", crd.SetResync(0).String())
 	fmt.Fprintf(b, "Enabled:     %v\n", crd.Enabled)
 
 	deps := crd.DependsOn.Names()
@@ -149,7 +149,12 @@ func (k *Katalog) Explain(name string) (string, error) {
 	if crd.DefaultReconcile() {
 		fmt.Fprint(b, "operatorBox:   Default\n")
 	} else {
-		fmt.Fprintf(b, "operatorBox:   %T\n", crd.OperatorBox.Constructor)
+		r := crd.Box().Reconcile
+		if r != nil && r.Constructor != nil {
+			fmt.Fprintf(b, "operatorBox:   %T\n", r.Constructor)
+		} else {
+			fmt.Fprint(b, "operatorBox:   Custom\n")
+		}
 	}
 	fmt.Fprintf(b, "Informer:     LIST, WATCH\n")
 
@@ -182,7 +187,7 @@ func (k *Katalog) Order() []string {
 func (k *Katalog) Controllers() []string {
 	var out []string
 	for _, crd := range k.enabledCRDs {
-		if crd.OperatorBox.Constructor != nil && crd.DefaultReconcile() {
+		if crd.HasConstructor() {
 			out = append(out, crd.Name)
 		}
 	}

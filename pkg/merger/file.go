@@ -134,9 +134,11 @@ func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string
 		}
 		// Resolve motif file paths in imports to absolute so they work regardless
 		// of the working directory when expandMotifImports runs.
-		for i, imp := range crd.Imports {
-			if isFileMotif(imp.Motif) && !filepath.IsAbs(imp.Motif) {
-				crd.Imports[i].Motif = filepath.Join(katalogDir, imp.Motif)
+		if crd.Box().Reconcile != nil {
+			for i, imp := range crd.Box().Reconcile.Imports {
+				if isFileMotif(imp.Motif) && !filepath.IsAbs(imp.Motif) {
+					crd.Box().Reconcile.Imports[i].Motif = filepath.Join(katalogDir, imp.Motif)
+				}
 			}
 		}
 
@@ -162,11 +164,17 @@ func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string
 		// Merge spec-level restrictions into each CRD (additive).
 		protect := doc.Security.NamespaceProtection
 		if protect != nil {
-			if len(protect.RestrictedNamespaces) > 0 {
-				crd.RestrictedNamespaces = protect.RestrictedNamespaces.Merge(crd.RestrictedNamespaces)
-			}
-			if len(protect.AllowedNamespaces) > 0 {
-				crd.AllowedNamespaces = protect.AllowedNamespaces.Merge(crd.AllowedNamespaces)
+			if len(protect.RestrictedNamespaces) > 0 || len(protect.AllowedNamespaces) > 0 {
+				if crd.Box().Runtime == nil {
+					rt := orktypes.RuntimeConfig{}
+					crd.Box().Runtime = &rt
+				}
+				if len(protect.RestrictedNamespaces) > 0 {
+					crd.Box().Runtime.RestrictedNamespaces = protect.RestrictedNamespaces.Merge(crd.Box().Runtime.RestrictedNamespaces)
+				}
+				if len(protect.AllowedNamespaces) > 0 {
+					crd.Box().Runtime.AllowedNamespaces = protect.AllowedNamespaces.Merge(crd.Box().Runtime.AllowedNamespaces)
+				}
 			}
 		}
 
@@ -425,8 +433,12 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 	if protect != nil {
 		if len(protect.RestrictedNamespaces) > 0 || len(protect.AllowedNamespaces) > 0 {
 			for name, crd := range allCRDs {
-				crd.RestrictedNamespaces = protect.RestrictedNamespaces.Merge(crd.RestrictedNamespaces)
-				crd.AllowedNamespaces = protect.AllowedNamespaces.Merge(crd.AllowedNamespaces)
+				if crd.Box().Runtime == nil {
+					rt := orktypes.RuntimeConfig{}
+					crd.Box().Runtime = &rt
+				}
+				crd.Box().Runtime.RestrictedNamespaces = protect.RestrictedNamespaces.Merge(crd.Box().Runtime.RestrictedNamespaces)
+				crd.Box().Runtime.AllowedNamespaces = protect.AllowedNamespaces.Merge(crd.Box().Runtime.AllowedNamespaces)
 				allCRDs[name] = crd
 			}
 		}

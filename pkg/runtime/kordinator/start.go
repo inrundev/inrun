@@ -43,7 +43,7 @@ func (k *DependencyKordinator) startCRDWorkers(ctx context.Context, gvk string, 
 	if rt.autoscaler != nil {
 		go rt.autoscaler.Run(crdCtx)
 	}
-	if entry.CRD.OperatorBox.Autoscale != nil {
+	if entry.CRD.OperatorBox.EffectiveAutoscale() != nil {
 		k.startResyncLoop(crdCtx, gvk)
 	}
 
@@ -96,17 +96,17 @@ func (k *DependencyKordinator) buildCRDRuntime(
 		target := &kordinatorTarget{rt: rt, wq: wq, gvk: gvk}
 		baseline := orktypes.AutoscaleBaseline{
 			Workers:  workers,
-			MaxDepth: crd.OperatorBox.Reconciler.Queue.MaxDepth,
-			Resync:   crd.OperatorBox.Reconciler.Resync.Duration,
+			MaxDepth: crd.SetQueueDepth(0),
+			Resync:   crd.SetResync(0),
 		}
 		rt.autoscaler = ork_autoscaler.NewAutoscaler(
 			k.kube.Clientset(),
 			crd.APITypes.Kind,
-			crd.OperatorBox.Autoscale,
+			crd.Box().EffectiveAutoscale(),
 			baseline,
 			target,
 			autoMet,
-			crd.OperatorBox.Cross,
+			crd.Box().EffectiveCross(),
 		)
 	}
 
@@ -135,8 +135,8 @@ func (k *DependencyKordinator) wireCRDHealthCallbacks(
 			rt.sem,
 			rt.autoMetrics,
 			workers,
-			crd.OperatorBox.Reconciler.Queue.MaxDepth,
-			crd.OperatorBox.Reconciler.Resync.String(),
+			crd.SetQueueDepth(0),
+			crd.SetResync(0).String(),
 			maxWorkers,
 			rt.autoscaler != nil,
 			rt.autoscaler.Snapshot(),

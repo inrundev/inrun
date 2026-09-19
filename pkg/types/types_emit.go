@@ -105,8 +105,9 @@ func (e *EmitEventEntry) EmitOn(reconcileErr error) bool {
 	return false
 }
 
-// EmitConfig groups all declarative outputs for an operatorBox.
-// status: is the existing status declaration, now co-located with events:.
+// EmitConfig writes the reconciler's conclusions back to the CR and the event stream.
+// status: declares fields patched onto the CR after every reconcile.
+// events: declares named structured events emitted on lifecycle transitions.
 type EmitConfig struct {
 	// Status declares declarative status fields written after every reconcile.
 	Status *StatusConfig `yaml:"status,omitempty" json:"status,omitempty"`

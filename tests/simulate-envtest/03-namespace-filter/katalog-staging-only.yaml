@@ -11,21 +11,24 @@ spec:
       crdFile: ../crd.yaml
       crFiles:
         - ../cr.yaml
-      # Only "staging" is allowed — CRs in "default" are dropped by the namespace
-      # filter before the reconciler sees them. The real informer's watch filter
-      # is what we're testing here; the fake simulate path uses the same filter
-      # but does not go through a real watch stream.
-      allowedNamespaces:
-        - staging
-
       operatorBox:
-        status:
-          fields:
-            - path: phase
-              value: "Running"
+        runtime:
+          # Only "staging" is allowed — CRs in "default" are dropped by the namespace
+          # filter before the reconciler sees them. The real informer's watch filter
+          # is what we're testing here; the fake simulate path uses the same filter
+          # but does not go through a real watch stream.
+          allowedNamespaces:
+            - staging
 
-        onReconcile:
-          deployments:
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+
+        reconcile:
+          onReconcile:
+            deployments:
             - name: "{{ .metadata.name }}"
               image: "{{ .spec.image }}"
               replicas: "{{ .spec.replicas }}"

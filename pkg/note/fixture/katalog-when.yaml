@@ -28,7 +28,6 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       # ── Conditional enrichment ──────────────────────────────────────────────
       # events: only pay the API cost when the deployment is degraded.
       # replicasets: only visible when debug mode is on.
@@ -42,91 +41,91 @@ spec:
             when:
               - field: spec.debug
                 equals: "true"
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 15s
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas | default \"1\" }}"
-              port: "80"
-              reconcile: true
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas | default \"1\" }}"
+                port: "80"
+                reconcile: true
 
-          services:
-            # Always-on service
-            - name: "{{ .metadata.name }}-svc"
-              port: "80"
-              targetPort: "80"
-              reconcile: true
+            services:
+              # Always-on service
+              - name: "{{ .metadata.name }}-svc"
+                port: "80"
+                targetPort: "80"
+                reconcile: true
 
-            # Debug service — only created when spec.debug == "true".
-            # Template expression in when: field — new in this release.
-            - name: "{{ .metadata.name }}-debug"
-              port: "9229"
-              targetPort: "9229"
-              reconcile: true
-              when:
-                - field: "{{ .spec.debug }}"
-                  equals: "true"
+              # Debug service — only created when spec.debug == "true".
+              # Template expression in when: field — new in this release.
+              - name: "{{ .metadata.name }}-debug"
+                port: "9229"
+                targetPort: "9229"
+                reconcile: true
+                when:
+                  - field: "{{ .spec.debug }}"
+                    equals: "true"
+        emit:
+          status:
+            fields:
+              # ── Readiness ────────────────────────────────────────────────────
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            # ── Readiness ────────────────────────────────────────────────────
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              - path: phase
+                value: "Degraded"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "false"
 
-            - path: phase
-              value: "Degraded"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "false"
+              # ── Pod details ──────────────────────────────────────────────────
+              - path: podCount
+                value: "{{ podCount .children.deployment }}"
 
-            # ── Pod details ──────────────────────────────────────────────────
-            - path: podCount
-              value: "{{ podCount .children.deployment }}"
+              - path: readyPodCount
+                value: "{{ readyPodCount .children.deployment }}"
 
-            - path: readyPodCount
-              value: "{{ readyPodCount .children.deployment }}"
+              - path: hasCrashingPod
+                value: "{{ hasCrashingPod .children.deployment }}"
 
-            - path: hasCrashingPod
-              value: "{{ hasCrashingPod .children.deployment }}"
+              # ── Conditional fields (only written when debug is on) ───────────
+              - path: replicaSetCount
+                value: "{{ deploymentReplicaSetCount .children.deployment }}"
+                when:
+                  - field: spec.debug
+                    equals: "true"
 
-            # ── Conditional fields (only written when debug is on) ───────────
-            - path: replicaSetCount
-              value: "{{ deploymentReplicaSetCount .children.deployment }}"
-              when:
-                - field: spec.debug
-                  equals: "true"
+              # ── Warning events (only present when degraded) ──────────────────
+              - path: hasWarnings
+                value: "{{ hasWarnings .children.deployment }}"
+                when:
+                  - field: "{{ replicasReady .children.deployment }}"
+                    equals: "false"
 
-            # ── Warning events (only present when degraded) ──────────────────
-            - path: hasWarnings
-              value: "{{ hasWarnings .children.deployment }}"
-              when:
-                - field: "{{ replicasReady .children.deployment }}"
-                  equals: "false"
+              - path: firstWarning
+                value: "{{ firstWarning .children.deployment }}"
+                when:
+                  - field: "{{ hasWarnings .children.deployment }}"
+                    equals: "true"
 
-            - path: firstWarning
-              value: "{{ firstWarning .children.deployment }}"
-              when:
-                - field: "{{ hasWarnings .children.deployment }}"
-                  equals: "true"
+              # ── Debug gate (template expression in when:) ────────────────────
+              - path: debugMode
+                value: "active"
+                when:
+                  - field: "{{ .spec.debug }}"
+                    equals: "true"
 
-            # ── Debug gate (template expression in when:) ────────────────────
-            - path: debugMode
-              value: "active"
-              when:
-                - field: "{{ .spec.debug }}"
-                  equals: "true"

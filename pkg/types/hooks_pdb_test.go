@@ -10,9 +10,11 @@ import (
 
 func crdWithPDBOnCreate(pdbs ...orktypes.PDBTemplateSource) orktypes.CRDEntry {
 	return orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnCreate: &orktypes.HookTemplates{
-				PodDisruptionBudgets: pdbs,
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnCreate: &orktypes.HookTemplates{
+					PodDisruptionBudgets: pdbs,
+				},
 			},
 		},
 	}
@@ -86,10 +88,12 @@ func TestCollectPDBProfileEntries_TemplateExpr(t *testing.T) {
 
 func TestCollectPDBProfileEntries_OnReconcile(t *testing.T) {
 	c := orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnReconcile: &orktypes.HookTemplates{
-				PodDisruptionBudgets: []orktypes.PDBTemplateSource{
-					{Name: "pdb", Behavior: &orktypes.PDBBehavior{Profile: "relaxed"}},
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnReconcile: &orktypes.HookTemplates{
+					PodDisruptionBudgets: []orktypes.PDBTemplateSource{
+						{Name: "pdb", Behavior: &orktypes.PDBBehavior{Profile: "relaxed"}},
+					},
 				},
 			},
 		},

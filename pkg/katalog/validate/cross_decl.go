@@ -26,7 +26,7 @@ func (e *executor) validateCrossDecl() error {
 			continue
 		}
 
-		decl := crd.OperatorBox.Cross
+		decl := crd.Box().EffectiveCross()
 
 		for i, cross := range decl {
 			crsCRD := cross.CRD
@@ -50,7 +50,7 @@ func (e *executor) validateCrossDecl() error {
 			}
 
 			// crd not found in katalog
-			if cross.IsCRDBased() {
+			if cross.IsCRDBased() && !cross.HasSource() {
 				if result := e.k.LookupByName(crsCRD); result.Entry() == nil {
 					return fmt.Errorf("%s CRD %q: cross[%d].crd: %q not found", failureMark(), name, i, crsCRD)
 				}
@@ -68,9 +68,9 @@ func (e *executor) validateCrossDecl() error {
 
 			// alias
 			if alias != "" {
-				if err := isValidK8sName(alias); err != nil {
-					return fmt.Errorf("%s CRD %q: invalid 'as' name: cross[%d].as: %s",
-						failureMark(), name, i, alias)
+				if err := isValidResolverName(alias); err != nil {
+					return fmt.Errorf("%s CRD %q: invalid 'as' name: cross[%d].as: %s - %w",
+						failureMark(), name, i, alias, err)
 				}
 				// uniqueness is katalog-wide
 				if seen[alias] {

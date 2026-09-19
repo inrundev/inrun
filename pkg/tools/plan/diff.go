@@ -134,18 +134,18 @@ func diffCRDEntry(_ string, from, to *orktypes.CRDEntry) []FieldChange {
 	}
 
 	// spec
-	if from.OperatorBox.Reconciler.Workers != to.OperatorBox.Reconciler.Workers {
+	if from.SetWorkers(0) != to.SetWorkers(0) {
 		changes = append(changes, FieldChange{
 			Path: "workers",
-			From: fmt.Sprint(from.OperatorBox.Reconciler.Workers),
-			To:   fmt.Sprint(to.OperatorBox.Reconciler.Workers),
+			From: fmt.Sprint(from.SetWorkers(0)),
+			To:   fmt.Sprint(to.SetWorkers(0)),
 		})
 	}
-	if from.OperatorBox.Reconciler.Resync != to.OperatorBox.Reconciler.Resync {
+	if from.SetResync(0) != to.SetResync(0) {
 		changes = append(changes, FieldChange{
 			Path: "resync",
-			From: from.OperatorBox.Reconciler.Resync.String(),
-			To:   to.OperatorBox.Reconciler.Resync.String(),
+			From: from.SetResync(0).String(),
+			To:   to.SetResync(0).String(),
 		})
 	}
 	if from.CRDFile != to.CRDFile {
@@ -155,11 +155,11 @@ func diffCRDEntry(_ string, from, to *orktypes.CRDEntry) []FieldChange {
 			To:   to.CRDFile,
 		})
 	}
-	if !reflect.DeepEqual(from.OperatorBox.Reconciler.Queue, to.OperatorBox.Reconciler.Queue) {
+	if from.SetQueueDepth(0) != to.SetQueueDepth(0) {
 		changes = append(changes, FieldChange{
 			Path: "queue",
-			From: fmt.Sprint(from.OperatorBox.Reconciler.Queue),
-			To:   fmt.Sprint(to.OperatorBox.Reconciler.Queue),
+			From: fmt.Sprint(from.SetQueueDepth(0)),
+			To:   fmt.Sprint(to.SetQueueDepth(0)),
 		})
 	}
 	if !reflect.DeepEqual(from.DependsOn, to.DependsOn) {
@@ -171,18 +171,18 @@ func diffCRDEntry(_ string, from, to *orktypes.CRDEntry) []FieldChange {
 	}
 
 	// namespace restrictions
-	if !reflect.DeepEqual(from.AllowedNamespaces, to.AllowedNamespaces) {
+	if !reflect.DeepEqual(from.AllAllowedNamespaces(), to.AllAllowedNamespaces()) {
 		changes = append(changes, FieldChange{
 			Path: "allowedNamespaces",
-			From: fmt.Sprint(from.AllowedNamespaces),
-			To:   fmt.Sprint(to.AllowedNamespaces),
+			From: fmt.Sprint(from.AllAllowedNamespaces()),
+			To:   fmt.Sprint(to.AllAllowedNamespaces()),
 		})
 	}
-	if !reflect.DeepEqual(from.RestrictedNamespaces, to.RestrictedNamespaces) {
+	if !reflect.DeepEqual(from.AllRestrictedNamespaces(), to.AllRestrictedNamespaces()) {
 		changes = append(changes, FieldChange{
 			Path: "restrictedNamespaces",
-			From: fmt.Sprint(from.RestrictedNamespaces),
-			To:   fmt.Sprint(to.RestrictedNamespaces),
+			From: fmt.Sprint(from.AllRestrictedNamespaces()),
+			To:   fmt.Sprint(to.AllRestrictedNamespaces()),
 		})
 	}
 
@@ -203,48 +203,48 @@ func diffCRDEntry(_ string, from, to *orktypes.CRDEntry) []FieldChange {
 	}
 
 	// validation, mutation, conversion
-	if !reflect.DeepEqual(from.Validation, to.Validation) {
+	if !reflect.DeepEqual(from.EffectiveValidation(), to.EffectiveValidation()) {
 		changes = append(changes, FieldChange{
 			Path: "validation",
-			From: fmt.Sprint(from.Validation),
-			To:   fmt.Sprint(to.Validation),
+			From: fmt.Sprint(from.EffectiveValidation()),
+			To:   fmt.Sprint(to.EffectiveValidation()),
 		})
 	}
-	if !reflect.DeepEqual(from.Mutation, to.Mutation) {
+	if !reflect.DeepEqual(from.EffectiveMutation(), to.EffectiveMutation()) {
 		changes = append(changes, FieldChange{
 			Path: "mutation",
-			From: fmt.Sprint(from.Mutation),
-			To:   fmt.Sprint(to.Mutation),
+			From: fmt.Sprint(from.EffectiveMutation()),
+			To:   fmt.Sprint(to.EffectiveMutation()),
 		})
 	}
-	if !reflect.DeepEqual(from.Conversion, to.Conversion) {
+	if !reflect.DeepEqual(from.EffectiveConversion(), to.EffectiveConversion()) {
 		changes = append(changes, FieldChange{
 			Path: "conversion",
-			From: fmt.Sprint(from.Conversion),
-			To:   fmt.Sprint(to.Conversion),
+			From: fmt.Sprint(from.EffectiveConversion()),
+			To:   fmt.Sprint(to.EffectiveConversion()),
 		})
 	}
 
 	// Normalize
-	if !reflect.DeepEqual(from.Normalize, to.Normalize) {
+	if !reflect.DeepEqual(from.EffectiveNormalize(), to.EffectiveNormalize()) {
 		changes = append(changes, FieldChange{
 			Path: "normalize",
-			From: fmt.Sprint(from.Normalize),
-			To:   fmt.Sprint(to.Normalize),
+			From: fmt.Sprint(from.EffectiveNormalize()),
+			To:   fmt.Sprint(to.EffectiveNormalize()),
 		})
 	}
 
 	// operatorBox resource counts
-	if from.OperatorBox.OnCreate != nil && to.OperatorBox.OnCreate != nil {
-		fromCreate := resourceCounts(from.OperatorBox.OnCreate)
-		toCreate := resourceCounts(to.OperatorBox.OnCreate)
+	if from.OperatorBox.EffectiveOnCreate() != nil && to.OperatorBox.EffectiveOnCreate() != nil {
+		fromCreate := resourceCounts(from.OperatorBox.EffectiveOnCreate())
+		toCreate := resourceCounts(to.OperatorBox.EffectiveOnCreate())
 		for _, change := range diffResourceCounts("operatorBox.onCreate", fromCreate, toCreate) {
 			changes = append(changes, change)
 		}
 	}
-	if from.OperatorBox.OnReconcile != nil && to.OperatorBox.OnReconcile != nil {
-		fromReconcile := resourceCounts(from.OperatorBox.OnReconcile)
-		toReconcile := resourceCounts(to.OperatorBox.OnReconcile)
+	if from.OperatorBox.EffectiveOnReconcile() != nil && to.OperatorBox.EffectiveOnReconcile() != nil {
+		fromReconcile := resourceCounts(from.OperatorBox.EffectiveOnReconcile())
+		toReconcile := resourceCounts(to.OperatorBox.EffectiveOnReconcile())
 		for _, change := range diffResourceCounts("operatorBox.onReconcile", fromReconcile, toReconcile) {
 			changes = append(changes, change)
 		}

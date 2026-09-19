@@ -20,11 +20,11 @@ func (e *executor) validateWorkloadAutoscale() error {
 
 		// Collect all HPAs across hooks so we can check for conflicts.
 		var allHPAs []orktypes.HPATemplateSource
-		if box.OnCreate != nil {
-			allHPAs = append(allHPAs, box.OnCreate.HorizontalPodAutoscalers...)
+		if box.EffectiveOnCreate() != nil {
+			allHPAs = append(allHPAs, box.EffectiveOnCreate().HorizontalPodAutoscalers...)
 		}
-		if box.OnReconcile != nil {
-			allHPAs = append(allHPAs, box.OnReconcile.HorizontalPodAutoscalers...)
+		if box.EffectiveOnReconcile() != nil {
+			allHPAs = append(allHPAs, box.EffectiveOnReconcile().HorizontalPodAutoscalers...)
 		}
 
 		type workloadEntry struct {
@@ -33,25 +33,25 @@ func (e *executor) validateWorkloadAutoscale() error {
 		}
 		var workloads []workloadEntry
 
-		if box.OnCreate != nil {
-			for _, d := range box.OnCreate.Deployments {
+		if box.EffectiveOnCreate() != nil {
+			for _, d := range box.EffectiveOnCreate().Deployments {
 				workloads = append(workloads, workloadEntry{d.Name, d.Autoscale})
 			}
-			for _, s := range box.OnCreate.StatefulSets {
+			for _, s := range box.EffectiveOnCreate().StatefulSets {
 				workloads = append(workloads, workloadEntry{s.Name, s.Autoscale})
 			}
-			for _, r := range box.OnCreate.ReplicaSets {
+			for _, r := range box.EffectiveOnCreate().ReplicaSets {
 				workloads = append(workloads, workloadEntry{r.Name, r.Autoscale})
 			}
 		}
-		if box.OnReconcile != nil {
-			for _, d := range box.OnReconcile.Deployments {
+		if box.EffectiveOnReconcile() != nil {
+			for _, d := range box.EffectiveOnReconcile().Deployments {
 				workloads = append(workloads, workloadEntry{d.Name, d.Autoscale})
 			}
-			for _, s := range box.OnReconcile.StatefulSets {
+			for _, s := range box.EffectiveOnReconcile().StatefulSets {
 				workloads = append(workloads, workloadEntry{s.Name, s.Autoscale})
 			}
-			for _, r := range box.OnReconcile.ReplicaSets {
+			for _, r := range box.EffectiveOnReconcile().ReplicaSets {
 				workloads = append(workloads, workloadEntry{r.Name, r.Autoscale})
 			}
 		}

@@ -11,9 +11,11 @@ import (
 func katalogWithNetworkPolicy(crdName string, nps ...orktypes.NetworkPolicyTemplateSource) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		crdName: {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				OnCreate: &orktypes.HookTemplates{
-					NetworkPolicies: nps,
+			OperatorBox: &orktypes.OperatorBoxConfig{
+				Reconcile: &orktypes.ReconcileConfig{
+					OnCreate: &orktypes.HookTemplates{
+						NetworkPolicies: nps,
+					},
 				},
 			},
 		},

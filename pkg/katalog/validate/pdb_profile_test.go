@@ -11,9 +11,11 @@ import (
 func katalogWithPDB(crdName string, pdbs ...orktypes.PDBTemplateSource) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		crdName: {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				OnCreate: &orktypes.HookTemplates{
-					PodDisruptionBudgets: pdbs,
+			OperatorBox: &orktypes.OperatorBoxConfig{
+				Reconcile: &orktypes.ReconcileConfig{
+					OnCreate: &orktypes.HookTemplates{
+						PodDisruptionBudgets: pdbs,
+					},
 				},
 			},
 		},

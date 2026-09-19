@@ -52,6 +52,8 @@ type Katalog struct {
 
 	// Warnings collects non‑fatal validation messages for this CRD.
 	Warnings orktypes.Warnings `json:"-"` // not serialized
+	// Info collects additional validation information for this CRD
+	Info orktypes.Info `json:"-"` // not serialized
 
 	// Indexes for O(1) lookups
 	kindIndex       map[string]string `yaml:"-" json:"-"` // kind -> crd name

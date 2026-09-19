@@ -11,9 +11,11 @@ import (
 func katalogWithResourceQuota(crdName string, rqs ...orktypes.ResourceQuotaTemplateSource) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		crdName: {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				OnCreate: &orktypes.HookTemplates{
-					ResourceQuotas: rqs,
+			OperatorBox: &orktypes.OperatorBoxConfig{
+				Reconcile: &orktypes.ReconcileConfig{
+					OnCreate: &orktypes.HookTemplates{
+						ResourceQuotas: rqs,
+					},
 				},
 			},
 		},

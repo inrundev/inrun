@@ -53,14 +53,14 @@ func (r *InMemoryConversionRegistry) RegisterConversionRules(rules *orktypes.Con
 // other versions of the same CRD don't need conversion rules registered
 // because conversion is always expressed relative to the storage version.
 func (reg *InMemoryConversionRegistry) registerConversionRulesFromSpec(entry orktypes.CRDEntry) {
-	if entry.Conversion == nil || entry.IsConversionParticipant() {
+	if entry.EffectiveConversion() == nil || entry.IsConversionParticipant() {
 		return
 	}
 
 	rules := &orktypes.ConversionRules{
 		Kind:           entry.APITypes.Kind,
-		StorageVersion: entry.Conversion.StorageVersion,
-		Paths:          entry.Conversion.Paths,
+		StorageVersion: entry.EffectiveConversion().StorageVersion,
+		Paths:          entry.EffectiveConversion().Paths,
 	}
 
 	reg.RegisterConversionRules(rules)

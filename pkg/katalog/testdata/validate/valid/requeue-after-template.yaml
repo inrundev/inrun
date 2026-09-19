@@ -9,7 +9,7 @@ spec:
     widget:
       crdFile: ../crd.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           requeue:
             after: '{{ .spec.checkInterval | default "60s" }}'
             when:

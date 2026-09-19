@@ -40,7 +40,7 @@ func validateCRDEventEntries(crdName string, crd orktypes.CRDEntry) error {
 
 		watch := event.ToWatchEntry(crd)
 
-		obs := crd.OperatorBox.Observe
+		obs := crd.Box().Observe
 
 		if invalid := obs.InvalidOnValues(event.On); len(invalid) > 0 {
 			return fmt.Errorf("%s crd %q: events[%q] %s/%s: unknown on: value(s) [%s] — valid values: %s",
@@ -57,7 +57,7 @@ func validateCRDEventEntries(crdName string, crd orktypes.CRDEntry) error {
 }
 
 func validateEventEntry(crdName, name string, event orktypes.EventEntry) error {
-	if err := validResolverName(name); err != nil {
+	if err := isValidResolverName(name); err != nil {
 		return fmt.Errorf("%s crd %q: events[%q]: %w",
 			failureMark(), crdName, name, err)
 	}

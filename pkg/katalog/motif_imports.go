@@ -60,11 +60,11 @@ func (k *Katalog) expandKatalogImports() error {
 // tied to the operatorbox configuration.
 func (k *Katalog) expandMotifImports() error {
 	for name, entry := range k.enabledCRDs {
-		if len(entry.Imports) == 0 {
+		if len(entry.EffectiveImports()) == 0 {
 			continue
 		}
 
-		for i, imp := range entry.Imports {
+		for i, imp := range entry.EffectiveImports() {
 			expanded, err := k.loadAndExpandImport(&imp)
 			if err != nil {
 				return fmt.Errorf("CRD %q: operatorBox.imports[%d]: %w", name, i, err)
@@ -88,7 +88,9 @@ func (k *Katalog) expandMotifImports() error {
 		}
 
 		// Clear imports after successful expansion
-		entry.Imports = nil
+		if entry.OperatorBox.Reconcile != nil {
+			entry.OperatorBox.Reconcile.Imports = nil
+		}
 		k.enabledCRDs[name] = entry
 	}
 	return nil
@@ -124,27 +126,36 @@ func (k *Katalog) loadAndExpandImport(imp *orktypes.MotifImport) (*motif.Expande
 func (k *Katalog) mergeExpandedMotif(entry *orktypes.CRDEntry, expanded *motif.ExpandedMotif) error {
 	// resources.onCreate: → CRD onCreate (update=false, preserves once: true guard)
 	if expanded.OnCreate != nil {
-		if !entry.HasOnCreate() {
-			entry.OperatorBox.OnCreate = &orktypes.HookTemplates{}
+		if entry.OperatorBox.Reconcile == nil {
+			entry.OperatorBox.Reconcile = &orktypes.ReconcileConfig{}
 		}
-		entry.OperatorBox.OnCreate.MergeFrom(expanded.OnCreate)
+		if entry.OperatorBox.Reconcile.OnCreate == nil {
+			entry.OperatorBox.Reconcile.OnCreate = &orktypes.HookTemplates{}
+		}
+		entry.OperatorBox.Reconcile.OnCreate.MergeFrom(expanded.OnCreate)
 	}
 	// resources flat fields → CRD onReconcile (drift correction)
 	if expanded.OnReconcile != nil {
-		if !entry.HasOnReconcile() {
-			entry.OperatorBox.OnReconcile = &orktypes.HookTemplates{}
+		if entry.OperatorBox.Reconcile == nil {
+			entry.OperatorBox.Reconcile = &orktypes.ReconcileConfig{}
 		}
-		entry.OperatorBox.OnReconcile.MergeFrom(expanded.OnReconcile)
+		if entry.OperatorBox.Reconcile.OnReconcile == nil {
+			entry.OperatorBox.Reconcile.OnReconcile = &orktypes.HookTemplates{}
+		}
+		entry.OperatorBox.Reconcile.OnReconcile.MergeFrom(expanded.OnReconcile)
 	}
 
 	// Merge status fields
 	if expanded.HasStatus() {
-		if !entry.HasStatusFields() {
-			entry.OperatorBox.Status = &orktypes.StatusConfig{}
+		if entry.OperatorBox.Emit == nil {
+			entry.OperatorBox.Emit = &orktypes.EmitConfig{}
 		}
-		entry.OperatorBox.Status.Fields = append(entry.OperatorBox.Status.Fields, expanded.Status.Fields...)
-		if entry.OperatorBox.Status.Conditions == nil && expanded.Status.Conditions != nil {
-			entry.OperatorBox.Status.Conditions = expanded.Status.Conditions
+		if entry.OperatorBox.Emit.Status == nil {
+			entry.OperatorBox.Emit.Status = &orktypes.StatusConfig{}
+		}
+		entry.OperatorBox.Emit.Status.Fields = append(entry.OperatorBox.Emit.Status.Fields, expanded.Status.Fields...)
+		if entry.OperatorBox.Emit.Status.Conditions == nil && expanded.Status.Conditions != nil {
+			entry.OperatorBox.Emit.Status.Conditions = expanded.Status.Conditions
 		}
 	}
 
@@ -152,17 +163,23 @@ func (k *Katalog) mergeExpandedMotif(entry *orktypes.CRDEntry, expanded *motif.E
 	if expanded.HasAdmission() {
 		// Merge validation rules
 		if expanded.Admission.HasValidationRules() {
-			if entry.Validation == nil {
-				entry.Validation = &orktypes.ValidationConfig{}
+			if entry.Admission == nil {
+				entry.Admission = &orktypes.AdmissionConfig{}
 			}
-			entry.Validation.Rules = append(entry.Validation.Rules, expanded.Admission.Validation.Rules...)
+			if entry.Admission.Validation == nil {
+				entry.Admission.Validation = &orktypes.ValidationConfig{}
+			}
+			entry.Admission.Validation.Rules = append(entry.Admission.Validation.Rules, expanded.Admission.Validation.Rules...)
 		}
 		// Merge mutation rules
 		if expanded.Admission.HasMutationRules() {
-			if entry.Mutation == nil {
-				entry.Mutation = &orktypes.MutationConfig{}
+			if entry.Admission == nil {
+				entry.Admission = &orktypes.AdmissionConfig{}
 			}
-			entry.Mutation.Rules = append(entry.Mutation.Rules, expanded.Admission.Mutation.Rules...)
+			if entry.Admission.Mutation == nil {
+				entry.Admission.Mutation = &orktypes.MutationConfig{}
+			}
+			entry.Admission.Mutation.Rules = append(entry.Admission.Mutation.Rules, expanded.Admission.Mutation.Rules...)
 		}
 	}
 

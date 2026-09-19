@@ -10,7 +10,7 @@ import (
 
 func katalogWithEmit(crdName string, emit *orktypes.EmitConfig) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
-		crdName: {OperatorBox: orktypes.OperatorBoxConfig{
+		crdName: {OperatorBox: &orktypes.OperatorBoxConfig{
 			Emit: emit,
 		}},
 	})

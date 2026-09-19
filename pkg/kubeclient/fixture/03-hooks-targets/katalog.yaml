@@ -40,21 +40,6 @@ spec:
         objectList: BlockchainAppWithTargetsList
         location: github.com/orkspace/orkestra-args-hooks-targets/api/v1alpha1
         alias: bcappwithtargetsv1
-
-      operatorBox:
-        reconciler:
-          workers: 2
-          resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: featureEnabled
-              value: "{{ .external.flags.body }}"
-              when:
-                - field: external.flags.called
-                  equals: "true"
-
       serve:
         enabled: true
         namespace: default
@@ -84,7 +69,7 @@ spec:
                   when:
                     - field: '{{ inBusinessHours }}'
                       equals: "true"
-              reconciler:
+              reconcile:
                 hooks:
                   location: github.com/orkspace/orkestra-args-hooks-targets/hooks
                   function: BlockchainAppHooks
@@ -97,7 +82,7 @@ spec:
 
           v2-disabled:
             operatorBox:
-              reconciler:
+              reconcile:
                 hooks:
                   location: github.com/orkspace/orkestra-args-hooks-targets/hooks
                   function: BlockchainAppHooks
@@ -110,7 +95,7 @@ spec:
 
           v2-ctor:
             operatorBox:
-              reconciler:
+              reconcile:
                 default: false
                 constructor:
                   location: github.com/orkspace/orkestra-args-hooks-targets/constructor
@@ -118,3 +103,18 @@ spec:
                   alias: bcctor
                   args:
                     featureEnabled: "true"
+      operatorBox:
+        reconcile:
+          workers: 2
+          resync: 30s
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: featureEnabled
+                value: "{{ .external.flags.body }}"
+                when:
+                  - field: external.flags.called
+                    equals: "true"
+

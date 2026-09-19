@@ -17,57 +17,58 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-zero"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "3"
-              reconcile: true
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-zero"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "3"
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-rolling"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "3"
-              reconcile: true
+              - name: "{{ .metadata.name }}-rolling"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "3"
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-relaxed"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "4"
-              reconcile: true
+              - name: "{{ .metadata.name }}-relaxed"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "4"
+                reconcile: true
 
-          pdb:
-            - name: "{{ .metadata.name }}-zero-pdb"
-              selector:
-                orkestra-owner: "{{ .metadata.name }}"
-              behavior:
-                profile: zero-downtime
+            pdb:
+              - name: "{{ .metadata.name }}-zero-pdb"
+                selector:
+                  orkestra-owner: "{{ .metadata.name }}"
+                behavior:
+                  profile: zero-downtime
 
-            - name: "{{ .metadata.name }}-rolling-pdb"
-              selector:
-                orkestra-owner: "{{ .metadata.name }}"
-              behavior:
-                profile: rolling
+              - name: "{{ .metadata.name }}-rolling-pdb"
+                selector:
+                  orkestra-owner: "{{ .metadata.name }}"
+                behavior:
+                  profile: rolling
 
-            - name: "{{ .metadata.name }}-relaxed-pdb"
-              selector:
-                orkestra-owner: "{{ .metadata.name }}"
-              behavior:
-                profile: relaxed
+              - name: "{{ .metadata.name }}-relaxed-pdb"
+                selector:
+                  orkestra-owner: "{{ .metadata.name }}"
+                behavior:
+                  profile: relaxed
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"

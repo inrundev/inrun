@@ -414,11 +414,11 @@ func collectCustomChildGVKs(katalog *ResourceKatalog) map[string]schema.GroupVer
 	for _, entry := range katalog.Entries() {
 		box := entry.CRD.OperatorBox
 		var srcs []orktypes.CustomResourceTemplateSource
-		if box.OnCreate != nil {
-			srcs = append(srcs, box.OnCreate.CustomResource...)
+		if box.EffectiveOnCreate() != nil {
+			srcs = append(srcs, box.EffectiveOnCreate().CustomResource...)
 		}
-		if box.OnReconcile != nil {
-			srcs = append(srcs, box.OnReconcile.CustomResource...)
+		if box.EffectiveOnReconcile() != nil {
+			srcs = append(srcs, box.EffectiveOnReconcile().CustomResource...)
 		}
 		for i := range srcs {
 			gvk, err := srcs[i].BuildGVK()

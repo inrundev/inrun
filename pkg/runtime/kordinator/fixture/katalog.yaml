@@ -19,10 +19,11 @@ spec:
         kind: Worker
         plural: workers
       operatorBox:
-        status:
-          fields:
-            - path: phase
-              value: Running
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: Running
 
     component:
       apiTypes:
@@ -34,10 +35,11 @@ spec:
         worker:
           condition: started
       operatorBox:
-        status:
-          fields:
-            - path: phase
-              value: Running
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: Running
 
     platform:
       apiTypes:
@@ -49,9 +51,11 @@ spec:
         worker:
           condition: healthy
       operatorBox:
-        status:
-          fields:
-            - path: phase
-              value: Running
-            - path: workerRef
-              value: "{{ .spec.workerRef }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: Running
+              - path: workerRef
+                value: "{{ .spec.workerRef }}"
+

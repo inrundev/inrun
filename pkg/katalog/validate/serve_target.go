@@ -74,28 +74,27 @@ func (e *executor) validateServeTarget() error {
 func validateTargetOperatorBox(crdName, targetName string, box *orktypes.OperatorBoxConfig) error {
 	var bad []string
 
-	if box.Reconciler != nil {
-		r := box.Reconciler
+	if r := box.Reconcile; r != nil {
 		if r.Workers != 0 {
-			bad = append(bad, "reconciler.workers")
+			bad = append(bad, "reconcile.workers")
 		}
 		if r.Resync.Duration != 0 {
-			bad = append(bad, "reconciler.resync")
+			bad = append(bad, "reconcile.resync")
 		}
 		if r.Queue != (orktypes.Queue{}) {
-			bad = append(bad, "reconciler.queue")
+			bad = append(bad, "reconcile.queue")
 		}
 		if r.Profile != "" {
-			bad = append(bad, "reconciler.profile")
+			bad = append(bad, "reconcile.profile")
 		}
 	}
-	if box.Autoscale != nil {
+	if box.EffectiveAutoscale() != nil {
 		bad = append(bad, "autoscale")
 	}
-	if box.Rollback != nil {
+	if box.EffectiveRollback() != nil {
 		bad = append(bad, "rollback")
 	}
-	if box.RollBackOnError {
+	if box.EffectiveRollBackOnError() {
 		bad = append(bad, "rollBackOnError")
 	}
 	if len(bad) == 0 {

@@ -57,7 +57,7 @@ func Apply(
 	valResult *ValidationResult,
 ) {
 	// Extend resolver with child state for status field templates.
-	if reconcileErr == nil && (box.OnCreate != nil || box.OnReconcile != nil) {
+	if reconcileErr == nil && (box.EffectiveOnCreate() != nil || box.EffectiveOnReconcile() != nil) {
 		ch := children.ReadChildren(ctx, in.Kube, obj, resolver, in.CRD)
 		resolver = resolver.WithChildren(ch)
 	}

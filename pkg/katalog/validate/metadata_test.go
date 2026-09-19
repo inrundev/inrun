@@ -70,6 +70,15 @@ func TestValidateCRDEntryLabels_InvalidValueTemplate_Rejected(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid template")
 }
 
+func TestValidateCRDEntryLabels_InvalidValue_Rejected(t *testing.T) {
+	k := katalogWithLabels("myapp", orktypes.Labels{
+		"tier": "value/with/slashes",
+	})
+	err := k.validateCRDEntryLabels()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "is not a valid Kubernetes label value")
+}
+
 func TestValidateCRDEntryLabels_MultipleKeys_OneInvalid(t *testing.T) {
 	k := katalogWithLabels("myapp", orktypes.Labels{
 		"app":          "{{ .metadata.name }}",

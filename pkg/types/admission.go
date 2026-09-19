@@ -253,7 +253,7 @@ func (r ValidationRule) ShorthandsEmpty() bool {
 	switch {
 	case r.Equals == "" && r.NotEquals == "" && r.GreaterThan == "" && r.LessThan == "" && r.GreaterThanOrEqual == "" && r.LessThanOrEqual == "" &&
 		r.Between == "" && r.NotBetween == "" && r.Contains == "" && r.NotContains == "" && r.In == "" && r.NotIn == "" && r.Prefix == "" && r.NotPrefix == "" &&
-		r.Suffix == "" && r.NotSuffix == "", r.Min == "" && r.Max == "" && r.Regex == "":
+		r.Suffix == "" && r.NotSuffix == "" && r.Min == "" && r.Max == "" && r.Regex == "":
 		return true
 	}
 	return false
@@ -738,4 +738,41 @@ func (w *AdmissionWebhookConfig) EffectiveOperations() []string {
 		return []string{"CREATE", "UPDATE"}
 	}
 	return w.Operations
+}
+
+// ── AdmissionConfig ────────────────────────────────────────────────────────────
+
+// AdmissionConfig groups all admission and versioning rules under crdEntry.admission:.
+// It supersedes the top-level Validation, Mutation, Webhooks, and Conversion fields
+// on CRDEntry. Both the new admission: block and the legacy top-level fields are
+// accepted during migration — accessor methods check the new path first.
+type AdmissionConfig struct {
+	// Validation declares CEL/webhook validation rules evaluated at admission time.
+	Validation *ValidationConfig `yaml:"validation,omitempty" json:"validation,omitempty"`
+
+	// Mutation declares mutation rules applied to incoming CRs at admission time.
+	Mutation *MutationConfig `yaml:"mutation,omitempty" json:"mutation,omitempty"`
+
+	// Webhooks controls per-CRD admission webhook behaviour.
+	Webhooks AdmissionWebhookConfig `yaml:"webhooks,omitempty" json:"webhooks,omitempty"`
+
+	// Conversion handles multi-version CRD conversion via a webhook or built-in strategy.
+	Conversion *CRDConversion `yaml:"conversion,omitempty" json:"conversion,omitempty"`
+}
+
+func (a *AdmissionConfig) Empty() bool { return a == nil }
+
+// HasValidation reports whether validation rules are declared.
+func (a *AdmissionConfig) HasValidation() bool {
+	return a != nil && a.Validation != nil && len(a.Validation.Rules) > 0
+}
+
+// HasMutation reports whether mutation rules are declared.
+func (a *AdmissionConfig) HasMutation() bool {
+	return a != nil && a.Mutation != nil && len(a.Mutation.Rules) > 0
+}
+
+// HasConversion reports whether conversion is declared.
+func (a *AdmissionConfig) HasConversion() bool {
+	return a != nil && a.Conversion != nil
 }

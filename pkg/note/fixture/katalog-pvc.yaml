@@ -16,70 +16,69 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       enrich:
         - pvc
         - storageclass
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 30s
 
-        onCreate:
-          persistentVolumeClaims:
-            - name: "{{ .metadata.name }}-data"
-              storageClassName: "{{ .spec.storageClass }}"
-              storage: "{{ .spec.storage }}"
-              accessModes: [ReadWriteOnce]
+          onCreate:
+            persistentVolumeClaims:
+              - name: "{{ .metadata.name }}-data"
+                storageClassName: "{{ .spec.storageClass }}"
+                storage: "{{ .spec.storage }}"
+                accessModes: [ReadWriteOnce]
+        emit:
+          status:
+            fields:
+              # ── Phase state machine ─────────────────────────────────────────
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            # ── Phase state machine ─────────────────────────────────────────
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Bound"
+                when:
+                  - field: "{{ pvcBound .children.pvc }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Bound"
-              when:
-                - field: "{{ pvcBound .children.pvc }}"
-                  equals: "true"
+              - path: phase
+                value: "Waiting"
+                when:
+                  - field: "{{ pvcBound .children.pvc }}"
+                    equals: "false"
 
-            - path: phase
-              value: "Waiting"
-              when:
-                - field: "{{ pvcBound .children.pvc }}"
-                  equals: "false"
+              # ── PVC notes (no enrichment required) ──────────────────────────
+              - path: pvcPhase
+                value: "{{ pvcPhase .children.pvc }}"
 
-            # ── PVC notes (no enrichment required) ──────────────────────────
-            - path: pvcPhase
-              value: "{{ pvcPhase .children.pvc }}"
+              - path: pvcBound
+                value: "{{ pvcBound .children.pvc }}"
 
-            - path: pvcBound
-              value: "{{ pvcBound .children.pvc }}"
+              - path: pvcCapacity
+                value: "{{ pvcCapacity .children.pvc }}"
 
-            - path: pvcCapacity
-              value: "{{ pvcCapacity .children.pvc }}"
+              - path: pvcStorageClass
+                value: "{{ pvcStorageClass .children.pvc }}"
 
-            - path: pvcStorageClass
-              value: "{{ pvcStorageClass .children.pvc }}"
+              - path: pvcAccessModes
+                value: "{{ pvcAccessModes .children.pvc }}"
 
-            - path: pvcAccessModes
-              value: "{{ pvcAccessModes .children.pvc }}"
+              # ── enriched PV notes (require enrich: [pvc]) ───────────────────
+              - path: pvcProvisioner
+                value: "{{ pvcProvisioner .children.pvc }}"
 
-            # ── enriched PV notes (require enrich: [pvc]) ───────────────────
-            - path: pvcProvisioner
-              value: "{{ pvcProvisioner .children.pvc }}"
+              - path: pvcVolumeMode
+                value: "{{ pvcVolumeMode .children.pvc }}"
 
-            - path: pvcVolumeMode
-              value: "{{ pvcVolumeMode .children.pvc }}"
+              # ── enriched StorageClass notes (require enrich: [storageclass]) ─
+              - path: storageClassProvisioner
+                value: "{{ pvcStorageClassProvisioner .children.pvc }}"
 
-            # ── enriched StorageClass notes (require enrich: [storageclass]) ─
-            - path: storageClassProvisioner
-              value: "{{ pvcStorageClassProvisioner .children.pvc }}"
+              - path: storageClassReclaimPolicy
+                value: "{{ pvcStorageClassReclaimPolicy .children.pvc }}"
 
-            - path: storageClassReclaimPolicy
-              value: "{{ pvcStorageClassReclaimPolicy .children.pvc }}"

@@ -51,7 +51,7 @@ type GenericReconciler[PTR domain.Object] struct {
 	// When empty, all targets fall back to the CRD-level hooks field.
 	targetHooks map[string]domain.ObjectHooks
 
-	operatorBox orktypes.OperatorBoxConfig
+	operatorBox *orktypes.OperatorBoxConfig
 	newObj      func() PTR
 	crd         orktypes.CRDEntry
 	kat         *katalog.Katalog
@@ -131,16 +131,15 @@ func NewGenericReconciler[PTR domain.Object](
 	}
 
 	box := crd.OperatorBox
-	workers := box.Reconciler.Workers
-	if workers <= 0 {
-		workers = 1
-	}
 	// Always inject a system finalizer so handleDeletion runs before the CR is removed.
 	// This guarantees explicit GC for cluster-scoped resources (Namespaces, ClusterRoles,
 	// ClusterRoleBindings, PVs, cluster-scoped custom resources) that Kubernetes GC
 	// cannot cascade through owner references.
-	if !slices.Contains(box.Finalizers, labels.CleanupFinalizer) {
-		box.Finalizers = append(box.Finalizers, labels.CleanupFinalizer)
+	if !slices.Contains(box.EffectiveFinalizers(), labels.CleanupFinalizer) {
+		if box.Runtime == nil {
+			box.Runtime = &orktypes.RuntimeConfig{}
+		}
+		box.Runtime.Finalizers = append(box.Runtime.Finalizers, labels.CleanupFinalizer)
 	}
 
 	r := &GenericReconciler[PTR]{
@@ -228,7 +227,7 @@ func (r *GenericReconciler[PTR]) Reconcile(ctx context.Context, req domain.Reque
 func (r *GenericReconciler[PTR]) reconcileImpl(ctx context.Context, resolver *orktmpl.Resolver, obj PTR, box orktypes.OperatorBoxConfig, hooks domain.ObjectHooks) error {
 	var err error
 
-	hasTemplates := box.OnCreate != nil || box.OnReconcile != nil
+	hasTemplates := box.EffectiveOnCreate() != nil || box.EffectiveOnReconcile() != nil
 	switch {
 	case hooks.OnReconcile != nil:
 		// Go hooks — user-provided, full type-safe access.
@@ -246,7 +245,7 @@ func (r *GenericReconciler[PTR]) reconcileImpl(ctx context.Context, resolver *or
 			resolver, err = r.runTemplateReconcile(ctx, resolver, obj, box)
 		}
 
-	case box.OnCreate != nil || box.OnReconcile != nil:
+	case box.EffectiveOnCreate() != nil || box.EffectiveOnReconcile() != nil:
 		// Declarative templates — interpreted at runtime.
 		// Requires: nothing. ork generate registry NOT needed.
 		// The returned resolver carries cross/external/git data for status evaluation.
@@ -294,7 +293,7 @@ func (r *GenericReconciler[PTR]) handleDeletion(ctx context.Context, resolver *o
 			return fmt.Errorf("deletion hook: %w", err)
 		}
 
-	case box.OnDelete != nil:
+	case box.EffectiveOnDelete() != nil:
 		if err := r.runTemplateOnDelete(ctx, resolver, obj, box); err != nil {
 			r.event.Eventf(obj, corev1.EventTypeWarning, r.crd.APITypes.Kind+"DeleteError",
 				fmt.Sprintf("Template deletion failed: %v", err))
@@ -306,7 +305,7 @@ func (r *GenericReconciler[PTR]) handleDeletion(ctx context.Context, resolver *o
 	// onDelete block exists: the GC does not cascade through owner references on them.
 	// runTemplateOnDelete already handles this when OnDelete is set; run it here for all
 	// other cases (no onDelete block, or Go hook path).
-	if box.OnDelete == nil {
+	if box.EffectiveOnDelete() == nil {
 		if kube, ok := kubeclient.FromContext(ctx); ok {
 			if err := runners.DeleteOwnedClusterScopedResources(ctx, kube, resolver, obj, box); err != nil {
 				return fmt.Errorf("namespace cleanup: %w", err)

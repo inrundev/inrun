@@ -23,16 +23,17 @@ spec:
   crds:
     website:
       crdFile: ./crd.yaml
-
-      validation:
-        rules:
-          - field: spec.domain
-            operator: unique
-            message: "spec.domain must be unique across all Website instances"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.domain
+              operator: unique
+              message: "spec.domain must be unique across all Website instances"
+              action: deny
       operatorBox:
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+

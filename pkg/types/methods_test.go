@@ -15,7 +15,7 @@ import (
 func boolp(v bool) *bool { return &v }
 
 func emptyCRD() orktypes.CRDEntry {
-	return orktypes.CRDEntry{}
+	return orktypes.CRDEntry{OperatorBox: &orktypes.OperatorBoxConfig{}}
 }
 
 // ── SetQueueDepth ──────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ func TestSetQueueDepth_UsesDefault(t *testing.T) {
 
 func TestSetQueueDepth_UsesPerCRDValue(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.Reconciler = &orktypes.ReconcilerConfig{Queue: orktypes.Queue{MaxDepth: 25}}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{Queue: orktypes.Queue{MaxDepth: 25}}
 	assert.Equal(t, 25, c.SetQueueDepth(10))
 }
 
@@ -40,7 +40,7 @@ func TestSetWorkers_UsesDefault(t *testing.T) {
 
 func TestSetWorkers_UsesPerCRDValue(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.Reconciler = &orktypes.ReconcilerConfig{Workers: 8}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{Workers: 8}
 	assert.Equal(t, 8, c.SetWorkers(4))
 }
 
@@ -111,7 +111,7 @@ func TestDefaultReconcile_NilDefaultsTrue(t *testing.T) {
 
 func TestDefaultReconcile_ExplicitFalse(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.Reconciler = &orktypes.ReconcilerConfig{Default: boolp(false)}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{Default: boolp(false)}
 	assert.False(t, c.DefaultReconcile())
 }
 
@@ -124,7 +124,7 @@ func TestDefaultQueue_NilDefaultsFalse(t *testing.T) {
 
 func TestDefaultQueue_ExplicitTrue(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.Reconciler = &orktypes.ReconcilerConfig{Queue: orktypes.Queue{Shared: boolp(true)}}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{Queue: orktypes.Queue{Shared: boolp(true)}}
 	assert.True(t, c.SharedQueue())
 }
 
@@ -186,8 +186,10 @@ func TestHasValidationOrMutationRules_Empty(t *testing.T) {
 
 func TestHasValidationRules_WithRules(t *testing.T) {
 	c := emptyCRD()
-	c.Validation = &orktypes.ValidationConfig{
-		Rules: []orktypes.ValidationRule{{Field: "spec.image"}},
+	c.Admission = &orktypes.AdmissionConfig{
+		Validation: &orktypes.ValidationConfig{
+			Rules: []orktypes.ValidationRule{{Field: "spec.image"}},
+		},
 	}
 	assert.True(t, c.HasValidationRules())
 	assert.True(t, c.HasValidationOrMutationRules())
@@ -196,8 +198,10 @@ func TestHasValidationRules_WithRules(t *testing.T) {
 
 func TestHasMutationRules_WithRules(t *testing.T) {
 	c := emptyCRD()
-	c.Mutation = &orktypes.MutationConfig{
-		Rules: []orktypes.MutationRule{{Field: "spec.replicas", Default: "1"}},
+	c.Admission = &orktypes.AdmissionConfig{
+		Mutation: &orktypes.MutationConfig{
+			Rules: []orktypes.MutationRule{{Field: "spec.replicas", Default: "1"}},
+		},
 	}
 	assert.True(t, c.HasMutationRules())
 	assert.True(t, c.HasValidationOrMutationRules())
@@ -223,19 +227,19 @@ func TestHasOnCreate_False(t *testing.T) {
 
 func TestHasOnCreate_True(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.OnCreate = &orktypes.HookTemplates{}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{OnCreate: &orktypes.HookTemplates{}}
 	assert.True(t, c.HasOnCreate())
 }
 
 func TestHasOnReconcile_True(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.OnReconcile = &orktypes.HookTemplates{}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{OnReconcile: &orktypes.HookTemplates{}}
 	assert.True(t, c.HasOnReconcile())
 }
 
 func TestHasOnDelete_True(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.OnDelete = &orktypes.HookTemplates{}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{OnDelete: &orktypes.HookTemplates{}}
 	assert.True(t, c.HasOnDelete())
 }
 
@@ -246,7 +250,7 @@ func TestHasAnyHooks_None(t *testing.T) {
 
 func TestHasAnyHooks_OnCreateOnly(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.OnCreate = &orktypes.HookTemplates{}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{OnCreate: &orktypes.HookTemplates{}}
 	assert.True(t, c.HasAnyHookTemplates())
 }
 
@@ -259,7 +263,7 @@ func TestHasTemplates_None(t *testing.T) {
 
 func TestHasTemplates_OnReconcile(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.OnReconcile = &orktypes.HookTemplates{}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{OnReconcile: &orktypes.HookTemplates{}}
 	assert.True(t, c.HasTemplates())
 }
 
@@ -272,13 +276,13 @@ func TestHasRollbackRules_None(t *testing.T) {
 
 func TestHasRollbackRules_ViaShorthand(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.RollBackOnError = true
+	c.OperatorBox.Runtime = &orktypes.RuntimeConfig{RollBackOnError: true}
 	assert.True(t, c.HasRollbackRules())
 }
 
 func TestHasRollbackRules_ViaBlock(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.Rollback = &orktypes.RollbackBlock{}
+	c.OperatorBox.Runtime = &orktypes.RuntimeConfig{Rollback: &orktypes.RollbackBlock{}}
 	assert.True(t, c.HasRollbackRules())
 }
 
@@ -327,15 +331,15 @@ func TestInvolvedInConversion_Nil(t *testing.T) {
 
 func TestInvolvedInConversion_WithPaths(t *testing.T) {
 	c := emptyCRD()
-	c.Conversion = &orktypes.CRDConversion{
+	c.Admission = &orktypes.AdmissionConfig{Conversion: &orktypes.CRDConversion{
 		Paths: []orktypes.ConversionPath{{From: "v1", To: "v2"}},
-	}
+	}}
 	assert.True(t, c.InvolvedInConversion())
 }
 
 func TestInvolvedInConversion_Participant(t *testing.T) {
 	c := emptyCRD()
-	c.Conversion = &orktypes.CRDConversion{Participant: true}
+	c.Admission = &orktypes.AdmissionConfig{Conversion: &orktypes.CRDConversion{Participant: true}}
 	assert.True(t, c.InvolvedInConversion())
 }
 
@@ -348,7 +352,7 @@ func TestUpdateCRDCaBundle_Nil(t *testing.T) {
 
 func TestUpdateCRDCaBundle_True(t *testing.T) {
 	c := emptyCRD()
-	c.Conversion = &orktypes.CRDConversion{UpdateCRD: true}
+	c.Admission = &orktypes.AdmissionConfig{Conversion: &orktypes.CRDConversion{UpdateCRD: true}}
 	assert.True(t, c.UpdateCRDCaBundle())
 }
 
@@ -361,13 +365,13 @@ func TestHasNamespaceRules_Empty(t *testing.T) {
 
 func TestHasNamespaceRules_WithAllowed(t *testing.T) {
 	c := emptyCRD()
-	c.AllowedNamespaces = orktypes.AllowedNamespaces{"apps"}
+	c.OperatorBox.Runtime = &orktypes.RuntimeConfig{AllowedNamespaces: orktypes.AllowedNamespaces{"apps"}}
 	assert.True(t, c.HasNamespaceRules())
 }
 
 func TestHasNamespaceRules_WithRestricted(t *testing.T) {
 	c := emptyCRD()
-	c.RestrictedNamespaces = orktypes.RestrictedNamespaces{"kube-system"}
+	c.OperatorBox.Runtime = &orktypes.RuntimeConfig{RestrictedNamespaces: orktypes.RestrictedNamespaces{"kube-system"}}
 	assert.True(t, c.HasNamespaceRules())
 }
 
@@ -375,22 +379,24 @@ func TestHasNamespaceRules_WithRestricted(t *testing.T) {
 
 func TestAllowedNamespacesOnly_OnlyAllowed(t *testing.T) {
 	c := emptyCRD()
-	c.AllowedNamespaces = orktypes.AllowedNamespaces{"apps"}
+	c.OperatorBox.Runtime = &orktypes.RuntimeConfig{AllowedNamespaces: orktypes.AllowedNamespaces{"apps"}}
 	assert.True(t, c.AllowedNamespacesOnly())
 	assert.False(t, c.RestrictedNamespacesOnly())
 }
 
 func TestRestrictedNamespacesOnly_OnlyRestricted(t *testing.T) {
 	c := emptyCRD()
-	c.RestrictedNamespaces = orktypes.RestrictedNamespaces{"kube-system"}
+	c.OperatorBox.Runtime = &orktypes.RuntimeConfig{RestrictedNamespaces: orktypes.RestrictedNamespaces{"kube-system"}}
 	assert.True(t, c.RestrictedNamespacesOnly())
 	assert.False(t, c.AllowedNamespacesOnly())
 }
 
 func TestAllowedAndRestrictedBoth_NeitherOnly(t *testing.T) {
 	c := emptyCRD()
-	c.AllowedNamespaces = orktypes.AllowedNamespaces{"apps"}
-	c.RestrictedNamespaces = orktypes.RestrictedNamespaces{"kube-system"}
+	c.OperatorBox.Runtime = &orktypes.RuntimeConfig{
+		AllowedNamespaces:    orktypes.AllowedNamespaces{"apps"},
+		RestrictedNamespaces: orktypes.RestrictedNamespaces{"kube-system"},
+	}
 	assert.False(t, c.AllowedNamespacesOnly())
 	assert.False(t, c.RestrictedNamespacesOnly())
 }
@@ -404,19 +410,19 @@ func TestAutoscaleEnabled_Nil(t *testing.T) {
 
 func TestAutoscaleEnabled_Set(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.Autoscale = &orktypes.AutoscaleSpec{}
+	c.OperatorBox.Runtime = &orktypes.RuntimeConfig{Autoscale: &orktypes.AutoscaleSpec{}}
 	assert.True(t, c.AutoscaleEnabled())
 }
 
 func TestHasAutoscaleProfile_NoProfile(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.Autoscale = &orktypes.AutoscaleSpec{}
+	c.OperatorBox.Runtime = &orktypes.RuntimeConfig{Autoscale: &orktypes.AutoscaleSpec{}}
 	assert.False(t, c.HasAutoscaleProfile())
 }
 
 func TestHasAutoscaleProfile_WithProfile(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.Autoscale = &orktypes.AutoscaleSpec{Profile: "burst"}
+	c.OperatorBox.Runtime = &orktypes.RuntimeConfig{Autoscale: &orktypes.AutoscaleSpec{Profile: "burst"}}
 	assert.True(t, c.HasAutoscaleProfile())
 	assert.Equal(t, "burst", c.AutoScaleProfile())
 }
@@ -430,7 +436,7 @@ func TestWithHooksDecl_Nil(t *testing.T) {
 
 func TestWithHooksDecl_WithLocation(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.Reconciler = &orktypes.ReconcilerConfig{Hooks: &orktypes.HookDeclaration{Location: "hooks/"}}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{Hooks: &orktypes.HookDeclaration{Location: "hooks/"}}
 	assert.True(t, c.WithHooksDecl())
 }
 
@@ -441,6 +447,6 @@ func TestWithConstructorDecl_Nil(t *testing.T) {
 
 func TestWithConstructorDecl_WithLocation(t *testing.T) {
 	c := emptyCRD()
-	c.OperatorBox.Reconciler = &orktypes.ReconcilerConfig{ConstructorDecl: &orktypes.ConstructorDeclaration{Location: "cmd/"}}
+	c.OperatorBox.Reconcile = &orktypes.ReconcileConfig{ConstructorDecl: &orktypes.ConstructorDeclaration{Location: "cmd/"}}
 	assert.True(t, c.WithConstructorDecl())
 }

@@ -18,59 +18,60 @@ spec:
       setup:
         - ./secret.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           resync: 15s
 
-        onReconcile:
-          external:
-            - name: healthCheck
-              url: "{{ .spec.url }}/health"
-              method: GET
-              expectedStatus: 200
-              continueOnError: true
-              timeout: 5s
+          onReconcile:
+            external:
+              - name: healthCheck
+                url: "{{ .spec.url }}/health"
+                method: GET
+                expectedStatus: 200
+                continueOnError: true
+                timeout: 5s
 
-            - name: config
-              url: "{{ .spec.url }}/protected/{{ .metadata.name }}"
-              method: GET
-              expectedStatus: 200
-              continueOnError: true
-              timeout: 5s
-              auth:
-                secretRef:
-                  name: dev-server-token
-                  namespace: default
-                  key: token
+              - name: config
+                url: "{{ .spec.url }}/protected/{{ .metadata.name }}"
+                method: GET
+                expectedStatus: 200
+                continueOnError: true
+                timeout: 5s
+                auth:
+                  secretRef:
+                    name: dev-server-token
+                    namespace: default
+                    key: token
 
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: 1
-              when:
-                - field: external.healthCheck.status
-                  equals: "200"
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: 1
+                when:
+                  - field: external.healthCheck.status
+                    equals: "200"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: external.healthCheck.status
+                    equals: "200"
+                  - field: external.config.status
+                    equals: "200"
 
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-              when:
-                - field: external.healthCheck.status
-                  equals: "200"
-                - field: external.config.status
-                  equals: "200"
+              - path: phase
+                value: "Degraded"
+                when:
+                  - field: external.healthCheck.status
+                    notEquals: "200"
 
-            - path: phase
-              value: "Degraded"
-              when:
-                - field: external.healthCheck.status
-                  notEquals: "200"
+              - path: healthStatus
+                value: "{{ .external.healthCheck.status }}"
 
-            - path: healthStatus
-              value: "{{ .external.healthCheck.status }}"
+              - path: configStatus
+                value: "{{ .external.config.status }}"
 
-            - path: configStatus
-              value: "{{ .external.config.status }}"
+              - path: tokenValid
+                value: "{{ .external.config.tokenValid }}"
 
-            - path: tokenValid
-              value: "{{ .external.config.tokenValid }}"

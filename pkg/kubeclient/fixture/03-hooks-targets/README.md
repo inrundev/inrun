@@ -24,7 +24,7 @@ serve:
             when:
               - field: '{{ inBusinessHours }}'
                 equals: "true"
-        reconciler:
+        reconcile:
           hooks:
             args:
               featureEnabled: "true"
@@ -32,7 +32,7 @@ serve:
 
     v2-disabled:
       operatorBox:
-        reconciler:
+        reconcile:
           hooks:
             args:
               featureEnabled: "false"
@@ -46,7 +46,7 @@ dispatch time:
 ```yaml
     v2-ctor:
       operatorBox:
-        reconciler:
+        reconcile:
           default: false
           constructor:
             location: github.com/orkspace/orkestra-args-hooks-targets/constructor

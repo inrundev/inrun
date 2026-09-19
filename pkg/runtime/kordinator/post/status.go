@@ -43,15 +43,17 @@ func applyStatus(
 		patch["observedGeneration"] = obj.GetGeneration()
 	}
 
+	statusCfg := box.EffectiveStatus()
+
 	logger.FromContext(ctx).Debug().
 		Str("name", obj.GetName()).
-		Bool("has_status_config", box.Status != nil && box.Status.HasFields()).
+		Bool("has_status_config", statusCfg != nil && statusCfg.HasFields()).
 		Bool("reconcile_error", reconcileErr != nil).
 		AnErr("reconcile_err", reconcileErr).
 		Msg("status: layer2 evaluation")
 
-	if box.Status != nil && box.Status.HasFields() {
-		fields := box.Status.Fields
+	if statusCfg != nil && statusCfg.HasFields() {
+		fields := statusCfg.Fields
 		if reconcileErr != nil {
 			var conditional []orktypes.StatusFieldSpec
 			for _, f := range fields {
@@ -159,10 +161,7 @@ func buildReadyCondition(reconcileErr error, generation int64, skipObservedGener
 		cond["status"] = "False"
 		cond["reason"] = "ReconcileError"
 		msg := reconcileErr.Error()
-		if len(msg) > 256 {
-			msg = msg[:253] + "..."
-		}
-		cond["message"] = msg
+		cond["message"] = truncateMessage(msg)
 	}
 
 	if !skipObservedGeneration {
@@ -180,9 +179,7 @@ func buildValidationCondition(valResult *ValidationResult) map[string]interface{
 			msgs = append(msgs, fmt.Sprintf("field %q: %s (got %q)", v.Field, v.Message, v.Value))
 		}
 		msg := strings.Join(msgs, "; ")
-		if len(msg) > 256 {
-			msg = msg[:253] + "..."
-		}
+		msg = truncateMessage(msg)
 		return map[string]interface{}{
 			"type":               "ValidationFailed",
 			"status":             "True",
@@ -208,9 +205,7 @@ func buildValidationWarningCondition(valResult *ValidationResult) map[string]int
 			msgs = append(msgs, fmt.Sprintf("field %q: %s", w.Field, w.Message))
 		}
 		msg := strings.Join(msgs, "; ")
-		if len(msg) > 256 {
-			msg = msg[:253] + "..."
-		}
+		msg = truncateMessage(strings.Join(msgs, "; "))
 		return map[string]interface{}{
 			"type":               "ValidationWarning",
 			"status":             "True",
@@ -226,4 +221,11 @@ func buildValidationWarningCondition(valResult *ValidationResult) map[string]int
 		"message":            "",
 		"lastTransitionTime": now,
 	}
+}
+
+func truncateMessage(msg string) string {
+	if len(msg) > 256 {
+		msg = msg[:253] + "..."
+	}
+	return msg
 }

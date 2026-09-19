@@ -13,8 +13,8 @@ func katalogWithQueue(crdName string, q *orktypes.Queue) *executor {
 		q = &orktypes.Queue{}
 	}
 	return newKatalogExec(map[string]orktypes.CRDEntry{
-		crdName: {OperatorBox: orktypes.OperatorBoxConfig{
-			Reconciler: &orktypes.ReconcilerConfig{Queue: *q},
+		crdName: {OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{Queue: *q},
 		}},
 	})
 }

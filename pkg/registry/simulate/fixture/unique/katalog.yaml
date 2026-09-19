@@ -19,22 +19,23 @@ spec:
         kind: Website
         plural: websites
       crdFile: ./crd.yaml
-
-      validation:
-        rules:
-          - field: spec.domain
-            operator: unique
-            message: "spec.domain must be unique across all Website instances"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.domain
+              operator: unique
+              message: "spec.domain must be unique across all Website instances"
+              action: deny
       operatorBox:
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: domainUnique
-              value: "true"
-              when:
-                - field: spec.domain
-                  operator: unique
-              clearOnFalse: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: domainUnique
+                value: "true"
+                when:
+                  - field: spec.domain
+                    operator: unique
+                clearOnFalse: true
+

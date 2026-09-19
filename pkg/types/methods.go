@@ -12,39 +12,46 @@ import (
 
 // ── CRDEntry helpers ──────────────────────────────────────────────────────────
 
-// Config returns the OperatorBox configuration for this CRD.
-// Safe to call when OperatorBox is the zero value.
-func (e CRDEntry) Config() OperatorBoxConfig {
-	return e.OperatorBox
+// ReconcileConfig returns the reconcile block for this CRD. Nil-safe.
+func (e CRDEntry) ReconcileConfig() *ReconcileConfig {
+	return e.Box().Reconcile
 }
 
-// ReconcilerConfig returns the reconciler configuration for this CRD.
-func (e CRDEntry) ReconcilerConfig() *ReconcilerConfig {
-	if e.OperatorBox.Reconciler == nil {
+// EffectiveImports returns the motif imports from reconcile.imports. Safe on nil receiver.
+func (c *CRDEntry) EffectiveImports() []MotifImport {
+	if c == nil || c.Box().Reconcile == nil {
 		return nil
 	}
-	return e.OperatorBox.Reconciler
+	return c.Box().Reconcile.Imports
+}
+
+// EffectiveNormalize returns the normalize config from reconcile.normalize. Safe on nil receiver.
+func (c *CRDEntry) EffectiveNormalize() *NormalizeConfig {
+	if c == nil || c.Box().Reconcile == nil {
+		return nil
+	}
+	return c.Box().Reconcile.Normalize
 }
 
 // QueueConfig returns the Queue configuration for this CRD.
 func (e CRDEntry) QueueConfig() *Queue {
-	if e.OperatorBox.Reconciler == nil {
-		return &Queue{}
+	if e.Box().Reconcile != nil {
+		return &e.Box().Reconcile.Queue
 	}
-	return &e.OperatorBox.Reconciler.Queue
+	return &Queue{}
 }
 
 // PreReconcileCheck returns the gate config for this CRD.
 // nil means no gate — the reconciler is always called.
 func (e CRDEntry) PreReconcileCheck() *PreReconcileConfig {
-	return e.OperatorBox.PreReconcile
+	return e.Box().PreReconcile
 }
 
 // HasAnyEnqueueGate reports whether the CRD-level or any per-target operatorBox
 // declares an enqueueGate. Used at startup to decide whether to register the
 // informer enqueue filter — must register if ANY surface can gate enqueueing.
 func (e CRDEntry) HasAnyEnqueueGate() bool {
-	if rc := e.OperatorBox.PreReconcile; rc != nil && rc.HasEnqueueGate() {
+	if rc := e.Box().PreReconcile; rc != nil && rc.HasEnqueueGate() {
 		return true
 	}
 	if e.Serve != nil {
@@ -63,7 +70,7 @@ func (e CRDEntry) HasAnyEnqueueGate() bool {
 // declares a reconcileGate. Used at dequeue time to decide whether to evaluate
 // the gate before calling the reconciler.
 func (e CRDEntry) HasAnyReconcileGate() bool {
-	if rc := e.OperatorBox.PreReconcile; rc != nil && rc.HasReconcileGate() {
+	if rc := e.Box().PreReconcile; rc != nil && rc.HasReconcileGate() {
 		return true
 	}
 	if e.Serve != nil {
@@ -87,17 +94,17 @@ func (c *CRDEntry) IsBuiltInType() bool {
 // SkipStatusSubresource reports whether this CRD belongs to a list to be ignored during status patches.
 // This is applied mainly to builtins or if specifically required by the crd through crd.IgnoreStatusPatch
 func (c *CRDEntry) SkipStatusSubresource() bool {
-	return c.IgnoreStatusPatch
+	return c.Box().Runtime != nil && c.Box().Runtime.IgnoreStatusPatch
 }
 
 // ResolveForceConflict returns the effective force-conflict setting for a resource.
 // ForceConflict defaults to true when unset.
 func (c *CRDEntry) ResolveForceConflict() *bool {
 	defaultForceConflict := true
-	if c.ForceConflict == nil {
-		return &defaultForceConflict
+	if c.Box().Reconcile != nil && c.Box().Reconcile.ForceConflict != nil {
+		return c.Box().Reconcile.ForceConflict
 	}
-	return c.ForceConflict
+	return &defaultForceConflict
 }
 
 // SkipObservedGeneration reports whether this CRD should ignore the
@@ -107,7 +114,7 @@ func (c *CRDEntry) ResolveForceConflict() *bool {
 // implement observedGeneration semantics. When true, Orkestra will NOT use
 // generation-based readiness logic for this CRD.
 func (c *CRDEntry) SkipObservedGeneration() bool {
-	return c.IgnoreObservedGeneration
+	return c.Box().Runtime != nil && c.Box().Runtime.IgnoreObservedGeneration
 }
 
 // ShouldEnrich returns true when the given enrichment target is enabled —
@@ -211,41 +218,37 @@ func (c *CRDEntry) IsDynamic() bool {
 // Does not imply anything about Default: true/false — a typed CRD can have hooks
 // even when Default: true (generic reconciler) or false (custom reconciler).
 func (c *CRDEntry) WithHooksDecl() bool {
-	r := c.OperatorBox.Reconciler
+	if c.Box().Reconcile.HasHooksDecl() {
+		return true
+	}
+	r := c.Box().Reconcile
 	return r != nil && r.Hooks != nil && r.Hooks.Location != ""
 }
 
 // RunHooksFirst reports whether the hook should run before declarative templates.
 // Returns false by default — declared templates run first (the 90/10 hybrid pattern).
-// Set reconciler.hooks.runHooksFirst: true in the Katalog to override.
+// Set reconcile.hooks.runHooksFirst: true in the Katalog to override.
 func (c *CRDEntry) RunHooksFirst() bool {
-	r := c.OperatorBox.Reconciler
-	if r == nil || r.Hooks == nil {
-		return false
-	}
-	return r.Hooks.RunHooksFirst
+	r := c.Box().Reconcile
+	return r != nil && r.Hooks != nil && r.Hooks.RunHooksFirst
 }
 
 // WithConstructorDecl returns true if the CRD has a constructor declaration.
-// Required when reconciler.default: false in the Katalog. The generated registry will
-// emit a ReconcilerRegistry entry for this CRD.
+// Required when reconcile.default: false in the Katalog.
 func (c *CRDEntry) WithConstructorDecl() bool {
-	r := c.OperatorBox.Reconciler
-	return r != nil && r.ConstructorDecl != nil && r.ConstructorDecl.Location != ""
+	return c.Box().Reconcile.HasConstructorDecl()
 }
 
-// WithHookManagedResources reports whether this CRD has hooks that declare
-// managed resources for RBAC generation.
+// WithHookManagedResources reports whether this CRD has hooks that declare managed resources.
 func (c *CRDEntry) WithHookManagedResources() bool {
-	r := c.OperatorBox.Reconciler
-	return c.WithHooksDecl() && r != nil && len(r.Hooks.ManagedResources) > 0
+	r := c.Box().Reconcile
+	return c.WithHooksDecl() && r != nil && r.Hooks != nil && len(r.Hooks.ManagedResources) > 0
 }
 
-// WithConstructorManagedResources reports whether this CRD has a constructor
-// that declares managed resources for RBAC generation.
+// WithConstructorManagedResources reports whether this CRD has a constructor with managed resources.
 func (c *CRDEntry) WithConstructorManagedResources() bool {
-	r := c.OperatorBox.Reconciler
-	return c.WithConstructorDecl() && r != nil && len(r.ConstructorDecl.ManagedResources) > 0
+	r := c.Box().Reconcile
+	return c.WithConstructorDecl() && r != nil && r.ConstructorDecl != nil && len(r.ConstructorDecl.ManagedResources) > 0
 }
 
 // WithAnyManagedResources reports whether hooks or constructor declare resources,
@@ -268,20 +271,20 @@ func (c *CRDEntry) WithAnyManagedResources() bool {
 // HookManagedResources returns the list of managed resources declared under
 // the hooks block. Returns nil if hooks are not declared or no resources exist.
 func (c *CRDEntry) HookManagedResources() []domain.ManagedResource {
-	if !c.WithHooksDecl() {
+	r := c.Box().Reconcile
+	if r == nil || r.Hooks == nil {
 		return nil
 	}
-	return c.OperatorBox.Reconciler.Hooks.ManagedResources
+	return r.Hooks.ManagedResources
 }
 
-// ConstructorManagedResources returns the list of managed resources declared
-// under the constructor block. Returns nil if constructor is not declared or
-// no resources exist.
+// ConstructorManagedResources returns the list of managed resources declared under the constructor block.
 func (c *CRDEntry) ConstructorManagedResources() []domain.ManagedResource {
-	if !c.WithConstructorDecl() {
+	r := c.Box().Reconcile
+	if r == nil || r.ConstructorDecl == nil {
 		return nil
 	}
-	return c.OperatorBox.Reconciler.ConstructorDecl.ManagedResources
+	return r.ConstructorDecl.ManagedResources
 }
 
 // AllManagedResources returns the combined list of managed resources from hooks,
@@ -304,11 +307,14 @@ func (c *CRDEntry) AllManagedResources() []domain.ManagedResource {
 // targetManagedResources extracts hook + constructor resources from a per-target
 // operatorBox pointer. Returns nil when the box is nil or has no resources.
 func targetManagedResources(box *OperatorBoxConfig) []domain.ManagedResource {
-	if box.Empty() || box.Reconciler.Empty() {
+	if box.Empty() {
 		return nil
 	}
-	rec := box.Reconciler
 	var out []domain.ManagedResource
+	rec := box.Reconcile
+	if rec.Empty() {
+		return nil
+	}
 	if rec.HasHooksDecl() {
 		out = append(out, rec.Hooks.ManagedResources...)
 	}
@@ -321,7 +327,7 @@ func targetManagedResources(box *OperatorBoxConfig) []domain.ManagedResource {
 // WithWatchEntries reports whether this CRD or any per-target
 // operatorBox.observe.watch declaration contains secondary watch entries.
 func (c *CRDEntry) WithWatchEntries() bool {
-	if c.OperatorBox.Observe != nil && len(c.OperatorBox.Observe.Watch) > 0 {
+	if c.Box().Observe != nil && len(c.Box().Observe.Watch) > 0 {
 		return true
 	}
 
@@ -342,7 +348,7 @@ func (c *CRDEntry) WithWatchEntries() bool {
 
 // WithSentinels reports whether this CRD declares any preReconcile sentinels.
 func (c *CRDEntry) WithSentinels() bool {
-	return len(c.OperatorBox.PreReconcile.DeclaredSentinels()) > 0
+	return len(c.Box().PreReconcile.DeclaredSentinels()) > 0
 }
 
 // WithQueueBehaviours reports whether this CRD declares any queue.behaviour.
@@ -359,8 +365,8 @@ func (c *CRDEntry) WithQueueBehaviours() bool {
 func (c *CRDEntry) WatchEntries() []WatchEntry {
 	var out []WatchEntry
 
-	if c.OperatorBox.Observe != nil {
-		out = append(out, c.OperatorBox.Observe.Watch...)
+	if c.Box().Observe != nil {
+		out = append(out, c.Box().Observe.Watch...)
 	}
 
 	if c.Serve == nil {
@@ -385,8 +391,8 @@ func (c *CRDEntry) WatchEntries() []WatchEntry {
 func (c *CRDEntry) EventEntries() map[string]EventEntry {
 	out := make(map[string]EventEntry)
 
-	if c.OperatorBox.Observe != nil {
-		for name, entry := range c.OperatorBox.Observe.Events {
+	if c.Box().Observe != nil {
+		for name, entry := range c.Box().Observe.Events {
 			if entry == nil {
 				continue
 			}
@@ -417,7 +423,7 @@ func (c *CRDEntry) EventEntries() map[string]EventEntry {
 // WithEventEntries reports whether this CRD or any per-target
 // operatorBox.observe.events declaration contains event entries.
 func (c *CRDEntry) WithEventEntries() bool {
-	if c.OperatorBox.Observe != nil && len(c.OperatorBox.Observe.Events) > 0 {
+	if c.Box().Observe != nil && len(c.Box().Observe.Events) > 0 {
 		return true
 	}
 
@@ -439,8 +445,8 @@ func (c *CRDEntry) WithEventEntries() bool {
 // HasTemplates reports whether this CRD declares any declarative hook templates.
 // Used by `ork generate` to determine whether to emit generated runtime hooks.
 func (c *CRDEntry) HasTemplates() bool {
-	rc := c.OperatorBox
-	return rc.OnCreate != nil || rc.OnReconcile != nil || rc.OnDelete != nil
+	r := c.Box().Reconcile
+	return r != nil && (r.OnCreate != nil || r.OnReconcile != nil || r.OnDelete != nil)
 }
 
 // GVK returns the fully resolved GroupVersionKind for this CRD. Used for logging,
@@ -493,9 +499,9 @@ func (c *CRDEntry) IsNamespaced() bool {
 }
 
 // DefaultReconcile reports whether this CRD uses the default reconciler (GenericReconciler).
-// True when reconciler: is absent or reconciler.default: is omitted or true.
+// True when reconcile: is absent or .default: is omitted or true.
 func (c *CRDEntry) DefaultReconcile() bool {
-	r := c.OperatorBox.Reconciler
+	r := c.Box().Reconcile
 	if r == nil || r.Default == nil {
 		return true
 	}
@@ -505,14 +511,14 @@ func (c *CRDEntry) DefaultReconcile() bool {
 // CustomHooksEnabled reports whether the reconcile behaviour uses custom hooks.
 // Defaults to false when omitted.
 func (c *CRDEntry) CustomHooksEnabled() bool {
-	r := c.OperatorBox.Reconciler
+	r := c.Box().Reconcile
 	return r != nil && r.Hooks != nil
 }
 
 // ConstructorEnabled reports whether the reconcile behaviour uses a constructor.
 // Defaults to false when omitted.
 func (c *CRDEntry) ConstructorEnabled() bool {
-	r := c.OperatorBox.Reconciler
+	r := c.Box().Reconcile
 	return r != nil && r.ConstructorDecl != nil
 }
 
@@ -546,28 +552,30 @@ func (c *CRDEntry) HasCrossDecl() bool {
 	if c == nil {
 		return false
 	}
-	return !c.OperatorBox.Empty() && len(c.OperatorBox.Cross) > 0
+	return !c.Box().Empty() && len(c.Box().EffectiveCross()) > 0
 }
 
 // HasHooks reports whether this CRD has hooks wired — either a YAML-declared
 // hooks block or a Go-registered HookFactory.
 func (c *CRDEntry) HasHooks() bool {
-	r := c.OperatorBox.Reconciler
-	return (r != nil && r.Hooks != nil) || c.OperatorBox.HookFactory != nil
+	r := c.Box().Reconcile
+	return r != nil && (r.Hooks != nil || r.HookFactory != nil)
 }
 
 // HasConstructor reports whether a Go-registered constructor is wired for this CRD.
 func (c *CRDEntry) HasConstructor() bool {
-	return c.OperatorBox.Constructor != nil
+	r := c.Box().Reconcile
+	return r != nil && r.Constructor != nil
 }
 
-// HooksArgs returns the args declared under reconciler.hooks.args in the Katalog.
+// HooksArgs returns the args declared under reconcile.hooks.args in the Katalog.
 // Returns nil when no hooks declaration or no args are present.
 func (c *CRDEntry) HooksArgs() map[string]interface{} {
-	if r := c.OperatorBox.Reconciler; r != nil && r.Hooks != nil {
-		return r.Hooks.Args
+	r := c.Box().Reconcile
+	if r == nil || r.Hooks == nil {
+		return nil
 	}
-	return nil
+	return r.Hooks.Args
 }
 
 // HooksArgs returns the args map from this reconciler config's hooks declaration.
@@ -579,48 +587,51 @@ func (r *ReconcilerConfig) HooksArgs() map[string]interface{} {
 	return r.Hooks.Args
 }
 
-// HooksExternal returns the external call specs declared under reconciler.hooks.external.
+// HooksExternal returns the external call specs declared under reconcile.hooks.external.
 // Returns nil when no hooks declaration or no external calls are declared.
 func (c *CRDEntry) HooksExternal() []ExternalCallSpec {
-	if r := c.OperatorBox.Reconciler; r != nil && r.Hooks != nil {
-		return r.Hooks.External
+	r := c.Box().Reconcile
+	if r == nil || r.Hooks == nil {
+		return nil
 	}
-	return nil
+	return r.Hooks.External
 }
 
-// HasHooksExternal reports whether the CRD declares any external calls under reconciler.hooks.external.
+// HasHooksExternal reports whether the CRD declares any external calls under reconcile.hooks.external.
 func (c *CRDEntry) HasHooksExternal() bool {
 	return len(c.HooksExternal()) > 0
 }
 
-// ConstructorArgs returns the args declared under reconciler.constructor.args in the Katalog.
+// ConstructorArgs returns the args declared under reconcile.constructor.args in the Katalog.
 // Returns nil when no constructor declaration or no args are present.
 func (c *CRDEntry) ConstructorArgs() map[string]interface{} {
-	if r := c.OperatorBox.Reconciler; r != nil && r.ConstructorDecl != nil {
-		return r.ConstructorDecl.Args
+	r := c.Box().Reconcile
+	if r == nil || r.ConstructorDecl == nil {
+		return nil
 	}
-	return nil
+	return r.ConstructorDecl.Args
 }
 
 // TargetConstructorArgs returns the constructor args declared under
-// serve.target.entries[targetName].operatorBox.reconciler.constructor.args.
+// serve.target.entries[targetName].operatorBox.reconcile.constructor.args (or reconciler.constructor.args).
 // Returns nil when the target entry, its operatorBox, or its constructor declaration is absent.
 func (c *CRDEntry) TargetConstructorArgs(targetName string) map[string]interface{} {
 	if c.Serve == nil || c.Serve.Target.Entries == nil {
 		return nil
 	}
 	entry, ok := c.Serve.Target.Entries[targetName]
-	if !ok || entry.OperatorBox == nil || entry.OperatorBox.Reconciler == nil {
+	if !ok || entry.OperatorBox == nil {
 		return nil
 	}
-	if entry.OperatorBox.Reconciler.ConstructorDecl == nil {
+	r := entry.OperatorBox.Reconcile
+	if r == nil || r.ConstructorDecl == nil {
 		return nil
 	}
-	return entry.OperatorBox.Reconciler.ConstructorDecl.Args
+	return r.ConstructorDecl.Args
 }
 
 // HasTargetConstructorFactories reports whether any serve target declares a
-// custom constructor (reconciler.default: false with a constructor declaration).
+// custom constructor (reconcile.default: false with a constructor declaration).
 func (c *CRDEntry) HasTargetConstructorFactories() bool {
 	if c.Serve == nil || c.Serve.Target.Entries == nil {
 		return false
@@ -630,11 +641,9 @@ func (c *CRDEntry) HasTargetConstructorFactories() bool {
 		if box.Empty() {
 			continue
 		}
-		rec := box.Reconciler
-		if rec.Empty() || rec.IsDefault() || !rec.HasConstructorDecl() {
-			continue
+		if r := box.Reconcile; !r.Empty() && !r.IsDefault() && r.HasConstructorDecl() {
+			return true
 		}
-		return true
 	}
 	return false
 }
@@ -662,44 +671,63 @@ func (c *CRDEntry) HasValidationOrMutationRules() bool {
 
 // Separate helpers for hasMutationRules and hasValidationRules
 func (c *CRDEntry) HasMutationRules() bool {
-	if c.Mutation == nil {
-		return false
-	}
-	return len(c.Mutation.Rules) > 0
+	return c.Admission.HasMutation()
 }
 
 // ShouldMutateFirst reports whether this CRD prefers mutation first or not
 //
 // Default is true
 func (c *CRDEntry) ShouldMutateFirst() bool {
-	if c.Mutation == nil {
-		return true
+	if c.Admission != nil && c.Admission.Mutation != nil {
+		return c.Admission.Mutation.MutateFirst
 	}
-	return c.Mutation.MutateFirst
+	return true
+}
+
+// EffectiveValidation returns the active ValidationConfig from admission.validation.
+func (c *CRDEntry) EffectiveValidation() *ValidationConfig {
+	if c.Admission != nil {
+		return c.Admission.Validation
+	}
+	return nil
+}
+
+// EffectiveMutation returns the active MutationConfig from admission.mutation.
+func (c *CRDEntry) EffectiveMutation() *MutationConfig {
+	if c.Admission != nil {
+		return c.Admission.Mutation
+	}
+	return nil
+}
+
+// EffectiveWebhooks returns the active AdmissionWebhookConfig from admission.webhooks.
+func (c *CRDEntry) EffectiveWebhooks() AdmissionWebhookConfig {
+	if c.Admission != nil {
+		return c.Admission.Webhooks
+	}
+	return AdmissionWebhookConfig{}
 }
 
 // HasValidationRules reports whether this CRD has any validation behavior configured
 func (c *CRDEntry) HasValidationRules() bool {
-	if c.Validation == nil {
-		return false
-	}
-	return len(c.Validation.Rules) > 0
+	return c.Admission.HasValidation()
 }
 
 // HasProviders reports whether this CRD declares any provider blocks.
 func (c *CRDEntry) HasProviders() bool {
-	return len(c.OperatorBox.ProviderBlocks) > 0
+	r := c.Box().Reconcile
+	return r != nil && len(r.ProviderBlocks) > 0
 }
 
 // AutoscaleEnabled reports whether this CRD declares the autoscale block
 func (c *CRDEntry) AutoscaleEnabled() bool {
-	return c.OperatorBox.Autoscale != nil
+	return c.Box().EffectiveAutoscale() != nil
 }
 
 // HasRollbackRules reports whether this CRD has any rollback behavior configured —
 // either via an explicit rollback: block or the rollBackOnError: true shorthand.
 func (c *CRDEntry) HasRollbackRules() bool {
-	return c.OperatorBox.Rollback != nil || c.OperatorBox.RollBackOnError
+	return c.Box().EffectiveRollback() != nil || c.Box().EffectiveRollBackOnError()
 }
 
 // HasCRDFile reports whether this CRDEntry declares a CRD file
@@ -761,12 +789,25 @@ func (c *CRDEntry) ValidateMetricField(field string) error {
 
 // HasAutoscaleProfile reports whether this crd defined autoscale profile
 func (c *CRDEntry) HasAutoscaleProfile() bool {
-	return c.OperatorBox.Autoscale != nil && c.OperatorBox.Autoscale.Profile != ""
+	a := c.Box().EffectiveAutoscale()
+	return a != nil && a.Profile != ""
 }
 
 // AutoScaleProfile returns the string value of the autoscale profile
 func (c *CRDEntry) AutoScaleProfile() string {
-	return c.OperatorBox.Autoscale.Profile
+	a := c.Box().EffectiveAutoscale()
+	if a == nil {
+		return ""
+	}
+	return a.Profile
+}
+
+// EffectiveConversion returns the conversion config from admission.conversion.
+func (c *CRDEntry) EffectiveConversion() *CRDConversion {
+	if c.Admission != nil {
+		return c.Admission.Conversion
+	}
+	return nil
 }
 
 // IsConversionParticipant reports whether this CRD is a participant-only member
@@ -774,19 +815,21 @@ func (c *CRDEntry) AutoScaleProfile() string {
 // the CRD that owns the /convert logic. Used to skip path registration so a
 // participant entry can never clobber the real rules during Katalog load.
 func (c *CRDEntry) IsConversionParticipant() bool {
-	if c.Conversion == nil {
+	cv := c.EffectiveConversion()
+	if cv == nil {
 		return false
 	}
-	return c.Conversion.Participant
+	return cv.Participant
 }
 
 // UpdateCRDCaBundle reports whether this CRD declares an updateCRD field
 // Used to update the crd when certificate is autogenerted by orkestra
 func (c *CRDEntry) UpdateCRDCaBundle() bool {
-	if c.Conversion == nil {
+	cv := c.EffectiveConversion()
+	if cv == nil {
 		return false
 	}
-	return c.Conversion.UpdateCRD
+	return cv.UpdateCRD
 }
 
 // InvolvedInConversion reports whether this CRD is involved in version conversion.
@@ -794,45 +837,63 @@ func (c *CRDEntry) UpdateCRDCaBundle() bool {
 // the /convert logic) or explicitly opts in with participant: true (the stable/
 // storage-version CRD on the other side of the pair).
 func (c *CRDEntry) InvolvedInConversion() bool {
-	if c.Conversion == nil {
+	cv := c.EffectiveConversion()
+	if cv == nil {
 		return false
 	}
-	return len(c.Conversion.Paths) > 0 || c.Conversion.Participant
+	return len(cv.Paths) > 0 || cv.Participant
 }
 
 // HasNamespaceRules reports whether this CRD declares any namespace rules.
 func (c *CRDEntry) HasNamespaceRules() bool {
-	return len(c.AllowedNamespaces) > 0 || len(c.RestrictedNamespaces) > 0
+	return c.HasAllowedNamespaces() || c.HasRestrictedNamespaces()
 }
 
 // HasOnCreate reports whether this CRD declares any onCreate hooks.
 func (c *CRDEntry) HasOnCreate() bool {
-	return c.OperatorBox.OnCreate != nil
+	return c.Box().EffectiveOnCreate() != nil
 }
 
 // HasOnReconcile reports whether this CRD declares any onReconcile hooks.
 func (c *CRDEntry) HasOnReconcile() bool {
-	return c.OperatorBox.OnReconcile != nil
+	return c.Box().EffectiveOnReconcile() != nil
 }
 
 // HasOnDelete reports whether this CRD declares any onDelete hooks.
 func (c *CRDEntry) HasOnDelete() bool {
-	return c.OperatorBox.OnDelete != nil
+	return c.Box().EffectiveOnDelete() != nil
 }
 
 // HasStatusFields reports whether this CRD declares any status fields.
 func (c *CRDEntry) HasStatusFields() bool {
-	return c.OperatorBox.Status != nil && c.OperatorBox.Status.HasFields()
+	s := c.Box().EffectiveStatus()
+	return s != nil && s.HasFields()
+}
+
+// effectiveRestrictedNamespaces returns the active restricted namespace list.
+func (c *CRDEntry) effectiveRestrictedNamespaces() RestrictedNamespaces {
+	if r := c.Box().Runtime; r != nil {
+		return r.RestrictedNamespaces
+	}
+	return nil
+}
+
+// effectiveAllowedNamespaces returns the active allowed namespace list.
+func (c *CRDEntry) effectiveAllowedNamespaces() AllowedNamespaces {
+	if r := c.Box().Runtime; r != nil {
+		return r.AllowedNamespaces
+	}
+	return nil
 }
 
 // AllRestrictedNamespaces returns a list of restricted namespaces for this crd
 func (c *CRDEntry) AllRestrictedNamespaces() RestrictedNamespaces {
-	return c.RestrictedNamespaces
+	return c.effectiveRestrictedNamespaces()
 }
 
 // AllAllowedNamespaces returns a list of allowed namespaces for this crd
 func (c *CRDEntry) AllAllowedNamespaces() AllowedNamespaces {
-	return c.AllowedNamespaces
+	return c.effectiveAllowedNamespaces()
 }
 
 // IsNamespaceRestricted returns true if either allowedNamespaces or restrictedNamespaces is not empty
@@ -842,22 +903,22 @@ func (c *CRDEntry) IsNamespaceRestricted() bool {
 
 // AllowedNamespacesOnly reports if only allowedNamespaces is defined for this crd.
 func (c *CRDEntry) AllowedNamespacesOnly() bool {
-	return len(c.AllowedNamespaces) > 0 && len(c.RestrictedNamespaces) == 0
+	return len(c.effectiveAllowedNamespaces()) > 0 && len(c.effectiveRestrictedNamespaces()) == 0
 }
 
 // RestrictedNamespacesOnly reports if only restrictedNamespaces is defined for this crd.
 func (c *CRDEntry) RestrictedNamespacesOnly() bool {
-	return len(c.RestrictedNamespaces) > 0 && len(c.AllowedNamespaces) == 0
+	return len(c.effectiveRestrictedNamespaces()) > 0 && len(c.effectiveAllowedNamespaces()) == 0
 }
 
 // HasAllowedNamespaces reports if allowedNamespaces is defined for this crd.
 func (c *CRDEntry) HasAllowedNamespaces() bool {
-	return len(c.AllowedNamespaces) > 0
+	return len(c.effectiveAllowedNamespaces()) > 0
 }
 
 // HasRestrictedNamespaces reports if restrictedNamespaces is defined for this crd.
 func (c *CRDEntry) HasRestrictedNamespaces() bool {
-	return len(c.RestrictedNamespaces) > 0
+	return len(c.effectiveRestrictedNamespaces()) > 0
 }
 
 // IsNamespaceAuthorized returns true if the namespace is allowed for this CRD.
@@ -868,31 +929,29 @@ func (c *CRDEntry) HasRestrictedNamespaces() bool {
 //   - If both are set: namespace must be in allowedNamespaces AND NOT in restrictedNamespaces
 //   - If neither is set: all namespaces are allowed
 func (c *CRDEntry) IsNamespaceAuthorized(namespace string) bool {
-	// If both are empty, all namespaces are allowed
-	if !c.HasAllowedNamespaces() && !c.HasRestrictedNamespaces() {
+	allowed := c.effectiveAllowedNamespaces()
+	restricted := c.effectiveRestrictedNamespaces()
+
+	if len(allowed) == 0 && len(restricted) == 0 {
 		return true
 	}
 
-	// Check allowedNamespaces (if set)
-	if c.HasAllowedNamespaces() {
-		allowed := false
-		for _, ns := range c.AllowedNamespaces {
+	if len(allowed) > 0 {
+		found := false
+		for _, ns := range allowed {
 			if ns == namespace {
-				allowed = true
+				found = true
 				break
 			}
 		}
-		if !allowed {
+		if !found {
 			return false
 		}
 	}
 
-	// Check restrictedNamespaces (if set)
-	if c.HasRestrictedNamespaces() {
-		for _, ns := range c.RestrictedNamespaces {
-			if ns == namespace {
-				return false // namespace is restricted
-			}
+	for _, ns := range restricted {
+		if ns == namespace {
+			return false
 		}
 	}
 
@@ -906,47 +965,54 @@ func (c *CRDEntry) IsNamespaceAuthorized(namespace string) bool {
 //   - LoadBalancer
 //
 // SetWorkers resolves the worker count for this CRD.
-// Reads from operatorBox.reconciler.workers; falls back to the global default.
 func (c *CRDEntry) SetWorkers(def int) int {
-	if c.OperatorBox.Reconciler != nil && c.OperatorBox.Reconciler.Workers != 0 {
-		return c.OperatorBox.Reconciler.Workers
+	if c.Box().Reconcile != nil && c.Box().Reconcile.Workers != 0 {
+		return c.Box().Reconcile.Workers
 	}
 	return def
 }
 
 // SetResync resolves the resync period for this CRD.
-// Reads from operatorBox.reconciler.resync; falls back to the global default.
 func (c *CRDEntry) SetResync(def time.Duration) time.Duration {
-	if c.OperatorBox.Reconciler != nil && c.OperatorBox.Reconciler.Resync.Duration != 0 {
-		return c.OperatorBox.Reconciler.Resync.Duration
+	if c.Box().Reconcile != nil && c.Box().Reconcile.Resync.Duration != 0 {
+		return c.Box().Reconcile.Resync.Duration
 	}
 	return def
 }
 
 // SetQueueDepth resolves the queue depth for this CRD.
-// Reads from operatorBox.reconciler.queue.maxDepth; falls back to the global default.
+// Reads from operatorBox.reconcile.queue.maxDepth first, falls back to reconciler.queue.maxDepth, then the global default.
 func (c *CRDEntry) SetQueueDepth(def int) int {
-	if c.OperatorBox.Reconciler != nil && c.OperatorBox.Reconciler.Queue.MaxDepth != 0 {
-		return c.OperatorBox.Reconciler.Queue.MaxDepth
+	if c.Box().Reconcile != nil && c.Box().Reconcile.Queue.MaxDepth != 0 {
+		return c.Box().Reconcile.Queue.MaxDepth
+	}
+	if c.Box().Reconcile != nil && c.Box().Reconcile.Queue.MaxDepth != 0 {
+		return c.Box().Reconcile.Queue.MaxDepth
 	}
 	return def
 }
 
 // SetFailureThreshold resolves the queue failure threshold for this CRD.
-// Reads from operatorBox.reconciler.queue.failureThreshold; falls back to the global default.
+// Reads from operatorBox.reconcile.queue.failureThreshold first, falls back to reconciler.queue.failureThreshold, then the global default.
 func (c *CRDEntry) SetFailureThreshold(def int) int {
-	if c.OperatorBox.Reconciler != nil && c.OperatorBox.Reconciler.Queue.FailureThreshold != 0 {
-		return c.OperatorBox.Reconciler.Queue.FailureThreshold
+	if c.Box().Reconcile != nil && c.Box().Reconcile.Queue.FailureThreshold != 0 {
+		return c.Box().Reconcile.Queue.FailureThreshold
+	}
+	if c.Box().Reconcile != nil && c.Box().Reconcile.Queue.FailureThreshold != 0 {
+		return c.Box().Reconcile.Queue.FailureThreshold
 	}
 	return def
 }
 
 // SharedQueue reports whether this CRD uses the shared default workqueue.
 func (c *CRDEntry) SharedQueue() bool {
-	if c.OperatorBox.Reconciler == nil || c.OperatorBox.Reconciler.Queue.Shared == nil {
+	if c.Box().Reconcile != nil && c.Box().Reconcile.Queue.Shared != nil {
+		return *c.Box().Reconcile.Queue.Shared
+	}
+	if c.Box().Reconcile == nil || c.Box().Reconcile.Queue.Shared == nil {
 		return false
 	}
-	return *c.OperatorBox.Reconciler.Queue.Shared
+	return *c.Box().Reconcile.Queue.Shared
 }
 
 func IsValidServiceType(t string) bool {

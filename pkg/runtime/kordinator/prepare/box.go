@@ -16,8 +16,19 @@ import (
 func effectiveBoxAndTarget(crd orktypes.CRDEntry, obj *unstructured.Unstructured) (orktypes.OperatorBoxConfig, string) {
 	target := orktarget.ResolveTargetFromAnnotations(obj.GetAnnotations())
 	box := *crd.EffectiveOperatorBox(target)
-	if !slices.Contains(box.Finalizers, labels.CleanupFinalizer) {
-		box.Finalizers = append(box.Finalizers, labels.CleanupFinalizer)
+	// Ensure the system cleanup finalizer is always present in the effective list.
+	// Write to whichever finalizer field is active so EffectiveFinalizers() reflects the update.
+	if box.Runtime != nil {
+		if !slices.Contains(box.Runtime.Finalizers, labels.CleanupFinalizer) {
+			box.Runtime.Finalizers = append(box.Runtime.Finalizers, labels.CleanupFinalizer)
+		}
+	} else {
+		if box.Runtime == nil {
+			box.Runtime = &orktypes.RuntimeConfig{}
+		}
+		if !slices.Contains(box.Runtime.Finalizers, labels.CleanupFinalizer) {
+			box.Runtime.Finalizers = append(box.Runtime.Finalizers, labels.CleanupFinalizer)
+		}
 	}
 	return box, target
 }

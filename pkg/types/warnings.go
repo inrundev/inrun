@@ -1,9 +1,6 @@
 package types
 
-import (
-	"slices"
-	"strings"
-)
+import "strings"
 
 // Warnings holds non‑fatal validation messages for this CRD.
 // Populated during Katalog validation (e.g., enrichment, deletion protection overrides).
@@ -27,8 +24,14 @@ func (w *Warnings) MergeWarnings(other Warnings) {
 	*w = append(*w, other...)
 }
 
+// Contains reports whether any warning message contains text as a substring.
 func (w *Warnings) Contains(text string) bool {
-	return slices.Contains(*w, text)
+	for _, msg := range *w {
+		if strings.Contains(msg, text) {
+			return true
+		}
+	}
+	return false
 }
 
 func (w *Warnings) String() string {

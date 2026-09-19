@@ -20,28 +20,28 @@ func populateAllServeFieldsFromInclude(entry *orktypes.CRDEntry, katalogDir stri
 }
 
 func populateStatusFieldsFromInclude(entry *orktypes.CRDEntry, katalogDir string) error {
-	if err := orktypes.ExpandStatusInclude(entry.OperatorBox.Status, katalogDir); err != nil {
+	if err := orktypes.ExpandStatusInclude(entry.OperatorBox.EffectiveStatus(), katalogDir); err != nil {
 		return fmt.Errorf("status: %w", err)
 	}
 	return nil
 }
 
 func populateValidationRulesFromInclude(entry *orktypes.CRDEntry, katalogDir string) error {
-	if err := orktypes.ExpandValidationInclude(entry.Validation, katalogDir); err != nil {
+	if err := orktypes.ExpandValidationInclude(entry.EffectiveValidation(), katalogDir); err != nil {
 		return fmt.Errorf("validation: %w", err)
 	}
 	return nil
 }
 
 func populateMutationRulesFromInclude(entry *orktypes.CRDEntry, katalogDir string) error {
-	if err := orktypes.ExpandMutationInclude(entry.Mutation, katalogDir); err != nil {
+	if err := orktypes.ExpandMutationInclude(entry.EffectiveMutation(), katalogDir); err != nil {
 		return fmt.Errorf("mutation: %w", err)
 	}
 	return nil
 }
 
 func populateConversionPathsFromInclude(entry *orktypes.CRDEntry, katalogDir string) error {
-	if err := orktypes.ExpandConversionInclude(entry.Conversion, katalogDir); err != nil {
+	if err := orktypes.ExpandConversionInclude(entry.EffectiveConversion(), katalogDir); err != nil {
 		return fmt.Errorf("conversion: %w", err)
 	}
 	return nil
@@ -72,8 +72,8 @@ func populateObserveInclude(entry *orktypes.CRDEntry, katalogDir string) error {
 }
 
 func populateReconcilerFromInclude(entry *orktypes.CRDEntry, katalogDir string) error {
-	if err := orktypes.ExpandReconcilerInclude(entry.OperatorBox.Reconciler, katalogDir); err != nil {
-		return fmt.Errorf("operatorBox.reconciler: %w", err)
+	if err := orktypes.ExpandReconcileInclude(entry.OperatorBox.Reconcile, katalogDir); err != nil {
+		return fmt.Errorf("operatorBox.reconcile: %w", err)
 	}
 	if entry.Serve == nil {
 		return nil
@@ -82,8 +82,8 @@ func populateReconcilerFromInclude(entry *orktypes.CRDEntry, katalogDir string) 
 		if cfg == nil || cfg.OperatorBox == nil {
 			continue
 		}
-		if err := orktypes.ExpandReconcilerInclude(cfg.OperatorBox.Reconciler, katalogDir); err != nil {
-			return fmt.Errorf("serve.target[%q].operatorBox.reconciler: %w", name, err)
+		if err := orktypes.ExpandReconcileInclude(cfg.OperatorBox.Reconcile, katalogDir); err != nil {
+			return fmt.Errorf("serve.target[%q].operatorBox.reconcile: %w", name, err)
 		}
 	}
 	return nil

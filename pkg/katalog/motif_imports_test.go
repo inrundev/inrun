@@ -31,10 +31,13 @@ func TestExpandMotifImports_DoesNotMergeProfiles(t *testing.T) {
 	k := &Katalog{
 		enabledCRDs: map[string]orktypes.CRDEntry{
 			"app": {
-				Imports: []orktypes.MotifImport{
-					{Motif: profileMotifPath},
+				OperatorBox: &orktypes.OperatorBoxConfig{
+					Reconcile: &orktypes.ReconcileConfig{
+						Imports: []orktypes.MotifImport{
+							{Motif: profileMotifPath},
+						},
+					},
 				},
-				OperatorBox: orktypes.OperatorBoxConfig{},
 			},
 		},
 	}
@@ -44,8 +47,9 @@ func TestExpandMotifImports_DoesNotMergeProfiles(t *testing.T) {
 
 	// Resources from the motif are still merged into the CRD's onReconcile.
 	entry := k.enabledCRDs["app"]
-	require.NotNil(t, entry.OperatorBox.OnReconcile)
-	assert.NotEmpty(t, entry.OperatorBox.OnReconcile.Deployments)
+	require.NotNil(t, entry.OperatorBox.Reconcile)
+	require.NotNil(t, entry.OperatorBox.Reconcile.OnReconcile)
+	assert.NotEmpty(t, entry.OperatorBox.Reconcile.OnReconcile.Deployments)
 }
 
 // Both import levels used together: profiles from spec.imports, resources from CRD imports.
@@ -58,8 +62,12 @@ func TestExpandImports_BothLevels(t *testing.T) {
 		},
 		enabledCRDs: map[string]orktypes.CRDEntry{
 			"app": {
-				Imports: []orktypes.MotifImport{
-					{Motif: profileMotifPath},
+				OperatorBox: &orktypes.OperatorBoxConfig{
+					Reconcile: &orktypes.ReconcileConfig{
+						Imports: []orktypes.MotifImport{
+							{Motif: profileMotifPath},
+						},
+					},
 				},
 			},
 		},
@@ -73,6 +81,7 @@ func TestExpandImports_BothLevels(t *testing.T) {
 
 	// Resources come from CRD-level import.
 	entry := k.enabledCRDs["app"]
-	require.NotNil(t, entry.OperatorBox.OnReconcile)
-	assert.NotEmpty(t, entry.OperatorBox.OnReconcile.Deployments)
+	require.NotNil(t, entry.OperatorBox.Reconcile)
+	require.NotNil(t, entry.OperatorBox.Reconcile.OnReconcile)
+	assert.NotEmpty(t, entry.OperatorBox.Reconcile.OnReconcile.Deployments)
 }

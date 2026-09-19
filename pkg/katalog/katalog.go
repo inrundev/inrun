@@ -75,9 +75,9 @@ func (k *Katalog) UpdateResourceMapAndReturn() (*Katalog, error) {
 func (k *Katalog) registerCustomResourceScheme(scheme *runtime.Scheme) (*runtime.Scheme, error) {
 	seen := make(map[string]bool)
 	for _, crd := range k.enabledCRDs {
-		if crd.HasOnCreate() && crd.OperatorBox.OnCreate.CustomResource != nil {
-			for i := range crd.OperatorBox.OnCreate.CustomResource {
-				cr := &crd.OperatorBox.OnCreate.CustomResource[i]
+		if crd.HasOnCreate() && crd.Box().EffectiveOnCreate().CustomResource != nil {
+			for i := range crd.Box().EffectiveOnCreate().CustomResource {
+				cr := &crd.Box().EffectiveOnCreate().CustomResource[i]
 				key := cr.APIVersion + "/" + cr.Kind
 				if seen[key] || cr.APIVersion == "" || cr.Kind == "" {
 					continue
@@ -92,9 +92,9 @@ func (k *Katalog) registerCustomResourceScheme(scheme *runtime.Scheme) (*runtime
 			}
 		}
 
-		if crd.HasOnReconcile() && crd.OperatorBox.OnReconcile.CustomResource != nil {
-			for i := range crd.OperatorBox.OnReconcile.CustomResource {
-				cr := &crd.OperatorBox.OnReconcile.CustomResource[i]
+		if crd.HasOnReconcile() && crd.Box().EffectiveOnReconcile().CustomResource != nil {
+			for i := range crd.Box().EffectiveOnReconcile().CustomResource {
+				cr := &crd.Box().EffectiveOnReconcile().CustomResource[i]
 				key := cr.APIVersion + "/" + cr.Kind
 				if seen[key] || cr.APIVersion == "" || cr.Kind == "" {
 					continue

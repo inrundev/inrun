@@ -18,7 +18,7 @@ import (
 func (e *executor) validateRetryBackoff() error {
 	for name, crd := range e.k.EnabledCRDs() {
 		changed := false
-		rec := crd.OperatorBox.Reconciler
+		rec := crd.Box().Reconcile
 		resync := effectiveResync(rec)
 
 		// queue.retryBackoff — applies to the reconcile loop as a whole.
@@ -92,7 +92,7 @@ func validateBackoffConfig(label string, rb *orktypes.RetryBackoffConfig) error 
 // effectiveResync returns the resolved resync duration for this CRD's reconciler.
 // By the time validation runs, enrichCRDs has already applied global defaults,
 // so Reconciler.Resync.Duration is the effective value.
-func effectiveResync(rec *orktypes.ReconcilerConfig) time.Duration {
+func effectiveResync(rec *orktypes.ReconcileConfig) time.Duration {
 	if rec == nil {
 		return 0
 	}
@@ -102,11 +102,11 @@ func effectiveResync(rec *orktypes.ReconcilerConfig) time.Duration {
 // allExternalPhases collects all external call lists from onReconcile, onCreate,
 // onDelete, and the preReconcile enqueueGate/reconcileGate.
 func allExternalPhases(crd orktypes.CRDEntry) [][]orktypes.ExternalCallSpec {
-	box := &crd.OperatorBox
+	box := crd.Box()
 	phases := [][]orktypes.ExternalCallSpec{
-		box.OnReconcile.ExternalCalls(),
-		box.OnCreate.ExternalCalls(),
-		box.OnDelete.ExternalCalls(),
+		box.EffectiveOnReconcile().ExternalCalls(),
+		box.EffectiveOnCreate().ExternalCalls(),
+		box.EffectiveOnDelete().ExternalCalls(),
 	}
 	phases = append(phases, box.PreReconcile.GateExternalCalls()...)
 	return phases

@@ -160,7 +160,7 @@ func (k *Katalog) EvaluateQueueBehaviourConditions(ctx context.Context, gvk stri
 		return true
 	}
 
-	rc := box.Reconciler
+	rc := box.Reconcile
 	q := rc.Queue
 	if rc.Empty() || q.Empty() || !q.HasBehaviourCondition() {
 		return true

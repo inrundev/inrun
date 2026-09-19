@@ -35,6 +35,11 @@ func HealthIconWarning() string {
 	return HealthIcon("warning")
 }
 
+// HealthIconInfo returns the blue "info" icon.
+func HealthIconInfo() string {
+	return HealthIcon("info")
+}
+
 // HealthIconError returns the red "error" icon.
 func HealthIconError() string {
 	return HealthIcon("error")

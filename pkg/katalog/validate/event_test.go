@@ -13,7 +13,7 @@ import (
 // supplied observe configuration.
 func katalogWithObserve(crdName string, observe *orktypes.Observe) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
-		crdName: {OperatorBox: orktypes.OperatorBoxConfig{
+		crdName: {OperatorBox: &orktypes.OperatorBoxConfig{
 			Observe: observe,
 		},
 		}})
@@ -281,7 +281,7 @@ func TestValidateEventEntries_EventNameCamelCase(t *testing.T) {
 			err := validateCRDEventEntries(
 				"app",
 				orktypes.CRDEntry{
-					OperatorBox: orktypes.OperatorBoxConfig{
+					OperatorBox: &orktypes.OperatorBoxConfig{
 						Observe: observe,
 					},
 				},

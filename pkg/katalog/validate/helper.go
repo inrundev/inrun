@@ -19,13 +19,13 @@ var (
 
 	parseTimeDuration = utils.ParseTimeDuration
 
-	toStringSet       = utils.ToStringSet
-	isNestedPath      = utils.IsNestedPath
-	isTemplate        = orktypes.IsTemplate
-	isValidLabelKey   = content.IsLabelKey
-	isValidLabelValue = content.IsLabelValue
-	isValidK8sName    = utils.ValidKubernetesName
-	validResolverName = orktmpl.ValidResolverName
+	toStringSet         = utils.ToStringSet
+	isNestedPath        = utils.IsNestedPath
+	isTemplate          = orktypes.IsTemplate
+	isValidLabelKey     = content.IsLabelKey
+	isValidLabelValue   = content.IsLabelValue
+	isValidK8sName      = utils.ValidKubernetesName
+	isValidResolverName = orktmpl.ValidResolverName
 )
 
 func boolPtr(b bool) *bool { return &b }

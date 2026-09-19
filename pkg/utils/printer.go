@@ -118,6 +118,8 @@ func HealthIcon(status string) string {
 		return ColorGreen + "●" + ColorReset
 	case "pending", "progressing", "warning":
 		return ColorYellow + "⚠" + ColorReset
+	case "info":
+		return ColorBlue + "ℹ" + ColorReset
 	case "error", "failed", "false", "unhealthy", "degraded":
 		return ColorRed + "●" + ColorReset
 	default:
