@@ -12,7 +12,6 @@ spec:
   crds:
     cronjob:
       crdFile: crd-single.yaml
-
       # normalize runs before mutation, validation, and template rendering.
       # Produces an in-memory canonical spec — raw CR in etcd is unchanged.
       # After this, .spec.schedule is ALWAYS a plain cron string.
@@ -31,63 +30,62 @@ spec:
       # After normalize:
       #   .spec.schedule is always a canonical cron string, e.g. "*/5 * * * *".
       #
-      normalize:
-        spec:
-          schedule: "{{ cronFromAny .spec.schedule }}"
-
-      mutation:
-        mutateFirst: true
-        rules:
-          - field: spec.concurrencyPolicy
-            default: "Allow"
-          - field: spec.successfulJobsHistoryLimit
-            default: 3
-            valueType: int
-          - field: spec.failedJobsHistoryLimit
-            default: 1
-            valueType: int
-          - field: spec.suspend
-            default: false
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-          - field: spec.schedule
-            operator: exists
-            message: "spec.schedule is required — use a cron string or structured object"
-            action: deny
-
+      admission:
+        mutation:
+          mutateFirst: true
+          rules:
+            - field: spec.concurrencyPolicy
+              default: "Allow"
+            - field: spec.successfulJobsHistoryLimit
+              default: 3
+              valueType: int
+            - field: spec.failedJobsHistoryLimit
+              default: 1
+              valueType: int
+            - field: spec.suspend
+              default: false
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
+            - field: spec.schedule
+              operator: exists
+              message: "spec.schedule is required — use a cron string or structured object"
+              action: deny
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 5
           resync: 45s
-        status:
-          fields:
-            - path: phase
-              value: '{{ boolTernary .spec.suspend "Suspended" "Active" }}'
-            - path: scheduleExpression
-              value: "{{ .spec.schedule }}"
-            - path: scheduleDescription
-              value: "{{ cronDescribe .spec.schedule }}"
-            - path: image
-              value: "{{ .spec.image }}"
-            - path: concurrencyPolicy
-              value: "{{ .spec.concurrencyPolicy }}"
-            - path: lastScheduleTime
-              value: '{{ cronJobLastScheduleTime .children.cronjob }}'
-            - path: nextScheduleTime
-              value: '{{ cronJobNextScheduleTime .children.cronjob }}'
+          onCreate:
+            cronJobs:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                schedule: "{{ .spec.schedule }}"
+                suspend: "{{ .spec.suspend }}"
+                successfulJobsHistoryLimit: "{{ .spec.successfulJobsHistoryLimit }}"
+                failedJobsHistoryLimit: "{{ .spec.failedJobsHistoryLimit }}"
+                concurrencyPolicy: "{{ .spec.concurrencyPolicy }}"
+                reconcile: true
+          normalize:
+            spec:
+              schedule: "{{ cronFromAny .spec.schedule }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: '{{ boolTernary .spec.suspend "Suspended" "Active" }}'
+              - path: scheduleExpression
+                value: "{{ .spec.schedule }}"
+              - path: scheduleDescription
+                value: "{{ cronDescribe .spec.schedule }}"
+              - path: image
+                value: "{{ .spec.image }}"
+              - path: concurrencyPolicy
+                value: "{{ .spec.concurrencyPolicy }}"
+              - path: lastScheduleTime
+                value: '{{ cronJobLastScheduleTime .children.cronjob }}'
+              - path: nextScheduleTime
+                value: '{{ cronJobNextScheduleTime .children.cronjob }}'
 
-        onCreate:
-          cronJobs:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              schedule: "{{ .spec.schedule }}"
-              suspend: "{{ .spec.suspend }}"
-              successfulJobsHistoryLimit: "{{ .spec.successfulJobsHistoryLimit }}"
-              failedJobsHistoryLimit: "{{ .spec.failedJobsHistoryLimit }}"
-              concurrencyPolicy: "{{ .spec.concurrencyPolicy }}"
-              reconcile: true

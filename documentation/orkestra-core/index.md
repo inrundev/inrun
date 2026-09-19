@@ -12,7 +12,7 @@ The reconciliation engine. It watches Kubernetes resources, runs your operator l
 
 ### [Gateway](./gateway/index.md)
 
-The external-facing process. It serves admission and conversion webhooks, handles notifications, and owns all outbound I/O. It is stateless, runs as multiple replicas, and has almost no attack surface — no reconcilers, no informers, no cluster state.
+The external-facing process. It serves admission and conversion webhooks, handles notifications, and owns all outbound I/O. It is stateless, runs as multiple replicas, and has no reconciliation logic — no reconcilers, no informers, no cluster state.
 
 ### [Control Center](./controlcenter/_index.md)
 

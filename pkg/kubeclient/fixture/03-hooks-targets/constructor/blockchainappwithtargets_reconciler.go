@@ -9,6 +9,7 @@ import (
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	orkdeploy "github.com/orkspace/orkestra/pkg/resources/deployments"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // BlockchainAppWithTargetsReconciler is the per-target constructor reconciler
@@ -26,20 +27,14 @@ func NewBlockchainAppWithTargetsReconciler(kube kubeclient.Interface) domain.Rec
 }
 
 func (r *BlockchainAppWithTargetsReconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
-	key := req.Key
-	raw, exists, err := r.kube.GetInformer().GetIndexer().GetByKey(key)
-	if err != nil {
-		return domain.Result{}, fmt.Errorf("cache lookup %q: %w", key, err)
-	}
-	if !exists {
+	if req.Prepared == nil {
 		return domain.Result{}, nil
 	}
 
-	app, ok := raw.(*apiv1.BlockchainAppWithTargets)
-	if !ok {
-		return domain.Result{}, fmt.Errorf("unexpected type %T for key %q", raw, key)
+	app, err := domain.ToTyped[apiv1.BlockchainAppWithTargets](req.Prepared)
+	if err != nil {
+		return domain.Result{}, fmt.Errorf("toTyped: %w", err)
 	}
-	app = app.DeepCopyObject().(*apiv1.BlockchainAppWithTargets)
 
 	if app.DeletionTimestamp != nil {
 		return domain.Result{}, nil
@@ -81,5 +76,5 @@ func (r *BlockchainAppWithTargetsReconciler) Reconcile(ctx context.Context, req 
 		"phase":          "Running",
 		"network":        app.Spec.Network,
 		"featureEnabled": annotation,
-	})
+	}, metav1.PatchOptions{})
 }

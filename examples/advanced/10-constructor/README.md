@@ -53,7 +53,7 @@ To move it to Orkestra:
    - `key` is `namespace/name` (same as `req.String()`)
    - Return `nil` for done, `error` to requeue with exponential backoff
 2. Remove the manager setup – Orkestra provides the informer, queue, and metrics.
-3. Register your constructor in the Katalog with `reconciler.default: false`
+3. Register your constructor in the Katalog with `reconcile.default: false`
 4. Run `ork generate registry` to wire it into Orkestra.
 
 That’s it. Your existing reconcile logic runs inside Orkestra’s runtime infrastructure.

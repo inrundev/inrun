@@ -14,17 +14,18 @@ This is the right model for most operators. It handles drift correction, templat
 
 ```yaml
 operatorBox:
-  onReconcile:
-    deployments:
-      - name: "{{ .Name }}-server"
-        image: "{{ .Spec.Image }}"
+  reconcile:
+    onReconcile:
+      deployments:
+        - name: "{{ .Name }}-server"
+          image: "{{ .Spec.Image }}"
 ```
 
 Or with minimal Go hooks for logic that belongs in code:
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     hooks:
       location: github.com/myorg/operator/hooks
       function: AppHooks
@@ -42,7 +43,7 @@ func NewAppReconciler(kube kubeclient.Interface) domain.Reconciler {
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     default: false
     constructor:
       location: github.com/myorg/operator/controller
@@ -59,7 +60,7 @@ Regardless of which model you use, Orkestra manages:
 
 - One informer per CRD — a watch stream from the API server, kept in a local store
 - One workqueue per CRD — items are deduplicated, rate-limited on error, and re-enqueued on a timer when `requeue:` is declared
-- A configurable worker pool — concurrency is set via `reconciler.workers:` and can be adjusted at runtime with `autoscale:`
+- A configurable worker pool — concurrency is set via `reconcile.workers:` and can be adjusted at runtime with `autoscale:`
 - Health tracking — each CRD moves through `pending → started → healthy → degraded` as it processes items
 - Operational state on the CR — after every reconcile the runtime stamps `.health` and `.metrics` onto each CR, making live operator state readable from the CR itself without an HTTP call
 - Startup sequencing — CRDs with `dependsOn:` declarations start in dependency order, not all at once

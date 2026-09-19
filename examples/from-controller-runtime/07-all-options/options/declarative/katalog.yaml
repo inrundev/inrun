@@ -21,30 +21,31 @@ spec:
         version: v1alpha1
         kind: DeclarativeApp
         plural: declarativeapps
-      allowedNamespaces:
-        - default
-
       operatorBox:
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
-            - path: replicas
-              value: "{{ .spec.replicas }}"
+            services:
+              - name: "{{ .metadata.name }}-svc"
+                port: "80"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+              - path: replicas
+                value: "{{ .spec.replicas }}"
+        runtime:
+          allowedNamespaces:
+            - default
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
-
-          services:
-            - name: "{{ .metadata.name }}-svc"
-              port: "80"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true

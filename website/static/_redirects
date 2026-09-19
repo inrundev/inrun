@@ -1,9 +1,0 @@
-# Cloudflare Pages — Hugo static site routing
-# Hugo generates directory-style URLs: /docs/foo/ → public/docs/foo/index.html
-# Without this file, Cloudflare's SPA default rewrites all 404s to index.html (the homepage).
-# This file disables that by mapping 404s to our own 404 page instead.
-
-/404   /404.html  200
-
-# Catch-all: serve 404 page (not index.html) for any path that doesn't exist
-/*     /404.html  404

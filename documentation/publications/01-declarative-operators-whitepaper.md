@@ -134,18 +134,18 @@ spec:
       crFiles:
         - ./cr.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 30s
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
-          services:
-            - port: "80"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+            services:
+              - port: "80"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
 ```
 
 This is a complete operator declaration. `ork run`
@@ -207,9 +207,8 @@ CRDs can declare dependencies with an explicit condition:
 crds:
   project:
     operatorBox:
-      reconciler:
+      reconcile:
         workers: 3
-
   namespace:
     dependsOn:
       project:
@@ -279,7 +278,7 @@ spec:
     # Inline override — wins on name conflict with any source
     application:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 8
 ```
 
@@ -497,22 +496,23 @@ template resolver:
     group: demo.orkestra.io
     version: v1
     kind: Website
-  conversion:
-    storageVersion: v1
-    paths:
-      - from: v1alpha1
-        to: v1
-        spec:
-          image: "{{ .spec.image }}"
-          replicas: "{{ .spec.replicas }}"
-          seo:
-            enabled: false   # default — v1alpha1 has no seo field
-      - from: v1
-        to: v1alpha1
-        spec:
-          image: "{{ .spec.image }}"
-          replicas: "{{ .spec.replicas }}"
-          theme: "default"   # default — v1 has no theme field
+  admission:
+    conversion:
+      storageVersion: v1
+      paths:
+        - from: v1alpha1
+          to: v1
+          spec:
+            image: "{{ .spec.image }}"
+            replicas: "{{ .spec.replicas }}"
+            seo:
+              enabled: false   # default — v1alpha1 has no seo field
+        - from: v1
+          to: v1alpha1
+          spec:
+            image: "{{ .spec.image }}"
+            replicas: "{{ .spec.replicas }}"
+            theme: "default"   # default — v1 has no theme field
 ```
 
 Orkestra's HTTPS server serves the `/convert` endpoint. The conversion

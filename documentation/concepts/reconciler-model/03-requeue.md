@@ -1,6 +1,6 @@
 # Requeue
 
-After a successful reconcile, Orkestra normally waits for the next informer event before running again. `reconciler.requeue:` changes this: declare a duration (static or template-driven) and Orkestra re-enqueues the CR on a timer — no external event required.
+After a successful reconcile, Orkestra normally waits for the next informer event before running again. `reconcile.requeue:` changes this: declare a duration (static or template-driven) and Orkestra re-enqueues the CR on a timer — no external event required.
 
 This is the right tool when your reconciler needs to act on time, not just on change.
 
@@ -24,7 +24,7 @@ Do not use it as a substitute for `watch:`. If a resource your reconciler reads 
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     requeue:
       after: "60s"
 ```
@@ -39,7 +39,7 @@ After every successful reconcile, the CR is re-enqueued 60 seconds later. Failed
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     requeue:
       after: '{{ .spec.checkInterval | default "60s" }}'
 ```
@@ -54,7 +54,7 @@ If `.spec.checkInterval` is `"30s"` on one CR and `"5m"` on another, each gets i
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     requeue:
       after: "30s"
       when:
@@ -73,7 +73,7 @@ Both `when:` (AND) and `or:` (OR) follow the same semantics as gate conditions. 
 | Primitive | Fires when | Scope |
 |-----------|-----------|-------|
 | `requeue.after:` | After a successful reconcile, per-object timing | Per CR, template-driven |
-| `reconciler.resync:` | On a fixed interval, for every CR of this CRD | Per CRD, uniform |
+| `reconcile.resync:` | On a fixed interval, for every CR of this CRD | Per CRD, uniform |
 | `watch:` | When a declared secondary resource changes | Event-driven |
 | `queue.retryBackoff:` | After a failed reconcile | Error path only |
 

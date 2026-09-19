@@ -41,11 +41,23 @@ func UnwrapCacheTombstone(obj interface{}) interface{} {
 	return obj
 }
 
-// ToUnstructured unwraps a cache tombstone and asserts to *unstructured.Unstructured.
+// ToUnstructured unwraps a cache tombstone and converts to *unstructured.Unstructured.
+// Works for both dynamic informers (which store *unstructured.Unstructured) and typed
+// informers (which store scheme-registered concrete types such as *v1alpha1.WebApp).
 func ToUnstructured(obj interface{}) (*unstructured.Unstructured, bool) {
 	if ts, ok := obj.(cache.DeletedFinalStateUnknown); ok {
 		obj = ts.Obj
 	}
-	u, ok := obj.(*unstructured.Unstructured)
-	return u, ok
+	if u, ok := obj.(*unstructured.Unstructured); ok {
+		return u, true
+	}
+	ro, ok := obj.(runtime.Object)
+	if !ok {
+		return nil, false
+	}
+	m, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ro)
+	if err != nil {
+		return nil, false
+	}
+	return &unstructured.Unstructured{Object: m}, true
 }

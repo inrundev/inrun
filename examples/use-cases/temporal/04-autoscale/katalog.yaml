@@ -19,46 +19,45 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: 2
+                port: "{{ .spec.port | default 8080 }}"
+                reconcile: true
+                autoscale:
+                  min: 2
+                  max: 8
+                  cooldown: 2m
+                  scaleUp:
+                    target: 8
+                    conditions:
+                      when:
+                        - field: "{{ inBusinessHours }}"
+                          equals: "true"
+                  scaleDown:
+                    target: 2
+                    conditions:
+                      when:
+                        - field: "{{ inBusinessHours }}"
+                          equals: "false"                  
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Steady"
+              - path: phase
+                value: "Peak"
+                when:
+                  - field: "{{ inBusinessHours }}"
+                    equals: "true"
+              - path: inBusinessHours
+                value: "{{ inBusinessHours }}"
+              - path: replicas
+                value: "{{ readyReplicas .children.deployment }}"
 
-        status:
-          fields:
-            - path: phase
-              value: "Steady"
-            - path: phase
-              value: "Peak"
-              when:
-                - field: "{{ inBusinessHours }}"
-                  equals: "true"
-            - path: inBusinessHours
-              value: "{{ inBusinessHours }}"
-            - path: replicas
-              value: "{{ readyReplicas .children.deployment }}"
-
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: 2
-              port: "{{ .spec.port | default 8080 }}"
-              reconcile: true
-              autoscale:
-                min: 2
-                max: 8
-                cooldown: 2m
-                scaleUp:
-                  target: 8
-                  conditions:
-                    when:
-                      - field: "{{ inBusinessHours }}"
-                        equals: "true"
-                scaleDown:
-                  target: 2
-                  conditions:
-                    when:
-                      - field: "{{ inBusinessHours }}"
-                        equals: "false"                  

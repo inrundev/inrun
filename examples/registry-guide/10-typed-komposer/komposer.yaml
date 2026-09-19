@@ -18,18 +18,18 @@ spec:
   crds:
     webapp:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 4
           resync: 30s
 
     cache:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
 
     database:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 30s

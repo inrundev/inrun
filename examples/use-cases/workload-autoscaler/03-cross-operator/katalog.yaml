@@ -23,36 +23,33 @@ spec:
       crdFile: ./crd-queue.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: queueDepth
-              value: "{{ .spec.initialDepth | default 0 }}"
-
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-queue"
-              image: "{{ .spec.image }}"
-              replicas: 1
-              port: "{{ .spec.port | default 8080 }}"
-              reconcile: true
-          services:
-            - name: "{{ .metadata.name }}-queue"
-              port: "{{ .spec.port | default 8080 }}"
-              reconcile: true
-
-        onDelete:
-          deployments:
-            - name: "{{ .metadata.name }}-queue"
-          services:
-            - name: "{{ .metadata.name }}-queue"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-queue"
+                image: "{{ .spec.image }}"
+                replicas: 1
+                port: "{{ .spec.port | default 8080 }}"
+                reconcile: true
+            services:
+              - name: "{{ .metadata.name }}-queue"
+                port: "{{ .spec.port | default 8080 }}"
+                reconcile: true
+          onDelete:
+            deployments:
+              - name: "{{ .metadata.name }}-queue"
+            services:
+              - name: "{{ .metadata.name }}-queue"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: queueDepth
+                value: "{{ .spec.initialDepth | default 0 }}"
 
     # ── JobWorker ─────────────────────────────────────────────────────────────
     # Reads the named JobQueue's status.queueDepth via cross: and uses it
@@ -61,53 +58,52 @@ spec:
       crdFile: ./crd-worker.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: 2
+                port: "{{ .spec.port | default 9090 }}"
+                reconcile: true
+                autoscale:
+                  min: 2
+                  max: 10
+                  cooldown: 2m
+                  scaleUp:
+                    conditions:
+                      when:
+                        - field: cross.queue.status.queueDepth
+                          greaterThan: "100"
+                    increment: 2
+                  scaleDown:
+                    conditions:
+                      when:
+                        - field: cross.queue.status.queueDepth
+                          lessThan: "20"
+                    decrement: 1
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Steady"
+              - path: phase
+                value: "Scaling"
+                when:
+                  - field: cross.queue.status.queueDepth
+                    greaterThan: "100"
+              - path: replicas
+                value: "{{ readyReplicas .children.deployment }}"
+              - path: observedQueueDepth
+                value: "{{ .cross.queue.status.queueDepth }}"
+        observe:
+          cross:
+            - crd: jobqueue
+              selector:
+                name: "{{ .spec.queueName }}"
+                namespace: "{{ .metadata.namespace }}"
+              as: queue
 
-        cross:
-          - crd: jobqueue
-            selector:
-              name: "{{ .spec.queueName }}"
-              namespace: "{{ .metadata.namespace }}"
-            as: queue
-
-        status:
-          fields:
-            - path: phase
-              value: "Steady"
-            - path: phase
-              value: "Scaling"
-              when:
-                - field: cross.queue.status.queueDepth
-                  greaterThan: "100"
-            - path: replicas
-              value: "{{ readyReplicas .children.deployment }}"
-            - path: observedQueueDepth
-              value: "{{ .cross.queue.status.queueDepth }}"
-
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: 2
-              port: "{{ .spec.port | default 9090 }}"
-              reconcile: true
-              autoscale:
-                min: 2
-                max: 10
-                cooldown: 2m
-                scaleUp:
-                  conditions:
-                    when:
-                      - field: cross.queue.status.queueDepth
-                        greaterThan: "100"
-                  increment: 2
-                scaleDown:
-                  conditions:
-                    when:
-                      - field: cross.queue.status.queueDepth
-                        lessThan: "20"
-                  decrement: 1

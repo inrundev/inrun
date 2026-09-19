@@ -45,32 +45,32 @@ spec:
   crdFile: website-crd.yaml
 
   operatorBox:
+    reconcile:
+      onCreate:
+        deployments:
+          - image: "{{ .spec.image }}"
+            replicas: "{{ .spec.replicas }}"
+            reconcile: true
+        services:
+          - port: "80"
+            targetPort: "80"
+            reconcile: true
+    emit:
+      status:
+        fields:
+          # Layer 2 — from the CR spec
+          - path: phase
+            value: "Running"
+          - path: observedReplicas
+            value: "{{ .spec.replicas }}"
+          - path: endpoint
+            value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
 
-    status:
-      fields:
-        # Layer 2 — from the CR spec
-        - path: phase
-          value: "Running"
-        - path: observedReplicas
-          value: "{{ .spec.replicas }}"
-        - path: endpoint
-          value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
-
-        # Layer 3 — from child resource status
-        - path: readyReplicas
-          value: "{{ get .children.deployment \"status\" \"readyReplicas\" }}"
-        - path: availableReplicas
-          value: "{{ get .children.deployment \"status\" \"availableReplicas\" }}"
-
-    onCreate:
-      deployments:
-        - image: "{{ .spec.image }}"
-          replicas: "{{ .spec.replicas }}"
-          reconcile: true
-      services:
-        - port: "80"
-          targetPort: "80"
-          reconcile: true
+          # Layer 3 — from child resource status
+          - path: readyReplicas
+            value: "{{ get .children.deployment \"status\" \"readyReplicas\" }}"
+          - path: availableReplicas
+            value: "{{ get .children.deployment \"status\" \"availableReplicas\" }}"
 ```
 
 After a successful reconcile with two ready replicas:
@@ -122,9 +122,10 @@ To disable all automatic status management for a CRD:
 
 ```yaml
 operatorBox:
-  status:
-    conditions: false
-    fields: []
+  emit:
+    status:
+      conditions: false
+      fields: []
 ```
 
 With both disabled, Orkestra makes no status patches. The CR's status is entirely managed by Go hooks or left empty.

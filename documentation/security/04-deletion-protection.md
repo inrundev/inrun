@@ -4,10 +4,12 @@ Deletion protection prevents CRDSs, their CRs — and Orkestra's own infrastruct
 
 ```yaml
 security:
-  deletionProtection:
-    enabled: true
-    cleanupOnShutdown: true
-    failurePolicy: Fail
+  operatorBox:
+    runtime:
+      deletionProtection:
+        enabled: true
+        cleanupOnShutdown: true
+        failurePolicy: Fail
 ```
 
 ---
@@ -40,9 +42,11 @@ Strict mode closes this gap:
 
 ```yaml
 security:
-  deletionProtection:
-    enabled: true
-    strictMode: true
+  operatorBox:
+    runtime:
+      deletionProtection:
+        enabled: true
+        strictMode: true
 ```
 
 With strict mode on, Orkestra registers a second webhook (`strict-mode.orkestra.orkspace.io`) that intercepts UPDATE operations on any labeled resource and blocks any request that removes the `orkestra.io/deletion-protection` label:
@@ -68,10 +72,12 @@ The global `deletionProtection` setting applies to every CRD in your Katalog. Yo
 spec:
   crds:
     app:
-      deletionProtection:
-        protectCRD: true      # protect the CRD object itself (default: true)
-        protectCRs: false     # protect instances of this CRD (default: true)
-        strictMode: false     # override the global strictMode for this CRD (default: inherits global)
+      operatorBox:
+        runtime:
+          deletionProtection:
+            protectCRD: true      # protect the CRD object itself (default: true)
+            protectCRs: false     # protect instances of this CRD (default: true)
+            strictMode: false     # override the global strictMode for this CRD (default: inherits global)
 ```
 
 ### `protectCRs: false` — instances can be deleted

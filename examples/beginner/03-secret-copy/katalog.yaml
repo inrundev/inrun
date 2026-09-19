@@ -28,24 +28,25 @@ spec:
             namespace: platform
             timeout: 15s
       namespaced: false             # Default: (true)
-
       operatorBox:
-        status:
-          fields:
-            - path: phase
-              value: "Distributed"
-            - path: sourceSecret
-              value: "{{ .spec.secretName }}"
-            - path: sourceNamespace
-              value: "{{ .spec.sourceNamespace }}"
+        reconcile:
+          onCreate:
+            secrets:
+              - name: "{{ .spec.secretName }}"
+                fromSecret: "{{ .spec.secretName }}"
+                fromNamespace: "{{ .spec.sourceNamespace }}"
+                # toNamespaces copies the secret to each target namespace.
+                # Each element supports template expressions.
+                toNamespaces: 
+                  - "{{ .spec.targetNamespaces }}"
+                reconcile: true   # re-sync if source secret changes
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Distributed"
+              - path: sourceSecret
+                value: "{{ .spec.secretName }}"
+              - path: sourceNamespace
+                value: "{{ .spec.sourceNamespace }}"
 
-        onCreate:
-          secrets:
-            - name: "{{ .spec.secretName }}"
-              fromSecret: "{{ .spec.secretName }}"
-              fromNamespace: "{{ .spec.sourceNamespace }}"
-              # toNamespaces copies the secret to each target namespace.
-              # Each element supports template expressions.
-              toNamespaces: 
-                - "{{ .spec.targetNamespaces }}"
-              reconcile: true   # re-sync if source secret changes

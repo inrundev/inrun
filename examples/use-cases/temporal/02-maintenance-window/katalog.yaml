@@ -28,72 +28,70 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
+          onCreate:
+            secrets:
+              - name: "{{ .metadata.name }}-creds"
+                once: true
+                data:
+                  password: "{{ randomAlphanumeric 24 }}"
 
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: phase
-              value: "Maintenance"
-              when:
-                - field: "{{ inMaintenance }}"
-                  equals: "true"
-            - path: readReplicas
-              value: "{{ activeReplicas }}"
-            - path: maintenanceActive
-              value: "{{ inMaintenance }}"
-            - path: nextMaintenance
-              value: "{{ nextMaintenance }}"
+            statefulSets:
+              - name: "{{ .metadata.name }}-primary"
+                image: "{{ .spec.image }}"
+                replicas: 2
+                port: 5432
+                reconcile: true
+                env:
+                  - name: POSTGRES_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: "{{ .metadata.name }}-creds"
+                        key: password
 
-        onCreate:
-          secrets:
-            - name: "{{ .metadata.name }}-creds"
-              once: true
-              data:
-                password: "{{ randomAlphanumeric 24 }}"
+              - name: "{{ .metadata.name }}-replicas"
+                image: "{{ .spec.image }}"
+                replicas: "{{ activeReplicas }}"
+                port: 5432
+                reconcile: true
+                env:
+                  - name: POSTGRES_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: "{{ .metadata.name }}-creds"
+                        key: password
 
-          statefulSets:
-            - name: "{{ .metadata.name }}-primary"
-              image: "{{ .spec.image }}"
-              replicas: 2
-              port: 5432
-              reconcile: true
-              env:
-                - name: POSTGRES_PASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: "{{ .metadata.name }}-creds"
-                      key: password
+            configMaps:
+              - name: "{{ .metadata.name }}-routing"
+                data:
+                  maintenance: "{{ inMaintenance }}"
+                  readReplicas: "{{ activeReplicas }}"
+                reconcile: true
+          onDelete:
+            secrets:
+              - name: "{{ .metadata.name }}-creds"
+            statefulSets:
+              - name: "{{ .metadata.name }}-primary"
+              - name: "{{ .metadata.name }}-replicas"
+            configMaps:
+              - name: "{{ .metadata.name }}-routing"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: phase
+                value: "Maintenance"
+                when:
+                  - field: "{{ inMaintenance }}"
+                    equals: "true"
+              - path: readReplicas
+                value: "{{ activeReplicas }}"
+              - path: maintenanceActive
+                value: "{{ inMaintenance }}"
+              - path: nextMaintenance
+                value: "{{ nextMaintenance }}"
 
-            - name: "{{ .metadata.name }}-replicas"
-              image: "{{ .spec.image }}"
-              replicas: "{{ activeReplicas }}"
-              port: 5432
-              reconcile: true
-              env:
-                - name: POSTGRES_PASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: "{{ .metadata.name }}-creds"
-                      key: password
-
-          configMaps:
-            - name: "{{ .metadata.name }}-routing"
-              data:
-                maintenance: "{{ inMaintenance }}"
-                readReplicas: "{{ activeReplicas }}"
-              reconcile: true
-
-        onDelete:
-          secrets:
-            - name: "{{ .metadata.name }}-creds"
-          statefulSets:
-            - name: "{{ .metadata.name }}-primary"
-            - name: "{{ .metadata.name }}-replicas"
-          configMaps:
-            - name: "{{ .metadata.name }}-routing"

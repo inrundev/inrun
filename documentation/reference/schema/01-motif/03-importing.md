@@ -177,7 +177,7 @@ spec:
         version: v1
         kind: Application
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
       imports:

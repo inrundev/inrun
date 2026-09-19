@@ -45,14 +45,15 @@ This is enforced with a `when:` condition:
 
 ```yaml
 operatorBox:
-  onCreate:
-    customResources:
-      - apiVersion: database.myorg.io/v1alpha1
-        kind: PostgreSQLInstance
-        when:
-          - field: spec.approved
-            equals: "true"
-        ...
+  reconcile:
+    onCreate:
+      customResources:
+        - apiVersion: database.myorg.io/v1alpha1
+          kind: PostgreSQLInstance
+          when:
+            - field: spec.approved
+              equals: "true"
+          ...
 ```
 
 The Claim is only created when the condition is satisfied. On every reconcile cycle Orkestra re-evaluates the condition — if it is no longer met, the Claim is removed.

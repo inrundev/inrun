@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/orkspace/orkestra/examples"
+	"github.com/orkspace/orkestra/pkg/version"
 )
 
 //
@@ -50,8 +51,10 @@ func extractEmbeddedPack(root, pack string) error {
 		// go.mod.txt and go.sum.txt are renamed at embed time because
 		// //go:embed skips subdirectories containing a go.mod (nested modules).
 		// Restore the real names transparently on extraction.
+		isGoMod := false
 		if name := d.Name(); name == "go.mod.txt" || name == "go.sum.txt" {
 			dst = filepath.Join(filepath.Dir(dst), strings.TrimSuffix(name, ".txt"))
+			isGoMod = name == "go.mod.txt"
 		}
 
 		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
@@ -68,6 +71,12 @@ func extractEmbeddedPack(root, pack string) error {
 		// extracted project has its own go.mod and must compile normally.
 		if filepath.Ext(dst) == ".go" {
 			data = bytes.TrimPrefix(data, []byte("//go:build ignore\n\n"))
+		}
+
+		// Substitute the Orkestra version placeholder so the extracted go.mod
+		// always requires the exact version of ork the user is running.
+		if isGoMod {
+			data = bytes.ReplaceAll(data, []byte("{{ .OrkVersion }}"), []byte(version.Short()))
 		}
 
 		return os.WriteFile(dst, data, 0644)

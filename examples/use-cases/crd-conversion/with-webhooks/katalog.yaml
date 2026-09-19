@@ -26,8 +26,6 @@ spec:
         version: v2
         kind: CronJob
         plural: cronjobs
-
-
       # ── Lossless version conversion using cron notes ───────────────────────
       #
       # The core change between v1 and v2:
@@ -48,77 +46,77 @@ spec:
       # Round-trip guarantee: v1 → v2 → v1 produces the canonical cron string.
       # @-macros are expanded transparently: @hourly → "0 * * * *"
       #
-      conversion:
-        storageVersion: v1
-        updateCRD: true
-        paths:
-          # v1 → v2: cronToMap splits the cron string into the structured map
-          - from: v1
-            to: v2
-            spec:
-              schedule:                   "{{ cronToMap .spec.schedule }}"
-              image:                      "{{ .spec.image }}"
-              concurrencyPolicy:          '{{ default "Allow" .spec.concurrencyPolicy }}'
-              startingDeadlineSeconds:    "{{ .spec.startingDeadlineSeconds }}"
-              successfulJobsHistoryLimit: "{{ default 3 .spec.successfulJobsHistoryLimit }}"
-              failedJobsHistoryLimit:     "{{ default 1 .spec.failedJobsHistoryLimit }}"
-              suspend:                    "{{ default false .spec.suspend }}"
-
-          # v2 → v1: cronFromMap converts structured maps to legacy flat strings.
-          - from: v2
-            to: v1
-            spec:
-              schedule:                   "{{ cronFromMap .spec.schedule }}"
-              image:                      "{{ .spec.image }}"
-              concurrencyPolicy:          '{{ default "Allow" .spec.concurrencyPolicy }}'
-              startingDeadlineSeconds:    "{{ .spec.startingDeadlineSeconds }}"
-              successfulJobsHistoryLimit: "{{ default 3 .spec.successfulJobsHistoryLimit }}"
-              failedJobsHistoryLimit:     "{{ default 1 .spec.failedJobsHistoryLimit }}"
-              suspend:                    "{{ default false .spec.suspend }}"
-
       # ── OperatorBox Reconciliation ─────────────────────────────────────────────────────────
+      admission:
+        conversion:
+          storageVersion: v1
+          updateCRD: true
+          paths:
+            # v1 → v2: cronToMap splits the cron string into the structured map
+            - from: v1
+              to: v2
+              spec:
+                schedule:                   "{{ cronToMap .spec.schedule }}"
+                image:                      "{{ .spec.image }}"
+                concurrencyPolicy:          '{{ default "Allow" .spec.concurrencyPolicy }}'
+                startingDeadlineSeconds:    "{{ .spec.startingDeadlineSeconds }}"
+                successfulJobsHistoryLimit: "{{ default 3 .spec.successfulJobsHistoryLimit }}"
+                failedJobsHistoryLimit:     "{{ default 1 .spec.failedJobsHistoryLimit }}"
+                suspend:                    "{{ default false .spec.suspend }}"
+
+            # v2 → v1: cronFromMap converts structured maps to legacy flat strings.
+            - from: v2
+              to: v1
+              spec:
+                schedule:                   "{{ cronFromMap .spec.schedule }}"
+                image:                      "{{ .spec.image }}"
+                concurrencyPolicy:          '{{ default "Allow" .spec.concurrencyPolicy }}'
+                startingDeadlineSeconds:    "{{ .spec.startingDeadlineSeconds }}"
+                successfulJobsHistoryLimit: "{{ default 3 .spec.successfulJobsHistoryLimit }}"
+                failedJobsHistoryLimit:     "{{ default 1 .spec.failedJobsHistoryLimit }}"
+                suspend:                    "{{ default false .spec.suspend }}"
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 5
           resync: 30s
+          onCreate:
+            cronJobs:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                schedule: "{{ cronFromAny .spec.schedule }}"
+                suspend: "{{ .spec.suspend }}"
+                successfulJobsHistoryLimit: "{{ .spec.successfulJobsHistoryLimit }}"
+                failedJobsHistoryLimit: "{{ .spec.failedJobsHistoryLimit }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: '{{ ternary .spec.suspend "Suspended" "Active" }}'
+
+              # cronFromAny handles both structured maps and legacy flat strings.
+              - path: scheduleExpression
+                value: "{{ cronFromAny .spec.schedule }}"
+
+              - path: scheduleDescription
+                value: "{{ cronDescribe .spec.schedule }}"
+
+              - path: image
+                value: "{{ .spec.image }}"
+
+              - path: concurrencyPolicy
+                value: "{{ .spec.concurrencyPolicy }}"
+
+              # Last schedule time from the child CronJob
+              - path: lastScheduleTime
+                value: '{{ cronJobLastScheduleTime .children.cronjob }}'
+
+              - path: nextScheduleTime
+                value: '{{ cronJobNextScheduleTime .children.cronjob }}'
         # Status — three layers
         # Layer 1: Ready condition — automatic after every reconcile
         # Layer 2: Declared fields — resolved from live CR
         # Layer 3: children.* — populated from child CronJob
-        status:
-          fields:
-            - path: phase
-              value: '{{ ternary .spec.suspend "Suspended" "Active" }}'
-
-            # cronFromAny handles both structured maps and legacy flat strings.
-            - path: scheduleExpression
-              value: "{{ cronFromAny .spec.schedule }}"
-
-            - path: scheduleDescription
-              value: "{{ cronDescribe .spec.schedule }}"
-
-            - path: image
-              value: "{{ .spec.image }}"
-
-            - path: concurrencyPolicy
-              value: "{{ .spec.concurrencyPolicy }}"
-
-            # Last schedule time from the child CronJob
-            - path: lastScheduleTime
-              value: '{{ cronJobLastScheduleTime .children.cronjob }}'
-
-            - path: nextScheduleTime
-              value: '{{ cronJobNextScheduleTime .children.cronjob }}'
-
-        onCreate:
-          cronJobs:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              schedule: "{{ cronFromAny .spec.schedule }}"
-              suspend: "{{ .spec.suspend }}"
-              successfulJobsHistoryLimit: "{{ .spec.successfulJobsHistoryLimit }}"
-              failedJobsHistoryLimit: "{{ .spec.failedJobsHistoryLimit }}"
-              reconcile: true
 
     # ── v1 ─────────────────────────────────────────────────────────────────
     # The legacy API. Objects applied as v1 are converted to v2 before
@@ -133,24 +131,26 @@ spec:
       # participant: true marks this CRD as part of the conversion pair.
       # The paths live on cronjob-v2. This flag lets the Control Center
       # show conversion stats for v1 without duplicating path declarations.
-      conversion:
-        participant: true
+      admission:
+        conversion:
+          participant: true
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: '{{ ternary .spec.suspend "Suspended" "Active" }}'
-            - path: scheduleExpression
-              value: "{{ .spec.schedule }}"
-            - path: image
-              value: "{{ .spec.image }}"
+          onCreate:
+            cronJobs:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                schedule: "{{ .spec.schedule }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: '{{ ternary .spec.suspend "Suspended" "Active" }}'
+              - path: scheduleExpression
+                value: "{{ .spec.schedule }}"
+              - path: image
+                value: "{{ .spec.image }}"
 
-        onCreate:
-          cronJobs:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              schedule: "{{ .spec.schedule }}"
-              reconcile: true

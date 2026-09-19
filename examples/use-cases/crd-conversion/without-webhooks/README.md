@@ -40,32 +40,34 @@ normalize:
 **2. mutation** — applies defaults to optional fields, using the already-normalised spec:
 
 ```yaml
-mutation:
-  mutateFirst: true
-  rules:
-    - field: spec.concurrencyPolicy
-      default: "Allow"
-    - field: spec.successfulJobsHistoryLimit
-      default: 3
-    - field: spec.failedJobsHistoryLimit
-      default: 1
-    - field: spec.suspend
-      default: false
+admission:
+  mutation:
+    mutateFirst: true
+    rules:
+      - field: spec.concurrencyPolicy
+        default: "Allow"
+      - field: spec.successfulJobsHistoryLimit
+        default: 3
+      - field: spec.failedJobsHistoryLimit
+        default: 1
+      - field: spec.suspend
+        default: false
 ```
 
 **3. validation** — checks required fields after defaults have been applied:
 
 ```yaml
-validation:
-  rules:
-    - field: spec.image
-      operator: exists
-      message: "spec.image is required"
-      action: deny
-    - field: spec.schedule
-      operator: exists
-      message: "spec.schedule is required — use a cron string or structured object"
-      action: deny
+admission:
+  validation:
+    rules:
+      - field: spec.image
+        operator: exists
+        message: "spec.image is required"
+        action: deny
+      - field: spec.schedule
+        operator: exists
+        message: "spec.schedule is required — use a cron string or structured object"
+        action: deny
 ```
 
 **4. onCreate** — creates the child `batch/v1 CronJob`. No `cronFromAny`, no `typeOf`, no branching — `.spec.schedule` is already a string:
@@ -183,13 +185,14 @@ Both CRs show a canonical cron expression in `SCHEDULE`, regardless of which for
 If you later want to nudge users toward structured schedules, you can add a validation rule without touching etcd or bumping the CRD version:
 
 ```yaml
-validation:
-  rules:
-    - field: spec.schedule
-      operator: typeOf
-      value: map
-      message: "spec.schedule must be a structured object — string format is deprecated. See migration guide."
-      action: warn   # change to deny when ready
+admission:
+  validation:
+    rules:
+      - field: spec.schedule
+        operator: typeOf
+        value: map
+        message: "spec.schedule must be a structured object — string format is deprecated. See migration guide."
+        action: warn   # change to deny when ready
 ```
 
 Old CRs continue to reconcile normally. When you are ready to enforce, change `action: warn` to `action: deny`. No stored object migration required at any point — the stored format never changes, only the admission policy does.

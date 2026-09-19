@@ -15,65 +15,66 @@ spec:
     multi-region-app:
       crdFile: crd.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        onReconcile:
+          onReconcile:
 
-          # Deployments — one per region.
-          # spec.regions can be a list OR a map:
-          #
-          # List (uniform replicas):
-          #   spec.regions: [us-east-1, eu-west-1, ap-southeast-1]
-          #   → .item = region name, use .spec.replicasPerRegion for count
-          #
-          # Map (per-region config):
-          #   spec.regions:
-          #     us-east-1: {replicas: 3}
-          #     eu-west-1: {replicas: 1}
-          #   → .item = region name, .value.replicas = per-region replica count
-          deployments:
-            - name: "{{ .metadata.name }}-{{ .item }}"
-              namespace: "{{ .metadata.namespace }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ or .value.replicas .spec.defaultReplicas }}"
-              port: "{{ or .value.port .spec.defaultPort }}"
-              env:
-                - name: REGION
-                  value: "{{ .item }}"
-                - name: PORT
-                  value: "{{ or .value.port .spec.defaultPort }}"
-              labels:
-                app: "{{ .metadata.name }}-{{ .item }}"
-              forEach:
-                field: spec.regions
-                as: item
+            # Deployments — one per region.
+            # spec.regions can be a list OR a map:
+            #
+            # List (uniform replicas):
+            #   spec.regions: [us-east-1, eu-west-1, ap-southeast-1]
+            #   → .item = region name, use .spec.replicasPerRegion for count
+            #
+            # Map (per-region config):
+            #   spec.regions:
+            #     us-east-1: {replicas: 3}
+            #     eu-west-1: {replicas: 1}
+            #   → .item = region name, .value.replicas = per-region replica count
+            deployments:
+              - name: "{{ .metadata.name }}-{{ .item }}"
+                namespace: "{{ .metadata.namespace }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ or .value.replicas .spec.defaultReplicas }}"
+                port: "{{ or .value.port .spec.defaultPort }}"
+                env:
+                  - name: REGION
+                    value: "{{ .item }}"
+                  - name: PORT
+                    value: "{{ or .value.port .spec.defaultPort }}"
+                labels:
+                  app: "{{ .metadata.name }}-{{ .item }}"
+                forEach:
+                  field: spec.regions
+                  as: item
 
-          # Services — one per region, selector wired to matching deployment pods.
-          services:
-            - name: "{{ .metadata.name }}-{{ .item }}-svc"
-              namespace: "{{ .metadata.namespace }}"
-              type: ClusterIP
-              port: "{{ or .value.port .spec.defaultPort }}"                 # per-region service port
-              targetPort: "{{ or .value.port .spec.defaultPort }}"
-              labels:
-                app: "{{ .metadata.name }}-{{ .item }}"
-              selector:
-                app: "{{ .metadata.name }}-{{ .item }}"
-              forEach:
-                field: spec.regions
-                as: item
+            # Services — one per region, selector wired to matching deployment pods.
+            services:
+              - name: "{{ .metadata.name }}-{{ .item }}-svc"
+                namespace: "{{ .metadata.namespace }}"
+                type: ClusterIP
+                port: "{{ or .value.port .spec.defaultPort }}"                 # per-region service port
+                targetPort: "{{ or .value.port .spec.defaultPort }}"
+                labels:
+                  app: "{{ .metadata.name }}-{{ .item }}"
+                selector:
+                  app: "{{ .metadata.name }}-{{ .item }}"
+                forEach:
+                  field: spec.regions
+                  as: item
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: children.deployment.status.readyReplicas
+                    operator: exists
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: children.deployment.status.readyReplicas
-                  operator: exists

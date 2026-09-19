@@ -13,22 +13,22 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       endpoints:
         health: false
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 15s
-        status:
-          fields:
-            - path: phase
-              value: "active"
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-processor"
-              image: "nginx:alpine"
-              replicas: "2"
-              port: "8080"
-              reconcile: true
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-processor"
+                image: "nginx:alpine"
+                replicas: "2"
+                port: "8080"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "active"
+

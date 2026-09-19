@@ -16,9 +16,35 @@ spec:
     datapipeline:
       crdFile: ./crd-datapipeline.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
+          onCreate:
+            custom:
+              - apiVersion: data.example.io/v1alpha1
+                kind: Connector
+                metadata:
+                  name: "{{ .metadata.name }}-connector"
+                  namespace: "{{ .metadata.namespace }}"
+                  namespaced: true
+                  labels:
+                    data.example.io/pipeline: "{{ .metadata.name }}"
+                spec:
+                  source: "{{ .spec.source }}"
+                  destination: "{{ .spec.destination }}"
+                  format: "{{ .spec.format }}"
+                # hasStatus: true — Orkestra fetches this child's status after
+                # creation and makes it available as .children.custom.<resolved-name>
+                hasStatus: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: pipelineStatus
+                value: "Active"
+              - path: connectorPhase
+                value: '{{ (index .children.customs (printf "%s-connector" .metadata.name)).status.phase }}'
         # Status fields are evaluated AFTER all children are reconciled and their
         # statuses fetched. The .children.customs map is keyed by the RESOLVED child
         # name — here "my-pipeline-connector" when the parent is "my-pipeline".
@@ -28,51 +54,27 @@ spec:
         #
         # For cr.yaml where the parent is named "my-pipeline", the resolved child
         # name is "my-pipeline-connector".
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: pipelineStatus
-              value: "Active"
-            - path: connectorPhase
-              value: '{{ (index .children.customs (printf "%s-connector" .metadata.name)).status.phase }}'
-
-        onCreate:
-          custom:
-            - apiVersion: data.example.io/v1alpha1
-              kind: Connector
-              metadata:
-                name: "{{ .metadata.name }}-connector"
-                namespace: "{{ .metadata.namespace }}"
-                namespaced: true
-                labels:
-                  data.example.io/pipeline: "{{ .metadata.name }}"
-              spec:
-                source: "{{ .spec.source }}"
-                destination: "{{ .spec.destination }}"
-                format: "{{ .spec.format }}"
-              # hasStatus: true — Orkestra fetches this child's status after
-              # creation and makes it available as .children.custom.<resolved-name>
-              hasStatus: true
 
     # ── Connector ─────────────────────────────────────────────────────────────
     connector:
       crdFile: ./crd-connector.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-        onCreate:
-          jobs:
-            - name: "{{ .metadata.name }}-transfer"
-              image: "curlimages/curl:8.5.0"
-              command: ["sh", "-c"]
-              args:
-                - |
-                  echo "Transferring from {{ .spec.source }} to {{ .spec.destination }} as {{ .spec.format }}"
-                  sleep 5
-                  echo "Transfer complete"
+          onCreate:
+            jobs:
+              - name: "{{ .metadata.name }}-transfer"
+                image: "curlimages/curl:8.5.0"
+                command: ["sh", "-c"]
+                args:
+                  - |
+                    echo "Transferring from {{ .spec.source }} to {{ .spec.destination }} as {{ .spec.format }}"
+                    sleep 5
+                    echo "Transfer complete"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+

@@ -73,7 +73,7 @@ Included definitions come first per sub-list. Inline entries append after. If th
 | `profiles.hpa` | minReplicas, maxReplicas, CPU target, behavior | `onCreate.hpa[].behavior.profile` |
 | `profiles.pdb` | minAvailable or maxUnavailable | `onCreate.pdb[].behavior.profile` |
 | `profiles.rollingUpdate` | maxSurge, maxUnavailable | `onCreate.deployments[].rollingUpdate.profile` |
-| `profiles.reconciler` | workers, resync, queue.maxDepth | `operatorBox.reconciler.profile` |
+| `profiles.reconciler` | workers, resync, queue.maxDepth | `operatorBox.reconcile.profile` |
 | `profiles.resources` | requests and limits per container | `containers[].resources.profile` |
 | `profiles.probes` | probe timing parameters | `containers[].probes[].profile` |
 | `profiles.containerSecurity` | allowPrivilegeEscalation, readOnlyRootFilesystem, runAsNonRoot, capabilities | `containers[].securityContext.profile` |

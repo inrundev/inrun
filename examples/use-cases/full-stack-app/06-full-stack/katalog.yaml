@@ -15,169 +15,165 @@ spec:
     #   crFiles: 
     #     - ../03-cross-crd/database-cr.yaml
     #   operatorBox:
-    #     reconciler:
+    #     reconcile:
     #       workers: 2
     #       resync: 30s
-    #     onCreate:
-    #       deployments:
-    #         - name: "{{ .metadata.name }}-postgres"
-    #           image: "postgres:17"
-    #           env:
-    #             - name: POSTGRES_PASSWORD
-    #               value: "postgres"
-    #             - name: POSTGRES_USER
-    #               value: "postgres"
-    #             - name: POSTGRES_DB
-    #               value: "postgres"
-
-    #       services:
-    #         - name: "{{ .metadata.name }}-postgres"
-    #           port: "5432"
-    #           reconcile: true
-
-    #     status:
-    #       fields:
-    #         - path: phase
-    #           value: "Pending"
-    #           when:
-    #             - field: status.phase
-    #               operator: notExists
-    #         - path: resourceExists
-    #           value: "ResourceExists"
-    #           when:
-    #             - field: "{{ resourceExists .children.deployment }}"
-    #               equals: "true"
-    #         - path: phase
-    #           value: "Ready"
-    #           when:
-    #             - field: "{{ allReplicasReady .children.deployment }}"
-    #               equals: "true"
-    #         - path: endpoint
-    #           value: "{{ .metadata.name }}-postgres.{{ .metadata.namespace }}.svc.cluster.local:5432"
-    #         - path: replicasReady
-    #           value: "{{ allReplicasReady .children.deployment }}"
-    #         - path: resourceExists
-    #           value: "{{ resourceExists .children.deployment }}"
+    #       onCreate:
+    #         deployments:
+    #           - name: "{{ .metadata.name }}-postgres"
+    #             image: "postgres:17"
+    #             env:
+    #               - name: POSTGRES_PASSWORD
+    #                 value: "postgres"
+    #               - name: POSTGRES_USER
+    #                 value: "postgres"
+    #               - name: POSTGRES_DB
+    #                 value: "postgres"
+    #         services:
+    #           - name: "{{ .metadata.name }}-postgres"
+    #             port: "5432"
+    #             reconcile: true
+    #     emit:
+    #       status:
+    #         fields:
+    #           - path: phase
+    #             value: "Pending"
+    #             when:
+    #               - field: status.phase
+    #                 operator: notExists
+    #           - path: resourceExists
+    #             value: "ResourceExists"
+    #             when:
+    #               - field: "{{ resourceExists .children.deployment }}"
+    #                 equals: "true"
+    #           - path: phase
+    #             value: "Ready"
+    #             when:
+    #               - field: "{{ allReplicasReady .children.deployment }}"
+    #                 equals: "true"
+    #           - path: endpoint
+    #             value: "{{ .metadata.name }}-postgres.{{ .metadata.namespace }}.svc.cluster.local:5432"
+    #           - path: replicasReady
+    #             value: "{{ allReplicasReady .children.deployment }}"
+    #           - path: resourceExists
+    #             value: "{{ resourceExists .children.deployment }}"
 
     full-stack-app:
       crdFile: ./crd.yaml
       dependsOn:
         managed-database: healthy
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            action: deny
-          - field: spec.regions
-            operator: exists
-            action: deny
-          - field: spec.serviceUrl
-            operator: exists
-            action: deny
-
-      mutation:
-        rules:
-          - field: spec.defaultReplicas
-            default: 1
-            valueType: int
-          - field: spec.notify
-            default: "false"
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              action: deny
+            - field: spec.regions
+              operator: exists
+              action: deny
+            - field: spec.serviceUrl
+              operator: exists
+              action: deny
+        mutation:
+          rules:
+            - field: spec.defaultReplicas
+              default: 1
+              valueType: int
+            - field: spec.notify
+              default: "false"
       operatorBox:
-        reconciler:
+        observe:
+          cross:
+            - crd: managed-database
+              selector:
+                name: "{{ .metadata.name }}-db"
+                namespace: "{{ .metadata.namespace }}"
+              as: stackDb
+        reconcile:
           workers: 2
           resync: 30s
-        cross:
-          - crd: managed-database
-            selector:
-              name: "{{ .metadata.name }}-db"
-              namespace: "{{ .metadata.namespace }}"
-            as: db
+          onCreate:
+            secrets:
+              - name: "{{ .metadata.name }}-creds"
+                once: true
+                rotateAfter: 90d
+                data:
+                  password: "{{ randomAlphanumeric 32 }}"
+          onReconcile:
+            external:
+              - name: healthCheck
+                url: "{{ .spec.serviceUrl }}/health"
+                expectedStatus: 200
+                continueOnError: false
+                timeout: 5s
 
-        onCreate:
-          secrets:
-            - name: "{{ .metadata.name }}-creds"
-              once: true
-              rotateAfter: 90d
-              data:
-                password: "{{ randomAlphanumeric 32 }}"
+            deployments:
+              - name: "{{ .metadata.name }}-{{ .item }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.defaultReplicas }}"
+                forEach:
+                  field: spec.regions
+                  as: item
+                when:
+                  - field: external.healthCheck.status
+                    equals: "200"
+                  - field: "{{ phase .cross.stackDb }}"
+                    equals: "Ready"
 
-        onReconcile:
-          external:
-            - name: healthCheck
-              url: "{{ .spec.serviceUrl }}/health"
-              expectedStatus: 200
-              continueOnError: false
-              timeout: 5s
+            configMaps:
+              - name: "{{ .metadata.name }}-config"
+                data:
+                  DB_HOST: "{{ get .cross.stackDb \"status\" \"endpoint\" }}"
+                  APP_ENV: "{{ .spec.environment }}"
+                when:
+                  - field: "{{ resourceExists .cross.stackDb }}"
+                    equals: "true"
 
-          deployments:
-            - name: "{{ .metadata.name }}-{{ .item }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.defaultReplicas }}"
-              forEach:
-                field: spec.regions
-                as: item
-              when:
-                - field: external.healthCheck.status
-                  equals: "200"
-                - field: "{{ phase .cross.db }}"
-                  equals: "Ready"
-
-          configMaps:
-            - name: "{{ .metadata.name }}-config"
-              data:
-                DB_HOST: "{{ get .cross.db \"status\" \"endpoint\" }}"
-                APP_ENV: "{{ .spec.environment }}"
-              when:
-                - field: "{{ resourceExists .cross.db }}"
-                  equals: "true"
-
-          jobs:
-            - name: "{{ .metadata.name }}-cleanup"
-              image: alpine:3.19
-              command: ["/bin/sh", "-c", "echo cleanup"]
-              or:
-                - field: status.phase
-                  equals: "Failed"
-                - field: status.phase
-                  equals: "Succeeded"
-
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "WaitingForDatabase"
-              when:
-                - field: "{{ phase .cross.db }}"
-                  notEquals: "Ready"
-            - path: phase
-              value: "HealthCheckFailed"
-              when:
-                - field: external.healthCheck.status
-                  operator: exists
-                - field: external.healthCheck.status
-                  notEquals: "200"
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ phase .cross.db }}"
-                  equals: "Ready"
-                - field: external.healthCheck.status
-                  equals: "200"
-                - field: "{{ readyReplicas .children.deployment }}"
-                  operator: gt
-                  value: "0"
-            - path: regionsDeployed
-              value: "{{ len .spec.regions }}"
-            - path: databaseEndpoint
-              value: "{{ get .cross.db \"status\" \"endpoint\" }}"
-              when:
-                - field: "{{ resourceExists .cross.db }}"
-                  equals: "true"
-            - path: credentialsSecret
-              value: "{{ .metadata.name }}-creds"
+            jobs:
+              - name: "{{ .metadata.name }}-cleanup"
+                image: alpine:3.19
+                command: ["/bin/sh", "-c", "echo cleanup"]
+                or:
+                  - field: status.phase
+                    equals: "Failed"
+                  - field: status.phase
+                    equals: "Succeeded"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "WaitingForDatabase"
+                when:
+                  - field: "{{ phase .cross.stackDb }}"
+                    notEquals: "Ready"
+              - path: phase
+                value: "HealthCheckFailed"
+                when:
+                  - field: external.healthCheck.status
+                    operator: exists
+                  - field: external.healthCheck.status
+                    notEquals: "200"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ phase .cross.stackDb }}"
+                    equals: "Ready"
+                  - field: external.healthCheck.status
+                    equals: "200"
+                  - field: "{{ readyReplicas .children.deployment }}"
+                    operator: gt
+                    value: "0"
+              - path: regionsDeployed
+                value: "{{ len .spec.regions }}"
+              - path: databaseEndpoint
+                value: "{{ get .cross.stackDb \"status\" \"endpoint\" }}"
+                when:
+                  - field: "{{ resourceExists .cross.stackDb }}"
+                    equals: "true"
+              - path: credentialsSecret
+                value: "{{ .metadata.name }}-creds"

@@ -12,74 +12,71 @@ spec:
   crds:
     microservice:
       crdFile: ../crd.yaml
-
-
       # ── Enrichment ───────────────────────────────────────────────────────────
       # pods: always fetch the pod list for the child Deployment.
       # This is one list-pods call per reconcile per CR.
       # Gate it behind a condition if your CRD has many instances at high resync.
       enrich:
         - pods
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 15s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Degraded"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "false"
+              - path: phase
+                value: "Degraded"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "false"
 
-            # ── Pod notes — all require enrich: [pods] ──────────────────────
-            - path: podCount
-              value: "{{ podCount .children.deployment }}"
+              # ── Pod notes — all require enrich: [pods] ──────────────────────
+              - path: podCount
+                value: "{{ podCount .children.deployment }}"
 
-            - path: readyPodCount
-              value: "{{ readyPodCount .children.deployment }}"
+              - path: readyPodCount
+                value: "{{ readyPodCount .children.deployment }}"
 
-            - path: podNames
-              value: "{{ podNames .children.deployment }}"
+              - path: podNames
+                value: "{{ podNames .children.deployment }}"
 
-            - path: podMaxRestarts
-              value: "{{ podMaxRestarts .children.deployment }}"
+              - path: podMaxRestarts
+                value: "{{ podMaxRestarts .children.deployment }}"
 
-            - path: hasCrashingPod
-              value: "{{ hasCrashingPod .children.deployment }}"
+              - path: hasCrashingPod
+                value: "{{ hasCrashingPod .children.deployment }}"
 
-            # Written only when a pod is crashing; cleared automatically on recovery.
-            - path: crashReason
-              value: "{{ podContainerReasons .children.deployment }}"
-              clearOnFalse: true
-              when:
-                - field: "{{ hasCrashingPod .children.deployment }}"
-                  equals: "true"
+              # Written only when a pod is crashing; cleared automatically on recovery.
+              - path: crashReason
+                value: "{{ podContainerReasons .children.deployment }}"
+                clearOnFalse: true
+                when:
+                  - field: "{{ hasCrashingPod .children.deployment }}"
+                    equals: "true"
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true

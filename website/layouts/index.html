@@ -1,484 +1,543 @@
-{{ define "main" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {{ partial "head.html" . }}
+</head>
+<body>
 
-<!-- ===== EARLY ACCESS BANNER ===== -->
-<div class="dev-banner" role="alert">
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-  </svg>
-  <span>Actively building. APIs may change. Feedback shapes what ships next.</span>
-  <a href="https://join.slack.com/t/orkspace-group/shared_invite/zt-42i4idb0h-WYUF6JryDFMkky95ZJWHBg" target="_blank" rel="noopener noreferrer">Join Early Access Slack →</a>
-</div>
+<!-- NAV ────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="/">
+      <img src="/img/logo.png" alt="Orkestra" width="28" height="28">
+      Orkestra
+    </a>
 
-<!-- ===== HERO ===== -->
-<section class="hero">
-  <div class="hero-inner">
-    <div class="hero-copy">
-      <div class="hero-badge">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
-        </svg>
-        Open Source · Apache 2.0
-      </div>
-      <h1 class="hero-headline">
-        Kubernetes operators<br>
-        <span class="gradient-text">without the infrastructure.</span>
-      </h1>
-      <p class="hero-subheadline">
-        Reconciliation as a runtime service. Security as a runtime service. Intent Delivery as a runtime service. Declare operator behavior — or keep your existing <code>Reconcile</code> function — and the runtime handles the rest.
-      </p>
-      <div class="hero-actions">
-        <a href="/docs/getting-started/" class="btn btn-primary btn-lg">
-          Get started
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
-        <a href="{{ .Site.Params.github }}" class="btn btn-outline btn-lg" target="_blank" rel="noopener noreferrer">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-          GitHub
-        </a>
-      </div>
+    <div class="nav-links">
+      <a class="nav-link" href="/docs/" title="Browse the documentation">Docs</a>
+      <a class="nav-link" href="/docs/concepts/" title="Explore core concepts">Concepts</a>
+      <a class="nav-link" href="/blog/" title="Read the Orkestra blog">Blog</a>
+      <a class="nav-link" href="/publications/" title="Research and publications">Publications</a>
     </div>
 
-    <div class="hero-code">
-      <div class="code-compare-hero">
-        <div class="code-tab-bar">
-          <button class="code-tab active" data-target="panel-yaml">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            New operator
-          </button>
-          <button class="code-tab" data-target="panel-migrate">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            From controller-runtime
-          </button>
-          <div class="code-tab-badge badge-green">Infrastructure removed</div>
-        </div>
+    <div class="nav-right">
+      <div id="docsearch"></div>
+      <a class="btn btn-ghost" href="{{ .Site.Params.github }}" target="_blank" rel="noopener" title="View Orkestra on GitHub" style="padding:7px 13px;font-size:13px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+      <a class="btn btn-primary" href="/docs/getting-started/" title="Start building your first operator" style="padding:7px 13px;font-size:13px;">Get Started</a>
+    </div>
+  </div>
+</nav>
 
-        <div class="code-panel active" id="panel-yaml">
-          <div class="code-panel-header">
-            <span class="code-filename">hello-website/katalog.yaml</span>
-            <span class="code-lines badge-green">Complete operator · No Go required</span>
+<!-- HERO ───────────────────────────────────────────────────────── -->
+<section class="hero w">
+  <div class="hero-inner">
+    <div class="hero-badge" data-reveal>
+      <span class="badge-dot"></span>
+      <a id="ork-version-link" href="{{ .Site.Params.github }}/releases" target="_blank" rel="noopener" title="View releases on GitHub" style="color:inherit;text-decoration:none;"><span id="ork-version">{{ .Site.Params.version }}</span> · open source · early access</a>
+    </div>
+
+    <h1 data-reveal data-delay="1">Kubernetes operators<br><span class="dim">without the <s style="text-decoration-thickness:1px;text-decoration-color:rgba(255,255,255,0.25);">infrastructure</s></span></h1>
+
+    <p class="hero-sub" data-reveal data-delay="2">
+      <strong>Reconciliation, security, and intent delivery</strong> — as runtime services.<br>
+      You declare behavior; Orkestra runs it.<br>
+      <s style="text-decoration-thickness:1px;text-decoration-color:rgba(255,255,255,0.35);">No boilerplate. No scaffolding. No ceremony.</s><br>
+      Or keep your existing <a href="/docs/guides/migration/" target="_blank" title="Migrate an existing reconciler" style="color:#fff;font-family:var(--mono);font-size:13px;font-weight:700;text-decoration:none;">Reconcile()</a> function and shed the rest.
+    </p>
+
+    <div class="hero-actions" data-reveal data-delay="3">
+      <a class="btn btn-primary btn-lg" href="/docs/getting-started/" title="Start building your first operator">Get Started →</a>
+      <a class="btn btn-outline btn-lg" href="/docs/" title="Browse the full documentation">Read the Docs</a>
+      <a class="btn btn-ghost btn-lg" href="{{ .Site.Params.github }}" target="_blank" rel="noopener" title="Star Orkestra on GitHub">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        Star on GitHub
+      </a>
+    </div>
+
+    <div class="hero-install" data-reveal data-delay="4">
+      <span class="p">$</span>
+      <span class="cmd">brew install <span class="pkg">orkspace/tap/ork</span></span>
+      <button class="copy-btn" onclick="copycmd(this)" title="Copy to clipboard">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- THREE RUNTIME SERVICES ─────────────────────────────────────── -->
+<div class="runtime-services">
+  <div class="rs-grid">
+    <div class="rs-item" data-reveal>
+      <div class="rs-kw" style="color:var(--observe)">Reconciliation</div>
+      <div class="rs-title">as a runtime service</div>
+      <p class="rs-desc">Informers, workqueues, workers, leader election, retries, finalizers, drift correction, status patching, panic recovery — provided unconditionally to every CRD in your Katalog. You own the declaration. Orkestra owns the loop.</p>
+    </div>
+    <div class="rs-item" data-reveal data-delay="2">
+      <div class="rs-kw" style="color:var(--execute)">Security</div>
+      <div class="rs-title">as a runtime service</div>
+      <p class="rs-desc">Admission webhooks, validation rules, mutation rules, RBAC generation, TLS management, deletion protection, namespace isolation, pod security — derived from your declarations. The default posture is the safe one.</p>
+    </div>
+    <div class="rs-item" data-reveal data-delay="4">
+      <div class="rs-kw" style="color:var(--intent)">Intent Delivery</div>
+      <div class="rs-title">as a runtime service</div>
+      <p class="rs-desc">CR construction, caller interfaces, field routing, value translation, schema evolution — any caller submits flat intent in their own vocabulary. The gateway translates, validates, stamps provenance, and delivers. No caller sees a CRD schema.</p>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK START ──────────────────────────────────────────────────── -->
+<section class="qs w">
+  <div class="qs-wrap">
+    <div data-reveal>
+      <span class="label" style="color:var(--observe)">Quick Start</span>
+      <h2 style="margin-bottom:14px;">From CRD to running operator</h2>
+      <p class="sub" style="max-width:380px;">
+        Two binaries: <code style="font-family:var(--mono);font-size:13px;">ork</code> is the operator CLI. <code style="font-family:var(--mono);font-size:13px;">orkcc</code> is the Control Center.
+      </p>
+
+      <div class="qs-selectors">
+        <div class="qs-row">
+          <span class="qs-lbl">OS</span>
+          <div class="chips">
+            <button class="chip on" onclick="qs('os','mac',this)">macOS</button>
+            <button class="chip" onclick="qs('os','linux',this)">Linux</button>
           </div>
-          <pre class="code-block"><code class="language-yaml"><span class="token-key">apiVersion:</span> <span class="token-string">orkestra.orkspace.io/v1</span>
-<span class="token-key">kind:</span> <span class="token-string">Katalog</span>
-<span class="token-key">metadata:</span>
-  <span class="token-key">name:</span> <span class="token-string">hello-website</span>
-
-<span class="token-key">spec:</span>
-  <span class="token-key">crds:</span>
-    <span class="token-key">website:</span>
-      <span class="token-key">crdFile: my-website.yaml</span>
-      <span class="token-key">operatorBox:</span>
-        <span class="token-key">onCreate:</span>
-          <span class="token-key">deployments:</span>
-            <span class="token-key">- image:</span> <span class="token-string">"{{ "{{" }} .spec.image {{ "}}" }}"</span>
-              <span class="token-key">replicas:</span> <span class="token-string">"{{ "{{" }} .spec.replicas {{ "}}" }}"</span>
-              <span class="token-key">reconcile:</span> <span class="token-string">true</span></code></pre>
         </div>
-
-        <div class="code-panel" id="panel-migrate">
-          <div class="code-panel-header">
-            <span class="code-filename">webapp_reconciler.go</span>
-            <span class="code-lines badge-green">Reconcile untouched · Two lines added</span>
+        <div class="qs-row" id="method-row">
+          <span class="qs-lbl">Method</span>
+          <div class="chips" id="method-chips">
+            <button class="chip on" onclick="qs('mt','brew',this)">brew</button>
+            <button class="chip" onclick="qs('mt','curl',this)">curl</button>
+            <button class="chip" onclick="qs('mt','helm',this)">helm</button>
           </div>
-          <pre class="code-block"><code class="language-go"><span class="token-comment">// Your Reconcile method: completely untouched.</span>
-<span class="token-comment">// Same signature. Same body. Same r.Get, r.Status().Update().</span>
+        </div>
+      </div>
 
-<span class="token-keyword">func</span> (r *WebAppReconciler) <span class="token-function">Reconcile</span>(
+      <div class="qs-note" id="qs-note">ork init · ork run</div>
+    </div>
+
+    <div class="cw" data-reveal data-delay="2">
+      <div class="cw-bar">
+        <span class="cw-dot" style="background:#FF5F57"></span>
+        <span class="cw-dot" style="background:#FEBC2E"></span>
+        <span class="cw-dot" style="background:#28C840"></span>
+        <span class="cw-name" id="qs-label">zsh</span>
+      </div>
+      <div class="cb" id="qs-out"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SUPER-OPERATOR ───────────────────────────────────────────────── -->
+<section class="super w">
+  <div class="super-split">
+    <div data-reveal>
+      <span class="label" style="color:var(--execute)">Super-operator model</span>
+      <h2 style="margin-bottom:14px;">Your CRD doesn't get a shim. It gets everything.</h2>
+      <p class="sub" style="max-width:440px;margin-bottom:24px;">
+        Traditionally, your operator has whatever you built into it. If you forgot metrics, there are no metrics.
+        In Orkestra, the runtime provides the full stack unconditionally to every CRD in your Katalog.
+      </p>
+      <button class="inc-trigger" onclick="openIncModal()">
+        What every CRD gets for free
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+
+    <div class="cw" data-reveal data-delay="2">
+      <div class="cw-tabs">
+        <button class="cw-tab on" onclick="switchTab('panel-yaml',this)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          New operator
+        </button>
+        <button class="cw-tab" onclick="switchTab('panel-migrate',this)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          From controller-runtime
+        </button>
+        <span class="cw-badge"><s>Infrastructure</s> removed</span>
+      </div>
+
+      <div class="cw-panel" id="panel-yaml">
+        <div class="cw-panel-hd">
+          <span class="cw-fname">hello-website/katalog.yaml</span>
+          <span class="cw-pill">Complete operator · No Go required</span>
+        </div>
+        <div class="cb">
+<pre><span class="k">apiVersion</span>: <span class="s">orkestra.orkspace.io/v1</span>
+<span class="k">kind</span>: <span class="t">Katalog</span>
+<span class="k">metadata</span>:
+  <span class="k">name</span>: <span class="s">hello-website</span>
+
+<span class="k">spec</span>:
+  <span class="k">crds</span>:
+    <span class="k">website</span>:
+      <span class="k">crdFile</span>: <span class="s">my-website.yaml</span>
+      <span class="k">operatorBox</span>:
+        <span class="k">reconcile</span>:
+          <span class="k">onCreate</span>:
+            <span class="k">deployments</span>:
+              - <span class="k">image</span>:    <span class="s">"&#123;&#123; .spec.image &#125;&#125;"</span>
+                <span class="k">replicas</span>: <span class="s">"&#123;&#123; .spec.replicas &#125;&#125;"</span>
+                <span class="k">reconcile</span>: <span class="v">true</span></pre>
+        </div>
+      </div>
+
+      <div class="cw-panel" id="panel-migrate" hidden>
+        <div class="cw-panel-hd">
+          <span class="cw-fname">webapp_reconciler.go</span>
+          <span class="cw-pill">Reconcile untouched · Two lines added</span>
+        </div>
+        <div class="cb">
+<pre><span class="c">// Your Reconcile method: completely untouched.</span>
+<span class="c">// Same signature. Same body. Same r.Get, r.Status().Update().</span>
+
+<span class="t">func</span> (r *WebAppReconciler) <span class="k">Reconcile</span>(
   ctx context.Context,
   req ctrl.Request,
 ) (ctrl.Result, error) {
-  <span class="token-comment">// ... your logic, unchanged ...</span>
-  <span class="token-keyword">return</span> ctrl.Result{}, nil
+  <span class="c">// ... your logic, unchanged ...</span>
+  <span class="kw">return</span> ctrl.Result{}, nil
 }
 
-<span class="token-comment">// Two lines replace SetupWithManager, Scheme, and main.go.</span>
-<span class="token-comment">// Orkestra provides everything else.</span>
+<span class="c">// Two lines replace SetupWithManager, Scheme, and main.go.</span>
 
-<span class="token-keyword">func</span> <span class="token-function">NewWebAppReconciler</span>(kube kubeclient.Interface) domain.Reconciler {
-  <span class="token-keyword">return</span> domain.<span class="token-function">ReconcilerFrom</span>(&WebAppReconciler{
-    Client: orkadapter.<span class="token-function">ToClient</span>(kube),
+<span class="t">func</span> <span class="k">NewWebAppReconciler</span>(kube kubeclient.Interface) domain.Reconciler {
+  <span class="kw">return</span> domain.<span class="k">ReconcilerFrom</span>(&amp;WebAppReconciler{
+    Client: orkadapter.<span class="k">ToClient</span>(kube),
   })
-}</code></pre>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="hero-bg-decoration" aria-hidden="true">
-    <div class="hero-orb hero-orb-1"></div>
-    <div class="hero-orb hero-orb-2"></div>
-    <div class="hero-grid"></div>
-  </div>
-</section>
-
-<!-- ===== STATS ===== -->
-<section class="stats-bar">
-  <div class="stats-inner">
-    <div class="stat">
-      <span class="stat-value">&lt; 1 hour</span>
-      <span class="stat-label">first operator</span>
-    </div>
-    <div class="stat-divider" aria-hidden="true"></div>
-    <div class="stat">
-      <span class="stat-value">~79 MB</span>
-      <span class="stat-label">10 CRDs, one runtime</span>
-    </div>
-    <div class="stat-divider" aria-hidden="true"></div>
-    <div class="stat">
-      <span class="stat-value">2 lines</span>
-      <span class="stat-label">to migrate from controller-runtime</span>
-    </div>
-    <div class="stat-divider" aria-hidden="true"></div>
-    <div class="stat">
-      <span class="stat-value">0</span>
-      <span class="stat-label">infrastructure files to write</span>
-    </div>
-  </div>
-</section>
-
-<!-- ===== TWO ENTRY POINTS ===== -->
-<section class="multi-crd-section">
-  <div class="section-inner">
-    <div class="section-header">
-      <div class="section-label">Two entry points. Same runtime.</div>
-      <h2 class="section-title">Start fresh or bring what you have</h2>
-      <p class="section-subtitle">Every Kubernetes operator carries reconciliation infrastructure, security infrastructure, and intent delivery infrastructure. Orkestra absorbs all three — whether you are writing a new operator or migrating an existing one.</p>
-    </div>
-
-    <div class="multi-crd-inner">
-      <div class="multi-crd-copy">
-        <div class="section-label">Platform engineer — starting fresh</div>
-        <h3 class="section-title" style="font-size:1.4rem;margin-bottom:0.75rem;">Declare. The runtime does the rest.</h3>
-        <p>Write a Katalog. No informers, no workqueues, no leader election, no admission webhook server, no RBAC hand-authoring, no <code>main.go</code>. Every CRD in a Katalog gets a complete, isolated operator — dedicated informer, queue, worker pool, drift correction, health API, Prometheus metrics, and a Control Center entry.</p>
-        <ul class="check-list">
-          <li>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <strong>No Go required</strong> — pure YAML for most operators
-          </li>
-          <li>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <strong>Go when you need it</strong> — hooks and constructors for custom logic
-          </li>
-          <li>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <strong>Intent delivery built in</strong> — <code>serve.enabled: true</code> opens your operator to any caller without Kubernetes knowledge
-          </li>
-        </ul>
-        <a href="/docs/getting-started/" class="btn btn-secondary">
-          Get started
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
-      </div>
-
-      <div class="multi-crd-code">
-        <div class="code-compare-hero">
-          <div class="code-tab-bar">
-            <button class="code-tab active" data-target="panel-engineer">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M1.811 10.231c-.047 0-.058-.023-.035-.059l.246-.315c.023-.035.081-.058.127-.058h4.172c.046 0 .058.035.035.07l-.199.303c-.023.036-.082.07-.117.07zM.047 11.306c-.047 0-.059-.023-.035-.058l.245-.316c.023-.035.082-.058.128-.058h5.328c.047 0 .07.035.058.07l-.093.28c-.012.047-.058.07-.105.07zm2.828 1.075c-.047 0-.059-.035-.035-.07l.163-.292c.023-.035.07-.07.117-.07h2.337c.047 0 .07.035.07.082l-.023.28c0 .047-.047.082-.082.082z"/></svg>
-              Platform engineer
-            </button>
-            <button class="code-tab" data-target="panel-developer">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              Developer
-            </button>
-          </div>
-
-          <div class="code-panel active" id="panel-engineer">
-            <div class="code-panel-header">
-              <span class="code-filename">webapp_reconciler.go</span>
-              <span class="code-lines badge-green">Reconcile untouched · Two lines added</span>
-            </div>
-            <pre class="code-block"><code class="language-go"><span class="token-comment">// Before: SetupWithManager, Scheme, main.go,</span>
-<span class="token-comment">// informer setup, leader election lease,</span>
-<span class="token-comment">// health endpoints, RBAC ClusterRoles,</span>
-<span class="token-comment">// admission webhook server + TLS...</span>
-
-<span class="token-comment">// After: two lines. Reconcile is untouched.</span>
-
-<span class="token-keyword">func</span> <span class="token-function">NewWebAppReconciler</span>(
-  kube kubeclient.Interface,
-) domain.Reconciler {
-  <span class="token-keyword">return</span> domain.<span class="token-function">ReconcilerFrom</span>(
-    &WebAppReconciler{
-      Client: orkadapter.<span class="token-function">ToClient</span>(kube),
-    },
-  )
-}
-
-<span class="token-comment">// Or: ork migrate ./controller/webapp_controller.go</span></code></pre>
-          </div>
-
-          <div class="code-panel" id="panel-developer">
-            <div class="code-panel-header">
-              <span class="code-filename">intent.yaml</span>
-              <span class="code-lines badge-green">No apiVersion · No kind · No kubectl</span>
-            </div>
-            <pre class="code-block"><code class="language-yaml"><span class="token-comment"># The developer knows their vocabulary.</span>
-<span class="token-comment"># The gateway knows the CRD.</span>
-<span class="token-comment"># Neither has to learn the other's language.</span>
-
-<span class="token-key">target:</span> <span class="token-string">app</span>
-<span class="token-key">name:</span> <span class="token-string">payments-api</span>
-<span class="token-key">repository:</span> <span class="token-string">myorg/payments-api</span>
-<span class="token-key">environment:</span> <span class="token-string">staging</span>
-<span class="token-key">team:</span> <span class="token-string">payments</span></code></pre>
-          </div>
-        </div>
-        <div style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
-          <a href="/docs/guides/migration/" class="btn btn-secondary">
-            Migration guide
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-          <a href="/docs/concepts/self-service/target-mode/" class="btn btn-secondary">
-            Intent delivery
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
+}</pre>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ===== CONTROL CENTER ===== -->
-<section class="controlcenter-section">
-  <div class="section-inner">
-    <div class="cc-header">
-      <div class="section-label label-light">Built-in observability</div>
-      <h2 class="section-title cc-title">Control Center — one dashboard for every Orkestra runtime</h2>
-      <p class="cc-subtitle">
-        The moment you run <code class="inline-code-dark">ork run</code>, a live dashboard starts on port 8081 — showing every CRD, worker, queue depth, and reconcile event in real time. No extra setup.
+<!-- INCLUDED MODAL ──────────────────────────────────────────────── -->
+<div class="modal-overlay" id="incModal" onclick="closeIncModal(event)">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-label="What every CRD gets for free">
+    <div class="modal-hd">
+      <div>
+        <div class="label" style="color:var(--execute);margin-bottom:6px;">Super-operator model</div>
+        <h3 class="modal-title">What every CRD gets for free</h3>
+      </div>
+      <button class="modal-close" onclick="closeIncModal()" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="inc-grid">
+      <div class="inc-card"><div class="inc-name">Isolated informer</div><div class="inc-sub">Per-CRD watch stream + in-memory cache. Zero-cost reads.</div></div>
+      <div class="inc-card"><div class="inc-name">Worker pool</div><div class="inc-sub">Configurable concurrency via <code style="font-size:11px;color:var(--observe)">workers:</code>. Autoscales at runtime.</div></div>
+      <div class="inc-card"><div class="inc-name">Health tracking</div><div class="inc-sub"><code style="font-size:11px;color:var(--observe)">pending → healthy → degraded</code> per operatorBox.</div></div>
+      <div class="inc-card"><div class="inc-name">Drift correction</div><div class="inc-sub">Child resource changes re-enqueue the parent CR automatically.</div></div>
+      <div class="inc-card"><div class="inc-name">Finalizer management</div><div class="inc-sub">Finalizers added and removed. <code style="font-size:11px;color:var(--observe)">onDelete:</code> runs before removal.</div></div>
+      <div class="inc-card"><div class="inc-name">Owner references</div><div class="inc-sub">All children carry owner refs. Cascade deletion is free.</div></div>
+      <div class="inc-card"><div class="inc-name">Prometheus metrics</div><div class="inc-sub">Duration, error rate, queue depth — GVK-labeled, per CRD.</div></div>
+      <div class="inc-card"><div class="inc-name">Live HTTP API</div><div class="inc-sub"><code style="font-size:11px;color:var(--observe)">/katalog/{crd}/health</code> — workers, queue, CR list.</div></div>
+      <div class="inc-card"><div class="inc-name">Leader election</div><div class="inc-sub">One Konductor. Workers stay consistent across restarts.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROL CENTER ──────────────────────────────────────────────── -->
+<section class="cc-section w">
+  <div class="cc-inner">
+    <div class="cc-copy" data-reveal>
+      <span class="label" style="color:var(--observe)">Built-in observability</span>
+      <h2 style="margin-bottom:14px;">One dashboard for every Orkestra runtime</h2>
+      <p class="sub" style="max-width:400px;margin-bottom:28px;">
+        The moment you run <code style="font-family:var(--mono);font-size:13px;">ork run</code>, a live dashboard starts on <code style="font-family:var(--mono);font-size:13px;">:8081</code> — showing every CRD, worker, queue depth, and reconcile event. No extra setup.
       </p>
+      <div class="cc-feats">
+        <div class="cc-feat">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--observe)" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <div>
+            <div class="cc-feat-title">Multi-runtime aggregation</div>
+            <div class="cc-feat-desc">Monitor every Orkestra instance — across clusters, namespaces, or environments — from a single Control Center.</div>
+          </div>
+        </div>
+        <div class="cc-feat">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--observe)" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <div>
+            <div class="cc-feat-title">Per-CRD drill-down</div>
+            <div class="cc-feat-desc">Click any CRD to see worker pool depth, queue pressure, admission stats, and live CR instances.</div>
+          </div>
+        </div>
+        <div class="cc-feat">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--observe)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div>
+            <div class="cc-feat-title">Zero configuration</div>
+            <div class="cc-feat-desc">Built into the <code style="font-family:var(--mono);font-size:12px;">ork</code> CLI. Launch with <code style="font-family:var(--mono);font-size:12px;">ork control</code> — no additional binary or Helm chart.</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:28px;flex-wrap:wrap;">
+        <a class="btn btn-primary" href="{{ .Site.Params.controlcenter }}" target="_blank" rel="noopener" title="Open the live Control Center demo">Live Control Center ↗</a>
+        <a class="btn btn-ghost" href="/docs/" title="Browse the full documentation">Read the docs →</a>
+      </div>
     </div>
 
-    <div class="cc-content">
-      <div class="cc-screenshot-wrapper">
-        <div class="cc-screenshot-placeholder">
-          <div class="cc-mock-browser">
-            <div class="cc-mock-bar">
-              <span class="cc-mock-dot"></span><span class="cc-mock-dot"></span><span class="cc-mock-dot"></span>
-              <span class="cc-mock-url">controlcenter.orkestra.sh</span>
+    <div class="cc-mock-wrap" data-reveal data-delay="2">
+      <div class="cc-mock">
+        <div class="cc-mock-bar">
+          <span class="cc-dot-r"></span><span class="cc-dot-y"></span><span class="cc-dot-g"></span>
+          <span class="cc-mock-url">localhost:8081</span>
+        </div>
+        <div class="cc-mock-body">
+          <div class="cc-mock-sidebar">
+            <div class="cc-mock-logo">⬡ <span>Control Center</span></div>
+            <div class="cc-mock-nav on">platform-operator</div>
+            <div class="cc-mock-nav">infra-operator</div>
+            <div class="cc-mock-nav">database-operator</div>
+          </div>
+          <div class="cc-mock-main">
+            <div class="cc-mock-hd">
+              <span class="cc-mock-name">platform-operator</span>
+              <span class="cc-mock-status green">● Healthy</span>
             </div>
-            <div class="cc-mock-content">
-              <div class="cc-mock-sidebar">
-                <div class="cc-mock-logo">⬡ Control Center</div>
-                <div class="cc-mock-nav-item active">platform-operator</div>
-                <div class="cc-mock-nav-item">infra-operator</div>
-                <div class="cc-mock-nav-item">database-operator</div>
-              </div>
-              <div class="cc-mock-main">
-                <div class="cc-mock-header">
-                  <span class="cc-mock-title">platform-operator</span>
-                  <span class="cc-mock-badge green">● Healthy</span>
-                </div>
-                <div class="cc-mock-stats">
-                  <div class="cc-mock-stat"><span class="cc-mock-num">4</span><span class="cc-mock-lbl">CRDs</span></div>
-                  <div class="cc-mock-stat"><span class="cc-mock-num">16</span><span class="cc-mock-lbl">Workers</span></div>
-                  <div class="cc-mock-stat"><span class="cc-mock-num">247</span><span class="cc-mock-lbl">Resources</span></div>
-                  <div class="cc-mock-stat"><span class="cc-mock-num">0</span><span class="cc-mock-lbl">Errors</span></div>
-                </div>
-                <div class="cc-mock-cards">
-                  <div class="cc-mock-card green">
-                    <span class="cc-mock-card-name">database</span>
-                    <span class="cc-mock-card-status">● Healthy · 4 workers</span>
-                    <div class="cc-mock-bar-wrap"><div class="cc-mock-bar-fill" style="width:15%"></div></div>
-                    <span class="cc-mock-card-detail">Queue: 3/64 · Uptime: 48h</span>
-                  </div>
-                  <div class="cc-mock-card green">
-                    <span class="cc-mock-card-name">application</span>
-                    <span class="cc-mock-card-status">● Healthy · 4 workers</span>
-                    <div class="cc-mock-bar-wrap"><div class="cc-mock-bar-fill" style="width:8%"></div></div>
-                    <span class="cc-mock-card-detail">Queue: 2/64 · Uptime: 47h</span>
-                  </div>
-                  <div class="cc-mock-card yellow">
-                    <span class="cc-mock-card-name">cache</span>
-                    <span class="cc-mock-card-status">⚠ Pending · 0 workers</span>
-                    <div class="cc-mock-bar-wrap"><div class="cc-mock-bar-fill" style="width:0%"></div></div>
-                    <span class="cc-mock-card-detail">Waiting for: database</span>
-                  </div>
-                  <div class="cc-mock-card green">
-                    <span class="cc-mock-card-name">ingress</span>
-                    <span class="cc-mock-card-status">● Healthy · 4 workers</span>
-                    <div class="cc-mock-bar-wrap"><div class="cc-mock-bar-fill" style="width:3%"></div></div>
-                    <span class="cc-mock-card-detail">Queue: 1/64 · Uptime: 48h</span>
-                  </div>
-                </div>
-              </div>
+            <div class="cc-mock-stats">
+              <div class="cc-stat"><span class="cc-stat-n">4</span><span class="cc-stat-l">CRDs</span></div>
+              <div class="cc-stat"><span class="cc-stat-n">16</span><span class="cc-stat-l">Workers</span></div>
+              <div class="cc-stat"><span class="cc-stat-n">247</span><span class="cc-stat-l">Resources</span></div>
+              <div class="cc-stat"><span class="cc-stat-n">0</span><span class="cc-stat-l">Errors</span></div>
+            </div>
+            <div class="cc-mock-cards">
+              <div class="cc-crd green"><div class="cc-crd-name">database</div><div class="cc-crd-st green">● Healthy · 4 workers</div><div class="cc-bar-wrap"><div class="cc-bar-fill" style="width:15%"></div></div><div class="cc-crd-detail">Queue: 3/64 · Uptime: 48h</div></div>
+              <div class="cc-crd green"><div class="cc-crd-name">application</div><div class="cc-crd-st green">● Healthy · 4 workers</div><div class="cc-bar-wrap"><div class="cc-bar-fill" style="width:8%"></div></div><div class="cc-crd-detail">Queue: 2/64 · Uptime: 47h</div></div>
+              <div class="cc-crd yellow"><div class="cc-crd-name">cache</div><div class="cc-crd-st yellow">⚠ Pending · 0 workers</div><div class="cc-bar-wrap"><div class="cc-bar-fill" style="width:0%"></div></div><div class="cc-crd-detail">Waiting for: database</div></div>
+              <div class="cc-crd green"><div class="cc-crd-name">ingress</div><div class="cc-crd-st green">● Healthy · 4 workers</div><div class="cc-bar-wrap"><div class="cc-bar-fill" style="width:3%"></div></div><div class="cc-crd-detail">Queue: 1/64 · Uptime: 48h</div></div>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
 
-      <div class="cc-features">
-        <div class="cc-feature">
-          <div class="cc-feature-icon">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          </div>
-          <div>
-            <h4 class="cc-feature-title">Multi-runtime aggregation</h4>
-            <p class="cc-feature-desc">Monitor every Orkestra instance — across clusters, namespaces, or environments — from a single Control Center.</p>
-          </div>
-        </div>
-        <div class="cc-feature">
-          <div class="cc-feature-icon">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          </div>
-          <div>
-            <h4 class="cc-feature-title">Per-CRD drill-down</h4>
-            <p class="cc-feature-desc">Click any CRD to see worker pool depth, queue pressure, admission stats, version conversion metrics, and live CR instances.</p>
-          </div>
-        </div>
-        <div class="cc-feature">
-          <div class="cc-feature-icon">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div>
-            <h4 class="cc-feature-title">Zero configuration</h4>
-            <p class="cc-feature-desc">Control Center is built into the <code class="inline-code">ork</code> CLI. Launch it with <code class="inline-code">ork control</code> — no additional binary or Helm chart needed.</p>
-          </div>
-        </div>
-        <div class="cc-feature">
-          <div class="cc-feature-icon">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-          </div>
-          <div>
-            <h4 class="cc-feature-title">Live production visibility</h4>
-            <p class="cc-feature-desc">See a running Control Center connected to a live Orkestra cluster — watch real operators, real CRs, real events.</p>
-          </div>
-        </div>
+<!-- GATEWAY / SERVE ─────────────────────────────────────────────── -->
+<section class="gateway w">
+  <div class="gw-split">
+    <div data-reveal>
+      <a href="/docs/concepts/self-service/" class="label" title="Learn about the gateway and serve layer" style="color:var(--intent);text-decoration:none;">Gateway &amp; Serve layer</a>
+      <h2 style="margin-bottom:14px;">Any caller. Any vocabulary. One operator.</h2>
+      <p class="sub" style="max-width:420px;margin-bottom:18px;">
+        Add <a href="/docs/concepts/self-service/" target="_blank" title="Learn about the serve field" style="color:#fff;font-family:var(--mono);font-size:13px;font-weight:700;text-decoration:none;">serve: true</a> to a CRD entry. Your operator instantly surfaces a token-scoped API. Callers submit flat intent in their own vocabulary. Orkestra translates, validates, stamps provenance, and applies.
+      </p>
+      <p style="font-size:14px;color:var(--text2);line-height:1.65;max-width:420px;margin-bottom:24px;">
+        When the CRD schema changes — a field moves, a structure deepens — update one line in the serve declaration. Callers notice nothing.
+      </p>
+      <div class="caller-list">
+        <div class="caller-item"><span class="caller-dot" style="background:var(--observe)"></span>CI pipeline (token)</div>
+        <div class="caller-item"><span class="caller-dot" style="background:var(--execute)"></span>Slack command</div>
+        <div class="caller-item"><span class="caller-dot" style="background:var(--intent)"></span>Browser form (Control Center)</div>
+        <div class="caller-item"><span class="caller-dot" style="background:var(--resource)"></span>GitHub webhook</div>
+        <div class="caller-item"><span class="caller-dot" style="background:var(--observe)"></span>curl / HTTP</div>
+        <div class="caller-item"><span class="caller-dot" style="background:var(--katalog)"></span>PagerDuty / cron</div>
+      </div>
+    </div>
 
-        <div class="cc-actions">
-          <a href="{{ .Site.Params.controlcenter }}" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
-            Live Control Center
-          </a>
-          <a href="/docs/" class="btn btn-secondary">
-            Read the docs
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-        </div>
+    <div class="cw" data-reveal data-delay="2">
+      <div class="cw-bar">
+        <span class="cw-dot" style="background:#FF5F57"></span>
+        <span class="cw-dot" style="background:#FEBC2E"></span>
+        <span class="cw-dot" style="background:#28C840"></span>
+        <span class="cw-name">intent → cluster</span>
+      </div>
+      <div class="cb">
+<pre><span class="c"># What the caller submits (flat, no Kubernetes)</span>
+<span class="k">target</span>:      <span class="s">app</span>
+<span class="k">name</span>:        <span class="s">payments-api</span>
+<span class="k">repository</span>:  <span class="s">myorg/payments-api</span>
+<span class="k">environment</span>: <span class="s">staging</span>
+<span class="k">team</span>:        <span class="s">payments</span>
+<span class="k">replicas</span>:    <span class="v">2</span>
+
+<span class="c"># What Orkestra builds and applies</span>
+<span class="k">apiVersion</span>: <span class="s">platform.myco.io/v1</span>
+<span class="k">kind</span>:       <span class="t">App</span>
+<span class="k">metadata</span>:
+  <span class="k">name</span>:      <span class="s">payments-api</span>
+  <span class="k">namespace</span>: <span class="s">team-payments-staging</span>
+  <span class="k">annotations</span>:
+    <span class="k">orkestra.sh/target</span>:  <span class="s">app</span>
+    <span class="k">orkestra.sh/source</span>:  <span class="s">github-actions</span>
+    <span class="k">orkestra.sh/subject</span>: <span class="s">repo:myorg/payments:ref:main</span>
+<span class="k">spec</span>:
+  <span class="k">source.repository</span>: <span class="s">myorg/payments-api</span>
+  <span class="k">environment</span>: <span class="s">staging</span>
+  <span class="k">replicas</span>:    <span class="v">2</span></pre>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ===== FEATURES GRID ===== -->
-<section class="features">
-  <div class="section-inner">
-    <div class="section-header">
-      <div class="section-label">What the runtime absorbs</div>
-      <h2 class="section-title">Three kinds of infrastructure. Gone.</h2>
-      <p class="section-subtitle">Everything normally surrounding <code>Reconcile()</code> — the cost of entry — is now the runtime's job.</p>
+<!-- REGISTRY ────────────────────────────────────────────────────── -->
+<div class="registry">
+  <div class="w" style="padding-block: 72px;">
+    <div class="reg-inner">
+      <div data-reveal>
+        <a href="/docs/orkestra-registry/" class="label" title="Browse the Orkestra Registry" style="color:var(--katalog);text-decoration:none;">Pattern registry</a>
+        <h2 style="margin-bottom:14px;">Distribute behavior, not binaries</h2>
+        <p class="sub" style="margin-bottom:16px;max-width:420px;">
+          The Orkestra Registry distributes operator patterns as OCI artifacts. A Katalog pulled at <code style="font-family:var(--mono);font-size:13px;">postgres:v14</code> behaves identically in every environment. Uses your existing <code style="font-family:var(--mono);font-size:13px;">docker login</code>. See <a href="/docs/deploying/" style="color:var(--observe)">production deployment →</a>
+        </p>
+        <p style="font-size:14px;color:var(--text2);line-height:1.65;max-width:420px;margin-bottom:20px;">
+          Every pattern ships with a declarative E2E test that gates publication. You do not push a pattern without proof it works.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <code style="font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;color:var(--observe)">ork pull postgres:v14</code>
+          <code style="font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;color:var(--observe)">ork push my-operator:v1 .</code>
+          <code style="font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 10px;color:var(--observe)">ork patterns</code>
+        </div>
+      </div>
+
+      <div class="reg-kinds" data-reveal data-delay="2">
+        <a class="reg-kind" href="/docs/orkestra-registry/katalogs/" title="A complete operator declaration — one CRD or many"><span class="rk-badge" style="background:rgba(245,158,11,.1);color:var(--katalog)">Katalog</span><span class="rk-desc">A complete operator declaration — one CRD or many, with all behaviors and tests</span></a>
+        <a class="reg-kind" href="/docs/orkestra-registry/motifs/" title="Reusable resource primitives imported into any Katalog"><span class="rk-badge" style="background:rgba(168,124,248,.1);color:var(--execute)">Motif</span><span class="rk-desc">Reusable resource primitive — resources, profiles, notes — imported into any Katalog</span></a>
+        <a class="reg-kind" href="/docs/orkestra-registry/komposers/" title="Assemble multiple Katalogs into a control plane"><span class="rk-badge" style="background:rgba(52,188,250,.1);color:var(--observe)">Komposer</span><span class="rk-desc">A platform declaration — assembles multiple Katalogs into a control plane</span></a>
+        <a class="reg-kind" href="/docs/orkestra-registry/simulate/" title="Declarative reconciler assertions — no cluster, no Docker"><span class="rk-badge" style="background:rgba(52,201,106,.1);color:var(--intent)">Simulate</span><span class="rk-desc">Declarative reconciler assertions — sub-second, no cluster, no Docker</span></a>
+        <a class="reg-kind" href="/docs/orkestra-registry/e2e/" title="Declarative cluster tests that gate publication"><span class="rk-badge" style="background:rgba(248,113,113,.1);color:var(--red)">E2E</span><span class="rk-desc">Declarative cluster tests that gate publication — one YAML file per scenario</span></a>
+      </div>
     </div>
+  </div>
+</div>
 
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        </div>
-        <h3 class="feature-title">Reconciliation infrastructure</h3>
-        <p class="feature-desc">Informers, workqueues, worker pools, leader election, retries, backoff, finalizers, status patching, panic recovery — declared in a Katalog, managed by the runtime. Per-CRD. Isolated.</p>
-        <a href="/docs/reference/schema/katalog/" class="feature-link">Katalog schema <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-      </div>
+<!-- THREE CORE COMPONENTS ──────────────────────────────────────── -->
+<section class="components w">
+  <a href="/docs/orkestra-core/" class="label" title="Learn about the three core components" style="color:var(--observe);text-decoration:none;" data-reveal>Orkestra Core</a>
+  <h2 style="margin-bottom:14px;" data-reveal>Three independent components</h2>
+  <p class="sub" style="max-width:520px;" data-reveal>No shared database. No shared cache. No direct in-process calls. Run them on the same pod or entirely separate deployments.</p>
 
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-        </div>
-        <h3 class="feature-title">Security infrastructure</h3>
-        <p class="feature-desc">Admission webhooks, validation rules, mutation rules, RBAC — declared in the Katalog. No webhook server to write. No TLS to manage. <code>ork generate rbac</code> derives ClusterRoles automatically.</p>
-        <a href="/docs/security/" class="feature-link">Security docs <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-      </div>
+  <div class="comp-grid">
+    <a class="comp-card" href="/docs/orkestra-core/runtime/" title="The reconciliation engine — informers, queues, workers, lifecycle" data-reveal>
+      <div class="comp-label" style="color:var(--observe)">ork run</div>
+      <h3>Runtime</h3>
+      <p>The reconciliation engine. Watches Kubernetes resources, runs operator logic, manages resource lifecycle, exposes the <code style="font-family:var(--mono);font-size:12px;">/katalog</code> API.</p>
+    </a>
+    <a class="comp-card" href="/docs/orkestra-core/gateway/" title="Stateless admission and intent delivery server" data-reveal data-delay="2">
+      <div class="comp-label" style="color:var(--execute)">ork gate</div>
+      <h3>Gateway</h3>
+      <p>Serves admission and conversion webhooks, handles notifications, validates and delivers intent. Stateless, multi-replica. No reconciliation logic.</p>
+    </a>
+    <a class="comp-card" href="/docs/orkestra-core/controlcenter/" title="Live dashboard for every Orkestra runtime" data-reveal data-delay="4">
+      <div class="comp-label" style="color:var(--intent)">ork control</div>
+      <h3>Control Center</h3>
+      <p>Connects to one or more runtimes, reads their <code style="font-family:var(--mono);font-size:12px;">/katalog</code> APIs, and renders a live view of every operator, CRD, worker, and CR in your fleet.</p>
+    </a>
+  </div>
+</section>
 
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        </div>
-        <h3 class="feature-title">Intent delivery infrastructure</h3>
-        <p class="feature-desc"><code>serve.enabled: true</code> opens any operator to callers who don't know Kubernetes. No apiVersion. No kind. No YAML. The gateway builds the CR, routes fields, translates values, and stamps provenance.</p>
-        <a href="/docs/concepts/gateway/" class="feature-link">Gateway docs <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-      </div>
+<!-- COMMUNITY ────────────────────────────────────────────────────── -->
+<section class="community">
+  <div class="w">
+    <span class="label" style="color:var(--observe)" data-reveal>Community</span>
+    <h2 style="max-width:460px;margin:0 auto;text-align:center;" data-reveal>Everyone welcome!</h2>
+    <p style="font-size:17px;color:var(--text2);font-weight:300;max-width:400px;margin:12px auto 0;text-align:center;line-height:1.65;" data-reveal>Open source. Apache 2.0. Built in the open.</p>
 
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <h3 class="feature-title">Drift correction</h3>
-        <p class="feature-desc">Mark any managed resource with <code>reconcile: true</code> — Orkestra detects and corrects configuration drift on every reconcile cycle. No manual enforcement code.</p>
-        <a href="/docs/reference/schema/operatorbox/" class="feature-link">OperatorBox schema <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-        </div>
-        <h3 class="feature-title">Migration from controller-runtime</h3>
-        <p class="feature-desc">Your <code>Reconcile</code> method stays completely unchanged. Two lines in a constructor wire it into Orkestra. <code>ork migrate</code> injects the constructor automatically and scaffolds the full operator project.</p>
-        <a href="/docs/guides/migration/" class="feature-link">Migration guide <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="M12 8v3M12 11l-6 5M12 11l6 5"/></svg>
-        </div>
-        <h3 class="feature-title">OCI distribution</h3>
-        <p class="feature-desc">Package operators as OCI artifacts. Publish with quality gates baked in — simulate status, e2e status, intent status. Distribute via any OCI registry or discover via Artifact Hub.</p>
-        <a href="/docs/orkestra-registry/" class="feature-link">Orkestra Registry <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-      </div>
+    <div class="com-actions" data-reveal>
+      <a class="btn btn-primary btn-com" href="https://discord.gg/RQMEYykq3" target="_blank" rel="noopener" title="Join the Orkestra Discord community">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+        Discord
+      </a>
+      <a class="btn btn-ghost btn-com" href="https://join.slack.com/t/orkspace-group/shared_invite/zt-42i4idb0h-WYUF6JryDFMkky95ZJWHBg" target="_blank" rel="noopener" title="Join the Orkestra Slack workspace">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
+        Slack
+      </a>
+      <a class="btn btn-ghost btn-com" href="https://github.com/orkspace/orkestra/discussions" target="_blank" rel="noopener" title="Join GitHub Discussions">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        Discussions
+      </a>
     </div>
   </div>
 </section>
 
-<!-- ===== HOW IT WORKS ===== -->
-<section class="how-it-works">
-  <div class="section-inner">
-    <div class="section-header">
-      <div class="section-label">The workflow</div>
-      <h2 class="section-title">From operator to running in three steps</h2>
-    </div>
+<!-- RESOURCES ────────────────────────────────────────────────────── -->
+<section class="resources w">
+  <span class="label" style="color:var(--observe)" data-reveal>Learn</span>
+  <h2 style="margin-bottom:0;" data-reveal>From the blog</h2>
 
-    <div class="steps">
-      <div class="step">
-        <div class="step-number">01</div>
-        <div class="step-content">
-          <h3 class="step-title">Declare or migrate</h3>
-          <p class="step-desc">Write a Katalog to declare new operator behavior — or run <code class="inline-code">ork migrate</code> against an existing controller-runtime file. Either way, the reconciliation, security, and delivery infrastructure is declared, not written.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-number">02</div>
-        <div class="step-content">
-          <h3 class="step-title">Run the Orkestra CLI</h3>
-          <p class="step-desc"><code class="inline-code">ork run</code><br>Orkestra registers the CRD, starts the controller, and launches Control Center automatically. No cluster? <code class="inline-code">ork run --dev</code> provisions one.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-number">03</div>
-        <div class="step-content">
-          <h3 class="step-title">The runtime manages everything</h3>
-          <p class="step-desc">Apply a CR and watch Orkestra reconcile child resources, emit events, update status, enforce admission rules, correct drift, and expose health and metrics — all from your declaration.</p>
-        </div>
-      </div>
-    </div>
+  <div class="res-grid">
+    <a class="res-card" href="/blog/your-crd-is-enough/" title="Why reconciliation is a data problem, not a programming problem" data-reveal>
+      <div class="res-head"><span class="res-icon">📄</span><span class="res-arrow">→</span></div>
+      <h3>Your CRD Is Enough</h3>
+      <p>Why reconciliation is a data problem, not a programming problem — and how the Katalog completes the promise Kubernetes made in 2017.</p>
+    </a>
+    <a class="res-card" href="/blog/why-i-built-this/" title="The story behind the super-operator model" data-reveal data-delay="2">
+      <div class="res-head"><span class="res-icon">🎹</span><span class="res-arrow">→</span></div>
+      <h3>Why I Built This</h3>
+      <p>A missed interview, a wall of boilerplate, and a pattern that kept repeating. The story behind the super-operator model and the music metaphor.</p>
+    </a>
+    <a class="res-card" href="/blog/what-if-the-next-ops-is-intentops/" title="The case for IntentOps — absorbing the manifest itself" data-reveal data-delay="4">
+      <div class="res-head"><span class="res-icon">🚀</span><span class="res-arrow">→</span></div>
+      <h3>What If the Next Ops Is IntentOps?</h3>
+      <p>DevOps. GitOps. PlatformOps. Every shift absorbed complexity from callers. IntentOps absorbs the manifest itself.</p>
+    </a>
   </div>
 </section>
 
-<!-- ===== CTA ===== -->
-<section class="cta-banner">
-  <div class="section-inner">
-    <div class="cta-inner">
-      <h2 class="cta-title">The infrastructure is the runtime's job.</h2>
-      <p class="cta-subtitle">We're in early access and iterating fast. Start with the getting-started guide — or bring your existing operator and run <code>ork migrate</code>.</p>
-      <div class="cta-actions">
-        <a href="/docs/" class="btn btn-white btn-lg">
-          Read the Docs
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
-        <a href="{{ .Site.Params.github }}" class="btn btn-outline-white btn-lg" target="_blank" rel="noopener noreferrer">
-          Star on GitHub
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        </a>
-      </div>
-    </div>
+<!-- ECOSYSTEM ────────────────────────────────────────────────────── -->
+<section class="ecosystem w" data-reveal>
+  <div class="eco-lbl">CLI &amp; Ecosystem</div>
+  <div class="eco-tags">
+    <a class="eco-tag" href="/docs/reference/cli/run/" title="Start the Orkestra runtime">ork run</a>
+    <a class="eco-tag" href="/docs/reference/cli/gate/" title="Start the gateway server">ork gate</a>
+    <a class="eco-tag" href="/docs/reference/cli/control/" title="Launch the Control Center">ork control</a>
+    <a class="eco-tag" href="/docs/reference/cli/validate/" title="Validate your Katalog">ork validate</a>
+    <a class="eco-tag" href="/docs/reference/cli/simulate/" title="Run declarative reconciler assertions">ork simulate</a>
+    <a class="eco-tag" href="/docs/reference/cli/e2e/" title="Run declarative cluster tests">ork e2e</a>
+    <a class="eco-tag" href="/docs/reference/cli/proxy/" title="Expose Orkestra services locally">ork proxy</a>
+    <a class="eco-tag" href="/docs/reference/cli/migrate/" title="Migrate an existing reconciler">ork migrate</a>
+    <a class="eco-tag" href="/docs/reference/cli/patterns/" title="Browse operator patterns">ork patterns</a>
+    <a class="eco-tag" href="/docs/reference/cli/push/" title="Publish a pattern to the registry">ork push</a>
+    <a class="eco-tag" href="/docs/reference/cli/pull/" title="Pull a pattern from the registry">ork pull</a>
+    <a class="eco-tag" href="/docs/reference/cli/token/" title="Manage serve tokens">ork token</a>
+    <a class="eco-tag" href="/docs/concepts/reconciler-model/" title="The reconciliation controller and execution model">Reconciler Model</a>
+    <a class="eco-tag" href="/docs/concepts/execution-model/" title="How reconciliation tasks are scheduled and executed">Execution Model</a>
+    <a class="eco-tag" href="/docs/concepts/operator-of-operators/" title="Compose operators into higher-order control planes">Operator of Operators</a>
+    <a class="eco-tag" href="/docs/concepts/self-service/" title="Token-scoped API surface for any caller">Self-Service</a>
+    <a class="eco-tag" href="/docs/concepts/lifecycle/" title="Resource lifecycle — onCreate, onUpdate, onDelete">Lifecycle</a>
+    <a class="eco-tag" href="/docs/concepts/reusability/" title="Share behavior across Katalogs with Motifs">Reusability</a>
+    <a class="eco-tag" href="/docs/concepts/operatorbox/" title="The per-CRD behavior declaration">OperatorBox</a>
+    <a class="eco-tag" href="/docs/concepts/profiles/" title="Reusable behavior templates">Profiles</a>
+    <a class="eco-tag" href="/docs/concepts/reconciler-model/kordinator/" title="Dependency health state machine">Kordinator</a>
+    <a class="eco-tag" href="/docs/orkestra-core/controlcenter/" title="Control Center docs">Control Center</a>
+    <a class="eco-tag" href="/docs/concepts/operator-autoscaler/" title="Automatic worker pool scaling">Operator Autoscaler</a>
+    <a class="eco-tag" href="/docs/concepts/workload-autoscaler/" title="Autoscale workloads driven by operator state">Workload Autoscaler</a>
+    <a class="eco-tag" href="/docs/concepts/operatorbox/external/" title="Integrate external systems via declared protocols">External Protocols</a>
   </div>
 </section>
 
+<!-- FOOTER ──────────────────────────────────────────────────────── -->
+<footer class="landing-footer">
+  <div class="foot">
+    <span class="foot-copy">© {{ now.Year }} Orkestra · Apache 2.0 · Kubernetes operators without the infrastructure</span>
+    <ul class="foot-links">
+      <li><a href="/docs/" title="Browse the documentation">Docs</a></li>
+      <li><a href="{{ .Site.Params.github }}" target="_blank" rel="noopener" title="View Orkestra on GitHub">GitHub</a></li>
+      <li><a href="https://discord.gg/RQMEYykq3" target="_blank" rel="noopener" title="Join the Discord community">Discord</a></li>
+      <li><a href="/blog/" title="Read the Orkestra blog">Blog</a></li>
+    </ul>
+  </div>
+</footer>
+
+<button id="back-to-top" title="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top">↑</button>
+
+<script src="/js/landing.js"></script>
+{{ if and .Site.Params.algolia.appId .Site.Params.algolia.searchKey }}
+<script src="https://cdn.jsdelivr.net/npm/@docsearch/js@3" crossorigin></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    docsearch({
+      appId: {{ .Site.Params.algolia.appId | jsonify | safeJS }},
+      apiKey: {{ .Site.Params.algolia.searchKey | jsonify | safeJS }},
+      indexName: {{ .Site.Params.algolia.indexName | jsonify | safeJS }},
+      container: '#docsearch',
+      debug: false,
+    });
+  });
+</script>
 {{ end }}
+</body>
+</html>

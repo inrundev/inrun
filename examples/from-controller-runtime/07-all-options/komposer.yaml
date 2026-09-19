@@ -27,7 +27,7 @@ spec:
         kind: DeclarativeApp
         plural: declarativeapps
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
 
     hybridApp:
@@ -57,7 +57,7 @@ spec:
         kind: ConstructorApp
         plural: constructorapps
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
 
     orkApp:
@@ -67,5 +67,5 @@ spec:
         kind: OrkApp
         plural: orkapps
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3

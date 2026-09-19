@@ -88,8 +88,9 @@ spec:
         kind: Prometheus
         plural: prometheuses
       operatorBox:
-        onCreate:
-          # governance, companion resources, defaults
+        reconcile:
+          onCreate:
+            # governance, companion resources, defaults
 ```
 
 This is how governance patterns work — you apply Orkestra's validation and mutation

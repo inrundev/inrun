@@ -5,28 +5,28 @@
 
 /* ── 1. CSS Custom Properties ─────────────────────────────── */
 :root {
-  /* Primary: Orkestra purple */
-  --color-primary: #4C2085;
-  --color-primary-light: #6B3AB5;
-  --color-primary-dark: #361660;
-  --color-accent: #336CE5;
-  --color-accent-light: #5589EE;
-  --color-dark: #1E293B;
+  /* Primary: Orkestra teal/blue — matches landing page observe token */
+  --color-primary: #34BCFA;
+  --color-primary-light: #60CCFB;
+  --color-primary-dark: #1A8CC4;
+  --color-accent: #A87CF8;
+  --color-accent-light: #C09BFA;
+  --color-dark: #06090F;
 
-  /* Light mode base — warm whites, not cold grays */
-  --color-bg: #F8F9FA;
-  --color-surface: #FFFFFF;
-  --color-surface-2: #F1F5F9;
-  --color-border: #E2E8F0;
-  --color-text: #0F172A;
-  --color-text-muted: #475569;
-  --color-text-faint: #94A3B8;
-  --color-code-bg: #1E293B;
-  --color-code-text: #E2E8F0;
-  --color-success: #059669;
-  --color-warning: #D97706;
-  --color-danger: #DC2626;
-  --color-info: #4C2085;
+  /* Dark-first base — same palette as landing page */
+  --color-bg: #06090F;
+  --color-surface: #0C1220;
+  --color-surface-2: #111A2B;
+  --color-border: #1C2D44;
+  --color-text: #C8D8E8;
+  --color-text-muted: #587898;
+  --color-text-faint: #2A3F58;
+  --color-code-bg: #06090F;
+  --color-code-text: #C8D8E8;
+  --color-success: #32C96A;
+  --color-warning: #F0A82A;
+  --color-danger: #F87171;
+  --color-info: #34BCFA;
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
@@ -58,19 +58,19 @@
   --transition-slow: 400ms ease;
 }
 
-/* Dark mode */
+/* Dark mode (same as root — we're dark-first) */
 [data-theme="dark"] {
-  --color-bg: #0F0F1A;
-  --color-surface: #1A1A2E;
-  --color-surface-2: #16213E;
-  --color-border: #2D2D4A;
-  --color-text: #E2E8F0;
-  --color-text-muted: #94A3B8;
-  --color-text-faint: #64748B;
-  --color-code-bg: #0D1B2E;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3);
+  --color-bg: #06090F;
+  --color-surface: #0C1220;
+  --color-surface-2: #111A2B;
+  --color-border: #1C2D44;
+  --color-text: #C8D8E8;
+  --color-text-muted: #587898;
+  --color-text-faint: #2A3F58;
+  --color-code-bg: #0C1220;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5), 0 4px 6px rgba(0, 0, 0, 0.4);
 }
 
 /* Light mode explicit (matches :root defaults — kept for JS toggle completeness) */

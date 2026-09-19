@@ -4,6 +4,26 @@
 
 ---
 
+I was building the Katalog and kept reaching for Go. A function here. A helper there. Every time I needed to reason about something — is this deployment healthy, are all replicas ready, is this pod crashing — I wrote Go.
+
+At some point I stopped and asked a question.
+
+*Does the Kubernetes schema actually change?*
+
+Deployments, Services, Conditions, Pods — the shape is fixed. The API is stable. Nobody invents a new kind of Deployment condition. What changes is the reasoning people want to do on top of it. And if the schema is fixed, the knowledge about it can be encoded once.
+
+Then I asked a second question.
+
+*What do people actually want to reason about when they work with operators?*
+
+The interesting part of operator logic is always a condition — should I do this, given what I know. That's if/else. Everything else is setup. And on top of that: data transformation, time, safe access to deeply nested fields. And ultimately: is this deployment healthy.
+
+If those questions have fixed answers, and the schema they interrogate is stable, then the knowledge belongs in a library. Written once. Available everywhere. Not rewritten in every controller until the project ends and it disappears.
+
+That was when Go templates stopped being a rendering engine and became the right place to put it.
+
+---
+
 Every team that operates Kubernetes eventually writes the same functions.
 
 `hasCrashingPod`. `rolloutComplete`. `allReplicasReady`. `isTerminating`. The names vary slightly. The logic is identical. Someone writes it in their controller, it lives in that codebase, and when the project ends it disappears. The next team starts from scratch.

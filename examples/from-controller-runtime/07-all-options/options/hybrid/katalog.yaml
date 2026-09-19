@@ -25,23 +25,8 @@ spec:
         objectList: HybridAppList
         location: github.com/orkspace/from-controller-runtime-all-options/options/hybrid/api/v1alpha1
         alias: hybridv1alpha1
-
-      allowedNamespaces:
-        - default
-
       operatorBox:
-
-        # Declared resources — Orkestra creates and drift-corrects these.
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
-
-        # The hook creates the Service with type-safe access to obj.Spec.Port.
-        reconciler:
+        reconcile:
           default: true   # GenericReconciler still runs — hook is additive
           hooks:
             location: github.com/orkspace/from-controller-runtime-all-options/options/hybrid/hooks
@@ -50,12 +35,25 @@ spec:
             runHooksFirst: true
             managedResources:
               - kind: Service
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+              - path: replicas
+                value: "{{ .spec.replicas }}"
+        runtime:
+          allowedNamespaces:
+            - default
+        # Declared resources — Orkestra creates and drift-corrects these.
+        # The hook creates the Service with type-safe access to obj.Spec.Port.
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
-            - path: replicas
-              value: "{{ .spec.replicas }}"

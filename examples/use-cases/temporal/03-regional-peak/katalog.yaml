@@ -40,64 +40,62 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-us-east"
+                image: "{{ .spec.image }}"
+                replicas: "{{ usEastReplicas }}"
+                port: 80
+                reconcile: true
 
-        status:
-          fields:
-            - path: phase
-              value: "Active"
-            - path: usEastPeak
-              value: "{{ usEastPeak }}"
-            - path: euCentralPeak
-              value: "{{ euCentralPeak }}"
-            - path: apacPeak
-              value: "{{ apacPeak }}"
-            - path: usEastReplicas
-              value: "{{ usEastReplicas }}"
-            - path: euCentralReplicas
-              value: "{{ euCentralReplicas }}"
-            - path: apacReplicas
-              value: "{{ apacReplicas }}"
+              - name: "{{ .metadata.name }}-eu-central"
+                image: "{{ .spec.image }}"
+                replicas: "{{ euCentralReplicas }}"
+                port: 80
+                reconcile: true
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-us-east"
-              image: "{{ .spec.image }}"
-              replicas: "{{ usEastReplicas }}"
-              port: 80
-              reconcile: true
+              - name: "{{ .metadata.name }}-apac"
+                image: "{{ .spec.image }}"
+                replicas: "{{ apacReplicas }}"
+                port: 80
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-eu-central"
-              image: "{{ .spec.image }}"
-              replicas: "{{ euCentralReplicas }}"
-              port: 80
-              reconcile: true
+            configMaps:
+              - name: "{{ .metadata.name }}-routing"
+                data:
+                  usEastPeak: "{{ usEastPeak }}"
+                  usEastReplicas: "{{ usEastReplicas }}"
+                  euCentralPeak: "{{ euCentralPeak }}"
+                  euCentralReplicas: "{{ euCentralReplicas }}"
+                  apacPeak: "{{ apacPeak }}"
+                  apacReplicas: "{{ apacReplicas }}"
+                reconcile: true
+          onDelete:
+            deployments:
+              - name: "{{ .metadata.name }}-us-east"
+              - name: "{{ .metadata.name }}-eu-central"
+              - name: "{{ .metadata.name }}-apac"
+            configMaps:
+              - name: "{{ .metadata.name }}-routing"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Active"
+              - path: usEastPeak
+                value: "{{ usEastPeak }}"
+              - path: euCentralPeak
+                value: "{{ euCentralPeak }}"
+              - path: apacPeak
+                value: "{{ apacPeak }}"
+              - path: usEastReplicas
+                value: "{{ usEastReplicas }}"
+              - path: euCentralReplicas
+                value: "{{ euCentralReplicas }}"
+              - path: apacReplicas
+                value: "{{ apacReplicas }}"
 
-            - name: "{{ .metadata.name }}-apac"
-              image: "{{ .spec.image }}"
-              replicas: "{{ apacReplicas }}"
-              port: 80
-              reconcile: true
-
-          configMaps:
-            - name: "{{ .metadata.name }}-routing"
-              data:
-                usEastPeak: "{{ usEastPeak }}"
-                usEastReplicas: "{{ usEastReplicas }}"
-                euCentralPeak: "{{ euCentralPeak }}"
-                euCentralReplicas: "{{ euCentralReplicas }}"
-                apacPeak: "{{ apacPeak }}"
-                apacReplicas: "{{ apacReplicas }}"
-              reconcile: true
-
-        onDelete:
-          deployments:
-            - name: "{{ .metadata.name }}-us-east"
-            - name: "{{ .metadata.name }}-eu-central"
-            - name: "{{ .metadata.name }}-apac"
-          configMaps:
-            - name: "{{ .metadata.name }}-routing"

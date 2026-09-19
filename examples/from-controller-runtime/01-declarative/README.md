@@ -132,24 +132,25 @@ The worker entry generates a token secret with automatic rotation every 30 days 
 worker:
   crdFile: ./crd-with-secret.yaml
   operatorBox:
-    onCreate:
-      secrets:
-        - name: "{{ .metadata.name }}-token"
-          once: true
-          rotateAfter: 30d
-          data:
-            token: "{{ randomAlphanumeric 32 }}"
-      deployments:
-        - name: "{{ .metadata.name }}"
-          image: "{{ .spec.image }}"
-          replicas: "{{ .spec.replicas }}"
-          reconcile: true
-          env:
-            - name: WORKER_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: "{{ .metadata.name }}-token"
-                  key: token
+    reconcile:
+      onCreate:
+        secrets:
+          - name: "{{ .metadata.name }}-token"
+            once: true
+            rotateAfter: 30d
+            data:
+              token: "{{ randomAlphanumeric 32 }}"
+        deployments:
+          - name: "{{ .metadata.name }}"
+            image: "{{ .spec.image }}"
+            replicas: "{{ .spec.replicas }}"
+            reconcile: true
+            env:
+              - name: WORKER_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: "{{ .metadata.name }}-token"
+                    key: token
 ```
 
 Uncomment and run:

@@ -33,11 +33,11 @@ If a dependency is not yet ready when the operator starts, the kordinator skips 
 
 ## Per-CRD worker pools
 
-Each CRD gets its own independent worker pool. Workers run concurrently — the number is set by `reconciler.workers:` and defaults to 1.
+Each CRD gets its own independent worker pool. Workers run concurrently — the number is set by `reconcile.workers:` and defaults to 1.
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     workers: 3
 ```
 

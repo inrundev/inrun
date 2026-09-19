@@ -30,29 +30,27 @@ spec:
         version: v1alpha1
         kind: Producer
         plural: producers
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: '{{ get .children.service "spec" "clusterIP" }}:8080'
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 8080
-              reconcile: true
-          services:
-            - port: "8080"
-              type: NodePort
-              reconcile: true
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 8080
+                reconcile: true
+            services:
+              - port: "8080"
+                type: NodePort
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: '{{ get .children.service "spec" "clusterIP" }}:8080'
 
     # ── Consumer (cluster-b) ──────────────────────────────────────────────────
     # source.endpoint crosses the cluster boundary via the Producer
@@ -63,37 +61,36 @@ spec:
         version: v1alpha1
         kind: Consumer
         plural: consumers
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
-        cross:
-          - crd: producer
-            selector:
-              name: "{{ .metadata.name }}"
-              namespace: "{{ .metadata.namespace }}"
-            as: producer
-            source:
-              endpoint: "http://$PRODUCER_ORKESTRA_URL/katalog/producer/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
-              cacheFor: 30s
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 9090
+                env:
+                  - name: PRODUCER_HOST
+                    value: "{{ .cross.producer.status.endpoint }}"
+                reconcile: true
+            services:
+              - port: "9090"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: producerEndpoint
+                value: "{{ .cross.producer.status.endpoint }}"
+        observe:
+          cross:
+            - crd: producer
+              selector:
+                name: "{{ .metadata.name }}"
+                namespace: "{{ .metadata.namespace }}"
+              as: producer
+              source:
+                endpoint: "http://$PRODUCER_ORKESTRA_URL/katalog/producer/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
+                cacheFor: 30s
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: producerEndpoint
-              value: "{{ .cross.producer.status.endpoint }}"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 9090
-              env:
-                - name: PRODUCER_HOST
-                  value: "{{ .cross.producer.status.endpoint }}"
-              reconcile: true
-          services:
-            - port: "9090"

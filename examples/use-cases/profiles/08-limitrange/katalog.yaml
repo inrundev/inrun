@@ -56,42 +56,40 @@ spec:
   crds:
     service:
       crdFile: ../crd.yaml
-
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ resourceExists .children.limitRanges }}"
-                  equals: "true"
+          onCreate:
+            limitRanges:
+              # minimal — CI and ephemeral namespaces
+              - name: "{{ .metadata.name }}-limits-minimal"
+                namespace: "{{ .metadata.namespace }}"
+                profile: minimal
+                reconcile: true
 
-        onCreate:
-          limitRanges:
-            # minimal — CI and ephemeral namespaces
-            - name: "{{ .metadata.name }}-limits-minimal"
-              namespace: "{{ .metadata.namespace }}"
-              profile: minimal
-              reconcile: true
+              # standard — general application namespaces
+              - name: "{{ .metadata.name }}-limits-standard"
+                namespace: "{{ .metadata.namespace }}"
+                profile: standard
+                reconcile: true
 
-            # standard — general application namespaces
-            - name: "{{ .metadata.name }}-limits-standard"
-              namespace: "{{ .metadata.namespace }}"
-              profile: standard
-              reconcile: true
+              # generous — workloads with heavy baseline needs
+              - name: "{{ .metadata.name }}-limits-generous"
+                namespace: "{{ .metadata.namespace }}"
+                profile: generous
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ resourceExists .children.limitRanges }}"
+                    equals: "true"
 
-            # generous — workloads with heavy baseline needs
-            - name: "{{ .metadata.name }}-limits-generous"
-              namespace: "{{ .metadata.namespace }}"
-              profile: generous
-              reconcile: true

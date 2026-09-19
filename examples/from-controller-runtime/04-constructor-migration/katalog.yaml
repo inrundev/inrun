@@ -26,12 +26,11 @@ spec:
         objectList: WebAppList
         location: github.com/orkspace/from-controller-runtime-demo/api/v1alpha1
         alias: demov1alpha1
-
-      allowedNamespaces:
-        - default
-
       operatorBox:
-        reconciler:
+        runtime:
+          allowedNamespaces:
+            - default
+        reconcile:
           # default: false — the GenericReconciler is not used.
           # The constructor below owns the full reconcile loop.
           default: false

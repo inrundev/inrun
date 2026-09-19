@@ -200,7 +200,7 @@ If the same note name appears in both the Katalog and an imported Motif, it is a
 
 A Motif can declare its own `profiles:` block. When a Katalog imports the Motif, its profiles are merged into the Katalog's registry and become available to all CRD entries.
 
-Supported keys in a Motif are a subset of the Katalog's profiles — everything except `reconciler` (which is operator-level, not resource-level):
+Supported keys in a Motif are a subset of the Katalog's profiles — everything except `reconcile` (which is operator-level, not resource-level):
 
 | Key | Class |
 |-----|-------|

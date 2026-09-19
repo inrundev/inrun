@@ -110,12 +110,13 @@ A CRD can expose multiple named targets — aliases — alongside the primary. A
 
 ```yaml
 gateway:
-  webhooks:
-    slack:
-      - name: platform-workspace
-        path: /webhooks/slack
-        signingSecretRef: { name: ork-slack-signing-secret, key: secret }
-        commands: ["/deploy"]
+  admission:
+    webhooks:
+      slack:
+        - name: platform-workspace
+          path: /webhooks/slack
+          signingSecretRef: { name: ork-slack-signing-secret, key: secret }
+          commands: ["/deploy"]
 ```
 
 → [Webhook Intake](09-webhook-intake.md)

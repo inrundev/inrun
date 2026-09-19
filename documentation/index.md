@@ -20,15 +20,16 @@ spec:
     webapp:
       crdFile: ./crd.yaml
       operatorBox:
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
-          services:
-            - port: "80"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true
+        reconcile:
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+            services:
+              - port: "80"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
 ```
 
 That is a fully working operator. Orkestra reads the CRD from `crdFile`, applies it to the cluster, starts informers, and reconciles every `WebApp` CR into a Deployment and Service. Drift correction included.

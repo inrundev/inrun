@@ -26,7 +26,7 @@ The ServiceAccount and Deployment stay declared in the Katalog. The Service move
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     hooks:
       location: github.com/myorg/webapp-operator/hooks
       function: WebAppHooks

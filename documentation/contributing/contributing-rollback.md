@@ -60,16 +60,17 @@ Rollback exits when the CR generation changes. The exit is not yet recorded as a
 
 ```yaml
 operatorBox:
-  rollback:
-    trigger:
-      consecutiveFailures: 3
-      withinDuration: 5m       # optional — both conditions must hold when set
-    onRollback:
-      deployments:
-        - name: "{{ .previous.metadata.name }}"
-          image: "{{ .previous.spec.image }}"
-          replicas: "{{ .previous.spec.replicas }}"
-          reconcile: true
+  runtime:
+    rollback:
+      trigger:
+        consecutiveFailures: 3
+        withinDuration: 5m       # optional — both conditions must hold when set
+      onRollback:
+        deployments:
+          - name: "{{ .previous.metadata.name }}"
+            image: "{{ .previous.spec.image }}"
+            replicas: "{{ .previous.spec.replicas }}"
+            reconcile: true
 ```
 
 The `.previous.*` context is hydrated from the `orkestra.orkspace.io/previous-spec` annotation, which is written before each spec change.

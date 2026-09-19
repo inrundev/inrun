@@ -164,158 +164,156 @@ spec:
             name: database-credentials
             namespace: platform
             timeout: 15s
-
-
-      imports:
-        - motif: ../motifs/tenant-rbac/motif.yaml
-          with:
-            team: "{{ .spec.team }}"
-            targetNamespace: "{{ .spec.targetNamespace }}"
-            owner: "{{ .spec.owner }}"
-            ownerNamespace: "{{ .spec.ownerNamespace }}"
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
-        status:
-          fields:
-            - path: phase
-              value: Provisioning
-              when:
-                - field: status.phase
-                  operator: notExists
+          onCreate:
+            namespaces:
+              - name: "{{ .spec.targetNamespace }}"
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
 
-            - path: phase
-              value: Ready
-              when:
-                - field: "{{ resourceExists .children.namespaces }}"
-                  equals: "true"
+            serviceAccounts:
+              - name: "{{ .spec.owner }}"
+                namespace: "{{ .spec.targetNamespace }}"
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
 
-            - path: namespace
-              value: "{{ .spec.targetNamespace }}"
+            # ── networkPolicies: user-defined org-* profiles ────────────────
+            networkPolicies:
+              - name: "{{ .spec.team }}-deny-all"
+                namespace: "{{ .spec.targetNamespace }}"
+                podSelector: {}
+                profile: org-deny-all
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
 
-            - path: team
-              value: "{{ .spec.team }}"
+              - name: "{{ .spec.team }}-allow-dns"
+                namespace: "{{ .spec.targetNamespace }}"
+                podSelector: {}
+                profile: org-allow-dns-egress
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
 
-        onCreate:
-          namespaces:
-            - name: "{{ .spec.targetNamespace }}"
-              labels:
+              - name: "{{ .spec.team }}-allow-monitoring"
+                namespace: "{{ .spec.targetNamespace }}"
+                podSelector: {}
+                profile: org-allow-monitoring
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
+
+            # ── resourceQuotas: user-defined org-* tier ────────────────────
+            # The template resolves spec.tier ("small"|"medium"|"large") to the
+            # org- prefixed profile name at reconcile time.
+            resourceQuotas:
+              - name: "{{ .spec.team }}-quota"
+                namespace: "{{ .spec.targetNamespace }}"
+                profile: "{{ printf \"org-%s\" .spec.tier }}"
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
+
+            # ── limitRanges: user-defined container defaults ─────────────────
+            limitRanges:
+              - name: "{{ .spec.team }}-container-limits"
+                namespace: "{{ .spec.targetNamespace }}"
+                profile: org-container-defaults
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
+
+            # ── Namespace agent deployment ────────────────────────────────────
+            # A lightweight agent that runs in each provisioned namespace.
+            # Uses org-safe rolling update and org-conservative HPA/PDB profiles.
+            deployments:
+              - name: "{{ .spec.team }}-ns-agent"
+                namespace: "{{ .spec.targetNamespace }}"
+                image: orkspace/ns-agent:v1
+                replicas: "2"
+                rollingUpdate:
+                  profile: org-safe
+                labels:
+                  team: "{{ .spec.team }}"
+                  app: ns-agent
+                  managed-by: orkestra
+                reconcile: true
+
+            # ── hpa: user-defined org-conservative preset ────────────────────
+            hpa:
+              - name: "{{ .spec.team }}-ns-agent-hpa"
+                namespace: "{{ .spec.targetNamespace }}"
+                scaleTargetRef:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  name: "{{ .spec.team }}-ns-agent"
+                minReplicas: "2"
+                maxReplicas: "8"
+                behavior:
+                  profile: org-conservative
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
+
+            # ── pdb: user-defined org-at-least-one preset ────────────────────
+            pdb:
+              - name: "{{ .spec.team }}-ns-agent-pdb"
+                namespace: "{{ .spec.targetNamespace }}"
+                selector:
+                  app: ns-agent
+                  team: "{{ .spec.team }}"
+                behavior:
+                  profile: org-at-least-one
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
+
+            secrets:
+              - name: registry-credentials
+                fromSecret: registry-credentials
+                fromNamespace: platform
+                toNamespaces:
+                  - "{{ .spec.targetNamespace }}"
+                reconcile: true
+          imports:
+            - motif: ../motifs/tenant-rbac/motif.yaml
+              with:
                 team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
+                targetNamespace: "{{ .spec.targetNamespace }}"
+                owner: "{{ .spec.owner }}"
+                ownerNamespace: "{{ .spec.ownerNamespace }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: Provisioning
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-          serviceAccounts:
-            - name: "{{ .spec.owner }}"
-              namespace: "{{ .spec.targetNamespace }}"
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
+              - path: phase
+                value: Ready
+                when:
+                  - field: "{{ resourceExists .children.namespaces }}"
+                    equals: "true"
 
-          # ── networkPolicies: user-defined org-* profiles ────────────────
-          networkPolicies:
-            - name: "{{ .spec.team }}-deny-all"
-              namespace: "{{ .spec.targetNamespace }}"
-              podSelector: {}
-              profile: org-deny-all
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
+              - path: namespace
+                value: "{{ .spec.targetNamespace }}"
 
-            - name: "{{ .spec.team }}-allow-dns"
-              namespace: "{{ .spec.targetNamespace }}"
-              podSelector: {}
-              profile: org-allow-dns-egress
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
+              - path: team
+                value: "{{ .spec.team }}"
 
-            - name: "{{ .spec.team }}-allow-monitoring"
-              namespace: "{{ .spec.targetNamespace }}"
-              podSelector: {}
-              profile: org-allow-monitoring
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
-
-          # ── resourceQuotas: user-defined org-* tier ────────────────────
-          # The template resolves spec.tier ("small"|"medium"|"large") to the
-          # org- prefixed profile name at reconcile time.
-          resourceQuotas:
-            - name: "{{ .spec.team }}-quota"
-              namespace: "{{ .spec.targetNamespace }}"
-              profile: "{{ printf \"org-%s\" .spec.tier }}"
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
-
-          # ── limitRanges: user-defined container defaults ─────────────────
-          limitRanges:
-            - name: "{{ .spec.team }}-container-limits"
-              namespace: "{{ .spec.targetNamespace }}"
-              profile: org-container-defaults
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
-
-          # ── Namespace agent deployment ────────────────────────────────────
-          # A lightweight agent that runs in each provisioned namespace.
-          # Uses org-safe rolling update and org-conservative HPA/PDB profiles.
-          deployments:
-            - name: "{{ .spec.team }}-ns-agent"
-              namespace: "{{ .spec.targetNamespace }}"
-              image: orkspace/ns-agent:v1
-              replicas: "2"
-              rollingUpdate:
-                profile: org-safe
-              labels:
-                team: "{{ .spec.team }}"
-                app: ns-agent
-                managed-by: orkestra
-              reconcile: true
-
-          # ── hpa: user-defined org-conservative preset ────────────────────
-          hpa:
-            - name: "{{ .spec.team }}-ns-agent-hpa"
-              namespace: "{{ .spec.targetNamespace }}"
-              scaleTargetRef:
-                apiVersion: apps/v1
-                kind: Deployment
-                name: "{{ .spec.team }}-ns-agent"
-              minReplicas: "2"
-              maxReplicas: "8"
-              behavior:
-                profile: org-conservative
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
-
-          # ── pdb: user-defined org-at-least-one preset ────────────────────
-          pdb:
-            - name: "{{ .spec.team }}-ns-agent-pdb"
-              namespace: "{{ .spec.targetNamespace }}"
-              selector:
-                app: ns-agent
-                team: "{{ .spec.team }}"
-              behavior:
-                profile: org-at-least-one
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
-
-          secrets:
-            - name: registry-credentials
-              fromSecret: registry-credentials
-              fromNamespace: platform
-              toNamespaces:
-                - "{{ .spec.targetNamespace }}"
-              reconcile: true

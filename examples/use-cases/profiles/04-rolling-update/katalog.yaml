@@ -12,51 +12,49 @@ spec:
   crds:
     service:
       crdFile: ../crd.yaml
-
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+          onCreate:
+            deployments:
+              # safe — zero downtime, one pod at a time
+              - name: "{{ .metadata.name }}-safe"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "3"
+                rollingUpdate:
+                  profile: safe
+                reconcile: true
 
-        onCreate:
-          deployments:
-            # safe — zero downtime, one pod at a time
-            - name: "{{ .metadata.name }}-safe"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "3"
-              rollingUpdate:
-                profile: safe
-              reconcile: true
+              # fast — replaces up to 50% immediately
+              - name: "{{ .metadata.name }}-fast"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "3"
+                rollingUpdate:
+                  profile: fast
+                reconcile: true
 
-            # fast — replaces up to 50% immediately
-            - name: "{{ .metadata.name }}-fast"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "3"
-              rollingUpdate:
-                profile: fast
-              reconcile: true
+              # blue-green — full new set before old is removed
+              - name: "{{ .metadata.name }}-bg"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "2"
+                rollingUpdate:
+                  profile: blue-green
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            # blue-green — full new set before old is removed
-            - name: "{{ .metadata.name }}-bg"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "2"
-              rollingUpdate:
-                profile: blue-green
-              reconcile: true

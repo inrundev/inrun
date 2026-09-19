@@ -21,7 +21,7 @@ spec:
   crds:
     declarativeApp:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
 
     hybridApp:
@@ -36,10 +36,10 @@ spec:
 
     constructorApp:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
 
     orkApp:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3

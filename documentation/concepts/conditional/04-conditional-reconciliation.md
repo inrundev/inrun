@@ -17,16 +17,17 @@ spec:
         kind: App
         version: v1alpha1
       operatorBox:
+        reconcile:
+          onReconcile:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                reconcile: true
         preReconcile:
           reconcileGate:
             when:
               - field: "{{ .spec.enabled }}"
                 equals: "true"
-        onReconcile:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              reconcile: true
 ```
 
 With this configuration:

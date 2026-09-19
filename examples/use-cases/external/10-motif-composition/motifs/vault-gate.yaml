@@ -26,7 +26,8 @@ resources:
     - name: vaultSecret
       url: "{{ .inputs.serviceUrl }}/vault/v1/secret/data/apps/{{ .metadata.name }}"
       method: GET
-      token: "{{ .inputs.vaultToken }}"
+      headers:
+        Authorization: "Bearer {{ .inputs.vaultToken }}"
       continueOnError: true
       timeout: 5s
 

@@ -14,80 +14,78 @@ spec:
   crds:
     webapp:
       crdFile: ../crd.yaml
-
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-          - field: spec.serviceUrl
-            operator: exists
-            message: "spec.serviceUrl is required — feature flag service base URL"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
+            - field: spec.serviceUrl
+              operator: exists
+              message: "spec.serviceUrl is required — feature flag service base URL"
+              action: deny
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        onCreate:
-          # ── External call — every reconcile ────────────────────────────────
-          # continueOnError: true — flag service being down degrades to baseline,
-          # it does not halt the operator.
-          external:
-            - name: flags
-              url: "{{ .spec.serviceUrl }}/flags/{{ .metadata.name }}/v2Enabled"
-              method: GET
-              continueOnError: true
-              timeout: 5s
+          onCreate:
+            # ── External call — every reconcile ────────────────────────────────
+            # continueOnError: true — flag service being down degrades to baseline,
+            # it does not halt the operator.
+            external:
+              - name: flags
+                url: "{{ .spec.serviceUrl }}/flags/{{ .metadata.name }}/v2Enabled"
+                method: GET
+                continueOnError: true
+                timeout: 5s
 
-          # ── Full capacity when flag is on ──────────────────────────────────
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
-              when:
-                - field: external.flags.body
-                  equals: "true"
+            # ── Full capacity when flag is on ──────────────────────────────────
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+                when:
+                  - field: external.flags.body
+                    equals: "true"
 
-          # ── Baseline when flag is off or service is unavailable ────────────
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "1"
-              reconcile: true
-              when:
-                - field: external.flags.body
-                  notEquals: "true"
+            # ── Baseline when flag is off or service is unavailable ────────────
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "1"
+                reconcile: true
+                when:
+                  - field: external.flags.body
+                    notEquals: "true"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              - path: phase
+                value: "Scaling"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "false"
 
-            - path: phase
-              value: "Scaling"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "false"
+              # Surface the active flag value so it is visible in status and Control Center.
+              - path: v2Enabled
+                value: "{{ .external.flags.body }}"
+                when:
+                  - field: external.flags.called
+                    equals: "true"
 
-            # Surface the active flag value so it is visible in status and Control Center.
-            - path: v2Enabled
-              value: "{{ .external.flags.body }}"
-              when:
-                - field: external.flags.called
-                  equals: "true"
+              - path: activeReplicas
+                value: "{{ readyReplicas .children.deployment }}"
 
-            - path: activeReplicas
-              value: "{{ readyReplicas .children.deployment }}"

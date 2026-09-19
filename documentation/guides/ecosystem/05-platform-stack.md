@@ -39,11 +39,14 @@ gateway:
   endpoint: http://orkestra-gateway.orkestra-system.svc:8080
 
 security:
-  webhooks:
-    admission:
-      enabled: true
-  deletionProtection:
-    enabled: true
+  admission:
+    webhooks:
+      admission:
+        enabled: true
+  operatorBox:
+    runtime:
+      deletionProtection:
+        enabled: true
 ```
 
 Each operator keeps its own informer, workqueue, and worker pool. One CRD failing does not affect others. The gateway registers admission webhooks for all four CRDs — a single policy enforcement point across the full stack.

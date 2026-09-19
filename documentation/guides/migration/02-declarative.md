@@ -33,13 +33,14 @@ The reconcile logic is now a declaration:
 
 ```yaml
 operatorBox:
-  onCreate:
-    deployments:
-      - name: "{{ .metadata.name }}"
-        image: "{{ .spec.image }}"
-        replicas: "{{ .spec.replicas }}"
-        port: "{{ .spec.port }}"
-        reconcile: true
+  reconcile:
+    onCreate:
+      deployments:
+        - name: "{{ .metadata.name }}"
+          image: "{{ .spec.image }}"
+          replicas: "{{ .spec.replicas }}"
+          port: "{{ .spec.port }}"
+          reconcile: true
 ```
 
 Template expressions — `{{ .spec.image }}`, `{{ .metadata.name }}` — have access to the full CR, its status, child resource state (`.children.*`), cross-CRD observations (`.cross.*`), HTTP call results (`.external.*`), and live runtime metrics (`.metrics.*`). See [Orkestra Notes](../../concepts/) and [Conditionals](../../concepts/conditional/) for what is expressible declaratively before reaching for Go.
@@ -72,35 +73,35 @@ spec:
       crdFile: ./crd-with-secret.yaml
       crFiles:
         - ./cr-with-secret.yaml
-      allowedNamespaces:
-        - default
-
       operatorBox:
+        reconcile:
+          onCreate:
+            secrets:
+              - name: "{{ .metadata.name }}-token"
+                once: true
+                rotateAfter: 30d
+                data:
+                  token: "{{ randomAlphanumeric 32 }}"
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-
-        onCreate:
-          secrets:
-            - name: "{{ .metadata.name }}-token"
-              once: true
-              rotateAfter: 30d
-              data:
-                token: "{{ randomAlphanumeric 32 }}"
-
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
-              env:
-                - name: WORKER_TOKEN
-                  valueFrom:
-                    secretKeyRef:
-                      name: "{{ .metadata.name }}-token"
-                      key: token
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+                env:
+                  - name: WORKER_TOKEN
+                    valueFrom:
+                      secretKeyRef:
+                        name: "{{ .metadata.name }}-token"
+                        key: token
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+        runtime:
+          allowedNamespaces:
+            - default
 ```
 
 This is the same pattern for all options — hooks, constructors, or mixed. The only difference is what goes inside `operatorBox:`. The CRD declaration, file layout, and the idea of adding a new entry are identical.

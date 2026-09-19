@@ -10,41 +10,42 @@ Orkestra registers a `ValidatingWebhookConfiguration` and a `MutatingWebhookConf
 
 ```yaml
 security:
-  webhooks:
-    admission:
-      enabled: true
-    cleanupOnShutdown: true
-    failurePolicy: Ignore   # allow apply through if Orkestra is temporarily unreachable
+  admission:
+    webhooks:
+      admission:
+        enabled: true
+      cleanupOnShutdown: true
+      failurePolicy: Ignore   # allow apply through if Orkestra is temporarily unreachable
 ```
 
 Per-CRD rules for the `Platform` CRD:
 
 ```yaml
-validation:
-  rules:
-    - field: spec.image
-      prefix: "registry.internal/"
-      action: deny        # hard block — wrong registry
+admission:
+  validation:
+    rules:
+      - field: spec.image
+        prefix: "registry.internal/"
+        action: deny        # hard block — wrong registry
 
-    - field: spec.replicas
-      greaterThan: 0
-      action: deny        # hard block — must be at least 1
+      - field: spec.replicas
+        greaterThan: 0
+        action: deny        # hard block — must be at least 1
 
-    - field: spec.environment
-      operator: in
-      value: "development,staging,production"
-      action: deny        # hard block — unknown environment
+      - field: spec.environment
+        operator: in
+        value: "development,staging,production"
+        action: deny        # hard block — unknown environment
 
-    - field: spec.rateLimit
-      operator: exists
-      action: warn        # advisory — logged, not blocked
-
-mutation:
-  mutateFirst: true
-  rules:
-    - field: spec.replicas    default: 2    valueType: int
-    - field: spec.environment default: "development"
-    - field: spec.rateLimit   default: 100  valueType: int
+      - field: spec.rateLimit
+        operator: exists
+        action: warn        # advisory — logged, not blocked
+  mutation:
+    mutateFirst: true
+    rules:
+      - field: spec.replicas    default: 2    valueType: int
+      - field: spec.environment default: "development"
+      - field: spec.rateLimit   default: 100  valueType: int
 ```
 
 At startup Orkestra:

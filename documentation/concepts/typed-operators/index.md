@@ -31,20 +31,21 @@ func NewPipelineReconciler(kube kubeclient.Interface) domain.Reconciler {
 ```yaml
 # The infrastructure — declared, not written.
 operatorBox:
-  reconciler:
+  reconcile:
     workers: 4
     resync: 30s
     queue:
       retryBackoff: 500ms
-  watch:
-    - apiVersion: v1
-      kind: ConfigMap
-      name: shared-config
-      on: [update]
-      enqueueGate:
-        when:
-          - field: "{{ generationChanged }}"
-            equals: "true"
+  observe:
+    watch:
+      - apiVersion: v1
+        kind: ConfigMap
+        name: shared-config
+        on: [update]
+        enqueueGate:
+          when:
+            - field: "{{ generationChanged }}"
+              equals: "true"
   preReconcile:
     sentinels: [generationChanged]
 ```

@@ -53,11 +53,13 @@ At admission time the webhook needs the same data, but it cannot read it from th
 Operational state is also readable by other operators. When a CRD declares a `cross:` source pointing at another CRD, Orkestra resolves the target CR and its stamped health and metrics fields are available in the referencing CRD's reconcile context:
 
 ```yaml
-cross:
-  - name: database
-    crd: databases.example.io
-    matchLabels:
-      app: "{{ .Name }}"
+operatorBox:
+  observe:
+    cross:
+      - name: database
+        crd: databases.example.io
+        matchLabels:
+          app: "{{ .Name }}"
 ```
 
 Inside conditions or templates, `.cross.database.health.status` reads the database operator's stamped health — no HTTP call, no extra wiring.

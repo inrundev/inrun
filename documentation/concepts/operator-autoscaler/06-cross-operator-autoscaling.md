@@ -42,14 +42,16 @@ Cross‑operator autoscaling makes this possible.
 
 ## How It Works
 
-When a CRD declares a `cross:` block:
+When a CRD declares an `observe.cross:` block:
 
 ```yaml
-cross:
-  - crd: database
-    selector:
-      name: "{{ .metadata.name }}-db"
-    as: db
+operatorBox:
+  observe:
+    cross:
+      - crd: database
+        selector:
+          name: "{{ .metadata.name }}-db"
+        as: db
 ```
 
 The autoscaler automatically receives:

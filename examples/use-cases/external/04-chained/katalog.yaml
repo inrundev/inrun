@@ -13,83 +13,83 @@ spec:
   crds:
     webapp:
       crdFile: ../crd.yaml
-
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-          - field: spec.serviceUrl
-            operator: exists
-            message: "spec.serviceUrl is required — your API service base URL"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
+            - field: spec.serviceUrl
+              operator: exists
+              message: "spec.serviceUrl is required — your API service base URL"
+              action: deny
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
-        onReconcile:
-          # ── Call 1: fetch a short-lived token ─────────────────────────────
-          # Token services typically return a JSON body like: {"token": "abc..."}
-          # We embed the body directly as the token for call 2.
-          external:
-            - name: tokenFetch
-              url: "{{ .spec.serviceUrl }}/auth/token"
-              method: POST
-              body: '{"client_id": "{{ .metadata.name }}", "namespace": "{{ .metadata.namespace }}"}'
-              token: "$CLIENT_SECRET"
-              expectedStatus: 200
-              continueOnError: false
-              timeout: 5s
+          onReconcile:
+            # ── Call 1: fetch a short-lived token ─────────────────────────────
+            # Token services typically return a JSON body like: {"token": "abc..."}
+            # We embed the body directly as the token for call 2.
+            external:
+              - name: tokenFetch
+                url: "{{ .spec.serviceUrl }}/auth/token"
+                method: POST
+                body: '{"client_id": "{{ .metadata.name }}", "namespace": "{{ .metadata.namespace }}"}'
+                auth:
+                  env: CLIENT_SECRET
+                expectedStatus: 200
+                continueOnError: false
+                timeout: 5s
 
-            # ── Call 2: use the token from call 1 ───────────────────────────
-            # .external.tokenFetch.body is available here because the resolver
-            # is updated after every call. If tokenFetch failed, this call
-            # never runs (continueOnError: false halted the reconcile above).
-            - name: resourceCheck
-              url: "{{ .spec.serviceUrl }}/resources/{{ .metadata.name }}"
-              method: GET
-              token: "{{ .external.tokenFetch.body }}"
-              expectedStatus: 200
-              continueOnError: true
-              timeout: 5s
+              # ── Call 2: use the token from call 1 ───────────────────────────
+              # .external.tokenFetch.body is available here because the resolver
+              # is updated after every call. If tokenFetch failed, this call
+              # never runs (continueOnError: false halted the reconcile above).
+              - name: resourceCheck
+                url: "{{ .spec.serviceUrl }}/resources/{{ .metadata.name }}"
+                method: GET
+                headers:
+                  Authorization: "Bearer {{ .external.tokenFetch.body }}"
+                expectedStatus: 200
+                continueOnError: true
+                timeout: 5s
 
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              when:
-                - field: external.tokenFetch.status
-                  equals: "200"
-                - field: external.resourceCheck.status
-                  equals: "200"
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                when:
+                  - field: external.tokenFetch.status
+                    equals: "200"
+                  - field: external.resourceCheck.status
+                    equals: "200"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Degraded"
+                when:
+                  - field: external.resourceCheck.status
+                    operator: exists
+                  - field: external.resourceCheck.status
+                    notEquals: "200"
 
-            - path: phase
-              value: "Degraded"
-              when:
-                - field: external.resourceCheck.status
-                  operator: exists
-                - field: external.resourceCheck.status
-                  notEquals: "200"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: external.resourceCheck.status
+                    equals: "200"
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: external.resourceCheck.status
-                  equals: "200"
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              - path: lastExternalStatus
+                value: "{{ .external.resourceCheck.status }}"
 
-            - path: lastExternalStatus
-              value: "{{ .external.resourceCheck.status }}"

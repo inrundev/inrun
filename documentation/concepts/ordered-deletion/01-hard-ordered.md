@@ -8,29 +8,29 @@
 
 ```yaml
 operatorBox:
+  reconcile:
+    onDelete:
+      ordered: true
+      timeout: 10m       # optional — default 5m for the entire sequence
+      groups:
+        # Group 0 — runs first
+        - jobs:
+            - name: "{{ .metadata.name }}-drain"
+              image: "{{ .spec.image }}"
+              command: ["./drain.sh"]
+
+        # Group 1 — runs after group 0 is fully deleted
+        - deployments:
+            - name: "{{ .metadata.name }}"
+          services:
+            - name: "{{ .metadata.name }}-svc"
+
+        # Group 2 — runs after group 1 is fully deleted
+        - secrets:
+            - name: "{{ .metadata.name }}-credentials"
+          configMaps:
+            - name: "{{ .metadata.name }}-config"
   crdFile: my-operator-crd.yaml
-
-  onDelete:
-    ordered: true
-    timeout: 10m       # optional — default 5m for the entire sequence
-    groups:
-      # Group 0 — runs first
-      - jobs:
-          - name: "{{ .metadata.name }}-drain"
-            image: "{{ .spec.image }}"
-            command: ["./drain.sh"]
-
-      # Group 1 — runs after group 0 is fully deleted
-      - deployments:
-          - name: "{{ .metadata.name }}"
-        services:
-          - name: "{{ .metadata.name }}-svc"
-
-      # Group 2 — runs after group 1 is fully deleted
-      - secrets:
-          - name: "{{ .metadata.name }}-credentials"
-        configMaps:
-          - name: "{{ .metadata.name }}-config"
 ```
 
 Multiple resource types within one group are deleted concurrently — only the boundary between groups enforces ordering.

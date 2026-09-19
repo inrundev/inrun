@@ -22,10 +22,8 @@ spec:
         # location enables typed mode — the informer delivers *apiv1.Pipeline
         # instead of *unstructured.Unstructured.
         location: github.com/orkspace/orkestra-constructor-demo/api/v1alpha1
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           # default: false tells Orkestra NOT to use the GenericReconciler.
           # The constructor below provides the complete reconcile implementation.
           default: false
@@ -48,7 +46,7 @@ spec:
                 plural: jobs
           workers: 5       # pipelines can be IO-bound — more workers tolerated
           resync: 10s      # short resync to check Job completion quickly
-
         # Note: onCreate, onReconcile, onDelete, hooks, and status.fields
         # are all ignored when reconciler.default is false. The constructor
         # owns everything. Status is managed directly by PipelineReconciler.patchStatus.
+

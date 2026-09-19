@@ -23,28 +23,27 @@ serve:
   target:
     standard:
       operatorBox:
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"   # declarative — no hooks needed
-
+        reconcile:
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"   # declarative — no hooks needed
     managed:
       operatorBox:
-        preReconcile:
-          enqueueGate:
-            when:
-              - field: '{{ inBusinessHours }}'
-                equals: "true"
-        reconciler:
+        reconcile:
           hooks:
             location: github.com/myorg/my-operator/hooks
             function: ManagedHooks
             alias: managed
             args:
               tier: managed
-
+        preReconcile:
+          enqueueGate:
+            when:
+              - field: '{{ inBusinessHours }}'
+                equals: "true"
     custom:
       operatorBox:
-        reconciler:
+        reconcile:
           default: false
           constructor:
             location: github.com/myorg/my-operator/reconciler
@@ -63,8 +62,8 @@ Anything a CRD-level operatorBox can declare is available per target:
 | Declaration | What it does |
 |-------------|-------------|
 | `onCreate` resources | Declaratively create Deployments, Services, ConfigMaps, etc. when the CR is created |
-| `reconciler.hooks` | A typed hook binary that runs on each reconcile event |
-| `reconciler.constructor` | A custom reconciler that owns the full reconcile loop |
+| `reconcile.hooks` | A typed hook binary that runs on each reconcile event |
+| `reconcile.constructor` | A custom reconciler that owns the full reconcile loop |
 | `preReconcile.enqueueGate` | A condition that must be true before a CR is enqueued |
 | `preReconcile.reconcileGate` | A condition that must be true before reconciliation proceeds |
 | `imports` | One or more Motifs, composing shared behaviour into the target |
@@ -84,41 +83,38 @@ spec:
       apiTypes: ...
 
       operatorBox:          # base — applies to all targets unless overridden
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-
       serve:
         target:
           v2-enabled:
             primary: true
             operatorBox:
-              preReconcile:
-                enqueueGate:
-                  when:
-                    - field: '{{ inBusinessHours }}'
-                      equals: "true"
-              reconciler:
+              reconcile:
                 hooks:
                   location: github.com/myorg/blockchain/hooks
                   function: BlockchainHooks
                   alias: bchooks
                   args:
                     featureEnabled: "true"
-
+              preReconcile:
+                enqueueGate:
+                  when:
+                    - field: '{{ inBusinessHours }}'
+                      equals: "true"
           v2-disabled:
             operatorBox:
-              reconciler:
+              reconcile:
                 hooks:
                   location: github.com/myorg/blockchain/hooks
                   function: BlockchainHooks
                   alias: bchooks
                   args:
                     featureEnabled: "false"
-
           v2-custom:
             operatorBox:
-              reconciler:
+              reconcile:
                 default: false
                 constructor:
                   location: github.com/myorg/blockchain/reconciler

@@ -11,16 +11,18 @@ spec:
     namespace-governance:
       apiTypes:
         kind: Namespace           # built-in — no group/version/plural needed
-      operatorBox:
-        reconciler:
-          workers: 1
-        default: true
       # Governance-only: no onCreate templates.
       # Validation rules declared here apply at reconcile time.
       # With ENABLE_ADMISSION_WEBHOOK=true they also apply at admission time.
-      validation:
-        rules:
-          - field: metadata.labels.team
-            operator: exists
-            message: "all namespaces must declare a team owner"
-            action: warn
+      admission:
+        validation:
+          rules:
+            - field: metadata.labels.team
+              operator: exists
+              message: "all namespaces must declare a team owner"
+              action: warn
+      operatorBox:
+        reconcile:
+          workers: 1
+          default: true
+

@@ -4,16 +4,17 @@ After reconcile templates create child resources, Orkestra reads them back and m
 
 ```yaml
 operatorBox:
-  status:
-    fields:
-      - path: readyReplicas
-        value: "{{ get .children.deployment \"status\" \"readyReplicas\" }}"
+  emit:
+    status:
+      fields:
+        - path: readyReplicas
+          value: "{{ get .children.deployment \"status\" \"readyReplicas\" }}"
 
-      - path: availableReplicas
-        value: "{{ get .children.deployment \"status\" \"availableReplicas\" }}"
+        - path: availableReplicas
+          value: "{{ get .children.deployment \"status\" \"availableReplicas\" }}"
 
-      - path: loadBalancerIP
-        value: "{{ serviceLoadBalancerIP .children.service }}"
+        - path: loadBalancerIP
+          value: "{{ serviceLoadBalancerIP .children.service }}"
 ```
 
 ---

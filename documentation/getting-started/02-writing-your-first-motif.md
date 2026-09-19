@@ -58,13 +58,11 @@ resources:
       replicas: "{{ .inputs.replicas }}"
       port: "6379"
       reconcile: true
-
   services:
     - name: "{{ .inputs.name }}-redis"
       port: "6379"
       targetPort: "6379"
       reconcile: true
-
 status:
   fields:
     - path: redisReady

@@ -16,9 +16,10 @@ This enforcement requires no extra configuration. It is always active whenever n
 spec:
   crds:
     app:
-      allowedNamespaces:
-        - production
       operatorBox:
+        runtime:
+          allowedNamespaces:
+            - production
 ```
 
 A CR applied to `staging` is stored in etcd but silently dropped at the informer. No child resources are created. No error is surfaced to the user unless the webhook is also enabled.
@@ -48,8 +49,10 @@ Only the listed namespaces are accepted. Any other namespace is rejected (or sil
 ```yaml
 crds:
   app:
-    allowedNamespaces:
-      - production
+    operatorBox:
+      runtime:
+        allowedNamespaces:
+          - production
 ```
 
 Webhook error when the admission path is active:
@@ -66,9 +69,11 @@ The listed namespaces are rejected. Any other namespace is accepted.
 ```yaml
 crds:
   cache:
-    restrictedNamespaces:
-      - kube-system
-      - kube-public
+    operatorBox:
+      runtime:
+        restrictedNamespaces:
+          - kube-system
+          - kube-public
 ```
 
 Applying a Cache CR to `kube-system`:
@@ -90,17 +95,21 @@ Each CRD in your Katalog carries its own namespace rules independently:
 spec:
   crds:
     app:
-      allowedNamespaces:
-        - production       # App: only production
-
+      operatorBox:
+        runtime:
+          allowedNamespaces:
+            - production       # App: only production
     database:
-      allowedNamespaces:
-        - production       # Database: only production
-
+      operatorBox:
+        runtime:
+          allowedNamespaces:
+            - production       # Database: only production
     cache:
-      restrictedNamespaces:
-        - kube-system      # Cache: anywhere except system namespaces
-        - kube-public
+      operatorBox:
+        runtime:
+          restrictedNamespaces:
+            - kube-system      # Cache: anywhere except system namespaces
+            - kube-public
 ```
 
 ---

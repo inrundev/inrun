@@ -12,47 +12,44 @@ spec:
   crds:
     app:
       crdFile: ./crd-app.yaml     # applied automatically by ork run (dev mode)
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: image
-              value: "{{ .spec.image }}"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 8080
-              reconcile: true
-          services:
-            - port: "80"
-              targetPort: "8080"
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 8080
+                reconcile: true
+            services:
+              - port: "80"
+                targetPort: "8080"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: image
+                value: "{{ .spec.image }}"
 
     database:
       crdFile: ./crd-database.yaml
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 60s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: engine
-              value: "{{ .spec.engine }}"
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-db-config"
+                data:
+                  ENGINE: "{{ .spec.engine }}"
+                  STORAGE: "{{ .spec.storageSize }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: engine
+                value: "{{ .spec.engine }}"
 
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-db-config"
-              data:
-                ENGINE: "{{ .spec.engine }}"
-                STORAGE: "{{ .spec.storageSize }}"

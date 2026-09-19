@@ -15,9 +15,8 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
           queue:
@@ -25,21 +24,22 @@ spec:
             behaviour:
               onLimit:
                 drop: true
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: autoscaleActive
-              value: "{{ .metrics.autoscaleActive }}"
-            - path: workers
-              value: "{{ .metrics.workers }}"
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 8080
+                reconcile: true
+            services:
+              - port: "8080"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: autoscaleActive
+                value: "{{ .metrics.autoscaleActive }}"
+              - path: workers
+                value: "{{ .metrics.workers }}"
 
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 8080
-              reconcile: true
-          services:
-            - port: "8080"
-              reconcile: true

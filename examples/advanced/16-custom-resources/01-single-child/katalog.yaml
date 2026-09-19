@@ -18,37 +18,37 @@ spec:
     workspace:
       crdFile: ./crd-workspace.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: vaultRef
-              value: "{{ .metadata.name }}-vault"
-
+          onCreate:
+            custom:
+              - apiVersion: platform.example.io/v1alpha1
+                kind: SecretVault
+                metadata:
+                  name: "{{ .metadata.name }}-vault"
+                  namespace: "{{ .metadata.namespace }}"
+                  namespaced: true
+                  labels:
+                    platform.example.io/workspace: "{{ .metadata.name }}"
+                    platform.example.io/team: "{{ .spec.team }}"
+                spec:
+                  workspaceName: "{{ .metadata.name }}"
+                  encryption: "{{ .spec.encryption }}"
+                  maxSecrets: 100
+                # hasStatus: false — we do not need to read vault status back
+                # into the workspace status for this basic example.
+                hasStatus: false
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: vaultRef
+                value: "{{ .metadata.name }}-vault"
         # onCreate.custom — declare child CRs to create when this CR is first seen.
         # Each entry is a full CR spec, with template expressions resolved from the
         # parent Workspace CR's metadata and spec fields.
-        onCreate:
-          custom:
-            - apiVersion: platform.example.io/v1alpha1
-              kind: SecretVault
-              metadata:
-                name: "{{ .metadata.name }}-vault"
-                namespace: "{{ .metadata.namespace }}"
-                namespaced: true
-                labels:
-                  platform.example.io/workspace: "{{ .metadata.name }}"
-                  platform.example.io/team: "{{ .spec.team }}"
-              spec:
-                workspaceName: "{{ .metadata.name }}"
-                encryption: "{{ .spec.encryption }}"
-                maxSecrets: 100
-              # hasStatus: false — we do not need to read vault status back
-              # into the workspace status for this basic example.
-              hasStatus: false
 
     # ── SecretVault ───────────────────────────────────────────────────────────
     # The "child" CRD. SecretVault has its own operator that creates a Deployment
@@ -58,25 +58,27 @@ spec:
     secretvault:
       crdFile: ./crd-secretvault.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:8443"
-        onCreate:
-          deployments:
-            - image: "hashicorp/vault:1.15"
-              replicas: 1
-              port: 8443
-              reconcile: true
-              env:
-                - name: VAULT_WORKSPACE
-                  value: "{{ .spec.workspaceName }}"
-                - name: VAULT_ENCRYPTION
-                  value: "{{ .spec.encryption }}"
-          services:
-            - port: "8443"
+          onCreate:
+            deployments:
+              - image: "hashicorp/vault:1.15"
+                replicas: 1
+                port: 8443
+                reconcile: true
+                env:
+                  - name: VAULT_WORKSPACE
+                    value: "{{ .spec.workspaceName }}"
+                  - name: VAULT_ENCRYPTION
+                    value: "{{ .spec.encryption }}"
+            services:
+              - port: "8443"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:8443"
+

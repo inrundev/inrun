@@ -19,12 +19,12 @@ enableGitInfo = true
   github = "https://github.com/orkspace/orkestra"
   controlcenter = "https://cc.orkestra.sh"
   version = "v1"
+  docsBase = "/docs/"
 
   [params.algolia]
     appId = "IDBZPZV9Q6"
     searchKey = "6eadbb67e7c72aaaa5309e17c4e1e9ad"
     indexName = "Orkestra Documentaion"
-
 
 [menu]
   [[menu.main]]
@@ -43,6 +43,7 @@ enableGitInfo = true
     name = "Publications"
     url = "/publications/"
     weight = 4
+
 [caches]
   [caches.images]
     dir = ':cacheDir/images'

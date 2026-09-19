@@ -26,12 +26,8 @@ spec:
         objectList: ConstructorAppList
         location: github.com/orkspace/from-controller-runtime-all-options/options/constructor/api/v1alpha1
         alias: constructorv1alpha1
-
-      allowedNamespaces:
-        - default
-
       operatorBox:
-        reconciler:
+        reconcile:
           # default: false — the GenericReconciler is not used.
           # The constructor below owns the full reconcile loop.
           default: false
@@ -41,3 +37,7 @@ spec:
             managedResources:
               - kind: Deployment
               - kind: Service
+        runtime:
+          allowedNamespaces:
+            - default
+

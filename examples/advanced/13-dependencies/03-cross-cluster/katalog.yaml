@@ -31,31 +31,29 @@ spec:
         version: v1alpha1
         kind: Database
         plural: databases
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}.default.svc:5432"
-            - path: ready
-              value: '{{ get .children.statefulset "status" "readyReplicas" }}'
-
-        onCreate:
-          statefulSets:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 5432
-              reconcile: true
-          services:
-            - port: "5432"
-              type: NodePort
-              reconcile: true
+          onCreate:
+            statefulSets:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 5432
+                reconcile: true
+            services:
+              - port: "5432"
+                type: NodePort
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}.default.svc:5432"
+              - path: ready
+                value: '{{ get .children.statefulset "status" "readyReplicas" }}'
 
     # ── App (cluster-b) ────────────────────────────────────────────────────────
     # source.endpoint crosses the cluster boundary to resolve the dependency
@@ -66,41 +64,39 @@ spec:
         version: v1alpha1
         kind: App
         plural: apps
-
-
       dependsOn:
         database: healthy
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 60s
-        cross:
-          - crd: database
-            selector:
-              name: "{{ .metadata.name }}"
-              namespace: "{{ .metadata.namespace }}"
-            as: database
-            source:
-              endpoint: "http://$DATABASE_ORKESTRA_URL/katalog/database/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
-              cacheFor: 30s
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 8080
+                env:
+                  - name: DB_HOST
+                    value: "{{ .cross.database.status.endpoint }}"
+                reconcile: true
+            services:
+              - port: "80"
+                targetPort: "8080"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: dbEndpoint
+                value: "{{ .cross.database.status.endpoint }}"
+        observe:
+          cross:
+            - crd: database
+              selector:
+                name: "{{ .metadata.name }}"
+                namespace: "{{ .metadata.namespace }}"
+              as: database
+              source:
+                endpoint: "http://$DATABASE_ORKESTRA_URL/katalog/database/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
+                cacheFor: 30s
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: dbEndpoint
-              value: "{{ .cross.database.status.endpoint }}"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 8080
-              env:
-                DB_HOST:
-                  value: "{{ .cross.database.status.endpoint }}"
-              reconcile: true
-          services:
-            - port: "80"
-              targetPort: "8080"

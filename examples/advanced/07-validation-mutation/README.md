@@ -22,10 +22,11 @@ In the [katalog.yaml](katalog.yaml), admission is enabled like this:
 
 ```yaml
 security:
-  webhooks:
-    admission:
-      enabled: true
-    cleanupOnShutdown: true
+  admission:
+    webhooks:
+      admission:
+        enabled: true
+      cleanupOnShutdown: true
 ```
 
 - `admission.enabled: true` tells Orkestra to register the admission webhook.

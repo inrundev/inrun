@@ -9,47 +9,45 @@ spec:
   crds:
     blockchainapp:
       crdFile: ./crd.yaml
-
-      validation:
-        rules:
-          - field: spec.image
-            prefix: "myorg/"
-            message: "images must come from the internal registry (myorg/)"
-            action: deny
-          - field: spec.replicas
-            greaterThan: 0
-            message: "replicas must be at least 1"
-            action: deny
-
-      mutation:
-        rules:
-          - field: spec.replicas
-            default: 1
-            valueType: int
-          - field: spec.port
-            default: 8545
-            valueType: int
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              prefix: "myorg/"
+              message: "images must come from the internal registry (myorg/)"
+              action: deny
+            - field: spec.replicas
+              greaterThan: 0
+              message: "replicas must be at least 1"
+              action: deny
+        mutation:
+          rules:
+            - field: spec.replicas
+              default: 1
+              valueType: int
+            - field: spec.port
+              default: 8545
+              valueType: int
       operatorBox:
-        reconciler:
+        reconcile:
           queue:
             failureThreshold: 3
+          onCreate:
+            statefulSets:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+            services:
+              - name: "{{ .metadata.name }}-rpc"
+                port: "{{ .spec.port }}"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: nodeCount
+                value: '{{ .spec.replicas }}'
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: nodeCount
-              value: '{{ .spec.replicas }}'
-
-        onCreate:
-          statefulSets:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
-          services:
-            - name: "{{ .metadata.name }}-rpc"
-              port: "{{ .spec.port }}"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true

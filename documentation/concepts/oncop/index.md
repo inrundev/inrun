@@ -16,27 +16,28 @@ Orkestra formalises this with a layered observation protocol:
 
 ## The `cross:` declaration
 
-All cross-operator observation is declared in the `cross:` block of an operatorBox:
+All cross-operator observation is declared in the `observe.cross:` block of an operatorBox:
 
 ```yaml
 operatorBox:
-  cross:
-    # Same-binary: zero API calls, informer cache only
-    - crd: database
-      selector:
-        name: "{{ .metadata.name }}-db"
-      as: db
+  observe:
+    cross:
+      # Same-binary: zero API calls, informer cache only
+      - crd: database
+        selector:
+          name: "{{ .metadata.name }}-db"
+        as: db
 
-    # Cross-binary: ONCOP over HTTP
-    - crd: loader
-      selector:
-        name: "{{ .metadata.name }}-loader"
-        namespace: loader-system
-      source:
-        host: "http://loader-runtime.loader-system:8080"
-        protocol: cr
-        cacheFor: 10s
-      as: loader
+      # Cross-binary: ONCOP over HTTP
+      - crd: loader
+        selector:
+          name: "{{ .metadata.name }}-loader"
+          namespace: loader-system
+        source:
+          host: "http://loader-runtime.loader-system:8080"
+          protocol: cr
+          cacheFor: 10s
+        as: loader
 ```
 
 After `ReadCross` runs, both are available identically in templates:

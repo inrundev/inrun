@@ -14,19 +14,19 @@ spec:
   crds:
     webapp:
       crdFile: ./crd.yaml
-
-      imports:
-        - motif: ../01-motifs/web-service/motif.yaml
-          with:
-            image: "{{ .spec.image }}"
-            port: "{{ .spec.port }}"
-            replicas: "{{ .spec.replicas }}"
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
-        status:
-          fields:
-            - path: phase
-              value: "Running"
+          imports:
+            - motif: ../01-motifs/web-service/motif.yaml
+              with:
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "{{ .spec.replicas }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+

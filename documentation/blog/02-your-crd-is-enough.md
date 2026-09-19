@@ -36,10 +36,11 @@ The reconciler receives an object with a spec that declares desired state. It mu
 
 ```yaml
 operatorBox:
-  onCreate:
-    deployments:
-      - image: "{{ .spec.image }}"
-        replicas: "{{ .spec.replicas }}"
+  reconcile:
+    onCreate:
+      deployments:
+        - image: "{{ .spec.image }}"
+          replicas: "{{ .spec.replicas }}"
 ```
 
 The template expressions are not programs. They are references. The value here comes from here. Orkestra's template resolver evaluates them against the live object and produces the literal values the registry needs. The registry — OrkestraRegistry — is the standard implementation of "given this spec, make this Kubernetes resource exist." It handles create, update, delete, owner references, idempotency, drift detection. The same code every operator would have written, extracted into a shared library.

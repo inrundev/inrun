@@ -32,79 +32,77 @@ spec:
             name: database-credentials
             namespace: platform
             timeout: 15s
-
-
-      imports:
-        - motif: ../motifs/tenant-isolation/motif.yaml
-          with:
-            namespace: "{{ .spec.targetNamespace }}"
-            team: "{{ .spec.team }}"
-
-        - motif: ../motifs/tenant-rbac/motif.yaml
-          with:
-            team: "{{ .spec.team }}"
-            targetNamespace: "{{ .spec.targetNamespace }}"
-            owner: "{{ .spec.owner }}"
-            ownerNamespace: "{{ .spec.ownerNamespace }}"
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
-        status:
-          fields:
-            - path: phase
-              value: Provisioning
-              when:
-                - field: status.phase
-                  operator: notExists
+          onCreate:
+            namespaces:
+              - name: "{{ .spec.targetNamespace }}"
+                labels:
+                  team: "{{ .spec.team }}"
+                  tier: "{{ .spec.tier }}"
+                  managed-by: orkestra
+                reconcile: true
 
-            - path: phase
-              value: Ready
-              when:
-                - field: "{{ resourceExists .children.namespaces }}"
-                  equals: "true"
+            serviceAccounts:
+              - name: "{{ .spec.owner }}"
+                namespace: "{{ .spec.targetNamespace }}"
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
 
-            - path: namespace
-              value: "{{ .spec.targetNamespace }}"
+            secrets:
+              - name: registry-credentials
+                fromSecret: registry-credentials
+                fromNamespace: platform
+                toNamespaces:
+                  - "{{ .spec.targetNamespace }}"
+                reconcile: true
 
-            - path: team
-              value: "{{ .spec.team }}"
-
-            - path: tier
-              value: "{{ .spec.tier }}"
-
-        onCreate:
-          namespaces:
-            - name: "{{ .spec.targetNamespace }}"
-              labels:
+            resourceQuotas:
+              - name: "{{ .spec.team }}-quota"
+                namespace: "{{ .spec.targetNamespace }}"
+                profile: "{{ .spec.tier }}"
+                labels:
+                  team: "{{ .spec.team }}"
+                  tier: "{{ .spec.tier }}"
+                  managed-by: orkestra
+                reconcile: true
+          imports:
+            - motif: ../motifs/tenant-isolation/motif.yaml
+              with:
+                namespace: "{{ .spec.targetNamespace }}"
                 team: "{{ .spec.team }}"
-                tier: "{{ .spec.tier }}"
-                managed-by: orkestra
-              reconcile: true
 
-          serviceAccounts:
-            - name: "{{ .spec.owner }}"
-              namespace: "{{ .spec.targetNamespace }}"
-              labels:
+            - motif: ../motifs/tenant-rbac/motif.yaml
+              with:
                 team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
+                targetNamespace: "{{ .spec.targetNamespace }}"
+                owner: "{{ .spec.owner }}"
+                ownerNamespace: "{{ .spec.ownerNamespace }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: Provisioning
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-          secrets:
-            - name: registry-credentials
-              fromSecret: registry-credentials
-              fromNamespace: platform
-              toNamespaces:
-                - "{{ .spec.targetNamespace }}"
-              reconcile: true
+              - path: phase
+                value: Ready
+                when:
+                  - field: "{{ resourceExists .children.namespaces }}"
+                    equals: "true"
 
-          resourceQuotas:
-            - name: "{{ .spec.team }}-quota"
-              namespace: "{{ .spec.targetNamespace }}"
-              profile: "{{ .spec.tier }}"
-              labels:
-                team: "{{ .spec.team }}"
-                tier: "{{ .spec.tier }}"
-                managed-by: orkestra
-              reconcile: true
+              - path: namespace
+                value: "{{ .spec.targetNamespace }}"
+
+              - path: team
+                value: "{{ .spec.team }}"
+
+              - path: tier
+                value: "{{ .spec.tier }}"
+

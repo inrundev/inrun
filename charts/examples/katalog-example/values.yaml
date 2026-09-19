@@ -15,7 +15,7 @@ crds:
     kind: Database
     plural: databases
     namespaced: false
-    reconciler:
+    reconcile:
       workers: 3
       resync: 1m
     description: >-
@@ -26,7 +26,7 @@ crds:
     kind: Cache
     plural: caches
     namespaced: true
-    reconciler:
+    reconcile:
       workers: 3
       resync: 2m
     description: >-

@@ -13,79 +13,77 @@ spec:
   crds:
     webapp:
       crdFile: ../crd.yaml
-
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-          - field: spec.serviceUrl
-            operator: exists
-            message: "spec.serviceUrl is required — OPA service base URL"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
+            - field: spec.serviceUrl
+              operator: exists
+              message: "spec.serviceUrl is required — OPA service base URL"
+              action: deny
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        onReconcile:
-          # ── OPA policy check — runs every reconcile ────────────────────────
-          # Sends CR identity context as OPA input. continueOnError: false —
-          # the Deployment must never exist without a passing policy check.
-          external:
-            - name: policy
-              url: "{{ .spec.serviceUrl }}/v1/data/deploy"
-              method: POST
-              expectedStatus: 200
-              continueOnError: false
-              timeout: 5s
-              body: '
-                {
-                  "input": {
-                  "name": "{{ .metadata.name }}", 
-                  "namespace": "{{ .metadata.namespace }}", 
-                  "image": "{{ .spec.image }}"}
-                }'
+          onReconcile:
+            # ── OPA policy check — runs every reconcile ────────────────────────
+            # Sends CR identity context as OPA input. continueOnError: false —
+            # the Deployment must never exist without a passing policy check.
+            external:
+              - name: policy
+                url: "{{ .spec.serviceUrl }}/v1/data/deploy"
+                method: POST
+                expectedStatus: 200
+                continueOnError: false
+                timeout: 5s
+                body: '
+                  {
+                    "input": {
+                    "name": "{{ .metadata.name }}", 
+                    "namespace": "{{ .metadata.namespace }}", 
+                    "image": "{{ .spec.image }}"}
+                  }'
 
-          # Only deploy when OPA allows.
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              when:
-                - field: external.policy.body
-                  contains: '"allow":true'
+            # Only deploy when OPA allows.
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                when:
+                  - field: external.policy.body
+                    contains: '"allow":true'
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: external.policy.body
+                    contains: '"allow":true'
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: external.policy.body
-                  contains: '"allow":true'
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              # Policy denied — surfaces the reason from OPA for observability.
+              - path: phase
+                value: "PolicyDenied"
+                when:
+                  - field: external.policy.called
+                    equals: "true"
+                  - field: external.policy.body
+                    contains: '"deny":true'
 
-            # Policy denied — surfaces the reason from OPA for observability.
-            - path: phase
-              value: "PolicyDenied"
-              when:
-                - field: external.policy.called
-                  equals: "true"
-                - field: external.policy.body
-                  contains: '"deny":true'
+              - path: policyDecision
+                value: "{{ .external.policy.body }}"
+                when:
+                  - field: external.policy.called
+                    equals: "true"
 
-            - path: policyDecision
-              value: "{{ .external.policy.body }}"
-              when:
-                - field: external.policy.called
-                  equals: "true"

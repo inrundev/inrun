@@ -47,23 +47,25 @@ spec:
           schedule: "{{ ... }}"
 
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 10
           resync: 30s
-        # reconciler: is optional — omit for declarative-only CRDs (GenericReconciler is the default)
-        # reconciler:
+          onCreate: [...]        # resource creation on first reconcile
+          onReconcile: [...]     # drift correction on every reconcile
+          onDelete: [...]        # cleanup before finalizer removal
+          providers: [...]       # external infra (AWS, MongoDB, etc.)
+        emit:
+          status: [...]          # status field declarations
+        # reconcile: is optional — omit for declarative-only CRDs (GenericReconciler is the default)
+        # reconcile:
         #   default: false     # set to use a custom constructor instead
         #   constructor:
         #     location: ...
-        cross: [...]           # IPC declarations
-        onCreate: [...]        # resource creation on first reconcile
-        onReconcile: [...]     # drift correction on every reconcile
-        onDelete: [...]        # cleanup before finalizer removal
-        status: [...]          # status field declarations
-        providers: [...]       # external infra (AWS, MongoDB, etc.)
+        observe:
+          cross: [...]         # cross-CRD observations
 ```
 
-Omitting `reconciler:` uses the declarative GenericReconciler — no Go code required. Add `reconciler.constructor:` with `default: false` when you need a typed Go reconciler.
+Omitting `reconcile:` uses the declarative GenericReconciler — no Go code required. Add `reconcile.constructor:` with `default: false` when you need a typed Go reconciler.
 
 ---
 

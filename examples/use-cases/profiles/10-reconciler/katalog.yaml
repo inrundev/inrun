@@ -36,31 +36,29 @@ spec:
   crds:
     service:
       crdFile: ../crd.yaml
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           profile: local-dev
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "{{ .spec.replicas }}"
+                resources:
+                  profile: medium
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployments }}"
+                    equals: "true"
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployments }}"
-                  equals: "true"
-
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "{{ .spec.replicas }}"
-              resources:
-                profile: medium
-              reconcile: true

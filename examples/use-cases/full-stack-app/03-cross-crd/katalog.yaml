@@ -13,111 +13,108 @@ spec:
     # managed-database:
     #   crdFile: ./crd-managed-database.yaml
     #   operatorBox:
-    #     reconciler:
+    #     reconcile:
     #       workers: 2
     #       resync: 30s
-    #     onCreate:
-    #       deployments:
-    #         - name: "{{ .metadata.name }}-postgres"
-    #           image: "postgres:17"
-    #           env:
-    #             - name: POSTGRES_PASSWORD
-    #               value: "postgres"
-    #             - name: POSTGRES_USER
-    #               value: "postgres"
-    #             - name: POSTGRES_DB
-    #               value: "postgres"
-
-    #       services:
-    #         - name: "{{ .metadata.name }}-postgres"
-    #           port: "5432"
-    #           reconcile: true
-
-    #     status:
-    #       fields:
-    #         - path: phase
-    #           value: "Pending"
-    #           when:
-    #             - field: status.phase
-    #               operator: notExists
-    #         - path: resourceExists
-    #           value: "ResourceExists"
-    #           when:
-    #             - field: "{{ resourceExists .children.deployment }}"
-    #               equals: "true"
-    #         - path: phase
-    #           value: "Ready"
-    #           when:
-    #             - field: "{{ allReplicasReady .children.deployment }}"
-    #               equals: "true"
-    #         - path: endpoint
-    #           value: "{{ .metadata.name }}-postgres.{{ .metadata.namespace }}.svc.cluster.local:5432"
-    #         - path: replicasReady
-    #           value: "{{ allReplicasReady .children.deployment }}"
-    #         - path: resourceExists
-    #           value: "{{ resourceExists .children.deployment }}"
+    #       onCreate:
+    #         deployments:
+    #           - name: "{{ .metadata.name }}-postgres"
+    #             image: "postgres:17"
+    #             env:
+    #               - name: POSTGRES_PASSWORD
+    #                 value: "postgres"
+    #               - name: POSTGRES_USER
+    #                 value: "postgres"
+    #               - name: POSTGRES_DB
+    #                 value: "postgres"
+    #         services:
+    #           - name: "{{ .metadata.name }}-postgres"
+    #             port: "5432"
+    #             reconcile: true
+    #     emit:
+    #       status:
+    #         fields:
+    #           - path: phase
+    #             value: "Pending"
+    #             when:
+    #               - field: status.phase
+    #                 operator: notExists
+    #           - path: resourceExists
+    #             value: "ResourceExists"
+    #             when:
+    #               - field: "{{ resourceExists .children.deployment }}"
+    #                 equals: "true"
+    #           - path: phase
+    #             value: "Ready"
+    #             when:
+    #               - field: "{{ allReplicasReady .children.deployment }}"
+    #                 equals: "true"
+    #           - path: endpoint
+    #             value: "{{ .metadata.name }}-postgres.{{ .metadata.namespace }}.svc.cluster.local:5432"
+    #           - path: replicasReady
+    #             value: "{{ allReplicasReady .children.deployment }}"
+    #           - path: resourceExists
+    #             value: "{{ resourceExists .children.deployment }}"
 
     database-backed-app:
       crdFile: ./crd-database-backed-app.yaml
-
       dependsOn:
         managed-database: healthy
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              action: deny
       operatorBox:
-        reconciler:
+        observe:
+          cross:
+            - crd: managed-database
+              selector:
+                name: "{{ .metadata.name }}-db"
+                namespace: "{{ .metadata.namespace }}"
+              as: appDb
+        reconcile:
           workers: 2
           resync: 30s
-        cross:
-          - crd: managed-database
-            selector:
-              name: "{{ .metadata.name }}-db"
-              namespace: "{{ .metadata.namespace }}"
-            as: db
+          onReconcile:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                when:
+                  - field: "{{ phase .cross.appDb }}"
+                    equals: "Ready"
 
-        onReconcile:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              when:
-                - field: "{{ phase .cross.db }}"
-                  equals: "Ready"
-
-          configMaps:
-            - name: "{{ .metadata.name }}-config"
-              data:
-                DB_HOST: "{{ .cross.db.status.endpoint }}"
-                DB_PORT: "5432"
-              when:
-                - field: "{{ resourceExists .cross.db }}"
-                  equals: "true"
-
-        status:
-          fields:
-            - path: phase
-              value: "WaitingForDatabase"
-              when:
-                - field: "{{ resourceExists .cross.db }}"
-                  equals: "false"
-            - path: phase
-              value: "WaitingForDatabase"
-              when:
-                - field: "{{ phase .cross.db }}"
-                  notEquals: "Ready"
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ phase .cross.db }}"
-                  equals: "Ready"
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
-            - path: databaseEndpoint
-              value: "{{ get .cross.db \"status\" \"endpoint\" }}"
-              when:
-                - field: "{{ resourceExists .cross.db }}"
-                  equals: "true"
+            configMaps:
+              - name: "{{ .metadata.name }}-config"
+                data:
+                  DB_HOST: "{{ .cross.appDb.status.endpoint }}"
+                  DB_PORT: "5432"
+                when:
+                  - field: "{{ resourceExists .cross.appDb }}"
+                    equals: "true"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "WaitingForDatabase"
+                when:
+                  - field: "{{ resourceExists .cross.appDb }}"
+                    equals: "false"
+              - path: phase
+                value: "WaitingForDatabase"
+                when:
+                  - field: "{{ phase .cross.appDb }}"
+                    notEquals: "Ready"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ phase .cross.appDb }}"
+                    equals: "Ready"
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
+              - path: databaseEndpoint
+                value: "{{ get .cross.appDb \"status\" \"endpoint\" }}"
+                when:
+                  - field: "{{ resourceExists .cross.appDb }}"
+                    equals: "true"

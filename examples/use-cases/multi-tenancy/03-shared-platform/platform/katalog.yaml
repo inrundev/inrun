@@ -14,32 +14,30 @@ spec:
         version: v1alpha1
         kind: Cache
         plural: caches
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "ready"
-            - path: endpoint
-              value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local:6379"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-redis"
+                image: "redis:7-alpine"
+                replicas: "1"
+                port: "6379"
+                reconcile: true
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-redis"
-              image: "redis:7-alpine"
-              replicas: "1"
-              port: "6379"
-              reconcile: true
-
-          services:
-            - name: "{{ .metadata.name }}"
-              port: "6379"
-              targetPort: "6379"
-              reconcile: true
+            services:
+              - name: "{{ .metadata.name }}"
+                port: "6379"
+                targetPort: "6379"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "ready"
+              - path: endpoint
+                value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local:6379"
 
     queue:
       apiTypes:
@@ -47,29 +45,28 @@ spec:
         version: v1alpha1
         kind: Queue
         plural: queues
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: amqpEndpoint
-              value: "amqp://{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-broker"
+                image: "rabbitmq:3-alpine"
+                replicas: "1"
+                port: "5672"
+                reconcile: true
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-broker"
-              image: "rabbitmq:3-alpine"
-              replicas: "1"
-              port: "5672"
-              reconcile: true
+            services:
+              - name: "{{ .metadata.name }}"
+                port: "5672"
+                targetPort: "5672"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: amqpEndpoint
+                value: "amqp://{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
 
-          services:
-            - name: "{{ .metadata.name }}"
-              port: "5672"
-              targetPort: "5672"
-              reconcile: true

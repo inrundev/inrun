@@ -37,101 +37,101 @@ spec:
         version: v1alpha1
         kind: PlatformResource
         plural: platformresources
-
-      validation:
-        rules:
-          - field: spec.team
-            operator: exists
-            message: "spec.team is required — all platform resources must declare team ownership"
-            action: deny
-          - field: spec.workloadType
-            operator: in
-            value: "app,cert,monitoring,infra"
-            message: "spec.workloadType must be one of: app, cert, monitoring, infra"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.team
+              operator: exists
+              message: "spec.team is required — all platform resources must declare team ownership"
+              action: deny
+            - field: spec.workloadType
+              operator: in
+              value: "app,cert,monitoring,infra"
+              message: "spec.workloadType must be one of: app, cert, monitoring, infra"
+              action: deny
       operatorBox:
+        reconcile:
+          onCreate:
+            custom:
+              # ArgoCD Application — created when workloadType: app
+              - apiVersion: argoproj.io/v1alpha1
+                kind: Application
+                metadata:
+                  name: "{{ .metadata.name }}"
+                  namespace: argocd
+                spec:
+                  project: default
+                  source:
+                    repoURL: "https://{{ .spec.repo }}"
+                    targetRevision: "{{ .spec.branch }}"
+                    path: "{{ .spec.path }}"
+                  destination:
+                    server: https://kubernetes.default.svc
+                    namespace: "{{ .spec.targetNamespace }}"
+                  syncPolicy:
+                    automated:
+                      prune: true
+                      selfHeal: true
+                hasStatus: true
+                when:
+                  - field: spec.workloadType
+                    equals: app
 
-        status:
-          fields:
-            - path: workloadType
-              value: "{{ .spec.workloadType }}"
-            - path: team
-              value: "{{ .spec.team }}"
-            - path: phase
-              value: "Ready"
+              # cert-manager Certificate — created when workloadType: cert
+              - apiVersion: cert-manager.io/v1
+                kind: Certificate
+                metadata:
+                  name: "{{ .metadata.name }}"
+                  namespace: "{{ .metadata.namespace }}"
+                spec:
+                  secretName: "{{ .metadata.name }}-tls"
+                  issuerRef:
+                    name: "{{ .spec.issuer }}"
+                    kind: ClusterIssuer
+                  dnsNames:
+                    - "{{ .spec.domain }}"
+                hasStatus: true
+                when:
+                  - field: spec.workloadType
+                    equals: cert
 
-        onCreate:
-          custom:
-            # ArgoCD Application — created when workloadType: app
-            - apiVersion: argoproj.io/v1alpha1
-              kind: Application
-              metadata:
-                name: "{{ .metadata.name }}"
-                namespace: argocd
-              spec:
-                project: default
-                source:
-                  repoURL: "https://{{ .spec.repo }}"
-                  targetRevision: "{{ .spec.branch }}"
-                  path: "{{ .spec.path }}"
-                destination:
-                  server: https://kubernetes.default.svc
-                  namespace: "{{ .spec.targetNamespace }}"
-                syncPolicy:
-                  automated:
-                    prune: true
-                    selfHeal: true
-              hasStatus: true
-              when:
-                - field: spec.workloadType
-                  equals: app
+              # Prometheus ServiceMonitor — created when workloadType: monitoring
+              - apiVersion: monitoring.coreos.com/v1
+                kind: ServiceMonitor
+                metadata:
+                  name: "{{ .metadata.name }}"
+                  namespace: "{{ .metadata.namespace }}"
+                spec:
+                  selector:
+                    matchLabels: "{{ toJson .spec.serviceSelector }}"
+                  endpoints:
+                    - port: metrics
+                      interval: 30s
+                when:
+                  - field: spec.workloadType
+                    equals: monitoring
 
-            # cert-manager Certificate — created when workloadType: cert
-            - apiVersion: cert-manager.io/v1
-              kind: Certificate
-              metadata:
-                name: "{{ .metadata.name }}"
-                namespace: "{{ .metadata.namespace }}"
-              spec:
-                secretName: "{{ .metadata.name }}-tls"
-                issuerRef:
-                  name: "{{ .spec.issuer }}"
-                  kind: ClusterIssuer
-                dnsNames:
-                  - "{{ .spec.domain }}"
-              hasStatus: true
-              when:
-                - field: spec.workloadType
-                  equals: cert
+              # Crossplane Composite Claim — created when workloadType: infra
+              - apiVersion: platform.demo.orkestra.io/v1alpha1
+                kind: InfraClaim
+                metadata:
+                  name: "{{ .metadata.name }}"
+                  namespace: "{{ .metadata.namespace }}"
+                spec:
+                  provider: "{{ .spec.provider }}"
+                  region: "{{ .spec.region }}"
+                  class: "{{ .spec.class }}"
+                hasStatus: true
+                when:
+                  - field: spec.workloadType
+                    equals: infra
+        emit:
+          status:
+            fields:
+              - path: workloadType
+                value: "{{ .spec.workloadType }}"
+              - path: team
+                value: "{{ .spec.team }}"
+              - path: phase
+                value: "Ready"
 
-            # Prometheus ServiceMonitor — created when workloadType: monitoring
-            - apiVersion: monitoring.coreos.com/v1
-              kind: ServiceMonitor
-              metadata:
-                name: "{{ .metadata.name }}"
-                namespace: "{{ .metadata.namespace }}"
-              spec:
-                selector:
-                  matchLabels: "{{ toJson .spec.serviceSelector }}"
-                endpoints:
-                  - port: metrics
-                    interval: 30s
-              when:
-                - field: spec.workloadType
-                  equals: monitoring
-
-            # Crossplane Composite Claim — created when workloadType: infra
-            - apiVersion: platform.demo.orkestra.io/v1alpha1
-              kind: InfraClaim
-              metadata:
-                name: "{{ .metadata.name }}"
-                namespace: "{{ .metadata.namespace }}"
-              spec:
-                provider: "{{ .spec.provider }}"
-                region: "{{ .spec.region }}"
-                class: "{{ .spec.class }}"
-              hasStatus: true
-              when:
-                - field: spec.workloadType
-                  equals: infra

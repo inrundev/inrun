@@ -37,31 +37,32 @@ The conversion paths are four template lines in the Katalog:
 
 ```yaml
 security:
-  conversion:
-    enabled: true
-
+  admission:
+    conversion:
+      enabled: true
 spec:
   crds:
     webapp-v2:
-      conversion:
-        storageVersion: v1
-        updateCRD: true
-        paths:
-          # v1 → v2: lift flat fields into expose struct
-          - from: v1
-            to: v2
-            spec:
-              expose:
-                port: "{{ .spec.port }}"
-                host: '{{ default "" .spec.host }}'
-                protocol: HTTP
+      admission:
+        conversion:
+          storageVersion: v1
+          updateCRD: true
+          paths:
+            # v1 → v2: lift flat fields into expose struct
+            - from: v1
+              to: v2
+              spec:
+                expose:
+                  port: "{{ .spec.port }}"
+                  host: '{{ default "" .spec.host }}'
+                  protocol: HTTP
 
-          # v2 → v1: flatten expose back to top-level fields
-          - from: v2
-            to: v1
-            spec:
-              port: "{{ .spec.expose.port }}"
-              host: '{{ default "" .spec.expose.host }}'
+            # v2 → v1: flatten expose back to top-level fields
+            - from: v2
+              to: v1
+              spec:
+                port: "{{ .spec.expose.port }}"
+                host: '{{ default "" .spec.expose.host }}'
 ```
 
 Conversion runs in-process inside Orkestra Gateway — no separate webhook pod, no TLS management, no cert-manager. The `/convert` endpoint is the same process that runs the operator.

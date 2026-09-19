@@ -11,10 +11,7 @@ metadata:
     separate Orkestra deployment.
 
     App declares dependsOn: database: healthy. Orkestra resolves the
-    condition by calling the Database Orkestra's health API at:
-      http://orkestra.db-system:8080/katalog/database/cr/<ns>/<name>/health
-
-    Once the Database CR reaches healthy, App's reconcile loop begins.
+    condition. Once the Database CR reaches healthy, App's reconcile loop begins.
     The cross block then reads the endpoint for injection.
 
     Deploy order:
@@ -30,30 +27,28 @@ spec:
         version: v1alpha1
         kind: Database
         plural: databases
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}.db-system.svc:5432"
-            - path: ready
-              value: '{{ get .children.statefulset "status" "readyReplicas" }}'
-
-        onCreate:
-          statefulSets:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 5432
-              reconcile: true
-          services:
-            - port: "5432"
-              reconcile: true
+          onCreate:
+            statefulSets:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 5432
+                reconcile: true
+            services:
+              - port: "5432"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}.db-system.svc:5432"
+              - path: ready
+                value: '{{ get .children.statefulset "status" "readyReplicas" }}'
 
     # ── App (app-system deployment) ────────────────────────────────────────────
     # dependsOn uses the cross source.endpoint to resolve the condition
@@ -64,41 +59,39 @@ spec:
         version: v1alpha1
         kind: App
         plural: apps
-
-
       dependsOn:
         database: healthy
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 30s
-        cross:
-          - crd: database
-            selector:
-              name: "{{ .metadata.name }}"
-              namespace: "{{ .metadata.namespace }}"
-            as: database
-            source:
-              endpoint: "http://orkestra.db-system:8080/katalog/database/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
-              cacheFor: 15s
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 8080
+                env:
+                  - name: DB_HOST
+                    value: "{{ .cross.database.status.endpoint }}"
+                reconcile: true
+            services:
+              - port: "80"
+                targetPort: "8080"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: dbEndpoint
+                value: "{{ .cross.database.status.endpoint }}"
+        observe:
+          cross:
+            - crd: database
+              selector:
+                name: "{{ .metadata.name }}"
+                namespace: "{{ .metadata.namespace }}"
+              as: database
+              source:
+                endpoint: "http://orkestra.db-system:8080/katalog/database/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
+                cacheFor: 15s
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: dbEndpoint
-              value: "{{ .cross.database.status.endpoint }}"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 8080
-              env:
-                DB_HOST:
-                  value: "{{ .cross.database.status.endpoint }}"
-              reconcile: true
-          services:
-            - port: "80"
-              targetPort: "8080"

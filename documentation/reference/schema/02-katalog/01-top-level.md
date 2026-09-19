@@ -14,7 +14,7 @@ metadata:
   description: string                  # optional
 
 profiles:                              # optional → see profiles schema
-  reconciler: [...]
+  reconcile: [...]
   networkPolicies: [...]
   resourceQuotas: [...]
   limitRanges: [...]

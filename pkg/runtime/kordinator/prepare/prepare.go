@@ -13,7 +13,6 @@ import (
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/contract"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // Input holds everything Prepare needs from the Kontroller.
@@ -52,7 +51,7 @@ func Prepare(ctx context.Context, in Input) (*domain.PreparedRequest, *Validatio
 	if err != nil || !exists || raw == nil {
 		return nil, nil, nil
 	}
-	obj, ok := raw.(*unstructured.Unstructured)
+	obj, ok := domain.ToUnstructured(raw)
 	if !ok {
 		return nil, nil, fmt.Errorf("prepare: unexpected type %T in informer cache for %q", raw, in.Key)
 	}

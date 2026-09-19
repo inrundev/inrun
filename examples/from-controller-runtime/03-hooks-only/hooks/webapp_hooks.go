@@ -47,6 +47,7 @@ func onWebAppReconcile(ctx context.Context, obj *apiv1.WebApp) error {
 			Port:      fmt.Sprintf("%d", obj.Spec.Port),
 		},
 		obj.Name,
+		nil,
 	)
 	if err := orkdeploy.Update(ctx, kube, obj, deploySpec); err != nil {
 		return fmt.Errorf("webapp deployment: %w", err)

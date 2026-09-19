@@ -155,7 +155,7 @@ spec:
   crds:
     postgres:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 8          # override the upstream default
           resync: 30s
 ```

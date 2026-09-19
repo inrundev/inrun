@@ -19,88 +19,97 @@ spec:
     # Writes its connection string into status.endpoint once the StatefulSet
     # is ready so App can read it.
     database:
-      crdFile: ./crd.yaml
-
+      apiTypes:
+        group: deps.orkestra.io
+        version: v1alpha1
+        kind: Database
+        plural: databases
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc:5432"
-            - path: ready
-              value: '{{ get .children.statefulset "status" "readyReplicas" }}'
-
-        onCreate:
-          statefulSets:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 5432
-              reconcile: true
-          services:
-            - port: "5432"
-              reconcile: true
+          onCreate:
+            statefulSets:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 5432
+                reconcile: true
+            services:
+              - port: "5432"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc:5432"
+              - path: ready
+                value: '{{ get .children.statefulset "status" "readyReplicas" }}'
 
     # ── App ───────────────────────────────────────────────────────────────────
     # Depends on Database being healthy before reconcile begins.
     # Reads the Database endpoint via cross: and injects it as DB_HOST.
     #
     # dependsOn formats (all equivalent):
+
     #   dependsOn:
+
     #     - database              # list form — condition defaults to "started"
     #
     #   dependsOn:
+
     #     database: healthy       # key-value form — explicit condition
     #
     #   dependsOn:               # full map form
     #     database:
+
     #       condition: healthy
     app:
-      crdFile: ./crd.yaml
-
+      apiTypes:
+        group: deps.orkestra.io
+        version: v1alpha1
+        kind: App
+        plural: apps
       dependsOn:
         database: healthy
-
       operatorBox:
-        reconciler:
+        observe:
+          cross:
+            - crd: database
+              selector:
+                name: "{{ .metadata.name }}"
+                namespace: "{{ .metadata.namespace }}"
+              as: db
+        reconcile:
           workers: 3
           resync: 30s
-        cross:
-          - crd: database
-            selector:
-              name: "{{ .metadata.name }}"
-              namespace: "{{ .metadata.namespace }}"
-            as: database
-
-        status:
-          fields:
-            # ── Initial state ───────────────────────────────────────────
-            - path: phase
-              value: "Pending"
-              when:
-                - field: cross.database.status.endpoint
-                  equals: ""
-            - path: phase
-              value: "Running"
-              when:
-                - field: cross.database.status.phase
-                  equals: "Running"
-            - path: dbEndpoint
-              value: "{{ .cross.database.status.endpoint }}"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 8080
-              env:
-                - name: DB_HOST
-                  value: "{{ .cross.database.status.endpoint }}"
-              reconcile: true
-          services:
-            - port: "80"
-              targetPort: "8080"
-              reconcile: true
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 8080
+                env:
+                  - name: DB_HOST
+                    value: "{{ .cross.db.status.endpoint }}"
+                reconcile: true
+            services:
+              - port: "80"
+                targetPort: "8080"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              # ── Initial state ───────────────────────────────────────────
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: cross.db.status.endpoint
+                    equals: ""
+              - path: phase
+                value: "Running"
+                when:
+                  - field: cross.db.status.phase
+                    equals: "Running"
+              - path: dbEndpoint
+                value: "{{ .cross.db.status.endpoint }}"

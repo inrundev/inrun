@@ -23,7 +23,7 @@ The Katalog declares the hook and resource kinds for RBAC, but no `onCreate` tem
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     hooks:
       location: github.com/myorg/webapp-operator/hooks
       function: WebAppHooks

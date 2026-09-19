@@ -149,7 +149,6 @@ operatorBox:
     events:
       dbFailed:
         reason: DatabaseFailed
-
   enrich:
     - events
 ```

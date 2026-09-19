@@ -15,8 +15,6 @@ spec:
   crds:
     microservice:
       crdFile: ../crd.yaml
-
-
       # ── Enrichment ───────────────────────────────────────────────────────────
       enrich:
         # pods: always — phase, pod count, crash detection.
@@ -30,77 +28,76 @@ spec:
                 equals: "false"
               - field: spec.debug
                 equals: "true"
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 15s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-            - path: phase
-              value: "Rollout"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "false"
+              - path: phase
+                value: "Rollout"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "false"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            # ── Pod notes (always available) ────────────────────────────────
-            - path: podCount
-              value: "{{ podCount .children.deployment }}"
+              # ── Pod notes (always available) ────────────────────────────────
+              - path: podCount
+                value: "{{ podCount .children.deployment }}"
 
-            - path: readyPodCount
-              value: "{{ readyPodCount .children.deployment }}"
+              - path: readyPodCount
+                value: "{{ readyPodCount .children.deployment }}"
 
-            - path: hasCrashingPod
-              value: "{{ hasCrashingPod .children.deployment }}"
+              - path: hasCrashingPod
+                value: "{{ hasCrashingPod .children.deployment }}"
 
-            # ── ReplicaSet notes (only available when enrichment ran) ───────
-            # replicaSetCount — how many ReplicaSets exist (>1 during rollout).
-            - path: replicaSetCount
-              value: "{{ deploymentReplicaSetCount .children.deployment }}"
-              clearOnFalse: true
-              when:
-                - field: "{{ replicasReady .children.deployment }}"
-                  equals: "false"
+              # ── ReplicaSet notes (only available when enrichment ran) ───────
+              # replicaSetCount — how many ReplicaSets exist (>1 during rollout).
+              - path: replicaSetCount
+                value: "{{ deploymentReplicaSetCount .children.deployment }}"
+                clearOnFalse: true
+                when:
+                  - field: "{{ replicasReady .children.deployment }}"
+                    equals: "false"
 
-            # oldReplicaSets — non-zero while old pods are still scaling down.
-            - path: oldReplicaSets
-              value: "{{ oldDeploymentReplicaSets .children.deployment }}"
-              clearOnFalse: true
-              when:
-                - field: "{{ replicasReady .children.deployment }}"
-                  equals: "false"
+              # oldReplicaSets — non-zero while old pods are still scaling down.
+              - path: oldReplicaSets
+                value: "{{ oldDeploymentReplicaSets .children.deployment }}"
+                clearOnFalse: true
+                when:
+                  - field: "{{ replicasReady .children.deployment }}"
+                    equals: "false"
 
-            # Debug-mode rollout visibility — cleared when debug is turned off.
-            - path: debugReplicaSetCount
-              value: "{{ deploymentReplicaSetCount .children.deployment }}"
-              clearOnFalse: true
-              when:
-                - field: spec.debug
-                  equals: "true"
+              # Debug-mode rollout visibility — cleared when debug is turned off.
+              - path: debugReplicaSetCount
+                value: "{{ deploymentReplicaSetCount .children.deployment }}"
+                clearOnFalse: true
+                when:
+                  - field: spec.debug
+                    equals: "true"
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true

@@ -14,39 +14,40 @@ spec:
         version: v1alpha1
         kind: Website
         plural: websites
-
-      validation:
-        rules:
-          - field: spec.image
-            prefix: "myorg/"
-            message: "images must come from the internal registry"
-            action: deny
-          - field: spec.replicas
-            greaterThan: 0
-            message: "replicas must be at least 1"
-            action: deny
-
-      mutation:
-        rules:
-          - field: spec.replicas
-            default: 2
-            valueType: int
-          - field: spec.port
-            default: "8080"
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              prefix: "myorg/"
+              message: "images must come from the internal registry"
+              action: deny
+            - field: spec.replicas
+              greaterThan: 0
+              message: "replicas must be at least 1"
+              action: deny
+        mutation:
+          rules:
+            - field: spec.replicas
+              default: 2
+              valueType: int
+            - field: spec.port
+              default: "8080"
       operatorBox:
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: readyReplicas
-              value: '{{ get .children.deployment "status" "readyReplicas" }}'
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
-          services:
-            - port: "80"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true
+        reconcile:
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+            services:
+              - port: "80"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: readyReplicas
+                value: '{{ get .children.deployment "status" "readyReplicas" }}'
+

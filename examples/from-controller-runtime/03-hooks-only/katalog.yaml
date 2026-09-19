@@ -27,14 +27,12 @@ spec:
         objectList: WebAppList
         location: github.com/orkspace/from-controller-runtime-demo/api/v1alpha1
         alias: demov1alpha1
-
-      allowedNamespaces:
-        - default
-
       operatorBox:
-
+        runtime:
+          allowedNamespaces:
+            - default
         # No declared templates. The hook manages both resources.
-        reconciler:
+        reconcile:
           default: true   # GenericReconciler still runs — hook is additive
           hooks:
             location: github.com/orkspace/from-controller-runtime-demo/hooks
@@ -43,12 +41,12 @@ spec:
             managedResources:
               - kind: Deployment
               - kind: Service
-
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
-            - path: replicas
-              value: "{{ .spec.replicas }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+              - path: replicas
+                value: "{{ .spec.replicas }}"

@@ -44,7 +44,7 @@ when:
 
 # timeUntil
 operatorBox:
-  reconciler:
+  reconcile:
     requeue:
       after: "{{ timeUntil .status.certExpiry }}"
       when:

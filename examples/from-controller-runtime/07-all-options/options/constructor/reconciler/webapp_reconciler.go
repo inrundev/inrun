@@ -40,7 +40,6 @@ package reconciler
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	apiv1 "github.com/orkspace/from-controller-runtime-all-options/options/constructor/api/v1alpha1"
 	"github.com/orkspace/orkestra/domain"
@@ -65,20 +64,14 @@ func NewWebAppReconciler(kube kubeclient.Interface) domain.Reconciler {
 
 // Reconcile is called by Orkestra's worker pool for every queued ConstructorApp key.
 func (r *WebAppReconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
-	key := req.Key
-	raw, exists, err := r.kube.GetInformer().GetIndexer().GetByKey(key)
-	if err != nil {
-		return domain.Result{}, fmt.Errorf("cache lookup %q: %w", key, err)
-	}
-	if !exists {
+	if req.Prepared == nil {
 		return domain.Result{}, nil
 	}
 
-	webapp, ok := raw.(*apiv1.ConstructorApp)
-	if !ok {
-		return domain.Result{}, fmt.Errorf("unexpected type %T", raw)
+	webapp, err := domain.ToTyped[apiv1.ConstructorApp](req.Prepared)
+	if err != nil {
+		return domain.Result{}, fmt.Errorf("toTyped: %w", err)
 	}
-	webapp = webapp.DeepCopyObject().(*apiv1.ConstructorApp)
 
 	if webapp.DeletionTimestamp != nil {
 		// Owner references clean up Deployment and Service automatically.
@@ -99,7 +92,7 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req domain.Request) (d
 		"phase":    "Running",
 		"endpoint": fmt.Sprintf("%s-svc.%s.svc.cluster.local", webapp.Name, webapp.Namespace),
 		"replicas": webapp.Spec.Replicas,
-	})
+	}, metav1.PatchOptions{})
 }
 
 // reconcileDeployment — same logic as the controller-runtime baseline.
@@ -190,11 +183,3 @@ func (r *WebAppReconciler) reconcileService(ctx context.Context, webapp *apiv1.C
 	return r.kube.Patch(ctx, existing, patch)
 }
 
-// namespacedName splits a cache key "namespace/name" into its parts.
-func namespacedName(key string) (namespace, name string) {
-	parts := strings.SplitN(key, "/", 2)
-	if len(parts) == 2 {
-		return parts[0], parts[1]
-	}
-	return "", parts[0]
-}

@@ -22,7 +22,7 @@ spec:
         database:
           condition: healthy
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 5
     pipeline:
       dependsOn:

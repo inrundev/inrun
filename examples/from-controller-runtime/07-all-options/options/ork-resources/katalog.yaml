@@ -27,12 +27,8 @@ spec:
         objectList: OrkAppList
         location: github.com/orkspace/from-controller-runtime-all-options/options/ork-resources/api/v1alpha1
         alias: orkv1alpha1
-
-      allowedNamespaces:
-        - default
-
       operatorBox:
-        reconciler:
+        reconcile:
           # default: false — the GenericReconciler is not used.
           # The constructor below owns the full reconcile loop.
           default: false
@@ -42,3 +38,7 @@ spec:
             managedResources:
               - kind: Deployment
               - kind: Service
+        runtime:
+          allowedNamespaces:
+            - default
+

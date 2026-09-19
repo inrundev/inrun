@@ -35,12 +35,13 @@ Once declared at the Katalog level, provider blocks appear in `operatorBox`:
 
 ```yaml
 operatorBox:
-  providers:
-    aws:
-      - action: createBucket
-        input:
-          name: "{{ .Name }}-data"
-          region: "{{ .Spec.Region }}"
+  reconcile:
+    providers:
+      aws:
+        - action: createBucket
+          input:
+            name: "{{ .Name }}-data"
+            region: "{{ .Spec.Region }}"
 ```
 
 The provider declaration at the top level is the dependency claim. The provider block in `operatorBox` is where calls are made.

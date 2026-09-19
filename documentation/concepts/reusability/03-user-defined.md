@@ -39,7 +39,7 @@ A profile named `high-throughput` might expand into:
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     workers: 8
     resync: 10s
     queue:
@@ -72,20 +72,19 @@ notes:
       expression: '{{ and weekday (timeInWindow "09:00" "18:00") }}'
 
 profiles:
-  reconciler:
+  reconcile:
     - name: api-service
       description: Balanced for a standard web service operator
       workers: 4
       resync: 30s
       queue:
         maxDepth: 200
-
 crds:
   app-eu:
-    reconciler:
+    reconcile:
       profile: api-service
   app-us:
-  reconciler:
+  reconcile:
       profile: api-service
 ```
 

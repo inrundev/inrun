@@ -4,8 +4,8 @@ package informer
 import (
 	"context"
 
+	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/logger"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
@@ -15,9 +15,10 @@ import (
 // informer created by this factory. Use it with indexer.ByIndex(OwnerNameIndex, ownerName).
 const OwnerNameIndex = "orkestra.io/owner-name"
 
-// OwnerNameIndexFunc indexes an unstructured object by the names of its owner references.
+// OwnerNameIndexFunc indexes an object by the names of its owner references.
+// Works for both unstructured and typed informer caches.
 func OwnerNameIndexFunc(obj interface{}) ([]string, error) {
-	u, ok := obj.(*unstructured.Unstructured)
+	u, ok := domain.ToUnstructured(obj)
 	if !ok {
 		return nil, nil
 	}

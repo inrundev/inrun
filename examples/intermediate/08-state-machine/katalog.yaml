@@ -18,27 +18,156 @@ spec:
         version: v1alpha1
         kind: Pipeline
         plural: pipelines
-
-
       # ── Validation ───────────────────────────────────────────────────
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-          - field: spec.steps
-            operator: exists
-            message: "spec.steps is required"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
+            - field: spec.steps
+              operator: exists
+              message: "spec.steps is required"
+              action: deny
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 4
           resync: 10s   # short resync to check Job completion quickly
           queue:
             maxDepth: 1000
             failureThreshold: 0.5
+          onReconcile:
+            jobs:
+              # ── Step 1: build ───────────────────────────────────────────
+              # Created when phase is empty (first reconcile)
+              - name: "{{ .metadata.name }}-build"
+                image: "{{ .spec.image }}"
+                command:
+                  - "sh"
+                  - "-c"
+                  - "{{ index (index .spec.steps 0) \"command\" }}"
+                when:
+                  - field: status.phase
+                    operator: notExists
+                reconcile: false   # create once — Job is terminal 
+                # false is the default internally, so ignored in the rest of the jobs
+
+              # ── Step 2: test ────────────────────────────────────────────
+              # Created when build Job succeeded
+              - name: "{{ .metadata.name }}-test"
+                image: "{{ .spec.image }}"
+                command:
+                  - "sh"
+                  - "-c"
+                  - "{{ index (index .spec.steps 1) \"command\" }}"
+                when:
+                  - field: status.phase
+                    equals: "Running/build"
+                  - field: children.job.status.succeeded
+                    greaterThan: "0"
+
+              # ── Step 3: notify ──────────────────────────────────────────
+              # Created when test Job succeeded
+              - name: "{{ .metadata.name }}-notify"
+                image: "{{ .spec.image }}"
+                command:
+                  - "sh"
+                  - "-c"
+                  - "{{ index (index .spec.steps 2) \"command\" }}"
+                when:
+                  - field: status.phase
+                    equals: "Running/test"
+                  - field: children.job.status.succeeded
+                    greaterThan: "0"
+        emit:
+          status:
+            fields:
+              # ── Initial state ───────────────────────────────────────────
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+
+              # ── Build started ───────────────────────────────────────────
+              - path: phase
+                value: "Running/build"
+                when:
+                  - field: status.phase
+                    operator: in
+                    value: "Pending,"       # Pending or empty
+
+              - path: currentStep
+                value: "build"
+                when:
+                  - field: status.phase
+                    operator: in
+                    value: "Pending,Running/build,"
+
+              # ── Test started ────────────────────────────────────────────
+              - path: phase
+                value: "Running/test"
+                when:
+                  - field: status.phase
+                    equals: "Running/build"
+                  - field: children.job.status.succeeded
+                    greaterThan: "0"
+
+              - path: currentStep
+                value: "test"
+                when:
+                  - field: status.phase
+                    equals: "Running/test"
+
+              # ── Notify started ──────────────────────────────────────────
+              - path: phase
+                value: "Running/notify"
+                when:
+                  - field: status.phase
+                    equals: "Running/test"
+                  - field: children.job.status.succeeded
+                    greaterThan: "0"
+
+              - path: currentStep
+                value: "notify"
+                when:
+                  - field: status.phase
+                    equals: "Running/notify"
+
+              # ── Succeeded — declared last, overrides any Running state ──
+              - path: phase
+                value: "Succeeded"
+                when:
+                  - field: status.phase
+                    equals: "Running/notify"
+                  - field: children.job.status.succeeded
+                    greaterThan: "0"
+
+              - path: currentStep
+                value: ""
+                when:
+                  - field: status.phase
+                    equals: "Succeeded"
+
+              # ── Failed — checked at every reconcile ─────────────────────
+              # Any Job failure drives to Failed regardless of current phase
+              - path: phase
+                value: "Failed"
+                when:
+                  - field: children.job.status.failed
+                    greaterThan: "0"
+
+              - path: currentStep
+                value: ""
+                when:
+                  - field: status.phase
+                    equals: "Failed"
+
+              # ── Always-written fields ────────────────────────────────────
+              # No when: → written on every successful reconcile
+              - path: image
+                value: "{{ .spec.image }}"
         # ── Phase-gated Jobs ─────────────────────────────────────────────
         # Each step is a separate Job.
         # The when: conditions gate creation based on current phase
@@ -56,51 +185,6 @@ spec:
         # Key insight: each reconcile does one thing and writes one state.
         # The queue fires again on the next resync (10s) and advances.
         # This is level-triggered reconciliation — idempotent by design.
-
-        onReconcile:
-          jobs:
-            # ── Step 1: build ───────────────────────────────────────────
-            # Created when phase is empty (first reconcile)
-            - name: "{{ .metadata.name }}-build"
-              image: "{{ .spec.image }}"
-              command:
-                - "sh"
-                - "-c"
-                - "{{ index (index .spec.steps 0) \"command\" }}"
-              when:
-                - field: status.phase
-                  operator: notExists
-              reconcile: false   # create once — Job is terminal 
-              # false is the default internally, so ignored in the rest of the jobs
-
-            # ── Step 2: test ────────────────────────────────────────────
-            # Created when build Job succeeded
-            - name: "{{ .metadata.name }}-test"
-              image: "{{ .spec.image }}"
-              command:
-                - "sh"
-                - "-c"
-                - "{{ index (index .spec.steps 1) \"command\" }}"
-              when:
-                - field: status.phase
-                  equals: "Running/build"
-                - field: children.job.status.succeeded
-                  greaterThan: "0"
-
-            # ── Step 3: notify ──────────────────────────────────────────
-            # Created when test Job succeeded
-            - name: "{{ .metadata.name }}-notify"
-              image: "{{ .spec.image }}"
-              command:
-                - "sh"
-                - "-c"
-                - "{{ index (index .spec.steps 2) \"command\" }}"
-              when:
-                - field: status.phase
-                  equals: "Running/test"
-                - field: children.job.status.succeeded
-                  greaterThan: "0"
-
         # ── Conditional status fields — the state machine ────────────────
         # Fields are evaluated in order.
         # When multiple entries write the same path, the last one
@@ -108,90 +192,4 @@ spec:
         #
         # Terminal states (Succeeded, Failed) are declared last
         # so they override Running states when conditions are met.
-        status:
-          fields:
-            # ── Initial state ───────────────────────────────────────────
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
 
-            # ── Build started ───────────────────────────────────────────
-            - path: phase
-              value: "Running/build"
-              when:
-                - field: status.phase
-                  operator: in
-                  value: "Pending,"       # Pending or empty
-
-            - path: currentStep
-              value: "build"
-              when:
-                - field: status.phase
-                  operator: in
-                  value: "Pending,Running/build,"
-
-            # ── Test started ────────────────────────────────────────────
-            - path: phase
-              value: "Running/test"
-              when:
-                - field: status.phase
-                  equals: "Running/build"
-                - field: children.job.status.succeeded
-                  greaterThan: "0"
-
-            - path: currentStep
-              value: "test"
-              when:
-                - field: status.phase
-                  equals: "Running/test"
-
-            # ── Notify started ──────────────────────────────────────────
-            - path: phase
-              value: "Running/notify"
-              when:
-                - field: status.phase
-                  equals: "Running/test"
-                - field: children.job.status.succeeded
-                  greaterThan: "0"
-
-            - path: currentStep
-              value: "notify"
-              when:
-                - field: status.phase
-                  equals: "Running/notify"
-
-            # ── Succeeded — declared last, overrides any Running state ──
-            - path: phase
-              value: "Succeeded"
-              when:
-                - field: status.phase
-                  equals: "Running/notify"
-                - field: children.job.status.succeeded
-                  greaterThan: "0"
-
-            - path: currentStep
-              value: ""
-              when:
-                - field: status.phase
-                  equals: "Succeeded"
-
-            # ── Failed — checked at every reconcile ─────────────────────
-            # Any Job failure drives to Failed regardless of current phase
-            - path: phase
-              value: "Failed"
-              when:
-                - field: children.job.status.failed
-                  greaterThan: "0"
-
-            - path: currentStep
-              value: ""
-              when:
-                - field: status.phase
-                  equals: "Failed"
-
-            # ── Always-written fields ────────────────────────────────────
-            # No when: → written on every successful reconcile
-            - path: image
-              value: "{{ .spec.image }}"

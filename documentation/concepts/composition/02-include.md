@@ -48,19 +48,19 @@ my-operator/
 spec:
   crds:
     apprequest:
-      validation:
-        include: ./admission/apprequest.yaml
-        rules:
-          - field: spec.tier           # inline — appended after included rules
-            operator: in
-            value: "free,pro,enterprise"
-      mutation:
-        include: ./admission/appdefaults.yaml
-
+      admission:
+        validation:
+          include: ./admission/apprequest.yaml
+          rules:
+            - field: spec.tier           # inline — appended after included rules
+              operator: in
+              value: "free,pro,enterprise"
+        mutation:
+          include: ./admission/appdefaults.yaml
       operatorBox:
-        status:
-          include: ./status/apprequest.yaml
-
+        emit:
+          status:
+            include: ./status/apprequest.yaml
 notes:
   include: ./notes/shared.yaml
   functions:
@@ -240,18 +240,19 @@ my-operator/
 spec:
   crds:
     deployment:
-      validation:
-        include: ./includes/workloads/admission/validation.yaml
-      mutation:
-        include: ./includes/workloads/admission/mutation.yaml
+      admission:
+        validation:
+          include: ./includes/workloads/admission/validation.yaml
+        mutation:
+          include: ./includes/workloads/admission/mutation.yaml
       operatorBox:
-        status:
-          include: ./includes/workloads/status.yaml
-
+        emit:
+          status:
+            include: ./includes/workloads/status.yaml
     rolebinding:
-      validation:
-        include: ./includes/rbac/admission/validation.yaml
-
+      admission:
+        validation:
+          include: ./includes/rbac/admission/validation.yaml
 notes:
   include: ./includes/shared/notes.yaml
 

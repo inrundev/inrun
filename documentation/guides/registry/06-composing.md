@@ -41,12 +41,12 @@ spec:
   crds:
     webapp:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 8         # production override
           resync: 30s
 ```
 
-This applies to any CRD-level field: `apiTypes`, `operatorBox.reconciler.workers`, `operatorBox.reconciler.resync`, `webhooks`, `deletionProtection`. The upstream operator is unmodified. Your override is applied at runtime.
+This applies to any CRD-level field: `apiTypes`, `operatorBox.reconcile.workers`, `operatorBox.reconcile.resync`, `webhooks`, `deletionProtection`. The upstream operator is unmodified. Your override is applied at runtime.
 
 ---
 

@@ -18,12 +18,13 @@ spec:
   crds:
     service:
       operatorBox:
-        onCreate:
-          deployments:
-            - resources:
-                profile: team-api        # from the imported motif
-              securityContext:
-                profile: team-baseline   # from the imported motif
+        reconcile:
+          onCreate:
+            deployments:
+              - resources:
+                  profile: team-api        # from the imported motif
+                securityContext:
+                  profile: team-baseline   # from the imported motif
 ```
 
 Only `profiles:` from the Motif is consumed at `spec.imports`. Resources, status, and admission in the Motif are ignored at this level.

@@ -48,7 +48,7 @@ spec:
     website:
       crdFile: website.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
       crFiles:
         - examples/website-sample.yaml

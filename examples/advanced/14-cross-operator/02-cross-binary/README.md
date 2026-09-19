@@ -13,15 +13,17 @@ Same Producer → Consumer pattern as `01-in-binary`, but the two CRDs run in **
 Because Producer and Consumer are in different processes, Consumer cannot reach the Producer informer directly. The `source.endpoint` field tells Orkestra to call Producer's Orkestra REST API and cache the result:
 
 ```yaml
-cross:
-  - crd: producer
-    selector:
-      name: "{{ .metadata.name }}"
-      namespace: "{{ .metadata.namespace }}"
-    as: producer
-    source:
-      endpoint: "http://orkestra.producer-system:8080/katalog/producer/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
-      cacheFor: 15s
+operatorBox:
+  observe:
+    cross:
+      - crd: producer
+        selector:
+          name: "{{ .metadata.name }}"
+          namespace: "{{ .metadata.namespace }}"
+        as: producer
+        source:
+          endpoint: "http://orkestra.producer-system:8080/katalog/producer/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
+          cacheFor: 15s
 ```
 
 Orkestra calls that URL at most once every 15 s, regardless of resync frequency. Between calls it serves the cached value — Consumer's reconcile loop is never blocked by network latency.

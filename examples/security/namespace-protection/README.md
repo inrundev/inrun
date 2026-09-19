@@ -28,13 +28,16 @@ Per-CRD rules:
 ```yaml
 crds:
   app:
-    allowedNamespaces:
-      - production     # whitelist — only this namespace is accepted
-
+    operatorBox:
+      runtime:
+        allowedNamespaces:
+          - production     # whitelist — only this namespace is accepted
   cache:
-    restrictedNamespaces:
-      - kube-system    # blacklist — these namespaces are rejected
-      - kube-public
+    operatorBox:
+      runtime:
+        restrictedNamespaces:
+          - kube-system    # blacklist — these namespaces are rejected
+          - kube-public
 ```
 
 At startup Orkestra:

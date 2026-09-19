@@ -24,76 +24,77 @@ spec:
         version: v1alpha1
         kind: MonitoringConfig
         plural: monitoringconfigs
-      allowedNamespaces:
-        - default
+      admission:
+        validation:
+          rules:
+            # Hard rule — scrape intervals below 10s put strain on Prometheus; enforce a floor
+            - field: spec.scrapeInterval
+              operator: exists
+              message: "declare spec.scrapeInterval explicitly; default is 30s — anything below 10s is not allowed"
+              action: warn
 
-      validation:
-        rules:
-          # Hard rule — scrape intervals below 10s put strain on Prometheus; enforce a floor
-          - field: spec.scrapeInterval
-            operator: exists
-            message: "declare spec.scrapeInterval explicitly; default is 30s — anything below 10s is not allowed"
-            action: warn
-
-          # Advisory — low thresholds produce alert fatigue; prompt teams to be deliberate
-          - field: spec.errorRateThreshold
-            operator: exists
-            message: "declare spec.errorRateThreshold explicitly; default is 0.05 (5%) — adjust for your SLA"
-            action: warn
-
+            # Advisory — low thresholds produce alert fatigue; prompt teams to be deliberate
+            - field: spec.errorRateThreshold
+              operator: exists
+              message: "declare spec.errorRateThreshold explicitly; default is 0.05 (5%) — adjust for your SLA"
+              action: warn
       operatorBox:
+        reconcile:
+          onCreate:
+            custom:
+              # ServiceMonitor — tells Prometheus which pods to scrape and how often.
+              # Teams declare targetDeployment and port; the selector and interval
+              # come from the Katalog.
+              - apiVersion: monitoring.coreos.com/v1
+                kind: ServiceMonitor
+                metadata:
+                  name: "{{ .metadata.name }}"
+                  namespace: "{{ .metadata.namespace }}"
+                  labels:
+                    team: "{{ .spec.team }}"
+                spec:
+                  selector:
+                    matchLabels:
+                      app: "{{ .spec.targetDeployment }}"
+                  endpoints:
+                    - port: "{{ .spec.port }}"
+                      interval: "{{ .spec.scrapeInterval | default \"30s\" }}"
+                      path: /metrics
 
-        status:
-          fields:
-            - path: phase
-              value: "Active"
-            - path: scrapeTarget
-              value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:{{ .spec.port }}"
+              # PrometheusRule — alert when error rate exceeds the declared threshold.
+              # Teams declare a threshold; the PromQL expression is managed here.
+              - apiVersion: monitoring.coreos.com/v1
+                kind: PrometheusRule
+                metadata:
+                  name: "{{ .metadata.name }}"
+                  namespace: "{{ .metadata.namespace }}"
+                  labels:
+                    team: "{{ .spec.team }}"
+                spec:
+                  groups:
+                    - name: "{{ .metadata.name }}.rules"
+                      rules:
+                        - alert: HighErrorRate
+                          expr: |
+                            rate(http_requests_total{job="{{ .spec.targetDeployment }}", status=~"5.."}[5m])
+                            /
+                            rate(http_requests_total{job="{{ .spec.targetDeployment }}"}[5m])
+                            > {{ .spec.errorRateThreshold | default "0.05" }}
+                          for: 5m
+                          labels:
+                            severity: warning
+                            team: "{{ .spec.team }}"
+                          annotations:
+                            summary: "High error rate on {{ .spec.targetDeployment }}"
+                            description: "Error rate exceeded {{ .spec.errorRateThreshold | default \"0.05\" }} for 5 minutes"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Active"
+              - path: scrapeTarget
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:{{ .spec.port }}"
+        runtime:
+          allowedNamespaces:
+            - default
 
-        onCreate:
-          custom:
-            # ServiceMonitor — tells Prometheus which pods to scrape and how often.
-            # Teams declare targetDeployment and port; the selector and interval
-            # come from the Katalog.
-            - apiVersion: monitoring.coreos.com/v1
-              kind: ServiceMonitor
-              metadata:
-                name: "{{ .metadata.name }}"
-                namespace: "{{ .metadata.namespace }}"
-                labels:
-                  team: "{{ .spec.team }}"
-              spec:
-                selector:
-                  matchLabels:
-                    app: "{{ .spec.targetDeployment }}"
-                endpoints:
-                  - port: "{{ .spec.port }}"
-                    interval: "{{ .spec.scrapeInterval | default \"30s\" }}"
-                    path: /metrics
-
-            # PrometheusRule — alert when error rate exceeds the declared threshold.
-            # Teams declare a threshold; the PromQL expression is managed here.
-            - apiVersion: monitoring.coreos.com/v1
-              kind: PrometheusRule
-              metadata:
-                name: "{{ .metadata.name }}"
-                namespace: "{{ .metadata.namespace }}"
-                labels:
-                  team: "{{ .spec.team }}"
-              spec:
-                groups:
-                  - name: "{{ .metadata.name }}.rules"
-                    rules:
-                      - alert: HighErrorRate
-                        expr: |
-                          rate(http_requests_total{job="{{ .spec.targetDeployment }}", status=~"5.."}[5m])
-                          /
-                          rate(http_requests_total{job="{{ .spec.targetDeployment }}"}[5m])
-                          > {{ .spec.errorRateThreshold | default "0.05" }}
-                        for: 5m
-                        labels:
-                          severity: warning
-                          team: "{{ .spec.team }}"
-                        annotations:
-                          summary: "High error rate on {{ .spec.targetDeployment }}"
-                          description: "Error rate exceeded {{ .spec.errorRateThreshold | default \"0.05\" }} for 5 minutes"

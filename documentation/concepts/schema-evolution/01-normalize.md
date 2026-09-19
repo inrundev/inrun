@@ -64,11 +64,11 @@ normalize:
   spec:
     schedule: "{{ cronFromAny .spec.schedule }}"
 
-mutation:
-  rules:
-    - field: spec.concurrencyPolicy
-      default: "Allow"
-
+admission:
+  mutation:
+    rules:
+      - field: spec.concurrencyPolicy
+        default: "Allow"
 onCreate:
   cronJobs:
     - name: "{{ .metadata.name }}"
@@ -112,13 +112,14 @@ Only one path fires per reconcile. The child resource is identical regardless of
 When you are ready to steer users away from the string format, add a validation rule — no etcd migration, no CRD version bump:
 
 ```yaml
-validation:
-  rules:
-    - field: spec.schedule
-      operator: typeOf
-      value: map
-      message: "spec.schedule as a string is deprecated — use the structured object. See migration guide."
-      action: warn   # change to deny when ready
+admission:
+  validation:
+    rules:
+      - field: spec.schedule
+        operator: typeOf
+        value: map
+        message: "spec.schedule as a string is deprecated — use the structured object. See migration guide."
+        action: warn   # change to deny when ready
 ```
 
 Old CRs continue to reconcile normally. `normalize:` still handles them. The warning surfaces at `kubectl apply` time — at the next admission call for each CR, not at migration time.

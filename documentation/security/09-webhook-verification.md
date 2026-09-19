@@ -25,20 +25,21 @@ A GitHub or GitLab entry needs `secretRef` to verify the *delivery* is genuine, 
 
 ```yaml
 gateway:
-  webhooks:
-    github:
-      - name: payments-repo
-        enabled: true
-        path: /webhooks/github/payments
-        branch: main
-        watch:
-          - "services/*/intent.yaml"
-        secretRef:
-          name: ork-payments-github-secret
-          key: secret
-        contentTokenRef:
-          name: ork-payments-github-app-token
-          key: token
+  admission:
+    webhooks:
+      github:
+        - name: payments-repo
+          enabled: true
+          path: /webhooks/github/payments
+          branch: main
+          watch:
+            - "services/*/intent.yaml"
+          secretRef:
+            name: ork-payments-github-secret
+            key: secret
+          contentTokenRef:
+            name: ork-payments-github-app-token
+            key: token
 ```
 
 A push event's payload carries only the *paths* that changed — GitHub and GitLab never include file content in the webhook body itself. Fetching what changed means a second, separate API call (the Contents API for GitHub, the Repository Files API for GitLab), and that call needs its own credential — a GitHub App installation token or a GitLab API token with read access to the repo.

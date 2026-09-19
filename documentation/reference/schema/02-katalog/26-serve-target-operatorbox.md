@@ -13,14 +13,13 @@ spec:
   crds:
     app:
       operatorBox:               # CRD-level fallback — used by kubectl apply / unknown targets
-        reconciler:
+        reconcile:
           hooks:
             location: github.com/myorg/myoperator/hooks
             function: AppHooks
             args:
               featureEnabled: '{{ .external.flags.body }}'
               inBusinessHours: '{{ inBusinessHours }}'
-
       serve:
         enabled: true
         target:
@@ -32,14 +31,13 @@ spec:
                   when:
                     - field: '{{ inBusinessHours }}'
                       equals: "true"
-              reconciler:
+              reconcile:
                 hooks:
                   location: github.com/myorg/myoperator/hooks
                   function: AppHooks
                   args:
                     featureEnabled: "true"
                     inBusinessHours: '{{ inBusinessHours }}'
-
           regional:
             operatorBox:         # declarative — forEach over regions
               preReconcile:
@@ -140,9 +138,10 @@ target:
       overrides:
         keepPreviousSurface: true
     operatorBox:
-      onCreate:
-        deployments:
-          - name: "{{ .metadata.name }}-canary"
+      reconcile:
+        onCreate:
+          deployments:
+            - name: "{{ .metadata.name }}-canary"
 ```
 
 CRD-level wins if set; per-target applies otherwise.
@@ -156,7 +155,7 @@ CRD-level wins if set; per-target applies otherwise.
 
 ## What stays fixed at the CRD level
 
-Reconciler settings — `workers`, `resync`, and `autoscale` — are always taken from the CRD-level `operatorBox`. Everything else (`onCreate`, `onReconcile`, `onDelete`, `preReconcile`, `status`, `reconciler.hooks`, `reconciler.hooks.args`) can be overridden per-target. When a target's `operatorBox` omits a block, it falls back to the CRD-level value.
+Reconciler settings — `workers`, `resync`, and `autoscale` — are always taken from the CRD-level `operatorBox`. Everything else (`onCreate`, `onReconcile`, `onDelete`, `preReconcile`, `status`, `reconcile.hooks`, `reconcile.hooks.args`) can be overridden per-target. When a target's `operatorBox` omits a block, it falls back to the CRD-level value.
 
 ---
 

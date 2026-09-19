@@ -44,7 +44,7 @@ spec:
     postgres:
       # All other postgres behavior inherited from the OCI pattern
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 8
           resync: 30s
 
@@ -52,10 +52,11 @@ spec:
     website:
       # All other website behavior inherited from the local Katalog
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 6
           resync: 15s
 
     # Disable the database operator since we now have Postgres
     database:
       enabled: true
+

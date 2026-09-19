@@ -640,6 +640,13 @@ needing separate target-aware implementations in each feature.
 
 ---
 
+!!! tip "The OPRE execution model"
+    Orkestra implements the OPRE model: **O**bserve, **P**re-reconcile, **R**econcile, **E**mit.
+    Each phase is owned by a distinct layer — informer, kordinator, reconciler, post.
+    One mental model applies everywhere conditions, gates, and outputs are declared.
+
+---
+
 ## Where to go next
 
 - [Observe — Watch](../operatorbox/10-observe/01-watch.md) — observe arbitrary Kubernetes resources

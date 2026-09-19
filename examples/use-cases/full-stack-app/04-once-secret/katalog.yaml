@@ -12,58 +12,57 @@ spec:
   crds:
     secure-app:
       crdFile: ./crd.yaml
-
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              action: deny
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        onCreate:
-          secrets:
-            - name: "{{ .metadata.name }}-credentials"
-              once: true
-              data:
-                password:  "{{ randomAlphanumeric 32 }}"
-                apiKey:    "{{ randomHex 16 }}"
-                jwtSecret: "{{ randomBase64 32 }}"
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              env:
-                - name: PASSWORD
-                  valueFrom:
-                    secretKeyRef:
-                      name: "{{ .metadata.name }}-credentials"
-                      key: password
-                - name: API_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: "{{ .metadata.name }}-credentials"
-                      key: apiKey
-                - name: JWT_SECRET
-                  valueFrom:
-                    secretKeyRef:
-                      name: "{{ .metadata.name }}-credentials"
-                      key: jwtSecret
+          onCreate:
+            secrets:
+              - name: "{{ .metadata.name }}-credentials"
+                once: true
+                data:
+                  password:  "{{ randomAlphanumeric 32 }}"
+                  apiKey:    "{{ randomHex 16 }}"
+                  jwtSecret: "{{ randomBase64 32 }}"
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                env:
+                  - name: PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: "{{ .metadata.name }}-credentials"
+                        key: password
+                  - name: API_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: "{{ .metadata.name }}-credentials"
+                        key: apiKey
+                  - name: JWT_SECRET
+                    valueFrom:
+                      secretKeyRef:
+                        name: "{{ .metadata.name }}-credentials"
+                        key: jwtSecret
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ readyReplicas .children.deployment }}"
+                    operator: gt
+                    value: "0"
+              - path: credentialsSecret
+                value: "{{ .metadata.name }}-credentials"
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ readyReplicas .children.deployment }}"
-                  operator: gt
-                  value: "0"
-            - path: credentialsSecret
-              value: "{{ .metadata.name }}-credentials"

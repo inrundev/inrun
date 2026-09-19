@@ -14,84 +14,82 @@ spec:
   crds:
     webapp:
       crdFile: ../crd.yaml
-
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-          - field: spec.serviceUrl
-            operator: exists
-            message: "spec.serviceUrl is required — cert service base URL"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
+            - field: spec.serviceUrl
+              operator: exists
+              message: "spec.serviceUrl is required — cert service base URL"
+              action: deny
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 15s
-        onReconcile:
-          # ── Certificate status check — runs every reconcile ────────────────
-          # continueOnError: true — pending cert is normal during issuance;
-          # the phase state machine surfaces Pending vs Ready without halting.
-          external:
-            - name: cert
-              url: "{{ .spec.serviceUrl }}/certs/{{ .metadata.name }}/status"
-              method: GET
-              continueOnError: true
-              timeout: 5s
+          onReconcile:
+            # ── Certificate status check — runs every reconcile ────────────────
+            # continueOnError: true — pending cert is normal during issuance;
+            # the phase state machine surfaces Pending vs Ready without halting.
+            external:
+              - name: cert
+                url: "{{ .spec.serviceUrl }}/certs/{{ .metadata.name }}/status"
+                method: GET
+                continueOnError: true
+                timeout: 5s
 
-          # Only deploy when the cert is issued (status 200, body contains "issued").
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              when:
-                - field: external.cert.status
-                  equals: "200"
-                - field: external.cert.body
-                  contains: '"status":"issued"'
+            # Only deploy when the cert is issued (status 200, body contains "issued").
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                when:
+                  - field: external.cert.status
+                    equals: "200"
+                  - field: external.cert.body
+                    contains: '"status":"issued"'
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: external.cert.status
+                    equals: "200"
+                  - field: external.cert.body
+                    contains: '"status":"issued"'
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: external.cert.status
-                  equals: "200"
-                - field: external.cert.body
-                  contains: '"status":"issued"'
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              # 202 — cert is still being issued, wait and retry.
+              - path: phase
+                value: "CertPending"
+                when:
+                  - field: external.cert.called
+                    equals: "true"
+                  - field: external.cert.status
+                    equals: "202"
 
-            # 202 — cert is still being issued, wait and retry.
-            - path: phase
-              value: "CertPending"
-              when:
-                - field: external.cert.called
-                  equals: "true"
-                - field: external.cert.status
-                  equals: "202"
+              # 5xx — cert service unavailable, transient, retry next reconcile.
+              - path: phase
+                value: "CertServiceUnavailable"
+                when:
+                  - field: external.cert.called
+                    equals: "true"
+                  - field: external.cert.status
+                    prefix: "5"
 
-            # 5xx — cert service unavailable, transient, retry next reconcile.
-            - path: phase
-              value: "CertServiceUnavailable"
-              when:
-                - field: external.cert.called
-                  equals: "true"
-                - field: external.cert.status
-                  prefix: "5"
+              - path: certStatus
+                value: "{{ .external.cert.body }}"
+                when:
+                  - field: external.cert.called
+                    equals: "true"
 
-            - path: certStatus
-              value: "{{ .external.cert.body }}"
-              when:
-                - field: external.cert.called
-                  equals: "true"

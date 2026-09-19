@@ -16,10 +16,11 @@ When you include `security.webhooks.admission.enabled: true` in your Katalog, th
 
 ```yaml
 security:
-  webhooks:
-    admission:
-      enabled: true
-    failurePolicy: Ignore
+  admission:
+    webhooks:
+      admission:
+        enabled: true
+      failurePolicy: Ignore
 ```
 
 The Gateway receives every `CREATE` and `UPDATE` request for the CRs you declared, makes its decision, and returns a response. The API server stores (or rejects) the object based on that response.
@@ -35,22 +36,23 @@ Validation rules gate CRs at admission time. A `deny` rule rejects the request b
 ```yaml
 crds:
   platform:
-    validation:
-      rules:
-        - field: spec.image
-          prefix: "registry.internal/"
-          message: "images must come from the internal registry"
-          action: deny
+    admission:
+      validation:
+        rules:
+          - field: spec.image
+            prefix: "registry.internal/"
+            message: "images must come from the internal registry"
+            action: deny
 
-        - field: spec.replicas
-          greaterThan: 0
-          message: "replicas must be at least 1"
-          action: deny
+          - field: spec.replicas
+            greaterThan: 0
+            message: "replicas must be at least 1"
+            action: deny
 
-        - field: spec.rateLimit
-          operator: exists
-          message: "declare spec.rateLimit for production readiness"
-          action: warn
+          - field: spec.rateLimit
+            operator: exists
+            message: "declare spec.rateLimit for production readiness"
+            action: warn
 ```
 
 When a user applies a CR with `spec.image: docker.io/nginx:latest`, the webhook returns:
@@ -75,19 +77,20 @@ Mutation rules fill in defaults before the CR is validated. A CR that omits `spe
 ```yaml
 crds:
   platform:
-    mutation:
-      mutateFirst: true
-      rules:
-        - field: spec.replicas
-          default: 2
-          valueType: int
+    admission:
+      mutation:
+        mutateFirst: true
+        rules:
+          - field: spec.replicas
+            default: 2
+            valueType: int
 
-        - field: spec.environment
-          default: "development"
+          - field: spec.environment
+            default: "development"
 
-        - field: spec.rateLimit
-          default: 100
-          valueType: int
+          - field: spec.rateLimit
+            default: 100
+            valueType: int
 ```
 
 `mutateFirst: true` ensures defaults are applied before any `deny` rule fires, both at admission time and at reconcile time.
@@ -125,8 +128,9 @@ Conversion webhooks allow CRDs to have multiple API versions simultaneously (`v1
 ```yaml
 crds:
   platform:
-    conversion:
-      strategy: Webhook
+    admission:
+      conversion:
+        strategy: Webhook
 ```
 
 When a client requests a CR at `v1` and the object was stored at `v1alpha1`, the API server calls the Gateway to convert between the two. Clients always see the version they asked for, regardless of what version the object was originally created at.
@@ -137,8 +141,9 @@ When a client requests a CR at `v1` and the object was stored at `v1alpha1`, the
 
 ```yaml
 security:
-  webhooks:
-    failurePolicy: Ignore   # or: Fail
+  admission:
+    webhooks:
+      failurePolicy: Ignore   # or: Fail
 ```
 
 - **`Ignore`** — if the Gateway is temporarily unreachable (e.g., during a rolling restart), the CR is accepted. Use this when availability takes priority.

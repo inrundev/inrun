@@ -118,9 +118,10 @@ spec:
         - ./cr.yaml
 
       operatorBox:
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
+        reconcile:
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
 ```
 
 `crdFile` points to the CRD definition. Orkestra reads it, infers the API types, and applies it to the cluster automatically when `ork run` starts. No separate `kubectl apply -f crd.yaml` step.

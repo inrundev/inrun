@@ -39,7 +39,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/cache"
 )
 
 const (
@@ -63,27 +62,14 @@ func NewPipelineReconciler(kube kubeclient.Interface) domain.Reconciler {
 // Reconcile is called by Orkestra's worker pool for every queued Pipeline key.
 // It is wrapped in safeReconcile — panics are caught and returned as errors.
 func (r *PipelineReconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
-	key := req.Key
-	namespace, _, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		return domain.Result{}, fmt.Errorf("invalid key %q: %w", key, err)
-	}
-
-	// Read from the informer cache — no API call
-	raw, exists, err := r.kube.GetInformer().GetIndexer().GetByKey(key)
-	if err != nil {
-		return domain.Result{}, fmt.Errorf("cache lookup %q: %w", key, err)
-	}
-	if !exists {
-		// CR deleted and finalizers already removed — nothing to do
+	if req.Prepared == nil {
 		return domain.Result{}, nil
 	}
 
-	pipeline, ok := raw.(*apiv1.Pipeline)
-	if !ok {
-		return domain.Result{}, fmt.Errorf("unexpected type %T for key %q", raw, key)
+	pipeline, err := domain.ToTyped[apiv1.Pipeline](req.Prepared)
+	if err != nil {
+		return domain.Result{}, fmt.Errorf("toTyped: %w", err)
 	}
-	pipeline = pipeline.DeepCopyObject().(*apiv1.Pipeline)
 
 	// ── Deletion handling ──────────────────────────────────────────────────
 	if pipeline.DeletionTimestamp != nil {
@@ -93,12 +79,10 @@ func (r *PipelineReconciler) Reconcile(ctx context.Context, req domain.Request) 
 	// ── Finalizer ─────────────────────────────────────────────────────────
 	if !containsFinalizer(pipeline, finalizerName) {
 		pipeline.Finalizers = append(pipeline.Finalizers, finalizerName)
-		if err := r.kube.PatchFinalizers(ctx, pipeline, pipeline.Finalizers); err != nil {
+		if err := r.kube.PatchFinalizers(ctx, pipeline, pipeline.Finalizers, metav1.PatchOptions{}); err != nil {
 			return domain.Result{}, fmt.Errorf("adding finalizer: %w", err)
 		}
 	}
-
-	_ = namespace // used implicitly through pipeline fields
 
 	// ── State machine ─────────────────────────────────────────────────────
 	switch pipeline.Status.Phase {
@@ -134,6 +118,7 @@ func (r *PipelineReconciler) handlePending(ctx context.Context, p *apiv1.Pipelin
 		},
 		backoffLimit,
 		p.Name,
+		nil,
 	)
 	if err := orkjobs.Create(ctx, r.kube, p, jobSpec); err != nil {
 		return fmt.Errorf("creating step job %q: %w", firstStep.Name, err)
@@ -214,6 +199,7 @@ func (r *PipelineReconciler) advanceStep(ctx context.Context, p *apiv1.Pipeline)
 		},
 		backoffLimit,
 		p.Name,
+		nil,
 	)
 	if err := orkjobs.Create(ctx, r.kube, p, jobSpec); err != nil {
 		return fmt.Errorf("creating step job %q: %w", nextStep.Name, err)
@@ -234,7 +220,7 @@ func (r *PipelineReconciler) handleDeletion(ctx context.Context, p *apiv1.Pipeli
 			newFinalizers = append(newFinalizers, f)
 		}
 	}
-	return r.kube.PatchFinalizers(ctx, p, newFinalizers)
+	return r.kube.PatchFinalizers(ctx, p, newFinalizers, metav1.PatchOptions{})
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -257,7 +243,7 @@ func (r *PipelineReconciler) patchStatus(ctx context.Context, p *apiv1.Pipeline)
 	if p.Status.CompletionTime != nil {
 		patch["completionTime"] = p.Status.CompletionTime.Format(time.RFC3339)
 	}
-	return r.kube.PatchStatus(ctx, p, patch)
+	return r.kube.PatchStatus(ctx, p, patch, metav1.PatchOptions{})
 }
 
 func (r *PipelineReconciler) getJob(ctx context.Context, namespace, name string) (*batchv1.Job, error) {

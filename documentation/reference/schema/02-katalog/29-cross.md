@@ -1,16 +1,17 @@
 # cross
 
-The `cross:` block under a CRD declares which other CRDs this CRD observes. After the cross read runs, the observed data is available in templates as `.cross.<as>.*`.
+The `cross:` block under `observe:` declares which other CRDs this CRD observes. After the cross read runs, the observed data is available in templates as `.cross.<as>.*`.
 
 ```yaml
 crds:
   application:
     operatorBox:
-      cross:
-        - crd: database
-          selector:
-            name: "{{ .metadata.name }}-db"
-          as: db
+      observe:
+        cross:
+          - crd: database
+            selector:
+              name: "{{ .metadata.name }}-db"
+            as: db
 ```
 
 From that point on, anywhere in the `application` operatorBox:

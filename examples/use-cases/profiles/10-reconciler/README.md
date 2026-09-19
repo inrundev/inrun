@@ -2,7 +2,7 @@
 
 One CR. One Deployment. The reconciler's workers, resync interval, and queue depth come from a profile name — no inline values on the CRD entry.
 
-**What you learn:** how `reconciler.profile` references a named preset; the difference between built-in profiles and user-defined ones; that the profile expands at `ork validate` time and any inline field on `operatorBox.reconciler` overrides the profile.
+**What you learn:** how `reconcile.profile` references a named preset; the difference between built-in profiles and user-defined ones; that the profile expands at `ork validate` time and any inline field on `operatorBox.reconcile` overrides the profile.
 
 **Built-in profiles** (no declaration needed):
 
@@ -28,7 +28,7 @@ Open [`katalog.yaml`](katalog.yaml) and set the reconciler to use the `conservat
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     profile: conservative
 ```
 
@@ -83,7 +83,7 @@ Stop the runtime (`Ctrl+C`). Edit [`katalog.yaml`](katalog.yaml) to use the user
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     profile: local-dev
 ```
 
@@ -125,18 +125,17 @@ The only change was one line in `katalog.yaml`. No code. No rebuild.
 
 ```yaml
 profiles:
-  reconciler:
+  reconcile:
     - name: api-service
       workers: 4
       resync: 30s
       queue:
         maxDepth: 200
-
 spec:
   crds:
     mycrd:
       operatorBox:
-        reconciler:
+        reconcile:
           profile: api-service
           # inline fields override the profile — add here to tune per-CRD
 ```
@@ -145,7 +144,7 @@ To use a built-in without declaring it:
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     profile: high-throughput
 ```
 

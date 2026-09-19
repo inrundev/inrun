@@ -6,13 +6,6 @@ Controls deletion protection, namespace protection, admission webhooks, and gate
 security:
   serviceName: orkestra-svc    # Kubernetes Service where Orkestra is deployed
   gatewayEndpoint: "http://orkestra-gateway.orkestra-system.svc:8080"
-
-  deletionProtection:
-    enabled: true
-    failurePolicy: Fail
-    cleanupOnShutdown: false
-    strictMode: false        # set true to block label removal too
-
   namespaceProtection:
     enabled: true
     restrictedNamespaces:
@@ -23,17 +16,23 @@ security:
       - staging
     failurePolicy: Fail
     cleanupOnShutdown: false
-
-  webhooks:
-    admission:
+  admission:
+    webhooks:
+      admission:
+        enabled: true
+      failurePolicy: Fail
+      serviceName: orkestra-svc
+      cleanupOnShutdown: false
+    conversion:
       enabled: true
-    failurePolicy: Fail
-    serviceName: orkestra-svc
-    cleanupOnShutdown: false
-
-  conversion:
-    enabled: true
-    conversionWindow: 100
+      conversionWindow: 100
+  operatorBox:
+    runtime:
+      deletionProtection:
+        enabled: true
+        failurePolicy: Fail
+        cleanupOnShutdown: false
+        strictMode: false        # set true to block label removal too
 ```
 
 ## Top-level fields

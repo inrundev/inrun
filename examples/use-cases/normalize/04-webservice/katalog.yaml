@@ -14,178 +14,174 @@ spec:
   crds:
     webservice:
       crdFile: ./crd.yaml
-
-
       # ── Normalize ──────────────────────────────────────────────────────────
       # All templates see the raw CR. Results overwrite in-memory fields only.
       # etcd is unchanged — kubectl get -o yaml returns what the user wrote.
-      normalize:
-        audit: true
-        spec:
-          # Image — ensure registry prefix and explicit tag.
-          image: >-
-            {{- $base := trimPrefix .spec.image "registry.internal/" -}}
-            {{- $tagged := ternary (contains $base ":") $base (printf "%s:latest" $base) -}}
-            {{- printf "registry.internal/%s" $tagged -}}
-
-          # Environment — lowercase, trimmed, default to "production".
-          environment: '{{ default "production" .spec.environment | toLower | trimSpace }}'
-
-          # Domain — strip protocol and trailing slash.
-          domain: '{{ domainHost .spec.domain }}'
-
-          # Resource request defaults.
-          resources.requests.cpu:    '{{ resourceCPU . | default "100m" }}'
-          resources.requests.memory: '{{ resourceMemory . | default "128Mi" }}'
-
-          # Replicas default.
-          replicas: "{{ default 1 .spec.replicas }}"
-
-          # internalName — stable DNS-safe identifier used across all child resources.
-          # Combining name and environment here because each normalize template
-          # sees the raw CR independently — we cannot reference other normalized fields.
-          internalName: >-
-            {{- $env := default "production" .spec.environment | toLower | trimSpace -}}
-            {{- printf "%s-%s" (camelToKebab .metadata.name) $env -}}
-
       # ── Validation ───────────────────────────────────────────────────────
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-          - field: spec.organizationId
-            operator: exists
-            message: "spec.organizationId is required"
-            action: deny
-          - field: spec.domain
-            operator: exists
-            message: "spec.domain is required"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
+            - field: spec.organizationId
+              operator: exists
+              message: "spec.organizationId is required"
+              action: deny
+            - field: spec.domain
+              operator: exists
+              message: "spec.domain is required"
+              action: deny
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 3
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+          onCreate:
+            # ── Secrets ────────────────────────────────────────────────────────
+            secrets:
+              # API key — generated once per CR, rotated every 30 days.
+              # Name encodes both the service and org so it is globally unique.
+              - name: '{{ printf "%s-%s-api-key" .spec.internalName .spec.organizationId }}'
+                once: true
+                rotateAfter: 720h
+                data:
+                  apiKey:         "{{ randomAlphanumeric 32 }}"
+                  organizationId: "{{ .spec.organizationId }}"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              # JWT signing key — rotated weekly.
+              - name: '{{ .spec.internalName }}-jwt'
+                once: true
+                rotateAfter: 168h
+                data:
+                  secret: "{{ randomBase64 64 }}"
 
-            # Normalized values — inspect these to see what normalize produced.
-            - path: image
-              value: "{{ .spec.image }}"
-            - path: environment
-              value: "{{ .spec.environment }}"
-            - path: domain
-              value: "{{ .spec.domain }}"
-            - path: internalName
-              value: "{{ .spec.internalName }}"
-            - path: replicas
-              value: "{{ .spec.replicas }}"
-            - path: backendCount
-              value: "{{ len .spec.backends }}"
-            - path: credentialsSecret
-              value: '{{ printf "%s-%s-api-key" .spec.internalName .spec.organizationId }}'
+            # ── ConfigMap ─────────────────────────────────────────────────────
+            # Built from the normalized spec — consumers always get canonical values.
+            configMaps:
+              - name: '{{ .spec.internalName }}-config'
+                data:
+                  APP_ENV:      "{{ .spec.environment }}"
+                  APP_DOMAIN:   "{{ .spec.domain }}"
+                  APP_IMAGE:    "{{ .spec.image }}"
+                  APP_REPLICAS: "{{ .spec.replicas }}"
+                  ORG_ID:       "{{ .spec.organizationId }}"
 
-            # normalizeChanges — present only when cr-simple.yaml is applied (messy inputs).
-            # Absent for cr-full.yaml (already canonical — no transformations needed).
-            - path: normalizeChanges
-              value: "{{ toJson ._normalizeChanges }}"
-              when:
-                - field: "{{ notEmpty ._normalizeChanges }}"
-                  equals: "true"
+            # ── Main deployment ───────────────────────────────────────────────
+            deployments:
+              - name: "{{ .spec.internalName }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+                env:
+                  - name: APP_ENV
+                    valueFrom:
+                      configMapKeyRef:
+                        name: '{{ .spec.internalName }}-config'
+                        key: APP_ENV
+                  - name: APP_DOMAIN
+                    valueFrom:
+                      configMapKeyRef:
+                        name: '{{ .spec.internalName }}-config'
+                        key: APP_DOMAIN
+                  - name: API_KEY
+                    valueFrom:
+                      secretKeyRef:
+                        name: '{{ printf "%s-%s-api-key" .spec.internalName .spec.organizationId }}'
+                        key: apiKey
+                  - name: JWT_SECRET
+                    valueFrom:
+                      secretKeyRef:
+                        name: '{{ .spec.internalName }}-jwt'
+                        key: secret
+          onReconcile:
+            # ── Backend deployments — one per spec.backends entry ─────────────
+            # forEach expands this block once per backend name.
+            # .item is the current backend name.
+            deployments:
+              - name: '{{ printf "%s-%s" .spec.internalName .item }}'
+                image: "{{ .spec.image }}"
+                reconcile: true
+                forEach:
+                  field: spec.backends
+                  as: item
+                env:
+                  - name: BACKEND_NAME
+                    value: "{{ .item }}"
+                  - name: APP_ENV
+                    valueFrom:
+                      configMapKeyRef:
+                        name: '{{ .spec.internalName }}-config'
+                        key: APP_ENV
+                  - name: APP_DOMAIN
+                    valueFrom:
+                      configMapKeyRef:
+                        name: '{{ .spec.internalName }}-config'
+                        key: APP_DOMAIN
+          normalize:
+            audit: true
+            spec:
+              # Image — ensure registry prefix and explicit tag.
+              image: >-
+                {{- $base := trimPrefix .spec.image "registry.internal/" -}}
+                {{- $tagged := ternary (contains $base ":") $base (printf "%s:latest" $base) -}}
+                {{- printf "registry.internal/%s" $tagged -}}
 
-        onCreate:
-          # ── Secrets ────────────────────────────────────────────────────────
-          secrets:
-            # API key — generated once per CR, rotated every 30 days.
-            # Name encodes both the service and org so it is globally unique.
-            - name: '{{ printf "%s-%s-api-key" .spec.internalName .spec.organizationId }}'
-              once: true
-              rotateAfter: 720h
-              data:
-                apiKey:         "{{ randomAlphanumeric 32 }}"
-                organizationId: "{{ .spec.organizationId }}"
+              # Environment — lowercase, trimmed, default to "production".
+              environment: '{{ default "production" .spec.environment | toLower | trimSpace }}'
 
-            # JWT signing key — rotated weekly.
-            - name: '{{ .spec.internalName }}-jwt'
-              once: true
-              rotateAfter: 168h
-              data:
-                secret: "{{ randomBase64 64 }}"
+              # Domain — strip protocol and trailing slash.
+              domain: '{{ domainHost .spec.domain }}'
 
-          # ── ConfigMap ─────────────────────────────────────────────────────
-          # Built from the normalized spec — consumers always get canonical values.
-          configMaps:
-            - name: '{{ .spec.internalName }}-config'
-              data:
-                APP_ENV:      "{{ .spec.environment }}"
-                APP_DOMAIN:   "{{ .spec.domain }}"
-                APP_IMAGE:    "{{ .spec.image }}"
-                APP_REPLICAS: "{{ .spec.replicas }}"
-                ORG_ID:       "{{ .spec.organizationId }}"
+              # Resource request defaults.
+              resources.requests.cpu:    '{{ resourceCPU . | default "100m" }}'
+              resources.requests.memory: '{{ resourceMemory . | default "128Mi" }}'
 
-          # ── Main deployment ───────────────────────────────────────────────
-          deployments:
-            - name: "{{ .spec.internalName }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
-              env:
-                - name: APP_ENV
-                  valueFrom:
-                    configMapKeyRef:
-                      name: '{{ .spec.internalName }}-config'
-                      key: APP_ENV
-                - name: APP_DOMAIN
-                  valueFrom:
-                    configMapKeyRef:
-                      name: '{{ .spec.internalName }}-config'
-                      key: APP_DOMAIN
-                - name: API_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: '{{ printf "%s-%s-api-key" .spec.internalName .spec.organizationId }}'
-                      key: apiKey
-                - name: JWT_SECRET
-                  valueFrom:
-                    secretKeyRef:
-                      name: '{{ .spec.internalName }}-jwt'
-                      key: secret
+              # Replicas default.
+              replicas: "{{ default 1 .spec.replicas }}"
 
-        onReconcile:
-          # ── Backend deployments — one per spec.backends entry ─────────────
-          # forEach expands this block once per backend name.
-          # .item is the current backend name.
-          deployments:
-            - name: '{{ printf "%s-%s" .spec.internalName .item }}'
-              image: "{{ .spec.image }}"
-              reconcile: true
-              forEach:
-                field: spec.backends
-                as: item
-              env:
-                - name: BACKEND_NAME
-                  value: "{{ .item }}"
-                - name: APP_ENV
-                  valueFrom:
-                    configMapKeyRef:
-                      name: '{{ .spec.internalName }}-config'
-                      key: APP_ENV
-                - name: APP_DOMAIN
-                  valueFrom:
-                    configMapKeyRef:
-                      name: '{{ .spec.internalName }}-config'
-                      key: APP_DOMAIN
+              # internalName — stable DNS-safe identifier used across all child resources.
+              # Combining name and environment here because each normalize template
+              # sees the raw CR independently — we cannot reference other normalized fields.
+              internalName: >-
+                {{- $env := default "production" .spec.environment | toLower | trimSpace -}}
+                {{- printf "%s-%s" (camelToKebab .metadata.name) $env -}}
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
+
+              # Normalized values — inspect these to see what normalize produced.
+              - path: image
+                value: "{{ .spec.image }}"
+              - path: environment
+                value: "{{ .spec.environment }}"
+              - path: domain
+                value: "{{ .spec.domain }}"
+              - path: internalName
+                value: "{{ .spec.internalName }}"
+              - path: replicas
+                value: "{{ .spec.replicas }}"
+              - path: backendCount
+                value: "{{ len .spec.backends }}"
+              - path: credentialsSecret
+                value: '{{ printf "%s-%s-api-key" .spec.internalName .spec.organizationId }}'
+
+              # normalizeChanges — present only when cr-simple.yaml is applied (messy inputs).
+              # Absent for cr-full.yaml (already canonical — no transformations needed).
+              - path: normalizeChanges
+                value: "{{ toJson ._normalizeChanges }}"
+                when:
+                  - field: "{{ notEmpty ._normalizeChanges }}"
+                    equals: "true"
+

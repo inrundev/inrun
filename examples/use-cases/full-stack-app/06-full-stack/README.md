@@ -6,7 +6,7 @@ One CR, all five patterns at once. A `FullStackApp` creates 3 regional Deploymen
 
 ## Step 1 — Validate
 
-`katalog.yaml` has the `managed-database` CRD block commented out by default. This lets the root `full-stack-app/` composite import it without a duplicate-CRD conflict. When running this example in isolation, uncomment the `managed-database:` block first:
+[`katalog.yaml`](katalog.yaml) has the `managed-database` CRD block commented out by default. This lets the root `full-stack-app/` composite import it without a duplicate-CRD conflict. When running this example in isolation, uncomment the `managed-database:` block first:
 
 ```yaml
 # katalog.yaml — uncomment this before running ork validate from 06-full-stack/

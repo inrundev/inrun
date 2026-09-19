@@ -36,7 +36,7 @@ spec:
         metadata.namespace: production
 
       operatorBox:             # → operatorbox.md
-        reconciler:
+        reconcile:
           workers: 3
           resync: 30s
           queue:
@@ -45,20 +45,18 @@ spec:
             failureThreshold: 5
         ...
 
-      conversion:              # → conversion.md
-        ...
-
-      validation:              # → validation.md
-        ...
-
-      mutation:                # → mutation.md
-        ...
-
-      webhooks:
-        validation: true
-        mutation: true
-        operations: [CREATE, UPDATE]
-
+      admission:
+        conversion:              # → conversion.md
+          ...
+        validation:              # → validation.md
+          ...
+        mutation:                # → mutation.md
+          ...
+        webhooks:
+          operations: [CREATE, UPDATE]
+          admission:
+            validation: true
+            mutation: true
       restrictedNamespaces:
         - kube-system
       allowedNamespaces:

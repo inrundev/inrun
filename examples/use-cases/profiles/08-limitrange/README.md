@@ -74,12 +74,13 @@ spec:
   crds:
     mycrd:
       operatorBox:
-        onCreate:
-          limitRanges:
-            - name: "{{ .metadata.name }}-limits"
-              namespace: "{{ .metadata.namespace }}"
-              profile: standard
-              reconcile: true
+        reconcile:
+          onCreate:
+            limitRanges:
+              - name: "{{ .metadata.name }}-limits"
+                namespace: "{{ .metadata.namespace }}"
+                profile: standard
+                reconcile: true
 ```
 
 ---

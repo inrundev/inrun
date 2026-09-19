@@ -86,6 +86,7 @@ func onDatabaseReconcile(ctx context.Context, obj *apiv1.Database) error {
 			},
 		},
 		obj.Name,
+		nil,
 	)
 	if err := orkstatefulset.Update(ctx, kube, obj, spec); err != nil {
 		return fmt.Errorf("database statefulSet: %w", err)
@@ -121,6 +122,7 @@ func onDatabaseReconcile(ctx context.Context, obj *apiv1.Database) error {
 				Args:      []string{obj.Name, obj.Namespace},
 			},
 			obj.Name,
+			nil,
 		)
 		if err := orkcron.Update(ctx, kube, obj, cronSpec); err != nil {
 			return fmt.Errorf("database backup cronjob: %w", err)

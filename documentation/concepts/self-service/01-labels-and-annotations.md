@@ -46,10 +46,11 @@ spec:
             type: boolean
 
       operatorBox:
-        onReconcile:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              replicas: '{{ ternary (eq (getAnnotation . "canary.myorg.io") "true") "1" "3" }}'
+        reconcile:
+          onReconcile:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                replicas: '{{ ternary (eq (getAnnotation . "canary.myorg.io") "true") "1" "3" }}'
 ```
 
 No new spec field, no CRD schema change — the platform team gets an annotation-driven extension point using notes that already ship.
@@ -78,13 +79,14 @@ serve:
       label: "Team"
       required: true
 
-validation:
-  rules:
-    - field: '{{ isDNS1123Subdomain (getLabel . "team") }}'
-      link: team
-      equals: "true"
-      message: "team must be a valid DNS subdomain"
-      action: deny
+admission:
+  validation:
+    rules:
+      - field: '{{ isDNS1123Subdomain (getLabel . "team") }}'
+        link: team
+        equals: "true"
+        message: "team must be a valid DNS subdomain"
+        action: deny
 ```
 
 `link: team` is what makes the Control Center highlight the Team field for this rule the same way it already does for the synthesized ones. It also means the check doesn't have to live in one giant expression — several focused rules can `link:` to the same field, each with its own message for its own failure mode.

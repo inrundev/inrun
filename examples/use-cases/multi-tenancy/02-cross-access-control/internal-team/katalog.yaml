@@ -17,24 +17,22 @@ spec:
         version: v1alpha1
         kind: Payment
         plural: payments
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 10s
-        status:
-          fields:
-            - path: phase
-              value: "active"
-
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-processor"
-              image: "nginx:alpine"
-              replicas: "2"
-              port: "8080"
-              reconcile: true
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-processor"
+                image: "nginx:alpine"
+                replicas: "2"
+                port: "8080"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "active"
 
     ledger:
       apiTypes:
@@ -42,24 +40,23 @@ spec:
         version: v1alpha1
         kind: Ledger
         plural: ledgers
-
-
       crossAccess: true
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: entryCount
-              value: '{{ default "0" .spec.initialEntries }}'
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-ledger"
+                image: "nginx:alpine"
+                replicas: "1"
+                port: "8080"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: entryCount
+                value: '{{ default "0" .spec.initialEntries }}'
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-ledger"
-              image: "nginx:alpine"
-              replicas: "1"
-              port: "8080"
-              reconcile: true

@@ -38,6 +38,7 @@ import (
 	orksvc "github.com/orkspace/orkestra/pkg/resources/services"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // WebAppReconciler implements domain.Reconciler for the OrkApp CRD.
@@ -52,20 +53,14 @@ func NewWebAppReconciler(kube kubeclient.Interface) domain.Reconciler {
 
 // Reconcile is called by Orkestra's worker pool for every queued OrkApp key.
 func (r *WebAppReconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
-	key := req.Key
-	raw, exists, err := r.kube.GetInformer().GetIndexer().GetByKey(key)
-	if err != nil {
-		return domain.Result{}, fmt.Errorf("cache lookup %q: %w", key, err)
-	}
-	if !exists {
+	if req.Prepared == nil {
 		return domain.Result{}, nil
 	}
 
-	webapp, ok := raw.(*apiv1.OrkApp)
-	if !ok {
-		return domain.Result{}, fmt.Errorf("unexpected type %T", raw)
+	webapp, err := domain.ToTyped[apiv1.OrkApp](req.Prepared)
+	if err != nil {
+		return domain.Result{}, fmt.Errorf("toTyped: %w", err)
 	}
-	webapp = webapp.DeepCopyObject().(*apiv1.OrkApp)
 
 	if webapp.DeletionTimestamp != nil {
 		return domain.Result{}, nil
@@ -85,7 +80,7 @@ func (r *WebAppReconciler) Reconcile(ctx context.Context, req domain.Request) (d
 		"phase":    "Running",
 		"endpoint": fmt.Sprintf("%s-svc.%s.svc.cluster.local", webapp.Name, webapp.Namespace),
 		"replicas": webapp.Spec.Replicas,
-	})
+	}, metav1.PatchOptions{})
 }
 
 // reconcileDeployment — single Update call replaces Get/IsNotFound/Create/Patch.
@@ -100,6 +95,7 @@ func (r *WebAppReconciler) reconcileDeployment(ctx context.Context, webapp *apiv
 			Port:      fmt.Sprintf("%d", webapp.Spec.Port),
 		},
 		webapp.Name,
+		nil,
 	)
 	if err := orkdeploy.Update(ctx, r.kube, webapp, spec); err != nil {
 		return fmt.Errorf("webapp deployment: %w", err)

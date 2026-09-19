@@ -102,81 +102,81 @@ The same pipeline, declared in a Katalog:
 
 ```yaml
 operatorBox:
+  reconcile:
+    onReconcile:
+      jobs:
+        - name: "{{ .metadata.name }}-build"
+          image: "{{ .spec.image }}"
+          command: ["sh", "-c", "{{ index (index .spec.steps 0) \"command\" | join \" \" }}"]
+          when:
+            - field: status.phase
+              operator: notExists       # only on first reconcile
+
+        - name: "{{ .metadata.name }}-test"
+          image: "{{ .spec.image }}"
+          command: ["sh", "-c", "{{ index (index .spec.steps 1) \"command\" | join \" \" }}"]
+          when:
+            - field: status.phase
+              equals: "Running/build"
+            - field: children.job.status.succeeded
+              greaterThan: 0           # build Job completed
+
+        - name: "{{ .metadata.name }}-notify"
+          image: "{{ .spec.image }}"
+          command: ["sh", "-c", "{{ index (index .spec.steps 2) \"command\" | join \" \" }}"]
+          when:
+            - field: status.phase
+              equals: "Running/test"
+            - field: children.job.status.succeeded
+              greaterThan: 0           # test Job completed
+  emit:
+    status:
+      fields:
+        - path: phase
+          value: "Pending"
+          when:
+            - field: status.phase
+              operator: notExists      # first reconcile only
+
+        - path: phase
+          value: "Running/build"
+          when:
+            - field: status.phase
+              operator: in
+              value: "Pending,"        # Pending or empty
+
+        - path: phase
+          value: "Running/test"
+          when:
+            - field: status.phase
+              equals: "Running/build"
+            - field: children.job.status.succeeded
+              greaterThan: 0
+
+        - path: phase
+          value: "Running/notify"
+          when:
+            - field: status.phase
+              equals: "Running/test"
+            - field: children.job.status.succeeded
+              greaterThan: 0
+
+        - path: phase
+          value: "Succeeded"
+          when:
+            - field: status.phase
+              equals: "Running/notify"
+            - field: children.job.status.succeeded
+              greaterThan: 0
+
+        - path: phase
+          value: "Failed"
+          when:
+            - field: children.job.status.failed
+              greaterThan: 0
   default: true
-
-  onReconcile:
-    jobs:
-      - name: "{{ .metadata.name }}-build"
-        image: "{{ .spec.image }}"
-        command: ["sh", "-c", "{{ index (index .spec.steps 0) \"command\" | join \" \" }}"]
-        when:
-          - field: status.phase
-            operator: notExists       # only on first reconcile
-
-      - name: "{{ .metadata.name }}-test"
-        image: "{{ .spec.image }}"
-        command: ["sh", "-c", "{{ index (index .spec.steps 1) \"command\" | join \" \" }}"]
-        when:
-          - field: status.phase
-            equals: "Running/build"
-          - field: children.job.status.succeeded
-            greaterThan: 0           # build Job completed
-
-      - name: "{{ .metadata.name }}-notify"
-        image: "{{ .spec.image }}"
-        command: ["sh", "-c", "{{ index (index .spec.steps 2) \"command\" | join \" \" }}"]
-        when:
-          - field: status.phase
-            equals: "Running/test"
-          - field: children.job.status.succeeded
-            greaterThan: 0           # test Job completed
-
   # Define the custom status fields.
   # Works with any custom value type.
-  status:
-    fields:
-      - path: phase
-        value: "Pending"
-        when:
-          - field: status.phase
-            operator: notExists      # first reconcile only
-
-      - path: phase
-        value: "Running/build"
-        when:
-          - field: status.phase
-            operator: in
-            value: "Pending,"        # Pending or empty
-
-      - path: phase
-        value: "Running/test"
-        when:
-          - field: status.phase
-            equals: "Running/build"
-          - field: children.job.status.succeeded
-            greaterThan: 0
-
-      - path: phase
-        value: "Running/notify"
-        when:
-          - field: status.phase
-            equals: "Running/test"
-          - field: children.job.status.succeeded
-            greaterThan: 0
-
-      - path: phase
-        value: "Succeeded"
-        when:
-          - field: status.phase
-            equals: "Running/notify"
-          - field: children.job.status.succeeded
-            greaterThan: 0
-
-      - path: phase
-        value: "Failed"
-        when:
-          - field: children.job.status.failed
-            greaterThan: 0
 ```
 
 No Go. No binary build. No deployment cycle. A new step is one more

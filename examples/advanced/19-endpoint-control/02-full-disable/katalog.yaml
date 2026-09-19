@@ -14,23 +14,23 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       endpoints:
         enabled: false
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
-        status:
-          fields:
-            - path: phase
-              value: "active"
-        onCreate:
-          secrets:
-            - name: "{{ .metadata.name }}-token"
-              once: true
-              rotateAfter: 720h
-              data:
-                token: "{{ randomAlphanumeric 32 }}"
-                service: "{{ .spec.service }}"
+          onCreate:
+            secrets:
+              - name: "{{ .metadata.name }}-token"
+                once: true
+                rotateAfter: 720h
+                data:
+                  token: "{{ randomAlphanumeric 32 }}"
+                  service: "{{ .spec.service }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "active"
+

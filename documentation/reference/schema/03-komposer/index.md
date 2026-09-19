@@ -57,16 +57,14 @@ spec:
   crds:
     postgres:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 8
           resync: 30s
-
     website:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 6
           resync: 15s
-
     database:
       enabled: false
 
