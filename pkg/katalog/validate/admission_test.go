@@ -12,8 +12,8 @@ import (
 func katalogWithValidationRule(crdName string, rules ...orktypes.ValidationRule) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		crdName: {
-			Name:       crdName,
-			Validation: &orktypes.ValidationConfig{Rules: rules},
+			Name:      crdName,
+			Admission: &orktypes.AdmissionConfig{Validation: &orktypes.ValidationConfig{Rules: rules}},
 		},
 	})
 }
@@ -21,8 +21,8 @@ func katalogWithValidationRule(crdName string, rules ...orktypes.ValidationRule)
 func katalogWithMutationRule(crdName string, rules ...orktypes.MutationRule) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		crdName: {
-			Name:     crdName,
-			Mutation: &orktypes.MutationConfig{Rules: rules},
+			Name:      crdName,
+			Admission: &orktypes.AdmissionConfig{Mutation: &orktypes.MutationConfig{Rules: rules}},
 		},
 	})
 }
@@ -100,9 +100,9 @@ func TestValidateAdmissionOperators_MutationRuleKnownOperator(t *testing.T) {
 func katalogWithServeValidationRule(crdName string, srv *orktypes.ServeConfig, rules ...orktypes.ValidationRule) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		crdName: {
-			Name:       crdName,
-			Serve:      srv,
-			Validation: &orktypes.ValidationConfig{Rules: rules},
+			Name:      crdName,
+			Serve:     srv,
+			Admission: &orktypes.AdmissionConfig{Validation: &orktypes.ValidationConfig{Rules: rules}},
 		},
 	})
 }
@@ -236,8 +236,7 @@ func TestValidateMutationRules_DefaultAndOverride(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	warn := "CRD: app - mutation.rules[0] has both default and override defined. default will be ignored."
-	containsWarn := crd.Warnings.Contains(warn)
+	containsWarn := crd.Warnings.Contains("mutation.rules[0] has both default and override defined")
 	if !containsWarn {
 		t.Fatalf("expected true: got %v - %q", containsWarn, strings.Join(crd.Warnings, ", "))
 	}
@@ -307,8 +306,7 @@ func TestValidateMutationRules_ServeLabelDefaultAndOverride(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	warn := "CRD: myresource - serve.labels.image has both default and override defined. default will be ignored."
-	containsWarn := crd.Warnings.Contains(warn)
+	containsWarn := crd.Warnings.Contains("serve.labels.image has both default and override defined")
 	if !containsWarn {
 		t.Fatalf("expected true: got %v - %q", containsWarn, strings.Join(crd.Warnings, ", "))
 	}
@@ -337,8 +335,7 @@ func TestValidateMutationRules_ServeAnnotationDefaultAndOverride(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	warn := "CRD: myresource - serve.annotations.image has both default and override defined. default will be ignored."
-	containsWarn := crd.Warnings.Contains(warn)
+	containsWarn := crd.Warnings.Contains("serve.annotations.image has both default and override defined")
 	if !containsWarn {
 		t.Fatalf("expected true: got %v - %q", containsWarn, strings.Join(crd.Warnings, ", "))
 	}

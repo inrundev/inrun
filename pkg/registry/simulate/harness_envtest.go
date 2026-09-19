@@ -101,9 +101,9 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	result := &Result{}
 	box := effectiveOperatorBox(crdEntry, cr, opts.Target)
 	for _, phase := range []*orktypes.HookTemplates{
-		box.OnCreate,
-		box.OnReconcile,
-		box.OnDelete,
+		box.EffectiveOnCreate(),
+		box.EffectiveOnReconcile(),
+		box.EffectiveOnDelete(),
 	} {
 		if phase == nil {
 			continue

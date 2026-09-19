@@ -117,8 +117,8 @@ func TestValidateServeTarget_NoServe(t *testing.T) {
 
 func TestValidateServeTarget_TargetBoxTemplatesOnly(t *testing.T) {
 	box := &orktypes.OperatorBoxConfig{
-		OnCreate:   &orktypes.HookTemplates{},
-		Finalizers: []string{"my.finalizer/cleanup"},
+		Reconcile: &orktypes.ReconcileConfig{OnCreate: &orktypes.HookTemplates{}},
+		Runtime:   &orktypes.RuntimeConfig{Finalizers: []string{"my.finalizer/cleanup"}},
 	}
 	k := katalogWithTargetCRDs(map[string]orktypes.CRDEntry{
 		"res": crdWithTargetAndBox("web", box),
@@ -141,7 +141,7 @@ func TestValidateServeTarget_NilTargetBox(t *testing.T) {
 
 func TestValidateServeTarget_ReconcilerWorkers(t *testing.T) {
 	box := &orktypes.OperatorBoxConfig{
-		Reconciler: &orktypes.ReconcilerConfig{Workers: 3},
+		Reconcile: &orktypes.ReconcileConfig{Workers: 3},
 	}
 	err := katalogWithTargetCRDs(map[string]orktypes.CRDEntry{
 		"res": crdWithTargetAndBox("web", box),
@@ -149,14 +149,14 @@ func TestValidateServeTarget_ReconcilerWorkers(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for reconciler.workers on target box")
 	}
-	if !strings.Contains(err.Error(), "reconciler.workers") {
+	if !strings.Contains(err.Error(), "reconcile.workers") {
 		t.Errorf("error should name reconciler.workers, got: %v", err)
 	}
 }
 
 func TestValidateServeTarget_ReconcilerResync(t *testing.T) {
 	box := &orktypes.OperatorBoxConfig{
-		Reconciler: &orktypes.ReconcilerConfig{
+		Reconcile: &orktypes.ReconcileConfig{
 			Resync: orktypes.Duration{Duration: 30 * time.Second},
 		},
 	}
@@ -166,14 +166,14 @@ func TestValidateServeTarget_ReconcilerResync(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for reconciler.resync on target box")
 	}
-	if !strings.Contains(err.Error(), "reconciler.resync") {
+	if !strings.Contains(err.Error(), "reconcile.resync") {
 		t.Errorf("error should name reconciler.resync, got: %v", err)
 	}
 }
 
 func TestValidateServeTarget_ReconcilerQueue(t *testing.T) {
 	box := &orktypes.OperatorBoxConfig{
-		Reconciler: &orktypes.ReconcilerConfig{
+		Reconcile: &orktypes.ReconcileConfig{
 			Queue: orktypes.Queue{MaxDepth: 50},
 		},
 	}
@@ -183,14 +183,14 @@ func TestValidateServeTarget_ReconcilerQueue(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for reconciler.queue on target box")
 	}
-	if !strings.Contains(err.Error(), "reconciler.queue") {
+	if !strings.Contains(err.Error(), "reconcile.queue") {
 		t.Errorf("error should name reconciler.queue, got: %v", err)
 	}
 }
 
 func TestValidateServeTarget_ReconcilerProfile(t *testing.T) {
 	box := &orktypes.OperatorBoxConfig{
-		Reconciler: &orktypes.ReconcilerConfig{Profile: "high-throughput"},
+		Reconcile: &orktypes.ReconcileConfig{Profile: "high-throughput"},
 	}
 	err := katalogWithTargetCRDs(map[string]orktypes.CRDEntry{
 		"res": crdWithTargetAndBox("web", box),
@@ -198,14 +198,14 @@ func TestValidateServeTarget_ReconcilerProfile(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for reconciler.profile on target box")
 	}
-	if !strings.Contains(err.Error(), "reconciler.profile") {
+	if !strings.Contains(err.Error(), "reconcile.profile") {
 		t.Errorf("error should name reconciler.profile, got: %v", err)
 	}
 }
 
 func TestValidateServeTarget_Autoscale(t *testing.T) {
 	box := &orktypes.OperatorBoxConfig{
-		Autoscale: &orktypes.AutoscaleSpec{},
+		Runtime: &orktypes.RuntimeConfig{Autoscale: &orktypes.AutoscaleSpec{}},
 	}
 	err := katalogWithTargetCRDs(map[string]orktypes.CRDEntry{
 		"res": crdWithTargetAndBox("web", box),
@@ -220,7 +220,7 @@ func TestValidateServeTarget_Autoscale(t *testing.T) {
 
 func TestValidateServeTarget_Rollback(t *testing.T) {
 	box := &orktypes.OperatorBoxConfig{
-		Rollback: &orktypes.RollbackBlock{},
+		Runtime: &orktypes.RuntimeConfig{Rollback: &orktypes.RollbackBlock{}},
 	}
 	err := katalogWithTargetCRDs(map[string]orktypes.CRDEntry{
 		"res": crdWithTargetAndBox("web", box),
@@ -234,7 +234,7 @@ func TestValidateServeTarget_Rollback(t *testing.T) {
 }
 
 func TestValidateServeTarget_RollBackOnError(t *testing.T) {
-	box := &orktypes.OperatorBoxConfig{RollBackOnError: true}
+	box := &orktypes.OperatorBoxConfig{Runtime: &orktypes.RuntimeConfig{RollBackOnError: true}}
 	err := katalogWithTargetCRDs(map[string]orktypes.CRDEntry{
 		"res": crdWithTargetAndBox("web", box),
 	}).validateServeTarget()
@@ -248,11 +248,11 @@ func TestValidateServeTarget_RollBackOnError(t *testing.T) {
 
 func TestValidateServeTarget_MultipleViolations(t *testing.T) {
 	box := &orktypes.OperatorBoxConfig{
-		Reconciler: &orktypes.ReconcilerConfig{
+		Reconcile: &orktypes.ReconcileConfig{
 			Workers: 5,
 			Profile: "high-throughput",
 		},
-		Autoscale: &orktypes.AutoscaleSpec{},
+		Runtime: &orktypes.RuntimeConfig{Autoscale: &orktypes.AutoscaleSpec{}},
 	}
 	err := katalogWithTargetCRDs(map[string]orktypes.CRDEntry{
 		"res": crdWithTargetAndBox("web", box),
@@ -261,7 +261,7 @@ func TestValidateServeTarget_MultipleViolations(t *testing.T) {
 		t.Fatal("expected error for multiple violations")
 	}
 	msg := err.Error()
-	for _, field := range []string{"reconciler.workers", "reconciler.profile", "autoscale"} {
+	for _, field := range []string{"reconcile.workers", "reconcile.profile", "autoscale"} {
 		if !strings.Contains(msg, field) {
 			t.Errorf("error should name %q, got: %v", field, msg)
 		}

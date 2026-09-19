@@ -16,80 +16,80 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           default: true
           workers: 1
           resync: 30s
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-fast"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              probes:
-                liveness:
-                  type: http
-                  path: /healthz
-                  profile: fast
-                readiness:
-                  type: http
-                  path: /readyz
-                  profile: fast
-              reconcile: true
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-fast"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                probes:
+                  liveness:
+                    type: http
+                    path: /healthz
+                    profile: fast
+                  readiness:
+                    type: http
+                    path: /readyz
+                    profile: fast
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-standard"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              probes:
-                liveness:
-                  type: http
-                  path: /healthz
-                  profile: standard
-                readiness:
-                  type: http
-                  path: /readyz
-                  profile: standard
-              reconcile: true
+              - name: "{{ .metadata.name }}-standard"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                probes:
+                  liveness:
+                    type: http
+                    path: /healthz
+                    profile: standard
+                  readiness:
+                    type: http
+                    path: /readyz
+                    profile: standard
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-patient"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              probes:
-                liveness:
-                  type: http
-                  path: /healthz
-                  profile: patient
-                readiness:
-                  type: http
-                  path: /readyz
-                  profile: patient
-              reconcile: true
+              - name: "{{ .metadata.name }}-patient"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                probes:
+                  liveness:
+                    type: http
+                    path: /healthz
+                    profile: patient
+                  readiness:
+                    type: http
+                    path: /readyz
+                    profile: patient
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-slow-start"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              probes:
-                startup:
-                  type: http
-                  path: /healthz
-                  profile: slow-start
-                liveness:
-                  type: http
-                  path: /healthz
-                  profile: standard
-              reconcile: true
+              - name: "{{ .metadata.name }}-slow-start"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                probes:
+                  startup:
+                    type: http
+                    path: /healthz
+                    profile: slow-start
+                  liveness:
+                    type: http
+                    path: /healthz
+                    profile: standard
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployments.my-probe-standard }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployments.my-probe-standard }}"
-                  equals: "true"

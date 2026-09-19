@@ -32,7 +32,7 @@ spec:
   crds:
     <crd-name>:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 4
           resync: 15s
 

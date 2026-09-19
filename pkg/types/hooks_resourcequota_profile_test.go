@@ -10,9 +10,11 @@ import (
 
 func crdWithResourceQuotaOnCreate(rqs ...orktypes.ResourceQuotaTemplateSource) orktypes.CRDEntry {
 	return orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnCreate: &orktypes.HookTemplates{
-				ResourceQuotas: rqs,
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnCreate: &orktypes.HookTemplates{
+					ResourceQuotas: rqs,
+				},
 			},
 		},
 	}
@@ -63,12 +65,14 @@ func TestCollectResourceQuotaProfileEntries_TemplateExpr(t *testing.T) {
 
 func TestCollectResourceQuotaProfileEntries_MultipleProfiles(t *testing.T) {
 	c := orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnCreate: &orktypes.HookTemplates{
-				ResourceQuotas: []orktypes.ResourceQuotaTemplateSource{
-					{Name: "rq-small", Profile: "small"},
-					{Name: "rq-no-profile"},
-					{Name: "rq-large", Profile: "large"},
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnCreate: &orktypes.HookTemplates{
+					ResourceQuotas: []orktypes.ResourceQuotaTemplateSource{
+						{Name: "rq-small", Profile: "small"},
+						{Name: "rq-no-profile"},
+						{Name: "rq-large", Profile: "large"},
+					},
 				},
 			},
 		},
@@ -81,10 +85,12 @@ func TestCollectResourceQuotaProfileEntries_MultipleProfiles(t *testing.T) {
 
 func TestCollectResourceQuotaProfileEntries_OnReconcile(t *testing.T) {
 	c := orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnReconcile: &orktypes.HookTemplates{
-				ResourceQuotas: []orktypes.ResourceQuotaTemplateSource{
-					{Name: "quota", Profile: "xlarge"},
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnReconcile: &orktypes.HookTemplates{
+					ResourceQuotas: []orktypes.ResourceQuotaTemplateSource{
+						{Name: "quota", Profile: "xlarge"},
+					},
 				},
 			},
 		},

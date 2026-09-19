@@ -30,8 +30,8 @@ func (k *Katalog) NamespaceProtectionRuleMap() map[string]NamespaceRuleEntry {
 		}
 		key := crd.APITypes.Plural + "." + crd.APITypes.Group
 		out[key] = NamespaceRuleEntry{
-			Allowed:    []string(crd.AllowedNamespaces),
-			Restricted: []string(crd.RestrictedNamespaces),
+			Allowed:    []string(crd.AllAllowedNamespaces()),
+			Restricted: []string(crd.AllRestrictedNamespaces()),
 		}
 	}
 

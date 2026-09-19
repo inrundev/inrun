@@ -68,7 +68,7 @@ func Prepare(ctx context.Context, in Input) (*domain.PreparedRequest, *Validatio
 	// Deletion is always permitted so finalizers can be removed;
 	// this guard runs only for non-deleting CRs.
 	if crd.HasNamespaceRules() && obj.GetDeletionTimestamp() == nil {
-		result := CheckNamespace(ctx, obj, obj.GetNamespace(), crd.RestrictedNamespaces, crd.AllowedNamespaces, crd.APITypes.Kind)
+		result := CheckNamespace(ctx, obj, obj.GetNamespace(), crd.AllRestrictedNamespaces(), crd.AllAllowedNamespaces(), crd.APITypes.Kind)
 		if !result.Allowed {
 			return nil, nil, nil
 		}
@@ -115,9 +115,9 @@ func Prepare(ctx context.Context, in Input) (*domain.PreparedRequest, *Validatio
 	}
 
 	// Step 7: cross-CRD observation
-	if len(box.Cross) > 0 && in.Registry != nil {
+	if len(box.EffectiveCross()) > 0 && in.Registry != nil {
 		cs := in.Kube.Clientset()
-		crossData := readCross(ctx, obj, box.Cross, resolver, in.Registry, cs)
+		crossData := readCross(ctx, obj, box.EffectiveCross(), resolver, in.Registry, cs)
 		if len(crossData) > 0 {
 			resolver = resolver.WithCross(crossData)
 		}

@@ -20,13 +20,19 @@ func (k *Katalog) applyServeAdmissionSynthesis() {
 		}
 
 		if hasSynthVal {
-			if entry.Validation == nil {
-				entry.Validation = &orktypes.ValidationConfig{}
+			if entry.Admission == nil {
+				entry.Admission = &orktypes.AdmissionConfig{}
+			}
+			if entry.Admission.Validation == nil {
+				entry.Admission.Validation = &orktypes.ValidationConfig{}
 			}
 		}
 		if hasSynthMut {
-			if entry.Mutation == nil {
-				entry.Mutation = &orktypes.MutationConfig{}
+			if entry.Admission == nil {
+				entry.Admission = &orktypes.AdmissionConfig{}
+			}
+			if entry.Admission.Mutation == nil {
+				entry.Admission.Mutation = &orktypes.MutationConfig{}
 			}
 		}
 		entry.DeduplicateSynthesizedServeRules(orktypes.SynthDedup{

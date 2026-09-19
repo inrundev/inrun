@@ -12,15 +12,11 @@ lifecycle:
 spec:
   crds:
     probe:
-
       operatorBox:
-        reconciler:
-          default: true
-          workers: 1
-          resync: 15s
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-probe"
+                image: "busybox:latest"
+                replicas: "1"
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-probe"
-              image: "busybox:latest"
-              replicas: "1"

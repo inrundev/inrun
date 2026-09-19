@@ -10,10 +10,12 @@ spec:
         version: v1alpha1
         kind: Platform
         plural: platforms
-      mutation:
-        rules:
-          - field: spec.env
-            default: "development"
+      admission:
+        mutation:
+          rules:
+            - field: spec.env
+              default: "development"
+
 security:
   webhooks:
     admission:

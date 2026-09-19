@@ -36,8 +36,14 @@ func (e *executor) validateCRDEntryLabels() error {
 			if errs := isValidLabelKey(key); len(errs) > 0 {
 				return fmt.Errorf("%s CRD %q: labels: key %q is not a valid Kubernetes label key: %s", failureMark(), crdName, key, strings.Join(errs, "; "))
 			}
-			if err := validateTemplate("labels", crdName, key, "value", value, funcMap); err != nil {
-				return err
+			if isTemplate(value) {
+				if err := validateTemplate("labels", crdName, key, "value", value, funcMap); err != nil {
+					return err
+				}
+			} else {
+				if errs := isValidLabelValue(value); len(errs) > 0 {
+					return fmt.Errorf("%s CRD %q: labels: value %q is not a valid Kubernetes label value: %s", failureMark(), crdName, value, strings.Join(errs, "; "))
+				}
 			}
 		}
 	}

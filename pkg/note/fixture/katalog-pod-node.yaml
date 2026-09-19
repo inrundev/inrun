@@ -17,45 +17,44 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       enrich:
         - node
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 30s
 
-        onCreate:
-          pods:
-            - name: "{{ .metadata.name }}-pod"
-              image: "{{ .spec.image }}"
-              reconcile: true
+          onCreate:
+            pods:
+              - name: "{{ .metadata.name }}-pod"
+                image: "{{ .spec.image }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              # ── Phase ───────────────────────────────────────────────────────
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            # ── Phase ───────────────────────────────────────────────────────
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Running"
+                when:
+                  - field: "{{ podNodeName .children.pod }}"
+                    operator: exists
 
-            - path: phase
-              value: "Running"
-              when:
-                - field: "{{ podNodeName .children.pod }}"
-                  operator: exists
+              # ── enriched pod node notes (require enrich: [node]) ────────────
+              - path: nodeName
+                value: "{{ podNodeName .children.pod }}"
 
-            # ── enriched pod node notes (require enrich: [node]) ────────────
-            - path: nodeName
-              value: "{{ podNodeName .children.pod }}"
+              - path: nodeZone
+                value: "{{ podNodeZone .children.pod }}"
 
-            - path: nodeZone
-              value: "{{ podNodeZone .children.pod }}"
+              - path: nodeRegion
+                value: "{{ podNodeRegion .children.pod }}"
 
-            - path: nodeRegion
-              value: "{{ podNodeRegion .children.pod }}"
+              - path: nodeInstanceType
+                value: "{{ podNodeInstanceType .children.pod }}"
 
-            - path: nodeInstanceType
-              value: "{{ podNodeInstanceType .children.pod }}"

@@ -180,14 +180,14 @@ func simulateOne(ctx context.Context, kat *katalog.Katalog, crdName string, cr *
 
 	// Emit notes for operatorBox blocks that cannot execute in the fake cluster.
 	crdEntry, _ := kat.CRDEntry(crdName)
-	if crdEntry.OperatorBox.OnReconcile != nil && len(crdEntry.OperatorBox.OnReconcile.External) > 0 {
+	if crdEntry.Box().EffectiveOnReconcile() != nil && len(crdEntry.Box().EffectiveOnReconcile().External) > 0 {
 		if opts.SkipExternal {
 			fmt.Printf("  %s external: calls stubbed — result fields will be empty\n", dim("note:"))
 		} else {
 			fmt.Printf("  %s external: calls will hit the real network (pass --skip-external to stub)\n", dim("note:"))
 		}
 	}
-	if len(crdEntry.OperatorBox.Cross) > 0 && len(opts.Peers) == 0 {
+	if len(crdEntry.Box().EffectiveCross()) > 0 && len(opts.Peers) == 0 {
 		fmt.Printf("  %s cross: peer CRs not provided — cross.* fields will be empty (add sibling CRs to the CR file)\n", dim("note:"))
 	}
 	printSimulateAutoscaleSummary(crdEntry)
@@ -369,7 +369,7 @@ func printSimulateAutoscaleSummary(entry orktypes.CRDEntry) {
 		autoscale *orktypes.WorkloadAutoscale
 	}
 	var workloads []workload
-	for _, ht := range []*orktypes.HookTemplates{entry.OperatorBox.OnCreate, entry.OperatorBox.OnReconcile} {
+	for _, ht := range []*orktypes.HookTemplates{entry.Box().EffectiveOnCreate(), entry.Box().EffectiveOnReconcile()} {
 		if ht == nil {
 			continue
 		}

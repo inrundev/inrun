@@ -74,7 +74,7 @@ func readChildrenForEndpoint(
 	ctx context.Context,
 	kube *kubeclient.Kubeclient,
 	owner map[string]interface{},
-	rc orktypes.OperatorBoxConfig,
+	rc *orktypes.OperatorBoxConfig,
 ) map[string]interface{} {
 	if kube == nil {
 		return map[string]interface{}{}
@@ -177,8 +177,8 @@ func InvalidateChildrenCache(namespace, name string) {
 // all ~24 built-in LIST calls anyway both wastes work and risks the fixed
 // fetchTimeout expiring before the (separately-fetched) custom resources
 // block ever runs, silently returning empty children with no error.
-func relevantGVRsFromConfig(box orktypes.OperatorBoxConfig) []childGVREntry {
-	if box.OnCreate == nil && box.OnReconcile == nil {
+func relevantGVRsFromConfig(box *orktypes.OperatorBoxConfig) []childGVREntry {
+	if box.EffectiveOnCreate() == nil && box.EffectiveOnReconcile() == nil {
 		return knownChildGVRs
 	}
 	needed := box.DeclaredChildKinds()
@@ -197,7 +197,7 @@ func relevantGVRsFromConfig(box orktypes.OperatorBoxConfig) []childGVREntry {
 // mergeCustomResourceSrcs collects all custom resource template entries from
 // both onCreate and onReconcile, deduplicating by APIVersion+Kind so each
 // unique GVR is only queried once.
-func mergeCustomResourceSrcs(box orktypes.OperatorBoxConfig) []orktypes.CustomResourceTemplateSource {
+func mergeCustomResourceSrcs(box *orktypes.OperatorBoxConfig) []orktypes.CustomResourceTemplateSource {
 	type key struct{ apiVersion, kind string }
 	seen := map[key]bool{}
 	var out []orktypes.CustomResourceTemplateSource
@@ -217,8 +217,8 @@ func mergeCustomResourceSrcs(box orktypes.OperatorBoxConfig) []orktypes.CustomRe
 			out = append(out, src)
 		}
 	}
-	add(box.OnCreate)
-	add(box.OnReconcile)
+	add(box.EffectiveOnCreate())
+	add(box.EffectiveOnReconcile())
 	return out
 }
 

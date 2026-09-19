@@ -59,32 +59,32 @@ func PopulateExternalCallsFromInclude(entry *CRDEntry, katalogDir string) error 
 		}
 	}
 
-	if box.OnReconcile != nil {
-		box.OnReconcile.External, err = ExpandExternalCalls(box.OnReconcile.External, katalogDir)
+	if box.EffectiveOnReconcile() != nil {
+		box.EffectiveOnReconcile().External, err = ExpandExternalCalls(box.EffectiveOnReconcile().External, katalogDir)
 		if err != nil {
 			return fmt.Errorf("onReconcile.external: %w", err)
 		}
 	}
-	if box.OnCreate != nil {
-		box.OnCreate.External, err = ExpandExternalCalls(box.OnCreate.External, katalogDir)
+	if box.EffectiveOnCreate() != nil {
+		box.EffectiveOnCreate().External, err = ExpandExternalCalls(box.EffectiveOnCreate().External, katalogDir)
 		if err != nil {
 			return fmt.Errorf("onCreate.external: %w", err)
 		}
 	}
-	if r := box.Reconciler; r != nil && r.Hooks != nil {
+	if r := box.Reconcile; r != nil && r.Hooks != nil {
 		r.Hooks.External, err = ExpandExternalCalls(r.Hooks.External, katalogDir)
 		if err != nil {
 			return fmt.Errorf("hooks.external: %w", err)
 		}
 	}
-	if entry.Validation != nil {
-		entry.Validation.External, err = ExpandExternalCalls(entry.Validation.External, katalogDir)
+	if entry.Admission != nil && entry.Admission.Validation != nil {
+		entry.Admission.Validation.External, err = ExpandExternalCalls(entry.Admission.Validation.External, katalogDir)
 		if err != nil {
 			return fmt.Errorf("validation.external: %w", err)
 		}
 	}
-	if entry.Mutation != nil {
-		entry.Mutation.External, err = ExpandExternalCalls(entry.Mutation.External, katalogDir)
+	if entry.Admission != nil && entry.Admission.Mutation != nil {
+		entry.Admission.Mutation.External, err = ExpandExternalCalls(entry.Admission.Mutation.External, katalogDir)
 		if err != nil {
 			return fmt.Errorf("mutation.external: %w", err)
 		}

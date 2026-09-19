@@ -11,8 +11,10 @@ spec:
         kind: Platform
         plural: platforms
       operatorBox:
-        status:
-          include: ./status-fields.yaml
-          fields:
-            - path: environment
-              value: "{{ .spec.environment }}"
+        emit:
+          status:
+            include: ./status-fields.yaml
+            fields:
+              - path: environment
+                value: "{{ .spec.environment }}"
+

@@ -155,6 +155,8 @@ type APITypes struct {
 }
 
 // ── Queue ─────────────────────────────────────────────────────────────────────
+
+// Future Enhancements - not yet worked on
 type QueueType string
 
 const (

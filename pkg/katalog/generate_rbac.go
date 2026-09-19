@@ -126,7 +126,7 @@ func (k *Katalog) GenerateRBACRules() []rbacv1.PolicyRule {
 		})
 
 		// CRD patching with CA bundle and watching for MODIFIED event by housekeeper
-		if crd.Conversion != nil && crd.UpdateCRDCaBundle() {
+		if crd.EffectiveConversion() != nil && crd.UpdateCRDCaBundle() {
 			rules = append(rules, rbacv1.PolicyRule{
 				APIGroups:     []string{"apiextensions.k8s.io"},
 				Resources:     []string{"customresourcedefinitions"},
@@ -256,18 +256,18 @@ func (k *Katalog) WebhookResources() []string {
 func (k *Katalog) HasExternalSecretRefs() bool {
 	for _, crd := range k.enabledCRDs {
 		var calls []orktypes.ExternalCallSpec
-		if crd.OperatorBox.OnReconcile != nil {
-			calls = append(calls, crd.OperatorBox.OnReconcile.External...)
+		if crd.Box().EffectiveOnReconcile() != nil {
+			calls = append(calls, crd.Box().EffectiveOnReconcile().External...)
 		}
-		if crd.OperatorBox.OnCreate != nil {
-			calls = append(calls, crd.OperatorBox.OnCreate.External...)
+		if crd.Box().EffectiveOnCreate() != nil {
+			calls = append(calls, crd.Box().EffectiveOnCreate().External...)
 		}
 		calls = append(calls, crd.HooksExternal()...)
-		if crd.Validation != nil {
-			calls = append(calls, crd.Validation.External...)
+		if crd.EffectiveValidation() != nil {
+			calls = append(calls, crd.EffectiveValidation().External...)
 		}
-		if crd.Mutation != nil {
-			calls = append(calls, crd.Mutation.External...)
+		if crd.EffectiveMutation() != nil {
+			calls = append(calls, crd.EffectiveMutation().External...)
 		}
 		for _, call := range calls {
 			if call.HasSecretRef() {
@@ -497,7 +497,7 @@ func (k *Katalog) GenerateGatewayRBACRules() []rbacv1.PolicyRule {
 	// CRD CA bundle patching (conversion webhooks)
 	// ───────────────────────────────────────────────
 	for _, crd := range k.Enabled() {
-		if crd.Conversion != nil && crd.UpdateCRDCaBundle() {
+		if crd.EffectiveConversion() != nil && crd.UpdateCRDCaBundle() {
 			rules = append(rules, rbacv1.PolicyRule{
 				APIGroups:     []string{"apiextensions.k8s.io"},
 				Resources:     []string{"customresourcedefinitions"},
@@ -727,7 +727,7 @@ func (k *Katalog) GeneratePerCRDRBACRules() map[string][]rbacv1.PolicyRule {
 					},
 				)
 			}
-			if crd.Conversion != nil && crd.UpdateCRDCaBundle() {
+			if crd.EffectiveConversion() != nil && crd.UpdateCRDCaBundle() {
 				rules = append(rules, rbacv1.PolicyRule{
 					APIGroups:     []string{"apiextensions.k8s.io"},
 					Resources:     []string{"customresourcedefinitions"},
@@ -816,11 +816,11 @@ func (k *Katalog) customResourceRBACRules() []rbacv1.PolicyRule {
 // a group + plural via ParseGroupVersion and lowercase+s inference.
 func customRBACRulesForCRD(crd orktypes.CRDEntry) []rbacv1.PolicyRule {
 	var entries []orktypes.CustomResourceTemplateSource
-	if crd.OperatorBox.OnCreate != nil {
-		entries = append(entries, crd.OperatorBox.OnCreate.CustomResource...)
+	if crd.Box().EffectiveOnCreate() != nil {
+		entries = append(entries, crd.Box().EffectiveOnCreate().CustomResource...)
 	}
-	if crd.OperatorBox.OnReconcile != nil {
-		entries = append(entries, crd.OperatorBox.OnReconcile.CustomResource...)
+	if crd.Box().EffectiveOnReconcile() != nil {
+		entries = append(entries, crd.Box().EffectiveOnReconcile().CustomResource...)
 	}
 
 	seen := make(map[string]bool)

@@ -46,20 +46,20 @@ func generateRBACInfo(crd orktypes.CRDEntry, v crdDisplayValues) RBACInfo {
 	box := crd.OperatorBox
 
 	// 3. Resources from declarative templates
-	if box.OnCreate != nil {
-		resourceRules := extractResourceRules(box.OnCreate)
+	if box.EffectiveOnCreate() != nil {
+		resourceRules := extractResourceRules(box.EffectiveOnCreate())
 		rules = append(rules, resourceRules...)
 	}
 
 	// 4. Resources from onReconcile
-	if box.OnReconcile != nil {
-		resourceRules := extractResourceRules(box.OnReconcile)
+	if box.EffectiveOnReconcile() != nil {
+		resourceRules := extractResourceRules(box.EffectiveOnReconcile())
 		rules = append(rules, resourceRules...)
 	}
 
 	// 5. Resources from onDelete
-	if box.OnDelete != nil {
-		resourceRules := extractResourceRules(box.OnDelete)
+	if box.EffectiveOnDelete() != nil {
+		resourceRules := extractResourceRules(box.EffectiveOnDelete())
 		rules = append(rules, resourceRules...)
 	}
 

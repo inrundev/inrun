@@ -115,19 +115,20 @@ func applyValidation(
 	resolver *orktmpl.Resolver,
 	crd orktypes.CRDEntry,
 ) (*orktmpl.Resolver, *ValidationResult, error) {
-	if crd.Validation == nil || len(crd.Validation.Rules) == 0 {
+	val := crd.EffectiveValidation()
+	if val == nil || len(val.Rules) == 0 {
 		return resolver, nil, nil
 	}
 
 	var err error
-	if calls := crd.Validation.ReconcileExternal(); len(calls) > 0 {
+	if calls := val.ReconcileExternal(); len(calls) > 0 {
 		resolver, err = orkexternal.Run(ctx, crd.GVKString(), resolver, calls, kube.Clientset())
 		if err != nil {
 			return resolver, nil, err
 		}
 	}
 
-	result := runValidation(resolver.Data(), resolver, crd.Validation, crd.GVKString())
+	result := runValidation(resolver.Data(), resolver, val, crd.GVKString())
 
 	for _, w := range result.Warnings {
 		logger.FromContext(ctx).Warn().

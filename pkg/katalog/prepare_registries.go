@@ -11,15 +11,13 @@ import (
 // Add reconcilers
 func (k *Katalog) AddReconcilers() error {
 	for name, crd := range k.enabledCRDs {
-		rc := crd.OperatorBox
-
-		// Add providers block
-		if len(rc.ProviderBlocks) > 0 {
-			blocks, err := orktypes.ParseProviderBlocks(rc.RawProviders)
+		// Parse raw providers into typed ProviderBlocks on the reconcile block
+		if crd.Box().Reconcile != nil && len(crd.Box().Reconcile.RawProviders) > 0 {
+			blocks, err := orktypes.ParseProviderBlocks(crd.Box().Reconcile.RawProviders)
 			if err != nil {
 				return err
 			}
-			rc.ProviderBlocks = blocks
+			crd.Box().Reconcile.ProviderBlocks = blocks
 		}
 
 		if !crd.IsDynamic() {
@@ -30,7 +28,6 @@ func (k *Katalog) AddReconcilers() error {
 				if err := wirePerTargetConstructors(name, &crd); err != nil {
 					return err
 				}
-				crd.OperatorBox = rc
 				k.enabledCRDs[name] = crd
 				continue
 			}
@@ -44,10 +41,12 @@ func (k *Katalog) AddReconcilers() error {
 				)
 			}
 
-			rc.Constructor = constructorFn
+			if crd.Box().Reconcile == nil {
+				crd.Box().Reconcile = &orktypes.ReconcileConfig{}
+			}
+			crd.Box().Reconcile.Constructor = constructorFn
 		}
 
-		crd.OperatorBox = rc
 		k.enabledCRDs[name] = crd
 	}
 	return nil
@@ -62,7 +61,10 @@ func (k *Katalog) AddHooks() error {
 		}
 		hookFn, ok := orktypes.HookRegistry[crd.GroupVersionKind]
 		if ok {
-			crd.OperatorBox.HookFactory = hookFn
+			if crd.Box().Reconcile == nil {
+				crd.Box().Reconcile = &orktypes.ReconcileConfig{}
+			}
+			crd.Box().Reconcile.HookFactory = hookFn
 		}
 
 		if !crd.HasServeTargetEntries() {
@@ -75,14 +77,14 @@ func (k *Katalog) AddHooks() error {
 		// CRD-level factory — it must be registered. Targets with a distinct binary
 		// are validated separately by addTargetHooks.
 		crdLevelHookLoc := ""
-		if crd.OperatorBox.Reconciler != nil && crd.OperatorBox.Reconciler.Hooks != nil {
-			crdLevelHookLoc = crd.OperatorBox.Reconciler.Hooks.Location
+		if crd.Box().Reconcile != nil && crd.Box().Reconcile.Hooks != nil {
+			crdLevelHookLoc = crd.Box().Reconcile.Hooks.Location
 		}
 		for targetName, targetCfg := range crd.Serve.Target.Entries {
-			if targetCfg.OperatorBox == nil || targetCfg.OperatorBox.Reconciler == nil {
+			if targetCfg.OperatorBox == nil || targetCfg.Box().Reconcile == nil {
 				continue
 			}
-			h := targetCfg.OperatorBox.Reconciler.Hooks
+			h := targetCfg.Box().Reconcile.Hooks
 			if h == nil {
 				continue
 			}
@@ -117,15 +119,15 @@ func (k *Katalog) AddTargetHooks() error {
 			continue
 		}
 		crdLevelLocation := ""
-		if crd.OperatorBox.Reconciler != nil && crd.OperatorBox.Reconciler.Hooks != nil {
-			crdLevelLocation = crd.OperatorBox.Reconciler.Hooks.Location
+		if crd.Box().Reconcile != nil && crd.Box().Reconcile.Hooks != nil {
+			crdLevelLocation = crd.Box().Reconcile.Hooks.Location
 		}
 		gvk := crd.GroupVersionKind
 		for targetName, targetCfg := range crd.Serve.Target.Entries {
-			if targetCfg.OperatorBox == nil || targetCfg.OperatorBox.Reconciler == nil {
+			if targetCfg.OperatorBox == nil || targetCfg.Box().Reconcile == nil {
 				continue
 			}
-			h := targetCfg.OperatorBox.Reconciler.Hooks
+			h := targetCfg.Box().Reconcile.Hooks
 			if h == nil || h.Location == "" || h.Location == crdLevelLocation {
 				continue
 			}
@@ -159,16 +161,16 @@ func (k *Katalog) AddTargetHooks() error {
 // wirePerTargetConstructors wires constructors for per-target entries that have
 // reconciler.default: false set on their own OperatorBox. These targets share the
 // CRD-level GVK and look up their constructor in ReconcilerRegistry, storing it
-// directly on targetCfg.OperatorBox.Constructor.
+// directly on targetCfg.Box().Constructor.
 func wirePerTargetConstructors(crdName string, crd *orktypes.CRDEntry) error {
 	if !crd.HasServeTargetEntries() {
 		return nil
 	}
 	for targetName, targetCfg := range crd.Serve.Target.Entries {
-		if targetCfg.OperatorBox == nil || targetCfg.OperatorBox.Reconciler == nil {
+		if targetCfg.OperatorBox == nil || targetCfg.Box().Reconcile == nil {
 			continue
 		}
-		rec := targetCfg.OperatorBox.Reconciler
+		rec := targetCfg.Box().Reconcile
 		if rec.Default == nil || *rec.Default || rec.ConstructorDecl == nil {
 			continue
 		}
@@ -180,7 +182,7 @@ func wirePerTargetConstructors(crdName string, crd *orktypes.CRDEntry) error {
 				crdName, targetName,
 			)
 		}
-		targetCfg.OperatorBox.Constructor = fn
+		targetCfg.Box().Reconcile.Constructor = fn
 		crd.Serve.Target.Entries[targetName] = targetCfg
 	}
 	return nil
@@ -195,10 +197,10 @@ func (k *Katalog) AddTargetConstructors() error {
 		}
 		gvk := crd.GroupVersionKind
 		for targetName, targetCfg := range crd.Serve.Target.Entries {
-			if targetCfg.OperatorBox == nil || targetCfg.OperatorBox.Reconciler == nil {
+			if targetCfg.OperatorBox == nil || targetCfg.Box().Reconcile == nil {
 				continue
 			}
-			rec := targetCfg.OperatorBox.Reconciler
+			rec := targetCfg.Box().Reconcile
 			if rec.Default == nil || *rec.Default || rec.ConstructorDecl == nil {
 				continue
 			}

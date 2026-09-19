@@ -28,7 +28,8 @@ func applyNormalize(
 	crd orktypes.CRDEntry,
 	obj domain.Object,
 ) (domain.Object, *orktmpl.Resolver, []orktypes.NormalizeChange, error) {
-	if crd.Normalize == nil || len(crd.Normalize.Spec) == 0 {
+	norm := crd.EffectiveNormalize()
+	if norm == nil || len(norm.Spec) == 0 {
 		baseResolver, err := orktmpl.NewResolver(ctx, obj)
 		if err != nil {
 			return obj, nil, nil, fmt.Errorf("normalize: building base resolver: %w", err)
@@ -57,10 +58,10 @@ func applyNormalize(
 		content = map[string]interface{}{}
 	}
 
-	audit := crd.Normalize.Audit
+	audit := norm.Audit
 	var changes []orktypes.NormalizeChange
 
-	for fieldPath, tpl := range crd.Normalize.Spec {
+	for fieldPath, tpl := range norm.Spec {
 		rendered, err := baseResolver.Resolve(tpl)
 		if err != nil {
 			return obj, nil, nil, fmt.Errorf("normalize spec.%s: %w", fieldPath, err)
@@ -68,7 +69,7 @@ func applyNormalize(
 		rendered = strings.TrimSpace(rendered)
 
 		var parsed interface{}
-		if declaredType, ok := crd.Normalize.Types[fieldPath]; ok {
+		if declaredType, ok := norm.Types[fieldPath]; ok {
 			parsed, err = coerceNormalizedValue(rendered, declaredType)
 			if err != nil {
 				return obj, nil, nil, fmt.Errorf("normalize spec.%s: type %q: %w", fieldPath, declaredType, err)

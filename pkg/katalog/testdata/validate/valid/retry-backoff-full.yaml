@@ -9,7 +9,7 @@ spec:
     widget:
       crdFile: ../crd.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           resync: 10m
           queue:
             retryBackoff:
@@ -17,12 +17,13 @@ spec:
               max: 30s
               multiplier: 2.0
               maxAttempts: 3
-        onReconcile:
-          external:
-            - name: health
-              url: http://svc/health
-              retryBackoff:
-                initial: 1s
-                max: 10s
-                multiplier: 1.5
-                maxAttempts: 3
+          onReconcile:
+            external:
+              - name: health
+                url: http://svc/health
+                retryBackoff:
+                  initial: 1s
+                  max: 10s
+                  multiplier: 1.5
+                  maxAttempts: 3
+

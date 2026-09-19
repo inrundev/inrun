@@ -218,9 +218,21 @@ func (k *Kontroller) processItemForGVK(ctx context.Context, gvk string, item que
 
 	requeueAfter := result.RequeueAfter
 	if requeueAfter == 0 {
-		if entry, ok := k.katalog.Get(gvk); ok {
+		if hasEntry {
 			obj := k.objectFromCache(entry, item.Key)
-			requeueAfter = k.kat.EvaluateRequeue(ctx, entry.CRD.Name, obj)
+			var resolver *orktmpl.Resolver
+			if prepared != nil {
+				resolver = prepared.Context.(*orktmpl.Resolver)
+			} else if obj != nil {
+				if r, err := orktmpl.NewResolver(ctx, obj); err == nil {
+					health := k.crdHealthMap[gvk]
+					resolver = r.WithUserNotes(k.kat.UserNotes()).
+						WithProfiles(k.kat.UserProfiles()).
+						WithHealth(health.HealthAsMap()).
+						WithMetrics(health.GetAutoMetrics())
+				}
+			}
+			requeueAfter = k.kat.EvaluateRequeue(ctx, entry.CRD.Name, obj, resolver)
 		}
 	}
 	if requeueAfter > 0 {

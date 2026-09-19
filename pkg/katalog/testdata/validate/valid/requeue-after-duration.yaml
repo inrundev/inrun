@@ -9,6 +9,6 @@ spec:
     widget:
       crdFile: ../crd.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           requeue:
             after: "30s"

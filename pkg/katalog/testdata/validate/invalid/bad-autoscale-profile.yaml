@@ -10,6 +10,8 @@ spec:
     widget:
       crdFile: ../crd.yaml
       operatorBox:
-        autoscale:
-          profile: steady
-          interval: 30s
+        runtime:
+          autoscale:
+            profile: steady
+            interval: 30s
+

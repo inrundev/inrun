@@ -35,7 +35,7 @@ func (e *executor) validateAdmissionRules() error {
 func (e *executor) validateAdmissionOperators() error {
 	for _, crd := range e.k.EnabledCRDs() {
 		if crd.HasValidationRules() {
-			for _, rule := range crd.Validation.Rules {
+			for _, rule := range crd.EffectiveValidation().Rules {
 				if err := checkKnownOperator(rule.Operator, crd.Name, rule.Field); err != nil {
 					return err
 				}
@@ -49,7 +49,7 @@ func (e *executor) validateAdmissionOperators() error {
 		}
 
 		if crd.HasMutationRules() {
-			for _, rule := range crd.Mutation.Rules {
+			for _, rule := range crd.EffectiveMutation().Rules {
 				if err := checkConditionOperators(rule.When, crd.Name, rule.Field); err != nil {
 					return err
 				}
@@ -109,7 +109,7 @@ func (e *executor) validateValidationRuleLinks() error {
 		if !crd.HasValidationRules() {
 			continue
 		}
-		for _, rule := range crd.Validation.Rules {
+		for _, rule := range crd.EffectiveValidation().Rules {
 			if rule.Link == "" {
 				continue
 			}
@@ -158,7 +158,7 @@ func (e *executor) validateMutationRules() error {
 			continue
 		}
 		if crd.HasMutationRules() {
-			for i, rule := range crd.Mutation.Rules {
+			for i, rule := range crd.EffectiveMutation().Rules {
 				if rule.Field == "" {
 					return fmt.Errorf("%s CRD: %s - mutation.rules[%d].field is required", failureMark(), crd.Name, i)
 				}
@@ -214,7 +214,7 @@ func (e *executor) validateValidationRules() error {
 			continue
 		}
 
-		for i, rule := range crd.Validation.Rules {
+		for i, rule := range crd.EffectiveValidation().Rules {
 			if rule.Field == "" {
 				return fmt.Errorf("%s CRD: %s - validation.rules[%d].field is required", failureMark(), crd.Name, i)
 			}

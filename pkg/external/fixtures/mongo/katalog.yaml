@@ -12,49 +12,49 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           resync: 20s
 
-        onReconcile:
-          external:
-            - name: docs
-              protocol: mongo
-              url: "{{ .spec.mongoURL }}"
-              query: "orkestra.test"
-              continueOnError: true
-              timeout: 5s
+          onReconcile:
+            external:
+              - name: docs
+                protocol: mongo
+                url: "{{ .spec.mongoURL }}"
+                query: "orkestra.test"
+                continueOnError: true
+                timeout: 5s
 
-            - name: activeConnections
-              protocol: mongo
-              url: "{{ .spec.mongoURL }}"
-              query: 'orkestra.test {"status": "active"}'
-              continueOnError: true
-              timeout: 5s
-              cacheFor: 10s
+              - name: activeConnections
+                protocol: mongo
+                url: "{{ .spec.mongoURL }}"
+                query: 'orkestra.test {"status": "active"}'
+                continueOnError: true
+                timeout: 5s
+                cacheFor: 10s
 
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: 1
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: 1
+        emit:
+          status:
+            fields:
+              - path: docCount
+                value: "{{ .external.docs.count }}"
 
-        status:
-          fields:
-            - path: docCount
-              value: "{{ .external.docs.count }}"
+              - path: activeCount
+                value: "{{ .external.activeConnections.count }}"
 
-            - path: activeCount
-              value: "{{ .external.activeConnections.count }}"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: external.docs.error
+                    operator: notExists
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: external.docs.error
-                  operator: notExists
+              - path: phase
+                value: "Degraded"
+                when:
+                  - field: external.docs.error
+                    operator: exists
 
-            - path: phase
-              value: "Degraded"
-              when:
-                - field: external.docs.error
-                  operator: exists

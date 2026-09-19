@@ -208,7 +208,7 @@ func BuildCRDetailHandler(
 	crd orktypes.CRDEntry,
 	inf cache.SharedIndexInformer,
 	kube *kubeclient.Kubeclient,
-	rc orktypes.OperatorBoxConfig,
+	box *orktypes.OperatorBoxConfig,
 	o *RuntimeHealth,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +254,7 @@ func BuildCRDetailHandler(
 			return
 		}
 
-		children := readChildrenForEndpoint(r.Context(), kube, objMap, rc)
+		children := readChildrenForEndpoint(r.Context(), kube, objMap, box)
 		eventsPath := buildEventsPath(crd, namespace, name)
 
 		detail := buildCRDetail(objMap, children, eventsPath, crd.APITypes.Kind)
@@ -270,10 +270,10 @@ func BuildCRDetailAndEventsHandler(
 	crd orktypes.CRDEntry,
 	inf cache.SharedIndexInformer,
 	kube *kubeclient.Kubeclient,
-	rc orktypes.OperatorBoxConfig,
+	box *orktypes.OperatorBoxConfig,
 	o *RuntimeHealth,
 ) http.HandlerFunc {
-	detail := BuildCRDetailHandler(crd, inf, kube, rc, o)
+	detail := BuildCRDetailHandler(crd, inf, kube, box, o)
 	events := BuildCREventsHandler(crd, kube)
 
 	return func(w http.ResponseWriter, r *http.Request) {

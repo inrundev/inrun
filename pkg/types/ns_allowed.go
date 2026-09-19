@@ -73,7 +73,9 @@ func (a AllowedNamespaces) Merge(other AllowedNamespaces) AllowedNamespaces {
 // mirrors this exact check; this is the canonical definition both that type
 // and any validator should call instead of re-deriving it from len(...)==1).
 func (c *CRDEntry) IsSingleNamespace() bool {
-	return len(c.AllowedNamespaces) == 1 && len(c.RestrictedNamespaces) == 0
+	allowed := c.effectiveAllowedNamespaces()
+	restricted := c.effectiveRestrictedNamespaces()
+	return len(allowed) == 1 && len(restricted) == 0
 }
 
 // SingleNamespace returns the one namespace IsSingleNamespace confirmed, or
@@ -82,7 +84,7 @@ func (c *CRDEntry) SingleNamespace() string {
 	if !c.IsSingleNamespace() {
 		return ""
 	}
-	return c.AllowedNamespaces[0]
+	return c.effectiveAllowedNamespaces()[0]
 }
 
 // PinnedToNamespace reports whether this CRD's informer is scoped to watch

@@ -113,27 +113,29 @@ func (t *RollbackTrigger) EffectiveConsecutiveFailures() int {
 //  3. rollBackOnError: true → synthetic block derived from reconcile:true resources;
 //     explicit rollback.trigger and rollback.onRollback take precedence when set
 func (c *OperatorBoxConfig) DerivedRollback() *RollbackBlock {
-	if !c.RollBackOnError && c.Rollback == nil {
+	rollback := c.EffectiveRollback()
+	rollBackOnError := c.EffectiveRollBackOnError()
+	if !rollBackOnError && rollback == nil {
 		return nil
 	}
-	if !c.RollBackOnError {
-		return c.Rollback
+	if !rollBackOnError {
+		return rollback
 	}
 
 	block := &RollbackBlock{}
 
 	// Merge trigger from explicit block if declared
-	if c.Rollback != nil {
-		block.Trigger = c.Rollback.Trigger
+	if rollback != nil {
+		block.Trigger = rollback.Trigger
 	}
 
 	// Explicit onRollback takes precedence over derived templates
-	if c.Rollback != nil && c.Rollback.OnRollback != nil {
-		block.OnRollback = c.Rollback.OnRollback
+	if rollback != nil && rollback.OnRollback != nil {
+		block.OnRollback = rollback.OnRollback
 		return block
 	}
 
-	block.OnRollback = deriveRollbackTemplates(c.OnCreate, c.OnReconcile)
+	block.OnRollback = deriveRollbackTemplates(c.EffectiveOnCreate(), c.EffectiveOnReconcile())
 	return block
 }
 

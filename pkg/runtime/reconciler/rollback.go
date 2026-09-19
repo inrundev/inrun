@@ -155,7 +155,7 @@ func (r *GenericReconciler[PTR]) shouldRollback(
 	consecutiveFailures int,
 	history *rollbackFailureHistory,
 ) bool {
-	derived := r.crd.OperatorBox.DerivedRollback()
+	derived := r.crd.Box().DerivedRollback()
 	if derived == nil {
 		return false
 	}
@@ -194,7 +194,7 @@ func isRollbackActive(obj domain.Object) bool {
 //   - Uses the declared templates as-is.
 //   - Resolver has .previous.* injected — templates use .previous.spec.* references.
 func (r *GenericReconciler[PTR]) runRollback(ctx context.Context, resolver *orktmpl.Resolver, obj PTR) error {
-	rollback := r.crd.OperatorBox.DerivedRollback()
+	rollback := r.crd.Box().DerivedRollback()
 	if rollback == nil || rollback.OnRollback == nil {
 		logger.Info().
 			Str("crd", r.crd.GVKString()).
@@ -218,8 +218,8 @@ func (r *GenericReconciler[PTR]) runRollback(ctx context.Context, resolver *orkt
 	}
 
 	var rollbackResolver *orktmpl.Resolver
-	usingDerived := r.crd.OperatorBox.RollBackOnError &&
-		(r.crd.OperatorBox.Rollback == nil || r.crd.OperatorBox.Rollback.OnRollback == nil)
+	usingDerived := r.crd.Box().EffectiveRollBackOnError() &&
+		(r.crd.Box().EffectiveRollback() == nil || r.crd.Box().EffectiveRollback().OnRollback == nil)
 
 	if usingDerived {
 		// Derived path: substitute .spec.* with previous spec so the same

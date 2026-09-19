@@ -113,21 +113,25 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	box := effectiveOperatorBox(crdEntry, cr, opts.Target)
 	// Copy the effective box so we don't mutate the original CRD entry.
 	boxCopy := *box
-	for _, phase := range []*orktypes.HookTemplates{
-		boxCopy.OnCreate,
-		boxCopy.OnReconcile,
-		boxCopy.OnDelete,
-	} {
-		if phase == nil {
-			continue
+	if boxCopy.Reconcile != nil {
+		reconcileCopy := *boxCopy.Reconcile
+		for _, phase := range []*orktypes.HookTemplates{
+			reconcileCopy.OnCreate,
+			reconcileCopy.OnReconcile,
+			reconcileCopy.OnDelete,
+		} {
+			if phase == nil {
+				continue
+			}
+			filtered, skipped := orktypes.FilterSimulatable(*phase)
+			*phase = filtered
+			result.Notes = append(result.Notes, skipped...)
 		}
-		filtered, skipped := orktypes.FilterSimulatable(*phase)
-		*phase = filtered
-		result.Notes = append(result.Notes, skipped...)
+		boxCopy.Reconcile = &reconcileCopy
 	}
 	// Build effective CRD entry — reconciler uses target's operatorBox, not the CRD-level one.
 	effectiveCRDEntry := crdEntry
-	effectiveCRDEntry.OperatorBox = boxCopy
+	effectiveCRDEntry.OperatorBox = &boxCopy
 
 	scheme, err := kat.Scheme()
 	if err != nil {

@@ -1,10 +1,22 @@
-## v0.7.18 [UNRELEASED]
+v0.7.18 — operatorBox schema groupings and declarative events [UNRELEASED]
+
+The flat `operatorBox` schema predates the kordinator split. Fields owned by the queue path, the runtime, and the reconciler had no proper grouping that reflected which layer they belonged to. This release introduces five sections that follow the execution flow.
+
+This release regroups `operatorBox` to match the runtime boundary and execution flow:
+
+- `operatorBox.observe:` — data: cross-CRD reads, secondary watches, Kubernetes Events; makes external state available at reconcile time
+- `operatorBox.preReconcile:` — gate: enqueueGate fires at the informer before the queue; reconcileGate fires at the kordinator after dequeue; events that fail either gate are silently dropped
+- `operatorBox.runtime:` — policy: finalizers, autoscale, rollback, namespace guards, deletion protection; the kordinator manages these as long-lived operator concerns
+- `operatorBox.reconcile:` — work: lifecycle hooks, workers, resync, queue, imports, normalize; if the reconciler reads it, it lives here
+- `operatorBox.emit:` — output: status shape and event emission; the runtime stamps these after every reconcile
+
+CRD-level admission fields (`validation`, `mutation`, `conversion`, `webhooks`) move under `admission:` for the same reason — they are a configuration group, not top-level peers.
+
+No change in behaviour. Schema migration only.
 
 ### Reconciliation preparation moved to kordinator
 
 Normalize, cross-CRD enrichment, mutation, and validation now run in `prepare.Prepare()` inside the kordinator worker loop, before `Reconcile()` is called. `GenericReconciler` is a pure dispatcher — it receives a fully-prepared `domain.Request` and dispatches to hooks or `runTemplateReconcile`. The reconciler no longer owns preparation.
-
-#### Benefit
 
 Every reconciler type — `GenericReconciler`, native `domain.Reconciler` implementations, future types — receives a fully-prepared object automatically. Preparation no longer needs to be wired per reconciler; adding a new reconciler type does not require duplicating or reimplementing the preparation pipeline.
 

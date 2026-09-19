@@ -119,8 +119,8 @@ func gateEvalCRD(kat *katalog.Katalog, crd *orktypes.CRDEntry, obj map[string]in
 
 	// Limitation notes — printed once for the CRD.
 	hasUnique := hasUniqueRule(crd)
-	hasValidationExternal := crd.Validation != nil && len(crd.Validation.AdmissionExternal()) > 0
-	hasMutationExternal := crd.Mutation != nil && len(crd.Mutation.AdmissionExternal()) > 0
+	hasValidationExternal := crd.EffectiveValidation() != nil && len(crd.EffectiveValidation().AdmissionExternal()) > 0
+	hasMutationExternal := crd.EffectiveMutation() != nil && len(crd.EffectiveMutation().AdmissionExternal()) > 0
 	if hasUnique {
 		fmt.Printf("  %s operator: unique — skipped (no live cluster)\n", dim("note:"))
 	}
@@ -223,10 +223,11 @@ func printGateMutateResult(r admissionMutationResult) {
 }
 
 func hasUniqueRule(crd *orktypes.CRDEntry) bool {
-	if crd.Validation == nil {
+	v := crd.EffectiveValidation()
+	if v == nil {
 		return false
 	}
-	for _, r := range crd.Validation.Rules {
+	for _, r := range v.Rules {
 		if r.Operator == orktypes.ConditionUnique {
 			return true
 		}

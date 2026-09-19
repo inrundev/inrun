@@ -283,6 +283,56 @@ func ExpandReconcilerInclude(r *ReconcilerConfig, baseDir string) error {
 	return nil
 }
 
+// ExpandReconcileInclude resolves the reconcile.include field by reading the
+// referenced file, unmarshaling its "reconcile:" block, and merging it under
+// the inline config. Inline fields take precedence. Cleared after expansion.
+func ExpandReconcileInclude(r *ReconcileConfig, baseDir string) error {
+	if r == nil || r.Include == "" {
+		return nil
+	}
+	path := r.Include
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(baseDir, path)
+	}
+	data, err := readLocal(path)
+	if err != nil {
+		return fmt.Errorf("reading reconcile.include %q: %w", r.Include, err)
+	}
+	var f struct {
+		Reconcile ReconcileConfig `yaml:"reconcile"`
+	}
+	if err := strictUnmarshal(data, &f); err != nil {
+		return fmt.Errorf("parsing reconcile.include %q: %w", r.Include, err)
+	}
+	inc := f.Reconcile
+	if r.Default == nil && inc.Default != nil {
+		r.Default = inc.Default
+	}
+	if r.Hooks == nil && inc.Hooks != nil {
+		r.Hooks = inc.Hooks
+	}
+	if r.ConstructorDecl == nil && inc.ConstructorDecl != nil {
+		r.ConstructorDecl = inc.ConstructorDecl
+	}
+	if r.Profile == "" && inc.Profile != "" {
+		r.Profile = inc.Profile
+	}
+	if r.Workers == 0 && inc.Workers != 0 {
+		r.Workers = inc.Workers
+	}
+	if r.Resync.Duration == 0 && inc.Resync.Duration != 0 {
+		r.Resync = inc.Resync
+	}
+	if r.Queue.Empty() && !inc.Queue.Empty() {
+		r.Queue = inc.Queue
+	}
+	if r.Requeue == nil && inc.Requeue != nil {
+		r.Requeue = inc.Requeue
+	}
+	r.Include = ""
+	return nil
+}
+
 // ExpandSimulateOpsIncludes resolves include entries in expect.Ops, expect.Absent,
 // and each per-CRD sub-expect. An entry {include: ./path.yaml} is replaced
 // in-place by the ops: list from the referenced file.

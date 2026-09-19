@@ -350,3 +350,13 @@ func (t *ServeTargetConfig) TargetClusters() []string {
 	}
 	return t.Clusters
 }
+
+// Box returns the per-target operatorBox configuration.
+// Initialises OperatorBox to an empty config if it is nil, so the pointer is always
+// safe to read from and write to without a separate nil guard.
+func (t *ServeTargetConfig) Box() *OperatorBoxConfig {
+	if t.OperatorBox == nil {
+		t.OperatorBox = &OperatorBoxConfig{}
+	}
+	return t.OperatorBox
+}

@@ -48,7 +48,7 @@ func ExtractOCIImports(filePath string) (*OCIImports, error) {
 
 	// Motif imports from spec.crds[*].imports (Katalog and inline Komposer CRDs)
 	for _, crd := range kf.Spec.CRDs {
-		for _, imp := range crd.Imports {
+		for _, imp := range crd.EffectiveImports() {
 			if isOCIMotifImport(imp) {
 				out.MotifImports = append(out.MotifImports, imp)
 			}
@@ -134,7 +134,7 @@ func ExtractLocalMotifImports(filePath string) ([]LocalMotifImport, error) {
 	}
 	var out []LocalMotifImport
 	for crdName, crd := range kf.Spec.CRDs {
-		for i, imp := range crd.Imports {
+		for i, imp := range crd.EffectiveImports() {
 			if ref := strings.TrimSpace(imp.Motif); IsFilePath(ref) {
 				out = append(out, LocalMotifImport{CRDName: crdName, Index: i, Path: ref})
 			}

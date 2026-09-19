@@ -181,7 +181,10 @@ func (g *GateConditions) ExternalCalls() []ExternalCallSpec {
 
 // ── PreReconcileConfig ────────────────────────────────────────────────────────────
 
-// PreReconcileConfig groups the two pre-reconcile gates under operatorBox.preReconcile.
+// PreReconcileConfig controls whether an event enters the queue and whether a dequeued
+// item reaches the reconciler. Two gates: enqueueGate fires at the informer before the
+// object enters the queue; reconcileGate fires at the kordinator after dequeue. Events
+// that fail either gate are silently dropped — the reconciler is never invoked.
 type PreReconcileConfig struct {
 	// External declares HTTP or gRPC calls made once before either gate is evaluated.
 	// Results are injected into the resolver under .external.<name>.* and are
@@ -443,77 +446,57 @@ func (rc *RequeueConfig) Empty() bool {
 func (p *PreReconcileConfig) Empty() bool { return p == nil }
 func (r *ReconcilerConfig) Empty() bool   { return r == nil }
 
-// OperatorBoxConfig is the per-CRD configuration block in a Katalog.
+// OperatorBoxConfig is the unit of reconciliation in Orkestra.
+//
+// CRDs in, operators out.
+//
+// Each CRD entry in a Katalog gets its own operatorBox:
+// an isolated informer, queue, worker pool, reconciler, health state, and metrics —
+// independent of every other CRD in the same process.
+//
+// The five sections follow the execution flow of one reconcile cycle:
+//
+//	observe       — data: cross-CRD reads and secondary watches available at reconcile time
+//	preReconcile  — gate: should this event enter the queue or reach the reconciler?
+//	runtime       — policy: autoscale, rollback, finalizers, and deletion guards
+//	reconcile     — work: implementation identity, lifecycle templates, execution tuning
+//	emit          — output: status fields and events written after every reconcile
 type OperatorBoxConfig struct {
-	// // Reconcile is the new consolidated reconciliation block (IN DEVELOPMENT).
-	// // Absorbs Reconciler + OnCreate/OnReconcile/OnDelete + providers + normalize + imports + forceConflict.
-	// // During migration both Reconcile and the old flat fields are accepted.
-	// Reconcile *ReconcileConfig `yaml:"reconcile,omitempty" json:"reconcile,omitempty"`
-
-	// // Runtime is the new Kordinator-owned operational block (IN DEVELOPMENT).
-	// // Absorbs Finalizers + Autoscale + Rollback + CRDEntry-level namespace/protection fields.
-	// // During migration both Runtime and the old flat fields are accepted.
-	// Runtime *RuntimeConfig `yaml:"runtime,omitempty" json:"runtime,omitempty"`
-
-	// Reconciler declares which implementation runs and how it is tuned.
-	// nil → GenericReconciler with default: true.
-	Reconciler *ReconcilerConfig `yaml:"reconciler,omitempty" json:"reconciler,omitempty"`
-
-	// PreReconcile declares gate conditions evaluated before the reconciler is called.
-	// Gated items are discarded and re-evaluated on the next informer tick.
-	PreReconcile *PreReconcileConfig `yaml:"preReconcile,omitempty" json:"preReconcile,omitempty"`
-
-	// Finalizers is the per-CRD finalizer list. Falls back to the Katalog-level finalizer.
-	Finalizers []string `yaml:"finalizers,omitempty" json:"finalizers,omitempty" validate:"omitempty"`
-
-	// OnCreate declares resources to create when the CR is first reconciled.
-	// Valid when Default: true and mode: dynamic.
-	OnCreate *HookTemplates `yaml:"onCreate,omitempty" json:"onCreate,omitempty" validate:"omitempty"`
-
-	// OnReconcile declares drift correction resources applied on every reconcile.
-	OnReconcile *HookTemplates `yaml:"onReconcile,omitempty" json:"onReconcile,omitempty" validate:"omitempty"`
-
-	// OnDelete declares cleanup resources applied before finalizer removal.
-	// Omit when owner reference cascade deletion is sufficient.
-	OnDelete *HookTemplates `yaml:"onDelete,omitempty" json:"onDelete,omitempty" validate:"omitempty"`
-
-	// HookFactory produces typed hooks at startup. nil → no user hooks.
-	HookFactory func() domain.AnyReconcileHooks `yaml:"-" json:"-"`
-
-	// Constructor builds a custom reconciler at startup. Required when Default: false.
-	Constructor NewReconcilerFunc `yaml:"-" json:"-"`
-
-	// Status declares declarative status fields written after every reconcile.
-	// nil → Layer 1 only (standard Ready condition).
-	Status *StatusConfig `yaml:"status,omitempty" json:"status,omitempty"`
-
-	// ProviderBlocks holds parsed provider declarations. Populated from RawProviders at load time.
-	ProviderBlocks []ProviderBlock `yaml:"-" json:"-"`
-
-	// RawProviders is the raw providers: map. Converted to ProviderBlocks after unmarshal.
-	RawProviders map[string][]map[string]interface{} `yaml:"providers,omitempty" json:"providers,omitempty"`
-
-	// Cross declares cross-CRD observations. Results available as .cross.<as>.status.*
-	Cross []CrossCRDDeclaration `yaml:"cross,omitempty" json:"cross,omitempty"`
-
-	// Observe declares secondary Kubernetes resources and events to watch as reconcile triggers.
+	// Observe makes external state available inside the reconcile context. cross: reads
+	// another CRD's CR via the informer cache (same binary) or HTTP (cross-binary/cluster).
+	// watch: registers secondary resource watches that act as additional reconcile triggers.
 	Observe *Observe `yaml:"observe,omitempty" json:"observe,omitempty"`
 
-	// Emit groups status outputs and named event declarations evaluated in postReconcile.
-	// Same level as Observe — available to typed and declarative reconcilers.
+	// PreReconcile controls whether an event enters the queue (enqueueGate) and whether
+	// a dequeued item reaches the reconciler (reconcileGate). Events that fail either
+	// gate are silently dropped — the reconciler is never invoked.
+	PreReconcile *PreReconcileConfig `yaml:"preReconcile,omitempty" json:"preReconcile,omitempty"`
+
+	// Runtime governs the operatorBox as a long-lived entity, not a single reconcile cycle.
+	// Covers autoscaling the worker pool, rollback on error, finalizer lifecycle,
+	// namespace guards, and deletion protection.
+	Runtime *RuntimeConfig `yaml:"runtime,omitempty" json:"runtime,omitempty"`
+
+	// Reconcile declares what runs and how. Default (omitted or default: true) uses the
+	// GenericReconciler driven by onCreate/onReconcile/onDelete templates. Set default: false
+	// and declare constructor: to bring a typed Go reconciler. Workers, resync, queue, and
+	// requeue tune execution regardless of which reconciler runs.
+	Reconcile *ReconcileConfig `yaml:"reconcile,omitempty" json:"reconcile,omitempty"`
+
+	// Emit writes the reconciler's conclusions back to the CR and the event stream.
+	// status: declares fields patched onto the CR after every reconcile.
+	// events: declares named structured events emitted on lifecycle transitions.
 	Emit *EmitConfig `yaml:"emit,omitempty" json:"emit,omitempty"`
+}
 
-	// Autoscale declares runtime worker/queue/resync overrides driven by conditions.
-	Autoscale *AutoscaleSpec `yaml:"autoscale,omitempty" json:"autoscale,omitempty"`
-
-	// Rollback declares failure-recovery behavior. Re-applies the last known good spec
-	// when the trigger threshold is crossed.
-	Rollback *RollbackBlock `yaml:"rollback,omitempty" json:"rollback,omitempty"`
-
-	// RollBackOnError enables zero-config rollback on 3 consecutive failures.
-	// Combine with rollback.trigger to adjust the threshold.
-	// Combine with rollback.onRollback to override the derived templates.
-	RollBackOnError bool `yaml:"rollBackOnError,omitempty" json:"rollBackOnError,omitempty"`
+// EffectiveCross returns the cross-CRD declarations from observe.cross.
+// Always call this instead of navigating the struct directly — the field
+// location is owned by this method and may move without notice to callers.
+func (box *OperatorBoxConfig) EffectiveCross() []CrossCRDDeclaration {
+	if box == nil || box.Observe == nil {
+		return nil
+	}
+	return box.Observe.Cross
 }
 
 // Empty reports true when this operatorBox is empty
@@ -536,6 +519,81 @@ func (c *OperatorBoxConfig) GetWatchEntry(secondaryGVK string) *WatchEntry {
 	}
 
 	return nil
+}
+
+// EffectiveFinalizers returns the finalizer list from runtime.finalizers. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveFinalizers() []string {
+	if c == nil || c.Runtime == nil {
+		return nil
+	}
+	return c.Runtime.Finalizers
+}
+
+// EffectiveAutoscale returns the autoscale config from runtime.autoscale. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveAutoscale() *AutoscaleSpec {
+	if c == nil || c.Runtime == nil {
+		return nil
+	}
+	return c.Runtime.Autoscale
+}
+
+// EffectiveRollback returns the rollback config from runtime.rollback. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveRollback() *RollbackBlock {
+	if c == nil || c.Runtime == nil {
+		return nil
+	}
+	return c.Runtime.Rollback
+}
+
+// EffectiveRollBackOnError reports whether runtime.rollBackOnError is set. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveRollBackOnError() bool {
+	return c != nil && c.Runtime != nil && c.Runtime.RollBackOnError
+}
+
+// EffectiveRemoveFinalizers reports whether runtime.removeFinalizers is set. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveRemoveFinalizers() bool {
+	return c != nil && c.Runtime != nil && c.Runtime.RemoveFinalizers
+}
+
+// EffectiveStatus returns the status config from emit.status.
+// Returns nil when neither block is declared. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveStatus() *StatusConfig {
+	if c == nil || c.Emit == nil {
+		return nil
+	}
+	return c.Emit.Status
+}
+
+// EffectiveOnCreate returns the onCreate templates from reconcile.onCreate. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveOnCreate() *HookTemplates {
+	if c == nil || c.Reconcile == nil {
+		return nil
+	}
+	return c.Reconcile.OnCreate
+}
+
+// EffectiveOnReconcile returns the onReconcile templates from reconcile.onReconcile. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveOnReconcile() *HookTemplates {
+	if c == nil || c.Reconcile == nil {
+		return nil
+	}
+	return c.Reconcile.OnReconcile
+}
+
+// EffectiveOnDelete returns the onDelete templates from reconcile.onDelete. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveOnDelete() *HookTemplates {
+	if c == nil || c.Reconcile == nil {
+		return nil
+	}
+	return c.Reconcile.OnDelete
+}
+
+// EffectiveProviderBlocks returns the parsed provider blocks from reconcile.providers. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveProviderBlocks() []ProviderBlock {
+	if c == nil || c.Reconcile == nil {
+		return nil
+	}
+	return c.Reconcile.ProviderBlocks
 }
 
 // HasEmit reports whether an emit block is declared.

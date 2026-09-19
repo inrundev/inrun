@@ -126,10 +126,10 @@ func (e *executor) validateHooks(name string, crd *orktypes.CRDEntry) error {
 	}
 
 	// Required fields
-	if crd.OperatorBox.Reconciler.Hooks.Location == "" {
+	if crd.Box().Reconcile.Hooks.Location == "" {
 		return fmt.Errorf("%s CRD %q: reconciler.hooks.location is required", failureMark(), name)
 	}
-	if crd.OperatorBox.Reconciler.Hooks.Function == "" {
+	if crd.Box().Reconcile.Hooks.Function == "" {
 		return fmt.Errorf("%s CRD %q: reconciler.hooks.function is required", failureMark(), name)
 	}
 
@@ -162,10 +162,10 @@ func (e *executor) validateConstructor(name string, crd *orktypes.CRDEntry) erro
 	}
 
 	// Required fields
-	if crd.OperatorBox.Reconciler.ConstructorDecl.Location == "" {
+	if crd.Box().Reconcile.ConstructorDecl.Location == "" {
 		return fmt.Errorf("%s CRD %q: reconciler.constructor.location is required", failureMark(), name)
 	}
-	if crd.OperatorBox.Reconciler.ConstructorDecl.Function == "" {
+	if crd.Box().Reconcile.ConstructorDecl.Function == "" {
 		return fmt.Errorf("%s CRD %q: reconciler.constructor.function is required", failureMark(), name)
 	}
 
@@ -191,8 +191,8 @@ func (e *executor) validateManagedResources(name string, crd *orktypes.CRDEntry)
 				"      - kind: Pod\n"+
 				"      - kind: Deployment\n",
 			failureMark(), name,
-			crd.OperatorBox.Reconciler.Hooks.Location,
-			crd.OperatorBox.Reconciler.Hooks.Function,
+			crd.Box().Reconcile.Hooks.Location,
+			crd.Box().Reconcile.Hooks.Function,
 		)
 	}
 
@@ -210,8 +210,8 @@ func (e *executor) validateManagedResources(name string, crd *orktypes.CRDEntry)
 				"      - kind: StatefulSet\n"+
 				"      - kind: Service\n",
 			failureMark(), name,
-			crd.OperatorBox.Reconciler.ConstructorDecl.Location,
-			crd.OperatorBox.Reconciler.ConstructorDecl.Function,
+			crd.Box().Reconcile.ConstructorDecl.Location,
+			crd.Box().Reconcile.ConstructorDecl.Function,
 		)
 	}
 

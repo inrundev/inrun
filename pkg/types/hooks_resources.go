@@ -75,13 +75,13 @@ func (c *CRDEntry) CollectResourceProfileEntries() []ResourceProfileEntry {
 	}
 
 	if c.HasOnCreate() {
-		collect("onCreate", c.OperatorBox.OnCreate)
+		collect("onCreate", c.OperatorBox.EffectiveOnCreate())
 	}
 	if c.HasOnReconcile() {
-		collect("onReconcile", c.OperatorBox.OnReconcile)
+		collect("onReconcile", c.OperatorBox.EffectiveOnReconcile())
 	}
 	if c.HasOnDelete() {
-		collect("onDelete", c.OperatorBox.OnDelete)
+		collect("onDelete", c.OperatorBox.EffectiveOnDelete())
 	}
 
 	return out

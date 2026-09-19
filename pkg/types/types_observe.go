@@ -26,8 +26,13 @@ type Observe struct {
 	// is treated as a trigger, not as the source of truth.
 	Events map[string]*EventEntry `yaml:"events,omitempty" json:"events,omitempty"`
 
+	// Cross declares cross-CRD observations. Each entry watches another CRD's
+	// CR instances and makes their state available as .cross.<as>.status.* in
+	// the reconciler template context.
+	Cross []CrossCRDDeclaration `yaml:"cross,omitempty" json:"cross,omitempty"`
+
 	// Include imports watch and event declarations from a local Katalog file.
-	// The included file may contain "watch:" and/or "events:" declarations.
+	// The included file may contain "watch:", "events:", and "cross:" declarations.
 	// Inline declarations are merged with the included declarations, with
 	// inline event declarations overriding included events with the same name.
 	// The include path is resolved relative to baseDir and cleared after

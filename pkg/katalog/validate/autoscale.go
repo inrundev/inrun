@@ -44,7 +44,7 @@ import (
 // only ever sees a fully-formed spec (never a bare profile name).
 func (e *executor) validateAutoscaleProfile() error {
 	for name, crd := range e.k.EnabledCRDs() {
-		spec := crd.OperatorBox.Autoscale
+		spec := crd.Box().EffectiveAutoscale()
 
 		// No autoscale block → nothing to validate
 		if spec == nil {
@@ -75,15 +75,18 @@ func (e *executor) validateAutoscaleProfile() error {
 		// Expand the profile into a fully-formed AutoscaleSpec using the CRD's
 		// declared workers and queue depth as the baseline.
 		baseline := orktypes.AutoscaleBaseline{
-			Workers:  crd.OperatorBox.Reconciler.Workers,
-			MaxDepth: crd.OperatorBox.Reconciler.Queue.MaxDepth,
-			Resync:   crd.OperatorBox.Reconciler.Resync.Duration,
+			Workers:  crd.SetWorkers(0),
+			MaxDepth: crd.SetQueueDepth(0),
+			Resync:   crd.SetResync(0),
 		}
 		expanded, err := profiles.ApplyAutoscalerProfile(profile, baseline)
 		if err != nil {
 			return fmt.Errorf("%s autoscale.profile %q expansion failed: %w", failureMark(), profile, err)
 		}
-		crd.OperatorBox.Autoscale = expanded
+		if crd.Box().Runtime == nil {
+			crd.Box().Runtime = &orktypes.RuntimeConfig{}
+		}
+		crd.Box().Runtime.Autoscale = expanded
 
 		e.k.EnabledCRDs()[name] = crd
 	}

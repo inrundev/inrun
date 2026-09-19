@@ -17,72 +17,71 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       enrich:
         - cronjob
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 30s
 
-        onCreate:
-          cronJobs:
-            - name: "{{ .metadata.name }}-cron"
-              schedule: "{{ .spec.schedule }}"
-              image: "busybox:1.36"
-              command:
-                - "sh"
-                - "-c"
-                - "echo Testing... passed"
-              reconcile: true
+          onCreate:
+            cronJobs:
+              - name: "{{ .metadata.name }}-cron"
+                schedule: "{{ .spec.schedule }}"
+                image: "busybox:1.36"
+                command:
+                  - "sh"
+                  - "-c"
+                  - "echo Testing... passed"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              # ── Phase state machine ─────────────────────────────────────────
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            # ── Phase state machine ─────────────────────────────────────────
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Running"
+                when:
+                  - field: "{{ cronJobActiveCount .children.cronjob }}"
+                    greaterThan: "0"
 
-            - path: phase
-              value: "Running"
-              when:
-                - field: "{{ cronJobActiveCount .children.cronjob }}"
-                  greaterThan: "0"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ cronJobLastJobSucceeded .children.cronjob }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ cronJobLastJobSucceeded .children.cronjob }}"
-                  equals: "true"
+              - path: phase
+                value: "Scheduled"
+                when:
+                  - field: "{{ cronJobLastScheduleTime .children.cronjob }}"
+                    operator: exists
 
-            - path: phase
-              value: "Scheduled"
-              when:
-                - field: "{{ cronJobLastScheduleTime .children.cronjob }}"
-                  operator: exists
+              # ── CronJob notes (no enrichment required) ──────────────────────
+              - path: activeCount
+                value: "{{ cronJobActiveCount .children.cronjob }}"
 
-            # ── CronJob notes (no enrichment required) ──────────────────────
-            - path: activeCount
-              value: "{{ cronJobActiveCount .children.cronjob }}"
+              - path: lastScheduleTime
+                value: "{{ cronJobLastScheduleTime .children.cronjob }}"
 
-            - path: lastScheduleTime
-              value: "{{ cronJobLastScheduleTime .children.cronjob }}"
+              - path: nextScheduleTime
+                value: "{{ cronJobNextScheduleTime .children.cronjob }}"
 
-            - path: nextScheduleTime
-              value: "{{ cronJobNextScheduleTime .children.cronjob }}"
+              - path: lastSuccessTime
+                value: "{{ cronJobLastSuccessTime .children.cronjob }}"
 
-            - path: lastSuccessTime
-              value: "{{ cronJobLastSuccessTime .children.cronjob }}"
+              # ── enriched CronJob notes (require enrich: [cronjob]) ──────────
+              - path: lastJobName
+                value: "{{ cronJobLastJobName .children.cronjob }}"
 
-            # ── enriched CronJob notes (require enrich: [cronjob]) ──────────
-            - path: lastJobName
-              value: "{{ cronJobLastJobName .children.cronjob }}"
+              - path: lastJobSucceeded
+                value: "{{ cronJobLastJobSucceeded .children.cronjob }}"
 
-            - path: lastJobSucceeded
-              value: "{{ cronJobLastJobSucceeded .children.cronjob }}"
+              - path: lastSuccessfulJobName
+                value: "{{ cronJobLastSuccessfulJobName .children.cronjob }}"
 
-            - path: lastSuccessfulJobName
-              value: "{{ cronJobLastSuccessfulJobName .children.cronjob }}"

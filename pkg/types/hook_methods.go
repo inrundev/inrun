@@ -49,10 +49,10 @@ func (c *CRDEntry) HasAnyHookTemplates() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyDeployments() bool {
 	if c.HasOnCreate() {
-		return c.OperatorBox.OnCreate.Deployments != nil
+		return c.Box().EffectiveOnCreate().Deployments != nil
 	}
 	if c.HasOnReconcile() {
-		return c.OperatorBox.OnReconcile.Deployments != nil
+		return c.Box().EffectiveOnReconcile().Deployments != nil
 	}
 
 	return false
@@ -62,10 +62,10 @@ func (c *CRDEntry) HasAnyDeployments() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyStatefulSets() bool {
 	if c.HasOnCreate() {
-		return c.OperatorBox.OnCreate.StatefulSets != nil
+		return c.Box().EffectiveOnCreate().StatefulSets != nil
 	}
 	if c.HasOnReconcile() {
-		return c.OperatorBox.OnReconcile.StatefulSets != nil
+		return c.Box().EffectiveOnReconcile().StatefulSets != nil
 	}
 
 	return false
@@ -75,10 +75,10 @@ func (c *CRDEntry) HasAnyStatefulSets() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyReplicaSets() bool {
 	if c.HasOnCreate() {
-		return c.OperatorBox.OnCreate.ReplicaSets != nil
+		return c.Box().EffectiveOnCreate().ReplicaSets != nil
 	}
 	if c.HasOnReconcile() {
-		return c.OperatorBox.OnReconcile.ReplicaSets != nil
+		return c.Box().EffectiveOnReconcile().ReplicaSets != nil
 	}
 
 	return false
@@ -88,10 +88,10 @@ func (c *CRDEntry) HasAnyReplicaSets() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnySecrets() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.Secrets) > 0
+		return len(c.Box().EffectiveOnCreate().Secrets) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.Secrets) > 0
+		return len(c.Box().EffectiveOnReconcile().Secrets) > 0
 	}
 
 	return false
@@ -101,7 +101,7 @@ func (c *CRDEntry) HasAnySecrets() bool {
 // defines a TLS configuration.
 func (c *CRDEntry) HasAnyTLSSecrets() bool {
 	if c.HasOnCreate() {
-		for _, s := range c.OperatorBox.OnCreate.Secrets {
+		for _, s := range c.Box().EffectiveOnCreate().Secrets {
 			if s.TLS != nil {
 				return true
 			}
@@ -109,7 +109,7 @@ func (c *CRDEntry) HasAnyTLSSecrets() bool {
 	}
 
 	if c.HasOnReconcile() {
-		for _, s := range c.OperatorBox.OnReconcile.Secrets {
+		for _, s := range c.Box().EffectiveOnReconcile().Secrets {
 			if s.TLS != nil {
 				return true
 			}
@@ -123,10 +123,10 @@ func (c *CRDEntry) HasAnyTLSSecrets() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyHPA() bool {
 	if c.HasOnCreate() {
-		return c.OperatorBox.OnCreate.HorizontalPodAutoscalers != nil
+		return c.Box().EffectiveOnCreate().HorizontalPodAutoscalers != nil
 	}
 	if c.HasOnReconcile() {
-		return c.OperatorBox.OnReconcile.HorizontalPodAutoscalers != nil
+		return c.Box().EffectiveOnReconcile().HorizontalPodAutoscalers != nil
 	}
 
 	return false
@@ -136,10 +136,10 @@ func (c *CRDEntry) HasAnyHPA() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyServices() bool {
 	if c.HasOnCreate() {
-		return c.OperatorBox.OnCreate.Services != nil
+		return c.Box().EffectiveOnCreate().Services != nil
 	}
 	if c.HasOnReconcile() {
-		return c.OperatorBox.OnReconcile.Services != nil
+		return c.Box().EffectiveOnReconcile().Services != nil
 	}
 
 	return false
@@ -149,10 +149,10 @@ func (c *CRDEntry) HasAnyServices() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyPods() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.Pods) > 0
+		return len(c.Box().EffectiveOnCreate().Pods) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.Pods) > 0
+		return len(c.Box().EffectiveOnReconcile().Pods) > 0
 	}
 	return false
 }
@@ -161,10 +161,10 @@ func (c *CRDEntry) HasAnyPods() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyConfigMaps() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.ConfigMaps) > 0
+		return len(c.Box().EffectiveOnCreate().ConfigMaps) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.ConfigMaps) > 0
+		return len(c.Box().EffectiveOnReconcile().ConfigMaps) > 0
 	}
 	return false
 }
@@ -173,10 +173,10 @@ func (c *CRDEntry) HasAnyConfigMaps() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyServiceAccounts() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.ServiceAccounts) > 0
+		return len(c.Box().EffectiveOnCreate().ServiceAccounts) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.ServiceAccounts) > 0
+		return len(c.Box().EffectiveOnReconcile().ServiceAccounts) > 0
 	}
 	return false
 }
@@ -185,10 +185,10 @@ func (c *CRDEntry) HasAnyServiceAccounts() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyIngresses() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.Ingresses) > 0
+		return len(c.Box().EffectiveOnCreate().Ingresses) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.Ingresses) > 0
+		return len(c.Box().EffectiveOnReconcile().Ingresses) > 0
 	}
 	return false
 }
@@ -197,10 +197,10 @@ func (c *CRDEntry) HasAnyIngresses() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyPersistentVolumes() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.PersistentVolumes) > 0
+		return len(c.Box().EffectiveOnCreate().PersistentVolumes) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.PersistentVolumes) > 0
+		return len(c.Box().EffectiveOnReconcile().PersistentVolumes) > 0
 	}
 	return false
 }
@@ -209,10 +209,10 @@ func (c *CRDEntry) HasAnyPersistentVolumes() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyPersistentVolumeClaims() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.PersistentVolumeClaims) > 0
+		return len(c.Box().EffectiveOnCreate().PersistentVolumeClaims) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.PersistentVolumeClaims) > 0
+		return len(c.Box().EffectiveOnReconcile().PersistentVolumeClaims) > 0
 	}
 	return false
 }
@@ -221,10 +221,10 @@ func (c *CRDEntry) HasAnyPersistentVolumeClaims() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyPodDisruptionBudgets() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.PodDisruptionBudgets) > 0
+		return len(c.Box().EffectiveOnCreate().PodDisruptionBudgets) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.PodDisruptionBudgets) > 0
+		return len(c.Box().EffectiveOnReconcile().PodDisruptionBudgets) > 0
 	}
 	return false
 }
@@ -233,10 +233,10 @@ func (c *CRDEntry) HasAnyPodDisruptionBudgets() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyNamespaces() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.Namespaces) > 0
+		return len(c.Box().EffectiveOnCreate().Namespaces) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.Namespaces) > 0
+		return len(c.Box().EffectiveOnReconcile().Namespaces) > 0
 	}
 	return false
 }
@@ -245,10 +245,10 @@ func (c *CRDEntry) HasAnyNamespaces() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyRoles() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.Roles) > 0
+		return len(c.Box().EffectiveOnCreate().Roles) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.Roles) > 0
+		return len(c.Box().EffectiveOnReconcile().Roles) > 0
 	}
 	return false
 }
@@ -257,10 +257,10 @@ func (c *CRDEntry) HasAnyRoles() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyRoleBindings() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.RoleBindings) > 0
+		return len(c.Box().EffectiveOnCreate().RoleBindings) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.RoleBindings) > 0
+		return len(c.Box().EffectiveOnReconcile().RoleBindings) > 0
 	}
 	return false
 }
@@ -269,10 +269,10 @@ func (c *CRDEntry) HasAnyRoleBindings() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyVolumes() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.Volumes) > 0
+		return len(c.Box().EffectiveOnCreate().Volumes) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.Volumes) > 0
+		return len(c.Box().EffectiveOnReconcile().Volumes) > 0
 	}
 	return false
 }
@@ -281,10 +281,10 @@ func (c *CRDEntry) HasAnyVolumes() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyVolumeMounts() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.VolumeMounts) > 0
+		return len(c.Box().EffectiveOnCreate().VolumeMounts) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.VolumeMounts) > 0
+		return len(c.Box().EffectiveOnReconcile().VolumeMounts) > 0
 	}
 	return false
 }
@@ -293,10 +293,10 @@ func (c *CRDEntry) HasAnyVolumeMounts() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyClusterRoles() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.ClusterRoles) > 0
+		return len(c.Box().EffectiveOnCreate().ClusterRoles) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.ClusterRoles) > 0
+		return len(c.Box().EffectiveOnReconcile().ClusterRoles) > 0
 	}
 	return false
 }
@@ -305,10 +305,10 @@ func (c *CRDEntry) HasAnyClusterRoles() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyClusterRoleBindings() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.ClusterRoleBindings) > 0
+		return len(c.Box().EffectiveOnCreate().ClusterRoleBindings) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.ClusterRoleBindings) > 0
+		return len(c.Box().EffectiveOnReconcile().ClusterRoleBindings) > 0
 	}
 	return false
 }
@@ -317,10 +317,10 @@ func (c *CRDEntry) HasAnyClusterRoleBindings() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyServiceMonitors() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.ServiceMonitors) > 0
+		return len(c.Box().EffectiveOnCreate().ServiceMonitors) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.ServiceMonitors) > 0
+		return len(c.Box().EffectiveOnReconcile().ServiceMonitors) > 0
 	}
 	return false
 }
@@ -329,10 +329,10 @@ func (c *CRDEntry) HasAnyServiceMonitors() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyPodSecurityPolicies() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.PodSecurityPolicies) > 0
+		return len(c.Box().EffectiveOnCreate().PodSecurityPolicies) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.PodSecurityPolicies) > 0
+		return len(c.Box().EffectiveOnReconcile().PodSecurityPolicies) > 0
 	}
 	return false
 }
@@ -341,10 +341,10 @@ func (c *CRDEntry) HasAnyPodSecurityPolicies() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyPriorityClasses() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.PriorityClasses) > 0
+		return len(c.Box().EffectiveOnCreate().PriorityClasses) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.PriorityClasses) > 0
+		return len(c.Box().EffectiveOnReconcile().PriorityClasses) > 0
 	}
 	return false
 }
@@ -353,10 +353,10 @@ func (c *CRDEntry) HasAnyPriorityClasses() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyLimitRanges() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.LimitRanges) > 0
+		return len(c.Box().EffectiveOnCreate().LimitRanges) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.LimitRanges) > 0
+		return len(c.Box().EffectiveOnReconcile().LimitRanges) > 0
 	}
 	return false
 }
@@ -365,10 +365,10 @@ func (c *CRDEntry) HasAnyLimitRanges() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyResourceQuotas() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.ResourceQuotas) > 0
+		return len(c.Box().EffectiveOnCreate().ResourceQuotas) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.ResourceQuotas) > 0
+		return len(c.Box().EffectiveOnReconcile().ResourceQuotas) > 0
 	}
 	return false
 }
@@ -377,10 +377,10 @@ func (c *CRDEntry) HasAnyResourceQuotas() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyRuntimeClasses() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.RuntimeClasses) > 0
+		return len(c.Box().EffectiveOnCreate().RuntimeClasses) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.RuntimeClasses) > 0
+		return len(c.Box().EffectiveOnReconcile().RuntimeClasses) > 0
 	}
 	return false
 }
@@ -389,10 +389,10 @@ func (c *CRDEntry) HasAnyRuntimeClasses() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyPriorityLevelConfigurations() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.PriorityLevelConfigurations) > 0
+		return len(c.Box().EffectiveOnCreate().PriorityLevelConfigurations) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.PriorityLevelConfigurations) > 0
+		return len(c.Box().EffectiveOnReconcile().PriorityLevelConfigurations) > 0
 	}
 	return false
 }
@@ -401,10 +401,10 @@ func (c *CRDEntry) HasAnyPriorityLevelConfigurations() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyPodTemplates() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.PodTemplates) > 0
+		return len(c.Box().EffectiveOnCreate().PodTemplates) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.PodTemplates) > 0
+		return len(c.Box().EffectiveOnReconcile().PodTemplates) > 0
 	}
 	return false
 }
@@ -413,10 +413,10 @@ func (c *CRDEntry) HasAnyPodTemplates() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyDaemonSets() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.DaemonSets) > 0
+		return len(c.Box().EffectiveOnCreate().DaemonSets) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.DaemonSets) > 0
+		return len(c.Box().EffectiveOnReconcile().DaemonSets) > 0
 	}
 	return false
 }
@@ -425,10 +425,10 @@ func (c *CRDEntry) HasAnyDaemonSets() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyNetworkPolicies() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.NetworkPolicies) > 0
+		return len(c.Box().EffectiveOnCreate().NetworkPolicies) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.NetworkPolicies) > 0
+		return len(c.Box().EffectiveOnReconcile().NetworkPolicies) > 0
 	}
 	return false
 }
@@ -437,10 +437,10 @@ func (c *CRDEntry) HasAnyNetworkPolicies() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyStorageClasses() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.StorageClasses) > 0
+		return len(c.Box().EffectiveOnCreate().StorageClasses) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.StorageClasses) > 0
+		return len(c.Box().EffectiveOnReconcile().StorageClasses) > 0
 	}
 	return false
 }
@@ -449,10 +449,10 @@ func (c *CRDEntry) HasAnyStorageClasses() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyStorageLocations() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.StorageLocations) > 0
+		return len(c.Box().EffectiveOnCreate().StorageLocations) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.StorageLocations) > 0
+		return len(c.Box().EffectiveOnReconcile().StorageLocations) > 0
 	}
 	return false
 }
@@ -461,10 +461,10 @@ func (c *CRDEntry) HasAnyStorageLocations() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyStoragePools() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.StoragePools) > 0
+		return len(c.Box().EffectiveOnCreate().StoragePools) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.StoragePools) > 0
+		return len(c.Box().EffectiveOnReconcile().StoragePools) > 0
 	}
 	return false
 }
@@ -473,10 +473,10 @@ func (c *CRDEntry) HasAnyStoragePools() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyStorageBackups() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.StorageBackups) > 0
+		return len(c.Box().EffectiveOnCreate().StorageBackups) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.StorageBackups) > 0
+		return len(c.Box().EffectiveOnReconcile().StorageBackups) > 0
 	}
 	return false
 }
@@ -485,10 +485,10 @@ func (c *CRDEntry) HasAnyStorageBackups() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyStorageSnapshots() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.StorageSnapshots) > 0
+		return len(c.Box().EffectiveOnCreate().StorageSnapshots) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.StorageSnapshots) > 0
+		return len(c.Box().EffectiveOnReconcile().StorageSnapshots) > 0
 	}
 	return false
 }
@@ -497,10 +497,10 @@ func (c *CRDEntry) HasAnyStorageSnapshots() bool {
 // in either OnCreate or OnReconcile phases.
 func (c *CRDEntry) HasAnyStorageVolumes() bool {
 	if c.HasOnCreate() {
-		return len(c.OperatorBox.OnCreate.StorageVolumes) > 0
+		return len(c.Box().EffectiveOnCreate().StorageVolumes) > 0
 	}
 	if c.HasOnReconcile() {
-		return len(c.OperatorBox.OnReconcile.StorageVolumes) > 0
+		return len(c.Box().EffectiveOnReconcile().StorageVolumes) > 0
 	}
 	return false
 }
@@ -510,14 +510,14 @@ func (c *CRDEntry) HasAnyStorageVolumes() bool {
 func (c *CRDEntry) HasAnyCustomResources() bool {
 	// Check OnCreate first (common fast path)
 	if c.HasOnCreate() {
-		if len(c.OperatorBox.OnCreate.CustomResource) > 0 {
+		if len(c.Box().EffectiveOnCreate().CustomResource) > 0 {
 			return true
 		}
 	}
 
 	// Then check OnReconcile
 	if c.HasOnReconcile() {
-		if len(c.OperatorBox.OnReconcile.CustomResource) > 0 {
+		if len(c.Box().EffectiveOnReconcile().CustomResource) > 0 {
 			return true
 		}
 	}
@@ -539,14 +539,14 @@ func (c *CRDEntry) NeedsResourceDecl() bool {
 func (c *CRDEntry) ResourceDecl() *ResourceRequirements {
 	// OnCreate phase takes precedence
 	if c.HasOnCreate() {
-		if req := findResourceDeclInPhase(c.OperatorBox.OnCreate); req != nil {
+		if req := findResourceDeclInPhase(c.Box().EffectiveOnCreate()); req != nil {
 			return req
 		}
 	}
 
 	// OnReconcile fallback
 	if c.HasOnReconcile() {
-		if req := findResourceDeclInPhase(c.OperatorBox.OnReconcile); req != nil {
+		if req := findResourceDeclInPhase(c.Box().EffectiveOnReconcile()); req != nil {
 			return req
 		}
 	}

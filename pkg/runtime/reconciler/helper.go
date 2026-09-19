@@ -61,7 +61,10 @@ func (r *GenericReconciler[PTR]) hooksFor(target string) domain.ObjectHooks {
 // merged hooks.args for this reconcile cycle. When the effective box has no
 // args override, the context is returned unchanged.
 func (r *GenericReconciler[PTR]) withTargetArgs(ctx context.Context, box orktypes.OperatorBoxConfig) context.Context {
-	args := box.Reconciler.HooksArgs()
+	var args map[string]interface{}
+	if box.Reconcile != nil {
+		args = box.Reconcile.HooksArgs()
+	}
 	if len(args) == 0 {
 		return ctx
 	}
@@ -71,8 +74,8 @@ func (r *GenericReconciler[PTR]) withTargetArgs(ctx context.Context, box orktype
 // namespaceGuardFunc returns a guard closure pre-bound to this CRD's
 // namespace restrictions, or nil when no restrictions are configured.
 func (r *GenericReconciler[PTR]) namespaceGuardFunc() func(ctx context.Context, obj domain.Object, ns string) bool {
-	restricted := r.crd.RestrictedNamespaces
-	allowed := r.crd.AllowedNamespaces
+	restricted := r.crd.AllRestrictedNamespaces()
+	allowed := r.crd.AllAllowedNamespaces()
 	if len(restricted) == 0 && len(allowed) == 0 {
 		return nil
 	}
@@ -87,7 +90,7 @@ func (r *GenericReconciler[PTR]) patchStripFinalizers(ctx context.Context, obj P
 	if len(obj.GetFinalizers()) == 0 {
 		return nil
 	}
-	if !labels.StripFinalizers(obj, box.Finalizers) {
+	if !labels.StripFinalizers(obj, box.EffectiveFinalizers()) {
 		return nil
 	}
 	logger.Debug().

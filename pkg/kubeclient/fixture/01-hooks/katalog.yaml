@@ -22,7 +22,6 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       apiTypes:
         group: demo.orkestra.io
         version: v1alpha1
@@ -32,9 +31,8 @@ spec:
         objectList: BlockchainAppList
         location: github.com/orkspace/orkestra-args-hooks/api/v1alpha1
         alias: bcappv1
-
       operatorBox:
-        reconciler:
+        reconcile:
           default: true
           hooks:
             location: github.com/orkspace/orkestra-args-hooks/hooks
@@ -56,13 +54,14 @@ spec:
               inBusinessHours: '{{ inBusinessHours }}'
           workers: 2
           resync: 30s
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: featureEnabled
+                value: "{{ .external.flags.body }}"
+                when:
+                  - field: external.flags.called
+                    equals: "true"
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: featureEnabled
-              value: "{{ .external.flags.body }}"
-              when:
-                - field: external.flags.called
-                  equals: "true"

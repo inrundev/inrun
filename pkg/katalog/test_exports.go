@@ -64,6 +64,22 @@ func NewKatalogForTest(crds map[string]orktypes.CRDEntry) *Katalog {
 	return (&Katalog{enabledCRDs: crds}).wireForTest()
 }
 
+// NewKatalogForTestWithSpec creates a wired Katalog with pre-set CRDs and a Spec.
+// Use when the test needs spec-level fields (e.g. Finalizers) applied during the
+// initial SetDefaults pass that wireForTest runs.
+func NewKatalogForTestWithSpec(crds map[string]orktypes.CRDEntry, spec orktypes.KatalogSpec) *Katalog {
+	if crds == nil {
+		crds = map[string]orktypes.CRDEntry{}
+	}
+	for key, entry := range crds {
+		if entry.Name == "" {
+			entry.Name = key
+			crds[key] = entry
+		}
+	}
+	return (&Katalog{enabledCRDs: crds, Spec: spec}).wireForTest()
+}
+
 // SetKatalogDirForTest sets the katalogDir field on a Katalog for use in tests
 // that exercise publish-path validation which reads files relative to that directory.
 func (k *Katalog) SetKatalogDirForTest(dir string) { k.katalogDir = dir }

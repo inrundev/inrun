@@ -39,8 +39,8 @@ func crdWithGVK(gvk schema.GroupVersionKind) orktypes.CRDEntry {
 			Kind:     gvk.Kind,
 			Location: "github.com/test/apis/v1",
 		},
-		OperatorBox: orktypes.OperatorBoxConfig{
-			Reconciler: &orktypes.ReconcilerConfig{},
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{},
 		},
 	}
 }
@@ -54,7 +54,7 @@ func withTargetHookLocation(crd orktypes.CRDEntry, targetName, location string) 
 	}
 	crd.Serve.Target.Entries[targetName] = &orktypes.ServeTargetConfig{
 		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconciler: &orktypes.ReconcilerConfig{
+			Reconcile: &orktypes.ReconcileConfig{
 				Hooks: &orktypes.HookDeclaration{Location: location, Function: "New"},
 			},
 		},
@@ -71,7 +71,7 @@ func withTargetDefaultFalse(crd orktypes.CRDEntry, targetName string) orktypes.C
 	}
 	crd.Serve.Target.Entries[targetName] = &orktypes.ServeTargetConfig{
 		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconciler: &orktypes.ReconcilerConfig{
+			Reconcile: &orktypes.ReconcileConfig{
 				Default:         boolPtr(false),
 				ConstructorDecl: &orktypes.ConstructorDeclaration{Location: "github.com/test/rec", Function: "New"},
 			},
@@ -94,7 +94,7 @@ func TestAddHooks_WiresFactoryWhenRegistered(t *testing.T) {
 		t.Fatalf("addHooks returned error: %v", err)
 	}
 	got := k.k.EnabledCRDs()["myapp"]
-	if got.OperatorBox.HookFactory == nil {
+	if got.OperatorBox.Reconcile.HookFactory == nil {
 		t.Error("expected HookFactory to be set, got nil")
 	}
 }
@@ -108,7 +108,7 @@ func TestAddHooks_NoEntryIsOK(t *testing.T) {
 	if err := k.k.AddHooks(); err != nil {
 		t.Fatalf("addHooks returned unexpected error: %v", err)
 	}
-	if k.k.EnabledCRDs()["myapp"].OperatorBox.HookFactory != nil {
+	if k.k.EnabledCRDs()["myapp"].OperatorBox.Reconcile.HookFactory != nil {
 		t.Error("HookFactory should be nil when no registry entry exists")
 	}
 }
@@ -120,7 +120,7 @@ func TestAddHooks_ErrorWhenTargetSharesBinaryButNotRegistered(t *testing.T) {
 
 	crd := crdWithGVK(testGVK)
 	// Set the CRD-level hook location.
-	crd.OperatorBox.Reconciler.Hooks = &orktypes.HookDeclaration{Location: "github.com/test/hooks", Function: "New"}
+	crd.OperatorBox.Reconcile.Hooks = &orktypes.HookDeclaration{Location: "github.com/test/hooks", Function: "New"}
 	// Target declares the same location — sharing the binary.
 	crd = withTargetHookLocation(crd, "v2", "github.com/test/hooks")
 	k := katalogWith(map[string]orktypes.CRDEntry{"myapp": crd})
@@ -144,7 +144,7 @@ func TestAddHooks_NoErrorWhenTargetHasDistinctBinary(t *testing.T) {
 
 func TestAddHooks_SkipsNonDefaultReconcilers(t *testing.T) {
 	crd := crdWithGVK(testGVK)
-	crd.OperatorBox.Reconciler.Default = boolPtr(false)
+	crd.OperatorBox.Reconcile.Default = boolPtr(false)
 	k := katalogWith(map[string]orktypes.CRDEntry{"myapp": crd})
 
 	if err := k.k.AddHooks(); err != nil {
@@ -161,7 +161,7 @@ func TestAddReconcilers_DefaultReconcileSkipsConstructor(t *testing.T) {
 	if err := k.k.AddReconcilers(); err != nil {
 		t.Fatalf("addReconcilers returned error: %v", err)
 	}
-	if k.k.EnabledCRDs()["myapp"].OperatorBox.Constructor != nil {
+	if k.k.EnabledCRDs()["myapp"].OperatorBox.Reconcile.Constructor != nil {
 		t.Error("Constructor should not be set for default reconciler")
 	}
 }
@@ -172,13 +172,13 @@ func TestAddReconcilers_WiresConstructorWhenRegistered(t *testing.T) {
 	t.Cleanup(func() { delete(orktypes.ReconcilerRegistry, testGVK) })
 
 	crd := crdWithGVK(testGVK)
-	crd.OperatorBox.Reconciler.Default = boolPtr(false)
+	crd.OperatorBox.Reconcile.Default = boolPtr(false)
 	k := katalogWith(map[string]orktypes.CRDEntry{"myapp": crd})
 
 	if err := k.k.AddReconcilers(); err != nil {
 		t.Fatalf("addReconcilers returned error: %v", err)
 	}
-	if k.k.EnabledCRDs()["myapp"].OperatorBox.Constructor == nil {
+	if k.k.EnabledCRDs()["myapp"].OperatorBox.Reconcile.Constructor == nil {
 		t.Error("expected Constructor to be set, got nil")
 	}
 }
@@ -187,7 +187,7 @@ func TestAddReconcilers_ErrorWhenDefaultFalseAndNotRegistered(t *testing.T) {
 	delete(orktypes.ReconcilerRegistry, testGVK)
 
 	crd := crdWithGVK(testGVK)
-	crd.OperatorBox.Reconciler.Default = boolPtr(false)
+	crd.OperatorBox.Reconcile.Default = boolPtr(false)
 	k := katalogWith(map[string]orktypes.CRDEntry{"myapp": crd})
 
 	if err := k.k.AddReconcilers(); err == nil {
@@ -207,7 +207,7 @@ func TestAddReconcilers_PerTargetDefaultFalseWiresConstructor(t *testing.T) {
 		t.Fatalf("addReconcilers returned error: %v", err)
 	}
 	entry := k.k.EnabledCRDs()["myapp"].Serve.Target.Entries["v2"]
-	if entry.OperatorBox.Constructor == nil {
+	if entry.OperatorBox.Reconcile.Constructor == nil {
 		t.Error("expected Constructor to be set on per-target config, got nil")
 	}
 }
@@ -247,7 +247,7 @@ func TestAddTargetHooks_WiresFactoryForDistinctBinary(t *testing.T) {
 func TestAddTargetHooks_SkipsTargetWithSameBinaryAsBase(t *testing.T) {
 	// Target location matches CRD-level → no TargetHookRegistry needed.
 	crd := crdWithGVK(testGVK)
-	crd.OperatorBox.Reconciler.Hooks = &orktypes.HookDeclaration{Location: "github.com/test/hooks"}
+	crd.OperatorBox.Reconcile.Hooks = &orktypes.HookDeclaration{Location: "github.com/test/hooks"}
 	crd = withTargetHookLocation(crd, "v2", "github.com/test/hooks") // same location
 	k := katalogWith(map[string]orktypes.CRDEntry{"myapp": crd})
 
@@ -321,7 +321,7 @@ func TestAddTargetConstructors_SkipsTargetWithDefaultReconciler(t *testing.T) {
 		crd.Serve = &orktypes.ServeConfig{Enabled: true}
 	}
 	crd.Serve.Target.Entries = map[string]*orktypes.ServeTargetConfig{
-		"v2": {OperatorBox: &orktypes.OperatorBoxConfig{Reconciler: &orktypes.ReconcilerConfig{Default: boolPtr(true)}}},
+		"v2": {OperatorBox: &orktypes.OperatorBoxConfig{Reconcile: &orktypes.ReconcileConfig{Default: boolPtr(true)}}},
 	}
 	k := katalogWith(map[string]orktypes.CRDEntry{"myapp": crd})
 

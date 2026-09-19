@@ -14,25 +14,25 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
+      admission:
+        validation:
+          external:
+            - name: healthCheck
+              url: "{{ .spec.healthCheckUrl }}"
+              method: GET
+              expectedStatus: 200
+              continueOnError: true
+              timeout: 5s
+              fires:
+                reconcile: false   # admission-only — not re-run on resyncs
 
-      validation:
-        external:
-          - name: healthCheck
-            url: "{{ .spec.healthCheckUrl }}"
-            method: GET
-            expectedStatus: 200
-            continueOnError: true
-            timeout: 5s
-            fires:
-              reconcile: false   # admission-only — not re-run on resyncs
+            - name: configFetch
+              url: "http://orkestra-dev-server.orkestra-system.svc:9999/health"
+              continueOnError: true
+              timeout: 5s
+              # no fires: — runs at both admission and reconcile
 
-          - name: configFetch
-            url: "http://orkestra-dev-server.orkestra-system.svc:9999/health"
-            continueOnError: true
-            timeout: 5s
-            # no fires: — runs at both admission and reconcile
-
-        rules:
+          rules:
           # Only active at admission time. when: guards on called == "true" —
           # at reconcile, healthCheck is skipped so called is "" and this
           # rule is never evaluated.
@@ -49,52 +49,52 @@ spec:
             equals: "200"
             action: deny
             message: "config service unreachable"
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              namespace: "{{ .metadata.namespace }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                namespace: "{{ .metadata.namespace }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Active"
+                when:
+                  - field: external.configFetch.status
+                    equals: "200"
 
-        status:
-          fields:
-            - path: phase
-              value: "Active"
-              when:
-                - field: external.configFetch.status
-                  equals: "200"
+              - path: phase
+                value: "Degraded"
+                when:
+                  - field: external.configFetch.called
+                    equals: "true"
+                  - field: external.configFetch.status
+                    notEquals: "200"
 
-            - path: phase
-              value: "Degraded"
-              when:
-                - field: external.configFetch.called
-                  equals: "true"
-                - field: external.configFetch.status
-                  notEquals: "200"
+              - path: configFetchStatus
+                value: "{{ .external.configFetch.status }}"
 
-            - path: configFetchStatus
-              value: "{{ .external.configFetch.status }}"
+              - path: lastExternalError
+                value: "{{ .external.healthCheck.error }}"
+                clearOnFalse: true
+                when:
+                  - field: external.healthCheck.called
+                    equals: "true"
+                  - field: external.healthCheck.error
+                    operator: exists
 
-            - path: lastExternalError
-              value: "{{ .external.healthCheck.error }}"
-              clearOnFalse: true
-              when:
-                - field: external.healthCheck.called
-                  equals: "true"
-                - field: external.healthCheck.error
-                  operator: exists
+              - path: admissionOnlyRan
+                value: "true"
+                when:
+                  - field: external.healthCheck.called
+                    equals: "true"
 
-            - path: admissionOnlyRan
-              value: "true"
-              when:
-                - field: external.healthCheck.called
-                  equals: "true"
+              - path: approvedMessage
+                value: "deployment approved"
 
-            - path: approvedMessage
-              value: "deployment approved"

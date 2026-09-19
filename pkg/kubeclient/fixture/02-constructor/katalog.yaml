@@ -28,7 +28,7 @@ spec:
         alias: bcnodev1
 
       operatorBox:
-        reconciler:
+        reconcile:
           default: false
           constructor:
             location: github.com/orkspace/orkestra-args-constructor/constructor

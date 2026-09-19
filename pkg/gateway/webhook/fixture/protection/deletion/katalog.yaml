@@ -28,32 +28,31 @@ spec:
         version: v1alpha1
         kind: App
         plural: apps
-
       operatorBox:
-        reconciler:
+        reconcile:
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: image
-              value: "{{ .spec.image }}"
-            - path: replicas
-              value: "{{ .spec.replicas }}"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-app"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-app"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
-
-          services:
-            - name: "{{ .metadata.name }}-svc"
-              port: "80"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true
+            services:
+              - name: "{{ .metadata.name }}-svc"
+                port: "80"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: image
+                value: "{{ .spec.image }}"
+              - path: replicas
+                value: "{{ .spec.replicas }}"
 
     database:
       apiTypes:
@@ -61,26 +60,25 @@ spec:
         version: v1alpha1
         kind: Database
         plural: databases
-
       operatorBox:
-        reconciler:
+        reconcile:
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: engine
-              value: "{{ .spec.engine }}"
-            - path: storageSize
-              value: "{{ .spec.storageSize }}"
-
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-db-config"
-              reconcile: true
-              data:
-                engine: "{{ .spec.engine }}"
-                storageSize: "{{ .spec.storageSize }}"
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-db-config"
+                reconcile: true
+                data:
+                  engine: "{{ .spec.engine }}"
+                  storageSize: "{{ .spec.storageSize }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: engine
+                value: "{{ .spec.engine }}"
+              - path: storageSize
+                value: "{{ .spec.storageSize }}"
 
     cache:
       apiTypes:
@@ -88,23 +86,23 @@ spec:
         version: v1alpha1
         kind: Cache
         plural: caches
-
       operatorBox:
-        reconciler:
+        reconcile:
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: maxMemory
-              value: "{{ .spec.maxMemory }}"
-            - path: evictionPolicy
-              value: "{{ .spec.evictionPolicy }}"
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-cache-config"
+                reconcile: true
+                data:
+                  maxMemory: "{{ .spec.maxMemory }}"
+                  evictionPolicy: "{{ .spec.evictionPolicy }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: maxMemory
+                value: "{{ .spec.maxMemory }}"
+              - path: evictionPolicy
+                value: "{{ .spec.evictionPolicy }}"
 
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-cache-config"
-              reconcile: true
-              data:
-                maxMemory: "{{ .spec.maxMemory }}"
-                evictionPolicy: "{{ .spec.evictionPolicy }}"
