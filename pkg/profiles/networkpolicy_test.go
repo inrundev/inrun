@@ -8,7 +8,7 @@ import (
 )
 
 func TestNetworkPolicyProfiles(t *testing.T) {
-	empty := orktypes.ProfileRegistry{}
+	var empty *orktypes.ProfileRegistry
 
 	tests := []struct {
 		name          string
@@ -56,7 +56,7 @@ func TestNetworkPolicyProfiles(t *testing.T) {
 }
 
 func TestNetworkPolicyCaseInsensitive(t *testing.T) {
-	empty := orktypes.ProfileRegistry{}
+	var empty *orktypes.ProfileRegistry
 	for _, name := range []string{"DENY-ALL", "Deny-All-Ingress", "ALLOW-DNS-EGRESS"} {
 		_, err := profiles.ApplyNetworkPolicyProfile(name, empty)
 		if err != nil {
@@ -78,7 +78,7 @@ func TestNetworkPolicyProfileUserDefined(t *testing.T) {
 		},
 	}
 
-	exp, err := profiles.ApplyNetworkPolicyProfile("allow-internal", reg)
+	exp, err := profiles.ApplyNetworkPolicyProfile("allow-internal", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

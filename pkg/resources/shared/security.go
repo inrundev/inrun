@@ -12,7 +12,7 @@ import (
 // ResolveContainerSecurityContext resolves a ContainerSecurityContext:
 // if a profile is set it expands to explicit fields; otherwise the block is
 // returned as-is. Returns nil when sc is nil.
-func ResolveContainerSecurityContext(sc *orktypes.ContainerSecurityContext, reg orktypes.ProfileRegistry) *orktypes.ContainerSecurityContext {
+func ResolveContainerSecurityContext(sc *orktypes.ContainerSecurityContext, reg *orktypes.ProfileRegistry) *orktypes.ContainerSecurityContext {
 	if sc == nil {
 		return nil
 	}
@@ -30,7 +30,7 @@ func ResolveContainerSecurityContext(sc *orktypes.ContainerSecurityContext, reg 
 // ResolvePodSecurityContext resolves a PodSecurityContext:
 // if a profile is set it expands to explicit fields; otherwise the block is
 // returned as-is. Returns nil when ps is nil.
-func ResolvePodSecurityContext(ps *orktypes.PodSecurityContext, reg orktypes.ProfileRegistry) *orktypes.PodSecurityContext {
+func ResolvePodSecurityContext(ps *orktypes.PodSecurityContext, reg *orktypes.ProfileRegistry) *orktypes.PodSecurityContext {
 	if ps == nil {
 		return nil
 	}

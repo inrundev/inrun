@@ -160,7 +160,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 
 // Resolve builds a ResolvedPDBSpec from a PDBTemplateSource.
 // All template expressions must be evaluated before calling here.
-func Resolve(src orktypes.PDBTemplateSource, ownerName string, reg orktypes.ProfileRegistry) ResolvedPDBSpec {
+func Resolve(src orktypes.PDBTemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedPDBSpec {
 	spec := ResolvedPDBSpec{
 		Name:           src.Name,
 		Namespace:      src.Namespace,

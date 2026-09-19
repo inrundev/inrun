@@ -9,7 +9,7 @@ import (
 )
 
 func TestReconcilerProfiles(t *testing.T) {
-	empty := orktypes.ProfileRegistry{}
+	var empty *orktypes.ProfileRegistry
 
 	tests := []struct {
 		name          string
@@ -64,7 +64,7 @@ func TestReconcilerProfileUserDefined(t *testing.T) {
 		},
 	}
 
-	res, err := profiles.ApplyReconcilerProfile("fast-api", reg)
+	res, err := profiles.ApplyReconcilerProfile("fast-api", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestReconcilerProfileUserDefinedTakesPrecedenceOverBuiltIn(t *testing.T) {
 		},
 	}
 
-	res, err := profiles.ApplyReconcilerProfile("conservative", reg)
+	res, err := profiles.ApplyReconcilerProfile("conservative", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

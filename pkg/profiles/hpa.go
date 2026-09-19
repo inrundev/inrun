@@ -39,20 +39,22 @@ type HPAProfileResult struct {
 // ApplyHPAProfile expands a named HPA profile into a CPUTarget and behavior block.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyHPAProfile(name string, reg orktypes.ProfileRegistry) (HPAProfileResult, error) {
-	if def, found := reg.LookupHPA(name); found {
-		r := HPAProfileResult{}
-		if def.TargetCPUUtilizationPercentage != "" {
-			// static value only — template expressions resolved before this call
-			var cpu int32
-			if _, err := fmt.Sscanf(def.TargetCPUUtilizationPercentage, "%d", &cpu); err == nil {
-				r.CPUTarget = cpu
+func ApplyHPAProfile(name string, reg *orktypes.ProfileRegistry) (HPAProfileResult, error) {
+	if reg != nil {
+		if def, found := reg.LookupHPA(name); found {
+			r := HPAProfileResult{}
+			if def.TargetCPUUtilizationPercentage != "" {
+				// static value only — template expressions resolved before this call
+				var cpu int32
+				if _, err := fmt.Sscanf(def.TargetCPUUtilizationPercentage, "%d", &cpu); err == nil {
+					r.CPUTarget = cpu
+				}
 			}
+			if def.Behavior != nil {
+				r.Behavior = *def.Behavior
+			}
+			return r, nil
 		}
-		if def.Behavior != nil {
-			r.Behavior = *def.Behavior
-		}
-		return r, nil
 	}
 	switch HPAProfile(strings.ToLower(name)) {
 	case HPAWeb:

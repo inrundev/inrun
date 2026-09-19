@@ -61,7 +61,7 @@ func onReconcile(ctx context.Context, obj *rpv1alpha1.ResourceProbe) error {
 		return fmt.Errorf("kubeclient not in context")
 	}
 
-	reg := orktypes.ProfileRegistry{}
+	var reg *orktypes.ProfileRegistry
 	ns := obj.Name + "-ns"
 
 	// ── Namespace ─────────────────────────────────────────────────────────────

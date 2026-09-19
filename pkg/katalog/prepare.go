@@ -132,7 +132,7 @@ func (k *Katalog) SetDefaults(kfg *konfig.Konfig) error {
 		}
 		rec := crd.Box().Reconcile
 		if rec.Profile != "" {
-			result, err := profiles.ApplyReconcilerProfile(rec.Profile, k.Profiles)
+			result, err := profiles.ApplyReconcilerProfile(rec.Profile, &k.Profiles)
 			if err != nil {
 				return fmt.Errorf("%s CRD %q: %w", failureMark(), name, err)
 			}

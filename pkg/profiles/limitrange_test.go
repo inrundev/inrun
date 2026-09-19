@@ -24,7 +24,7 @@ func TestLimitRangeProfileUserDefined(t *testing.T) {
 		},
 	}
 
-	items, err := profiles.ApplyLimitRangeProfile("default-container", reg)
+	items, err := profiles.ApplyLimitRangeProfile("default-container", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestLimitRangeProfileMultipleItems(t *testing.T) {
 		},
 	}
 
-	items, err := profiles.ApplyLimitRangeProfile("multi", reg)
+	items, err := profiles.ApplyLimitRangeProfile("multi", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestLimitRangeProfileMultipleItems(t *testing.T) {
 }
 
 func TestLimitRangeProfileUnknownReturnsError(t *testing.T) {
-	_, err := profiles.ApplyLimitRangeProfile("nonexistent", orktypes.ProfileRegistry{})
+	_, err := profiles.ApplyLimitRangeProfile("nonexistent", nil)
 	if err == nil {
 		t.Fatal("expected error for unknown limitrange profile but got none")
 	}
@@ -85,15 +85,15 @@ func TestIsValidLimitRangeProfile(t *testing.T) {
 		},
 	}
 
-	if !profiles.IsValidLimitRangeProfile("my-limits", reg) {
+	if !profiles.IsValidLimitRangeProfile("my-limits", &reg) {
 		t.Error("expected my-limits to be valid")
 	}
 
-	if profiles.IsValidLimitRangeProfile("unknown", reg) {
+	if profiles.IsValidLimitRangeProfile("unknown", &reg) {
 		t.Error("expected unknown to be invalid")
 	}
 
-	if profiles.IsValidLimitRangeProfile("my-limits", orktypes.ProfileRegistry{}) {
+	if profiles.IsValidLimitRangeProfile("my-limits", nil) {
 		t.Error("expected my-limits to be invalid with empty registry")
 	}
 }

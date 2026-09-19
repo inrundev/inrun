@@ -139,11 +139,11 @@ func (k *Katalog) UserNotes() orktypes.NoteRegistry {
 }
 
 // UserProfiles returns all user defined profiles in the katalog
-func (k *Katalog) UserProfiles() orktypes.ProfileRegistry {
+func (k *Katalog) UserProfiles() *orktypes.ProfileRegistry {
 	if k == nil {
-		return orktypes.ProfileRegistry{}
+		return nil
 	}
-	return k.Profiles
+	return &k.Profiles
 }
 
 // Empty reports true when the katalog is nil.

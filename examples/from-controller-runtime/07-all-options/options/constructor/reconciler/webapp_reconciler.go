@@ -134,16 +134,16 @@ func (r *WebAppReconciler) reconcileDeployment(ctx context.Context, webapp *apiv
 	}
 
 	existing := &appsv1.Deployment{}
-	err := r.kube.Get(ctx, webapp.Namespace, webapp.Name, existing)
+	err := r.kube.Get(ctx, domain.ObjectKey{Namespace: webapp.Namespace, Name: webapp.Name}, existing, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		return r.kube.Create(ctx, desired)
+		return r.kube.Create(ctx, desired, metav1.CreateOptions{})
 	}
 	if err != nil {
 		return err
 	}
 	patch := sigs.StrategicMergeFrom(existing.DeepCopy())
 	existing.Spec = desired.Spec
-	return r.kube.Patch(ctx, existing, patch)
+	return r.kube.Patch(ctx, existing, patch, metav1.PatchOptions{})
 }
 
 // reconcileService — same logic as the controller-runtime baseline.
@@ -171,15 +171,14 @@ func (r *WebAppReconciler) reconcileService(ctx context.Context, webapp *apiv1.C
 	}
 
 	existing := &corev1.Service{}
-	err := r.kube.Get(ctx, webapp.Namespace, webapp.Name+"-svc", existing)
+	err := r.kube.Get(ctx, domain.ObjectKey{Namespace: webapp.Namespace, Name: webapp.Name + "-svc"}, existing, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		return r.kube.Create(ctx, desired)
+		return r.kube.Create(ctx, desired, metav1.CreateOptions{})
 	}
 	if err != nil {
 		return err
 	}
 	patch := sigs.MergeFrom(existing.DeepCopy())
 	existing.Spec.Ports = desired.Spec.Ports
-	return r.kube.Patch(ctx, existing, patch)
+	return r.kube.Patch(ctx, existing, patch, metav1.PatchOptions{})
 }
-

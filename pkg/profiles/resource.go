@@ -32,12 +32,14 @@ const (
 // ApplyResourceProfile expands a named resource profile into a complete
 // ResourceRequirements. User-defined profiles in reg are checked first; falls
 // back to built-ins. Returns an error for unknown profile names.
-func ApplyResourceProfile(name string, reg orktypes.ProfileRegistry) (*orktypes.ResourceRequirements, error) {
-	if def, found := reg.LookupResource(name); found {
-		return &orktypes.ResourceRequirements{
-			Requests: def.Requests,
-			Limits:   def.Limits,
-		}, nil
+func ApplyResourceProfile(name string, reg *orktypes.ProfileRegistry) (*orktypes.ResourceRequirements, error) {
+	if reg != nil {
+		if def, found := reg.LookupResource(name); found {
+			return &orktypes.ResourceRequirements{
+				Requests: def.Requests,
+				Limits:   def.Limits,
+			}, nil
+		}
 	}
 	switch ResourceProfile(strings.ToLower(name)) {
 	case ResourceTiny:

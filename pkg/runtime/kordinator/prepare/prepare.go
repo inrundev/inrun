@@ -88,7 +88,7 @@ func Prepare(ctx context.Context, in Input) (*domain.PreparedRequest, *Validatio
 	// Step 6: enrichment chain
 	if in.Kat != nil {
 		if !in.Kat.Profiles.Empty() {
-			resolver = resolver.WithProfiles(in.Kat.Profiles)
+			resolver = resolver.WithProfiles(&in.Kat.Profiles)
 		}
 		if !in.Kat.Notes.Empty() {
 			resolver = resolver.WithUserNotes(in.Kat.UserNotes())

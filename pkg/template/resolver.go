@@ -36,7 +36,7 @@ type Resolver struct {
 	data           map[string]interface{}
 	ownerName      string
 	ownerNamespace string
-	profiles       orktypes.ProfileRegistry
+	profiles       *orktypes.ProfileRegistry
 	// mergedFuncs is set by WithUserNotes and contains orkNotes + user-defined notes.
 	// When nil, Resolve() uses the package-level orkNotes FuncMap directly.
 	mergedFuncs template.FuncMap
@@ -85,7 +85,7 @@ func SentinelFuncMap(declared []string) template.FuncMap {
 
 // WithProfiles attaches a user-defined profile registry to the resolver.
 // Call this after NewResolver when the katalog declares a profiles: block.
-func (r *Resolver) WithProfiles(reg orktypes.ProfileRegistry) *Resolver {
+func (r *Resolver) WithProfiles(reg *orktypes.ProfileRegistry) *Resolver {
 	r.profiles = reg
 	return r
 }
@@ -131,7 +131,7 @@ func (r *Resolver) WithUserNotes(reg orktypes.NoteRegistry) *Resolver {
 }
 
 // Profiles returns the user-defined profile registry attached to this resolver.
-func (r *Resolver) Profiles() orktypes.ProfileRegistry {
+func (r *Resolver) Profiles() *orktypes.ProfileRegistry {
 	return r.profiles
 }
 

@@ -127,7 +127,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface, owner domain.
 }
 
 // Resolve builds a ResolvedStatefulSetSpec from a StatefulSetTemplateSource.
-func Resolve(src orktypes.StatefulSetTemplateSource, ownerName string, reg orktypes.ProfileRegistry) ResolvedStatefulSetSpec {
+func Resolve(src orktypes.StatefulSetTemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedStatefulSetSpec {
 	spec := ResolvedStatefulSetSpec{
 		Name:            src.Name,
 		Namespace:       src.Namespace,

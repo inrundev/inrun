@@ -72,7 +72,7 @@ func TestHPAProfiles(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.profile, func(t *testing.T) {
-			result, err := profiles.ApplyHPAProfile(tc.profile, orktypes.ProfileRegistry{})
+			result, err := profiles.ApplyHPAProfile(tc.profile, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -110,7 +110,7 @@ func assertRules(t *testing.T, label string, r *orktypes.HPAScalingRules, wantWi
 
 func TestHPAProfileCaseInsensitive(t *testing.T) {
 	for _, name := range []string{"WEB", "Web", "API", "Latency-Sensitive", "BATCH", "Cost-Optimized"} {
-		_, err := profiles.ApplyHPAProfile(name, orktypes.ProfileRegistry{})
+		_, err := profiles.ApplyHPAProfile(name, nil)
 		if err != nil {
 			t.Errorf("profile %q: unexpected error: %v", name, err)
 		}
@@ -118,7 +118,7 @@ func TestHPAProfileCaseInsensitive(t *testing.T) {
 }
 
 func TestHPAProfileUnknown(t *testing.T) {
-	_, err := profiles.ApplyHPAProfile("unknown-profile", orktypes.ProfileRegistry{})
+	_, err := profiles.ApplyHPAProfile("unknown-profile", nil)
 	if err == nil {
 		t.Error("expected error for unknown profile, got nil")
 	}
@@ -142,7 +142,7 @@ func TestIsValidHPAProfile(t *testing.T) {
 
 func TestHPAProfilePoliciesNonZero(t *testing.T) {
 	for _, name := range []string{"web", "api", "latency-sensitive", "batch", "cost-optimized"} {
-		result, _ := profiles.ApplyHPAProfile(name, orktypes.ProfileRegistry{})
+		result, _ := profiles.ApplyHPAProfile(name, nil)
 		for i, p := range result.Behavior.ScaleUp.Policies {
 			if p.Value == 0 {
 				t.Errorf("profile %q scaleUp policy[%d]: Value is 0", name, i)
