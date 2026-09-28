@@ -10,7 +10,7 @@ This directory explains how the `pkg/merger` package resolves and merges Katalog
 | [02-kinds.md](02-kinds.md) | Katalog vs Komposer — what each kind can and cannot declare |
 | [03-imports.md](03-imports.md) | Import types (file, Helm, registry) — resolution order and auth |
 | [04-deduplication.md](04-deduplication.md) | How duplicate CRD names are detected and why they are errors |
-| [05-top-level-accumulation.md](05-top-level-accumulation.md) | How security, notification, and providers are merged across imports |
+| [05-top-level-accumulation.md](05-top-level-accumulation.md) | How security and notification are merged across imports |
 | [06-protocol.md](06-protocol.md) | The v1 wire protocol: required fields, apiVersion enforcement, format rules |
 
 Read them in order the first time. For the v1 contract (what external patterns must look like), read [06-protocol.md](06-protocol.md).

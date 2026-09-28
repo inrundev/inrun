@@ -33,7 +33,6 @@ func (k *Katalog) SerializeExpanded() ([]byte, error) {
 		Security:     k.Security,
 		Gateway:      k.Gateway,
 		Notification: k.Notification,
-		Providers:    k.Providers,
 		Profiles:     k.Profiles,
 		Notes:        k.Notes,
 	}

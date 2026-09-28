@@ -1,21 +1,20 @@
 # 05 — Top-Level Field Accumulation
 
-When a Komposer references multiple source Katalogs, each source may declare its own top-level `security:`, `notification:`, and `providers:` blocks. These fields are accumulated so that `ork generate rbac` and `ork generate configmap` against a Komposer produce the same output as running them against the source Katalogs directly.
+When a Komposer references multiple source Katalogs, each source may declare its own top-level `security:` and `notification:` blocks. These fields are accumulated so that `ork generate rbac` and `ork generate configmap` against a Komposer produce the same output as running them against the source Katalogs directly.
 
 ## The problem without accumulation
 
-`loadKatalog` sets `m.security`, `m.notification`, and `m.providers` as side-effects when it loads each source Katalog. Without accumulation, the last source loaded overwrites all earlier ones. The Komposer's own (possibly Empty() block then further overwrites whatever the last source set.
+`loadKatalog` sets `m.security` and `m.notification` as side-effects when it loads each source Katalog. Without accumulation, the last source loaded overwrites all earlier ones. The Komposer's own (possibly empty) block then further overwrites whatever the last source set.
 
-Result: the Komposer appears to have no security or providers, even though its sources declare them.
+Result: the Komposer appears to have no security, even though its sources declare it.
 
 ## The solution
 
-`loadKomposer` declares three accumulators before the source loops:
+`loadKomposer` declares two accumulators before the source loops:
 
 ```go
 var accSecurity     orktypes.KatalogSecurity
 var accNotification *orktypes.KatalogNotification
-var accProviders    []orktypes.KatalogProviderRequirement
 ```
 
 After each source is loaded, the side-effects on `m` are captured:
@@ -23,7 +22,6 @@ After each source is loaded, the side-effects on `m` are captured:
 ```go
 accSecurity     = mergeKatalogSecurity(accSecurity, m.security)
 accNotification = mergeKatalogNotification(accNotification, m.notification)
-accProviders    = append(accProviders, m.providers...)
 ```
 
 At the end, the Komposer's own block is layered on top:
@@ -31,11 +29,6 @@ At the end, the Komposer's own block is layered on top:
 ```go
 m.security     = mergeKatalogSecurity(accSecurity, doc.Security)
 m.notification = mergeKatalogNotification(accNotification, doc.Notification)
-if len(doc.Providers) > 0 {
-    m.providers = doc.Providers  // Komposer's own list replaces entirely
-} else {
-    m.providers = accProviders   // use accumulated list from imports
-}
 ```
 
 ## Merge semantics per field
@@ -53,9 +46,3 @@ if len(doc.Providers) > 0 {
 - If both non-nil: teams are merged by name — override teams win per key; base teams not in override are kept.
 - `Defaults`: override's Defaults replaces base Defaults entirely if non-nil.
 - Rationale: source Katalogs may declare team routing for their own CRDs; the Komposer can add or replace teams without wiping source teams.
-
-### `providers` — append + replace
-
-- All source providers are appended into `accProviders`.
-- If the Komposer declares its own `providers:` list (non-Empty(), that list replaces `accProviders` entirely.
-- Rationale: a Komposer that declares providers explicitly knows exactly what it needs; one that doesn't should inherit whatever its imports require.

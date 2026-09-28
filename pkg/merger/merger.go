@@ -6,7 +6,7 @@
 // operator's live configuration.
 //
 // Entry point: New(paths...).Merge() — call once; query with Enabled, All,
-// ToSpec, ToSecurity, ToNotification, and ToProviders.
+// ToSpec, ToSecurity, and ToNotification.
 //
 // See README.md for merge rules, source-loading order, and top-level field
 // accumulation semantics.
@@ -46,9 +46,6 @@ type Merger struct {
 
 	// notification holds the merged notification configuration of the final katalog
 	notification *orktypes.KatalogNotification
-
-	// providers holds the top-level provider requirements of the final katalog
-	providers []orktypes.KatalogProviderRequirement
 
 	// gateway holds the gateway deployment config of the final katalog
 	gateway *orktypes.GatewayConfig
@@ -400,13 +397,6 @@ func (m *Merger) ToSpec() orktypes.KatalogSpec {
 func (m *Merger) ToSecurity() orktypes.KatalogSecurity {
 	m.mustBeMerged()
 	return m.security
-}
-
-// ToProviders returns the top-level provider requirements of the merged result.
-// Used by KomposeRuntimeKatalog to populate Katalog.Providers.
-func (m *Merger) ToProviders() []orktypes.KatalogProviderRequirement {
-	m.mustBeMerged()
-	return m.providers
 }
 
 // ToNotification returns the merged notification configuration of the merged result.

@@ -222,8 +222,6 @@ Hooks become necessary when the work is genuinely outside HTTP:
 - **Non-HTTP protocols** — gRPC, database connections, message queue operations, anything that isn't an HTTP endpoint
 - **Complex computed fields from non-HTTP sources** — deriving values that require SDK calls, database queries, or binary protocols where there is no HTTP endpoint to call
 
-For AWS, GCP, and Stripe — providers are in development for common SDK integrations (`aws:`, `gcp:`, `stripe:` blocks in the Katalog). Until a provider covers your case, hooks are the path.
-
 Hooks are additive: the hook runs, then Orkestra applies `onCreate`/`onReconcile` templates as normal. The template layer does not disappear.
 
 ```yaml

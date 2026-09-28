@@ -61,7 +61,6 @@ The following Orkestra features have no dedicated example yet:
 
 - **Motifs** — reusable resource building blocks assembled via `imports`
 - **Rollback** — `operatorBox.rollback` triggering and recovery
-- **Providers** — operator that manages a cloud resource (S3 bucket, RDS, Redis ACL) alongside a Kubernetes resource
 - **Notification** — `operatorBox.conditions` with `notify.teams` firing a Slack or email alert
 - **Komposer** — multi-source Katalog merge from Git, HTTP, and ConfigMap
 - **Typed operators** — full typed-mode example with `ork generate registry` and a custom Go type

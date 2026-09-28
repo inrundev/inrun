@@ -12,9 +12,6 @@ func (k *Katalog) DebugKatalogInformation() {
 	// [DEBUG] Contents of k.Notiication
 	logger.Debug().Interface("katalog notification", k.Notification).Msg("katalog notification")
 
-	// [DEBUG] Contents of k.Providers
-	logger.Debug().Interface("katalog providers", k.Providers).Msg("katalog providers")
-
 	// [DEBUG] Contents of k.Spec
 	logger.Debug().Interface("katalog spec", k.Spec).Msg("katalog spec")
 

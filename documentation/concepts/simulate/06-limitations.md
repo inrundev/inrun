@@ -41,7 +41,6 @@ ork simulate --cr cr.yaml
 | Admission webhook validation/mutation | No | Yes |
 | Real pod scheduling and readiness | No | Yes |
 | Cross-namespace secret reads | No | Yes |
-| Provider blocks (AWS, MongoDB) | No | Yes |
 
 `--envtest` covers most API-server correctness concerns without a running cluster. Use `ork e2e` for admission webhooks, real pod lifecycle, and provider integrations.
 

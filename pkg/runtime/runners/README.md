@@ -36,7 +36,7 @@ Runners that are specific to the reconciler's dispatch logic stay in `pkg/runtim
 - `run_template_reconcile.go` — the dispatcher that calls each runner in sequence
 - `run_delete_ordered.go` — sequential staged deletion
 - `run_git.go`, `run_docker.go` — external integration runners
-- `run_providers.go`, `run_customresource.go` — provider and cross-CRD runners
+- `run_customresource.go` — cross-CRD runners
 - `run_surface_cleanup.go` — removes resources from a previous surface that are no longer declared
 
 Admission, validation, mutation, status writing, and namespace enforcement all moved to `pkg/runtime/kordinator/prepare/` as part of the kordinator refactor.

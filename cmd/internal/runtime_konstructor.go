@@ -5,7 +5,7 @@
 // here; startup is handled by orkestra.Start() in declaration order.
 //
 // The resulting registry contains the Katalog, Kubernetes clients and
-// informers, resource and provider registries, Kordinator, and health server.
+// informers, resource registries, Kordinator, and health server.
 package internal
 
 import (
@@ -162,23 +162,6 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 		QueueRegistry: queueRegistry,
 	})
 
-	// ── 4c. Provider registry ─────────────────────────────────────────────────
-	// External infrastructure providers (AWS, MongoDB, etc.).
-	// Must be built BEFORE the factory loop so all reconciler closures capture
-	// the same fully-initialised registry. loadProviders is non-fatal —
-	// unavailable providers log a warning and the operator starts regardless.
-	providerRegistry := loadProviders(ctx, kat)
-
-	// One ProviderStats per CRD — shared between generic.Reconciler (writes on each
-	// provider call) and BuildCRDInfoHandler (reads for the /katalog/{crd} response).
-	// Only created for CRDs that declare provider blocks — others get nil.
-	providerStatsMap := make(map[string]*health.ProviderStats)
-	for _, crd := range kat.Enabled() {
-		if crd.HasProviders() {
-			providerStatsMap[crd.GVKString()] = health.NewProviderStats()
-		}
-	}
-
 	// ── 4d. Kordinator registry + per-CRD wiring ──────────────────────────────
 	// ktrlRegistry maps GVK → (CRDEntry, SharedIndexInformer, ReconcilerFactory).
 	// It also implements reconciler.KatalogRegistry via GetInformerByName,
@@ -309,7 +292,6 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 				hookKube = kube.WithArgs(kubeclient.Args(args))
 			}
 
-			pStats := providerStatsMap[gvk]
 			factory = func() domain.Reconciler {
 				return generic.New(
 					crd,
@@ -320,9 +302,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 					func() domain.Object {
 						return objCopy.DeepCopyObject().(domain.Object)
 					},
-					providerRegistry, // aws:, mongodb:, etc. block dispatch
-					pStats,           // per-CRD provider error rate tracking
-					kat,              // Katalog for notification wiring
+					kat,
 				)
 			}
 		} else if crd.WithRemoteDecl() {
@@ -452,7 +432,6 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 				vitals.BuildCRDInfoHandler(
 					crd, kfg, inf, crdHealth,
 					orkHealth,
-					providerStatsMap[gvk],
 				),
 			)
 			hs.Register(

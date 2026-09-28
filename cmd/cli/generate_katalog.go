@@ -13,7 +13,6 @@
 //
 //	--add-security          — namespace + deletion protection block
 //	--add-notification      — notification / alerting block
-//	--add-provider <cloud>  — providers block for aws | azure | gcp
 
 //go:build !runtime && !gateway
 
@@ -44,13 +43,12 @@ Reconcile mode (choose at most one):
 Optional sections (may be combined with any mode):
   --add-security        Namespace and deletion-protection block.
   --add-notification    Notification / alerting block with example teams.
-  --add-provider <p>    Provider block for aws, azure, or gcp.
 
 Examples:
   ork generate katalog
   ork generate katalog --add-hook -o database-katalog.yaml
   ork generate katalog --add-constructor
-  ork generate katalog --typed --add-security --add-provider aws
+  ork generate katalog --typed --add-security
   ork generate katalog --add-notification -o ops-katalog.yaml`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		addHook, _ := cmd.Flags().GetBool("add-hook")
@@ -58,7 +56,6 @@ Examples:
 		typed, _ := cmd.Flags().GetBool("typed")
 		addSecurity, _ := cmd.Flags().GetBool("add-security")
 		addNotification, _ := cmd.Flags().GetBool("add-notification")
-		provider, _ := cmd.Flags().GetString("add-provider")
 		outputFile, _ := cmd.Flags().GetString("output")
 
 		opts := generate.KatalogScaffoldOptions{
@@ -67,7 +64,6 @@ Examples:
 			Typed:           typed,
 			AddSecurity:     addSecurity,
 			AddNotification: addNotification,
-			Provider:        provider,
 			OutputFile:      outputFile,
 		}
 
@@ -103,8 +99,6 @@ func init() {
 		"Include a security block (namespace protection + deletion protection)")
 	generateKatalogCmd.Flags().Bool("add-notification", false,
 		"Include a notification block with example team entries")
-	generateKatalogCmd.Flags().String("add-provider", "",
-		"Include a providers block for the given cloud: aws | azure | gcp")
 	generateKatalogCmd.Flags().StringP("output", "o", "",
 		`Output file path (default "katalog.yaml")`)
 }

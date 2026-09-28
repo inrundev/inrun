@@ -52,8 +52,6 @@ GET /katalog/{crd}        — configuration + health for one CRD
 GET /katalog/{crd}/health — live health status for one CRD
 ```
 
-The `/katalog/{crd}` endpoint includes per-provider stats when providers are declared.
-
 ---
 
 ## Where to go next

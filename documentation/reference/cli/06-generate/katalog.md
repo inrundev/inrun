@@ -19,7 +19,6 @@ Generates a `katalog.yaml` with sensible defaults, commented optional blocks, an
 | `--typed` | Typed mode: include both `hooks` and `constructor` sections commented; prints a warning |
 | `--add-security` | Include a security block (namespace and deletion protection) |
 | `--add-notification` | Include a notification block with example team entries |
-| `--add-provider <cloud>` | Include a providers block for `aws`, `azure`, or `gcp` |
 | `-o, --output <file>` | Output file path (default: `katalog.yaml`) |
 
 ---
@@ -66,13 +65,13 @@ ork generate katalog --typed
 Add optional blocks:
 
 ```bash
-ork generate katalog --add-security --add-notification --add-provider aws
+ork generate katalog --add-security --add-notification
 ```
 
 Combine mode and optional flags:
 
 ```bash
-ork generate katalog --add-hook --add-security --add-provider gcp -o ops-katalog.yaml
+ork generate katalog --add-hook --add-security -o ops-katalog.yaml
 ```
 
 ---
@@ -94,9 +93,6 @@ Optional flags may be combined freely with any reconcile mode.
 |------|-------------|
 | `--add-security` | `security.namespaceProtection` and `security.deletionProtection` |
 | `--add-notification` | `notification.teams` with example Slack webhook entries |
-| `--add-provider aws` | `providers.aws` with credential env-var placeholders |
-| `--add-provider azure` | `providers.azure` with subscription and tenant env-var placeholders |
-| `--add-provider gcp` | `providers.gcp` with project and credentials file placeholders |
 
 ---
 
@@ -104,4 +100,3 @@ Optional flags may be combined freely with any reconcile mode.
 
 - Replace every `TODO` placeholder before running `ork run`.
 - The generated file is idempotent — re-running overwrites the output file.
-- Provider names are case-insensitive (`AWS`, `aws`, and `Aws` all work).

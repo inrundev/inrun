@@ -110,7 +110,7 @@ This is the same pattern for all options — hooks, constructors, or mixed. The 
 
 ## When Go hooks become necessary
 
-Processes that cannot be expressed as a sequence of declarative steps. Live streaming, long-running stateful workflows with runtime branching, anything the provider system does not yet cover, protocol calls that are not HTTP. When in doubt, try declaring it first — the system keeps expanding.
+Processes that cannot be expressed as a sequence of declarative steps. Live streaming, long-running stateful workflows with runtime branching, anything the exrernal system does not yet cover. When in doubt, try declaring it first — the system keeps expanding.
 
 
 → [02 — Hybrid](./03-hybrid.md)

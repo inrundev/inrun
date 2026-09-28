@@ -25,7 +25,7 @@ func TestOrkContext_InjectedIntoResolver(t *testing.T) {
 
 	assert.Equal(t, "orkestra-system", got["namespace"])
 	assert.Equal(t, "v0.7.18", got["version"])
-	assert.Equal(t, false, got["inCluster"]) // not running inside a pod in tests
+	assert.Equal(t, false, got["inPod"]) // not running inside a pod in tests
 }
 
 func TestOrkContext_ZeroValueWhenAbsent(t *testing.T) {

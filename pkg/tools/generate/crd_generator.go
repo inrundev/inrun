@@ -351,17 +351,6 @@ func (g *CRDGenerator) extractTemplateSpecFields() []string {
 	collectFromTemplates(op.EffectiveOnCreate())
 	collectFromTemplates(op.EffectiveOnReconcile())
 
-	// Also collect from provider block fields
-	if r := op.Reconcile; r != nil {
-		for _, block := range r.ProviderBlocks {
-			for _, decl := range block.Declarations {
-				for _, v := range decl.Fields {
-					templates = append(templates, v)
-				}
-			}
-		}
-	}
-
 	// Also collect from status fields
 	if s := op.EffectiveStatus(); s != nil {
 		for _, f := range s.Fields {

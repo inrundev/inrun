@@ -778,12 +778,6 @@ func (c *CRDEntry) HasValidationRules() bool {
 	return c.Admission.HasValidation()
 }
 
-// HasProviders reports whether this CRD declares any provider blocks.
-func (c *CRDEntry) HasProviders() bool {
-	r := c.Box().Reconcile
-	return r != nil && len(r.ProviderBlocks) > 0
-}
-
 // AutoscaleEnabled reports whether this CRD declares the autoscale block
 func (c *CRDEntry) AutoscaleEnabled() bool {
 	return c.Box().EffectiveAutoscale() != nil

@@ -11,15 +11,6 @@ import (
 // Add reconcilers
 func (k *Katalog) AddReconcilers() error {
 	for name, crd := range k.enabledCRDs {
-		// Parse raw providers into typed ProviderBlocks on the reconcile block
-		if crd.Box().Reconcile != nil && len(crd.Box().Reconcile.RawProviders) > 0 {
-			blocks, err := orktypes.ParseProviderBlocks(crd.Box().Reconcile.RawProviders)
-			if err != nil {
-				return err
-			}
-			crd.Box().Reconcile.ProviderBlocks = blocks
-		}
-
 		if !crd.IsDynamic() {
 			if crd.DefaultReconcile() {
 				// Wire per-target entries that opt out of the default reconciler

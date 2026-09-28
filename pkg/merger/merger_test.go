@@ -32,9 +32,6 @@ notification:
     ops:
       slack:
         - "#ops-channel"
-providers:
-  - name: aws
-    version: "1.0"
 spec:
   crds:
     website:
@@ -91,27 +88,6 @@ func TestKomposer_InheritsUpstreamNotification(t *testing.T) {
 	}
 }
 
-func TestKomposer_InheritsUpstreamProviders(t *testing.T) {
-	dir := t.TempDir()
-	katalogPath := writeTempKatalog(t, dir, "upstream.yaml", upstreamKatalogYAML)
-
-	komposer := "apiVersion: orkestra.orkspace.io/v1\nkind: Komposer\nmetadata:\n  name: my-komposer\nimports:\n  files:\n    - url: " + katalogPath + "\n"
-	komposerPath := writeTempKatalog(t, dir, "komposer.yaml", komposer)
-
-	m := New(komposerPath)
-	if err := m.Merge(); err != nil {
-		t.Fatalf("Merge() error: %v", err)
-	}
-
-	providers := m.ToProviders()
-	if len(providers) == 0 {
-		t.Fatal("expected providers from upstream Katalog")
-	}
-	if providers[0].Name != "aws" {
-		t.Errorf("expected provider name=aws, got %q", providers[0].Name)
-	}
-}
-
 func TestKomposer_OwnSecurityWinsOverUpstream(t *testing.T) {
 	dir := t.TempDir()
 	katalogPath := writeTempKatalog(t, dir, "upstream.yaml", upstreamKatalogYAML)
@@ -127,24 +103,6 @@ func TestKomposer_OwnSecurityWinsOverUpstream(t *testing.T) {
 	sec := m.ToSecurity()
 	if sec.ServiceName == nil || sec.ServiceName.Runtime != "komposer-svc" {
 		t.Errorf("expected komposer serviceName.runtime to win, got %v", sec.ServiceName)
-	}
-}
-
-func TestKomposer_OwnProvidersWinOverUpstream(t *testing.T) {
-	dir := t.TempDir()
-	katalogPath := writeTempKatalog(t, dir, "upstream.yaml", upstreamKatalogYAML)
-
-	komposer := "apiVersion: orkestra.orkspace.io/v1\nkind: Komposer\nmetadata:\n  name: my-komposer\nproviders:\n  - name: gcp\n    version: \"2.0\"\nimports:\n  files:\n    - url: " + katalogPath + "\n"
-	komposerPath := writeTempKatalog(t, dir, "komposer.yaml", komposer)
-
-	m := New(komposerPath)
-	if err := m.Merge(); err != nil {
-		t.Fatalf("Merge() error: %v", err)
-	}
-
-	providers := m.ToProviders()
-	if len(providers) != 1 || providers[0].Name != "gcp" {
-		t.Errorf("expected Komposer providers=[gcp] to win, got %v", providers)
 	}
 }
 

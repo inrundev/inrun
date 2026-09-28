@@ -601,14 +601,6 @@ func (c *OperatorBoxConfig) EffectiveOnDelete() *HookTemplates {
 	return c.Reconcile.OnDelete
 }
 
-// EffectiveProviderBlocks returns the parsed provider blocks from reconcile.providers. Safe on nil receiver.
-func (c *OperatorBoxConfig) EffectiveProviderBlocks() []ProviderBlock {
-	if c == nil || c.Reconcile == nil {
-		return nil
-	}
-	return c.Reconcile.ProviderBlocks
-}
-
 // HasEmit reports whether an emit block is declared.
 func (c *OperatorBoxConfig) HasEmit() bool {
 	return c != nil && c.Emit != nil

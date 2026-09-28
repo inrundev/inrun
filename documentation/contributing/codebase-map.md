@@ -62,8 +62,7 @@ These are imported by more than one binary.
 | `pkg/runtime/queue` | Per-CRD work queue with backoff and rate limiting. |
 | `pkg/event` | Kubernetes event recorder. |
 | `pkg/metrics` | Prometheus metrics stubs. |
-| `pkg/provider` | Cloud and database provider interface and implementations. |
-| `pkg/tools/plan` | Plan/diff logic for operatorBox reconciliation. |
+| `pkg/tools/plan` | Plan/diff logic for operatorBox reconciliation. *(in development)* |
 | `pkg/registry` | Runtime-level type and hook registries. |
 | `pkg/registry/simulate` | Test harness for reconciler unit tests. |
 | `pkg/note` | Template note functions — Go helpers exposed as template variables so operators can surface replica counts, pod health, scaling state, and more in status fields without writing code. Every new note makes Orkestra more declarative. |

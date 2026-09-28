@@ -31,7 +31,6 @@ type Katalog struct {
 	Gateway      *orktypes.GatewayConfig               `yaml:"gateway,omitempty"`
 	Publish      *orktypes.PublishConfig               `yaml:"publish,omitempty"`
 	Notification *orktypes.KatalogNotification         `yaml:"notification,omitempty"`
-	Providers    []orktypes.KatalogProviderRequirement `yaml:"providers,omitempty"`
 	projectInfo  interface{}                           `yaml:"projectInfo,omitempty"`
 
 	KomposerMetadata orktypes.KatalogMeta `yaml:"metadata"`

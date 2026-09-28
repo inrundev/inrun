@@ -458,22 +458,6 @@ type KatalogFile struct {
 	// resolved at reconcile time; validation skips fields that contain {{ }}.
 	Profiles ProfileRegistry `yaml:"profiles,omitempty"`
 
-	// Providers declares which external provider libraries this Katalog requires.
-	// Top-level alongside spec: and security: — providers represent a distinct
-	// operational concern (infrastructure dependencies) separate from CRD definitions.
-	//
-	//   providers:
-	//     - name: aws
-	//       required: true
-	//       auth:
-	//         accessKeyId: "$AWS_ACCESS_KEY_ID"
-	//         secretAccessKey: "$AWS_SECRET_ACCESS_KEY"
-	//         region: "$AWS_REGION"
-	//     - name: mongodb
-	//       required: true
-	//       auth:
-	//         mongoUri: "$MONGODB_URL"
-	Providers []KatalogProviderRequirement `yaml:"providers,omitempty"`
 }
 
 // LooksLikeKomposer reports if this document looks like a Komposer
@@ -824,8 +808,7 @@ type KatalogForUI struct {
 	Kind       string                       `json:"kind"`                // Always "Katalog" at runtime
 	Metadata   KatalogMeta                  `json:"metadata"`            // Katalog metadata (name, description, etc.)
 	Spec       KatalogSpecForUI             `json:"spec"`                // CRD definitions
-	Security   KatalogSecurity              `json:"security"`            // Security settings
-	Providers  []KatalogProviderRequirement `json:"providers,omitempty"` // Provider requirements
+	Security   KatalogSecurity `json:"security"` // Security settings
 }
 
 // KatalogSpecForUI contains the CRD definitions for UI display.

@@ -2,7 +2,7 @@
 
 `kordinator` is the orchestration heart of every Orkestra operator. It decides when each CRD's workers start, in what order, under what conditions, and how they recover when the cluster changes while the operator is running.
 
-Everything upstream of kordinator — informers, queues, the provider registry, the reconciler factory — produces inputs. Kordinator is where those inputs become running workers.
+Everything upstream of kordinator — informers, queues, the reconciler factory — produces inputs. Kordinator is where those inputs become running workers.
 
 ## What kordinator does
 
@@ -22,7 +22,6 @@ Everything upstream of kordinator — informers, queues, the provider registry, 
 Kordinator is the last component started in `konstructRuntime`. The startup sequence is:
 
 ```
-loadProviders        — provider registry built
 resourceKatalog      — CRD entries, informers, reconciler factories registered
 informer.Factory     — informers created and started, caches warm
 DependencyKordinator — workers start in dependency order  ← here
