@@ -17,7 +17,6 @@ Operators are control loops, not Pods. Their performance is measured in:
 - worker utilization  
 - reconcile duration  
 - event throughput  
-- provider error rate  
 
 These signals are already tracked per CRD inside the operatorBox. The autoscaler reads them directly from memory — no additional instrumentation required.
 

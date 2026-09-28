@@ -7,7 +7,6 @@
 //  3. forEach expand             → N sources from N-element list fields
 //  4. onCreate groups            → deployments, services, secrets, configmaps, ...
 //  5. onReconcile groups
-//  6. runProviders               → aws:, mongodb:, ... (external infra)
 package generic
 
 import (
@@ -93,15 +92,6 @@ func (r *Reconciler[PTR]) runTemplateReconcile(ctx context.Context, resolver *or
 	if t := box.EffectiveOnReconcile(); t != nil {
 		if err := r.runResourceGroup(ctx, kube, resolver, obj, t, true); err != nil {
 			return resolver, err
-		}
-	}
-
-	// Step 7: provider dispatch
-	providerBlocks := box.EffectiveProviderBlocks()
-	if len(providerBlocks) > 0 && r.providerRegistry != nil && r.providerRegistry.Len() > 0 {
-		kubeReader := &kubeReaderAdapter{kube: kube}
-		if err := runProviders(ctx, obj, resolver, providerBlocks, r.providerRegistry, kubeReader, r.providerStats); err != nil {
-			return resolver, fmt.Errorf("providers: %w", err)
 		}
 	}
 
@@ -248,13 +238,6 @@ func (r *Reconciler[PTR]) runTemplateOnDelete(ctx context.Context, resolver *ork
 				children.ExpandForEachJobs(resolver, t.Jobs), guard); err != nil {
 				return err
 			}
-		}
-	}
-
-	if providerBlocksDel := box.EffectiveProviderBlocks(); len(providerBlocksDel) > 0 && r.providerRegistry != nil {
-		kubeReader := &kubeReaderAdapter{kube: kube}
-		if err := runProviderDelete(ctx, obj, resolver, providerBlocksDel, r.providerRegistry, kubeReader, r.providerStats); err != nil {
-			return fmt.Errorf("provider cleanup: %w", err)
 		}
 	}
 

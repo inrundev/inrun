@@ -19,13 +19,12 @@ The package is large by design — centralising types avoids import cycles. Call
 | `status.go` | Status field declarations and `StatusField` shape |
 | `conditions.go` | Condition helpers used by reconcilers |
 | `enrichment.go` | `EnrichmentSpec` — the `enrich:` list on a CRD entry |
-| `provider.go`, `provider_katalog.go` | `Provider` interface and `ProviderDeclaration` |
 | `security.go` | Security policy types (`SecuritySpec`, deletion protection, namespace restriction) |
 | `notification.go` | Notification policy types |
 | `autoscale.go` | Worker autoscale policy |
 | `rollback.go` | Rollback policy and trigger conditions |
 | `secret_rotation.go` | Secret rotation policy |
-| `when.go` | `WhenSpec` — conditional expressions for provider declarations |
+| `when.go` | `WhenSpec` — conditional field expressions |
 | `admission.go`, `conversion.go` | Webhook configuration types |
 | `external.go`, `docker.go`, `git.go` | External call, Docker, and Git integration types |
 | `cross.go`, `cross_methods.go`, `cross_oncop.go` | Cross-CRD dependency types |

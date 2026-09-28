@@ -246,7 +246,6 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 			fakeKube,
 			hookBinder,
 			newObjFn,
-			nil, nil,
 			kat,
 		)
 	}

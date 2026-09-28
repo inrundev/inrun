@@ -53,9 +53,6 @@ security:                      # optional
 
 notification:                  # optional
   ...
-
-providers:                     # optional
-  - ...
 ```
 
 ---
@@ -87,7 +84,6 @@ This scaffolds the simplest Katalog — a single CRD that creates a Deployment a
 | [09-conversion.md](09-conversion.md) | `conversion` — multi-version CRD support |
 | [10-katalog-security.md](10-katalog-security.md) | `security` block |
 | [11-katalog-notification.md](11-katalog-notification.md) | `notification` block |
-| [12-katalog-providers.md](12-katalog-providers.md) | `providers` block |
 | [16-resource-types.md](16-resource-types.md) | Supported Kubernetes resource types |
 | [Profiles concept](../../../concepts/profiles/10-user-defined-profiles.md) | `profiles:` — user-defined named profiles |
 | [15-enrich.md](15-enrich.md) | `enrich` — post-reconcile enrichment |

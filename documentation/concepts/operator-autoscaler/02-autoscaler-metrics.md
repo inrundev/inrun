@@ -12,7 +12,6 @@ Metrics are updated continuously by:
 - the worker pool  
 - the workqueue  
 - the reconcile loop  
-- the provider subsystem  
 
 They represent the **true runtime load** of an operator.
 

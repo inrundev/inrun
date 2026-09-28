@@ -21,8 +21,6 @@ kubeclient.Kubeclient          REST config, dynamic client, typed clientset.
     │        │                  in-memory cache from watch stream on Start().
     │        └──► per-CRD informer
     │
-    ├──► ProviderRegistry       AWS, MongoDB, Stripe — shared by all reconcilers.
-    │
     ├──► KordinatorRegistry     Maps GVK → (CRD, informer, reconcilerFactory).
     │        └──► per-CRD reconciler factory closure
     │

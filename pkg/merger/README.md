@@ -6,7 +6,7 @@ The merger package resolves and merges Katalog/Komposer YAML files into a single
 
 | File | Role |
 |------|------|
-| `merger.go` | `Merger` struct, `New`, `Merge`, `Enabled`, `All`, `Get`, `ToSpec`, `ToSecurity`, `ToNotification`, `ToProviders`, `ToUI` |
+| `merger.go` | `Merger` struct, `New`, `Merge`, `Enabled`, `All`, `Get`, `ToSpec`, `ToSecurity`, `ToNotification`, `ToUI` |
 | `file.go` | `loadKatalogFile` dispatcher; `loadKatalog` (Katalog kind); `loadKomposer` (Komposer kind — imports + inline merge + accumulation) |
 | `parse.go` | `parseKatalogDoc` — YAML decode + kind validation |
 | `file_auth.go` | `loadSourceFileWithAuth` — HTTP/S fetch with bearer/basic auth; local file read |
@@ -25,9 +25,8 @@ Katalog  (kind: Katalog)
 Komposer (kind: Komposer)
   Resolves imports (registry → files → helm) in that order.
   Inline spec.crds are merged last and win on name conflict.
-  Top-level fields (security, notification, providers) are
-  accumulated across all imports; the Komposer's own block
-  wins on conflict.
+  Top-level fields (security, notification) are accumulated
+  across all imports; the Komposer's own block wins on conflict.
 ```
 
 ### Deduplication scopes
@@ -47,7 +46,6 @@ When a Komposer references multiple source Katalogs, the merger accumulates thei
 |-------|-----------------------|
 | `security` | `mergeKatalogSecurity` — non-nil pointer fields in override win |
 | `notification` | `mergeKatalogNotification` — teams merged by name; override wins per key |
-| `providers` | append all, Komposer's own list replaces if non-empty |
 
 ## Usage
 
@@ -58,7 +56,6 @@ if err := m.Merge(); err != nil { ... }
 kat.Spec         = m.ToSpec()
 kat.Security     = m.ToSecurity()
 kat.Notification = m.ToNotification()
-kat.Providers    = m.ToProviders()
 ```
 
 All `To*` methods panic if called before `Merge()`.
@@ -73,5 +70,5 @@ Full step-by-step documentation is in [docs/](docs/README.md).
 | Understand Katalog vs Komposer rules | [02 — Kinds](docs/02-kinds.md) |
 | Add or understand a source type | [03 — Imports](docs/03-imports.md) |
 | Debug duplicate CRD name errors | [04 — Deduplication](docs/04-deduplication.md) |
-| Understand security/notification/providers inheritance | [05 — Top-Level Accumulation](docs/05-top-level-accumulation.md) |
+| Understand security/notification inheritance | [05 — Top-Level Accumulation](docs/05-top-level-accumulation.md) |
 | Understand Helm and file source caching | [07 — Source Caching](docs/07-source-caching.md) |

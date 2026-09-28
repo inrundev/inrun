@@ -247,7 +247,6 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 			recKube,
 			hookBinder,
 			newObjFn,
-			nil, nil,
 			kat,
 		)
 	}

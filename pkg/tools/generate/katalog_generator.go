@@ -13,8 +13,8 @@
 //	typed + constructor — mode: typed, operatorBox.default: false, commented constructor.
 //	    The user owns the entire reconcile loop; Orkestra calls their constructor.
 //
-// Optional sections (security, notification, providers) are injected after the
-// metadata block when the corresponding flag is set. They are independent of the
+// Optional sections (security, notification) are injected after the metadata
+// block when the corresponding flag is set. They are independent of the
 // reconcile mode and may be combined freely.
 //
 // The generated file is pure YAML — all conditional logic is resolved at
@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/template"
 	"time"
 )
@@ -58,16 +57,11 @@ type KatalogScaffoldOptions struct {
 	// AddNotification appends a notification block with example team entries.
 	AddNotification bool
 
-	// Provider appends a providers block for the named cloud.
-	// Accepted: "aws", "azure", "gcp". Empty means no providers block.
-	Provider string
-
 	// OutputFile is the destination path. Defaults to "katalog.yaml".
 	OutputFile string
 }
 
-// Validate returns a descriptive error when mutually exclusive flags are
-// combined, or when an unsupported provider name is given.
+// Validate returns a descriptive error when mutually exclusive flags are combined.
 func (o KatalogScaffoldOptions) Validate() error {
 	typeFlags := 0
 	if o.AddHook {
@@ -84,17 +78,6 @@ func (o KatalogScaffoldOptions) Validate() error {
 			"--add-hook, --add-constructor, and --typed are mutually exclusive; " +
 				"use --typed to get both sections commented so you can choose one",
 		)
-	}
-
-	if o.Provider != "" {
-		switch strings.ToLower(o.Provider) {
-		case "aws", "azure", "gcp":
-		default:
-			return fmt.Errorf(
-				"--add-provider: unknown provider %q — supported values: aws, azure, gcp",
-				o.Provider,
-			)
-		}
 	}
 	return nil
 }
@@ -118,10 +101,9 @@ type katalogTemplateData struct {
 	// DefaultFalse sets operatorBox.default: false (constructor mode only).
 	DefaultFalse bool
 
-	// AddSecurity, AddNotification, Provider control optional top-level blocks.
+	// AddSecurity, AddNotification control optional top-level blocks.
 	AddSecurity     bool
 	AddNotification bool
-	Provider        string // already lower-cased
 
 	// Timestamp is written into the generated-by comment.
 	Timestamp string
@@ -141,7 +123,6 @@ func KatalogScaffold(opts KatalogScaffoldOptions) (string, error) {
 	data := katalogTemplateData{
 		AddSecurity:     opts.AddSecurity,
 		AddNotification: opts.AddNotification,
-		Provider:        strings.ToLower(opts.Provider),
 		Timestamp:       time.Now().UTC().Format("2006-01-02T15:04:05Z"),
 	}
 
@@ -166,9 +147,6 @@ func KatalogScaffold(opts KatalogScaffoldOptions) (string, error) {
 	}
 	if opts.AddNotification {
 		data.FlagSuffix += " --add-notification"
-	}
-	if opts.Provider != "" {
-		data.FlagSuffix += " --add-provider " + opts.Provider
 	}
 
 	var buf bytes.Buffer
@@ -239,31 +217,6 @@ notification:
       slack:
         - "#oncall"
       interval: 1m
-
-{{ end -}}
-{{ if eq .Provider "aws" -}}
-providers:
-  aws:
-    region: us-east-1
-    credentials:
-      accessKeyID: ${AWS_ACCESS_KEY_ID}
-      secretAccessKey: ${AWS_SECRET_ACCESS_KEY}
-
-{{ end -}}
-{{ if eq .Provider "azure" -}}
-providers:
-  azure:
-    subscriptionID: ${AZURE_SUBSCRIPTION_ID}
-    tenantID: ${AZURE_TENANT_ID}
-    clientID: ${AZURE_CLIENT_ID}
-    clientSecret: ${AZURE_CLIENT_SECRET}
-
-{{ end -}}
-{{ if eq .Provider "gcp" -}}
-providers:
-  gcp:
-    projectID: ${GCP_PROJECT_ID}
-    credentialsFile: ${GOOGLE_APPLICATION_CREDENTIALS}
 
 {{ end -}}
 spec:

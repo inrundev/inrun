@@ -247,7 +247,6 @@ type CRDSummary struct {
 	RBACCount                int          `json:"rbacCount,omitempty"`
 	HasUnhealthyDependencies bool         `json:"hasUnhealthyDependencies"`
 	DeletionProtection       bool         `json:"deletionProtection"`
-	ProviderCount            int          `json:"providerCount,omitempty"`
 	KatalogNamespace         string       `json:"katalogNamespace,omitempty"`
 	Endpoints                EndpointInfo `json:"endpoints,omitempty"`
 	IdpEnabled               bool         `json:"idpEnabled,omitempty"`
@@ -389,7 +388,6 @@ type CRDInfo struct {
 	Admission                *AdmissionStats           `json:"admission"`
 	DeletionProtection       *DeletionProtectionStats  `json:"deletionProtection,omitempty"`
 	NamespaceProtection      *NamespaceProtectionStats `json:"namespaceProtection,omitempty"`
-	Providers                []ProviderInfo            `json:"providers,omitempty"`
 	RBAC                     RBACInfo                  `json:"rbac,omitempty"`
 	HasUnhealthyDependencies bool                      `json:"hasUnhealthyDependencies"`
 	AutoscalerEnabled        bool                      `json:"autoscalerEnabled"`
@@ -426,16 +424,6 @@ type NamespaceProtectionStats struct {
 	Allowed              int      `json:"allowed"`
 	AllowedNamespaces    []string `json:"allowedNamespaces,omitempty"`
 	RestrictedNamespaces []string `json:"restrictedNamespaces,omitempty"`
-}
-
-// ProviderInfo contains per-provider metadata and error rate for a CRD.
-// No sensitive data — auth, URLs, and credentials are never included.
-type ProviderInfo struct {
-	Name      string   `json:"name"`
-	Kinds     []string `json:"kinds"`
-	Total     int64    `json:"total"`
-	Errors    int64    `json:"errors"`
-	ErrorRate float64  `json:"errorRate"`
 }
 
 // AdmissionStats contains admission webhook metrics
@@ -499,7 +487,6 @@ type CRDDetail struct {
 	Admission                *AdmissionStats             `json:"admission"`
 	DeletionProtection       *DeletionProtectionStats    `json:"deletionProtection,omitempty"`
 	NamespaceProtection      *NamespaceProtectionStats   `json:"namespaceProtection,omitempty"`
-	Providers                []ProviderInfo              `json:"providers,omitempty"`
 	RBAC                     RBACInfo                    `json:"rbac,omitempty"`
 	RBACCount                int                         `json:"rbacCount,omitempty"`
 	AutoscalerEnabled        bool                        `json:"autoscalerEnabled"`

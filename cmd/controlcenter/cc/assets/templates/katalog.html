@@ -343,12 +343,6 @@
                 <span class="cc-card-row-label">RBAC Rules</span>
                 <span class="cc-card-row-value">{{ .RBACCount }}</span>
               </div>
-              {{ if gt .ProviderCount 0 }}
-              <div class="cc-card-row">
-                <span class="cc-card-row-label">Providers</span>
-                <span class="cc-card-row-value">{{ .ProviderCount }}</span>
-              </div>
-              {{ end }}
               {{- end }}
               {{- if .Endpoints.HealthEnabled }}
               <div class="cc-card-row">

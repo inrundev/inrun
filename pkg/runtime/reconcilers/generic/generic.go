@@ -34,8 +34,6 @@ import (
 // The dynamic registry path uses domain.Object, which is also supported
 // because the informer cache stores the underlying concrete object.
 type Reconciler[PTR domain.Object] struct {
-	providerRegistry orktypes.ProviderRegistry
-	providerStats    providerStatsRecorder
 	informer         cache.SharedIndexInformer
 	event            event.Recorder
 	kube             kubeclient.Interface
@@ -93,8 +91,6 @@ func New[PTR domain.Object](
 	kube kubeclient.Interface,
 	anyHooks domain.AnyReconcileHooks,
 	newObj func() PTR,
-	providerRegistry orktypes.ProviderRegistry,
-	providerStats providerStatsRecorder,
 	kat *katalog.Katalog,
 ) *Reconciler[PTR] {
 
@@ -143,8 +139,6 @@ func New[PTR domain.Object](
 	}
 
 	r := &Reconciler[PTR]{
-		providerRegistry: providerRegistry,
-		providerStats:    providerStats,
 		crd:              crd,
 		operatorBox:      box,
 		informer:         informer,

@@ -181,18 +181,14 @@ type ReconcileConfig struct {
 	// ForceConflict sets Force: true on server-side apply for child resources.
 	ForceConflict *bool `yaml:"forceConflict,omitempty" json:"forceConflict,omitempty"`
 
-	// RawProviders is the raw providers: map. Converted to ProviderBlocks after unmarshal.
-	RawProviders map[string][]map[string]interface{} `yaml:"providers,omitempty" json:"providers,omitempty"`
-
 	OnCreate    *HookTemplates `yaml:"onCreate,omitempty" json:"onCreate,omitempty" validate:"omitempty"`
 	OnReconcile *HookTemplates `yaml:"onReconcile,omitempty" json:"onReconcile,omitempty" validate:"omitempty"`
 	OnDelete    *HookTemplates `yaml:"onDelete,omitempty" json:"onDelete,omitempty" validate:"omitempty"`
 
 	// --- At runtime mapping ---
 
-	HookFactory    func() domain.AnyReconcileHooks `yaml:"-" json:"-"`
-	Constructor    NewReconcilerFunc               `yaml:"-" json:"-"`
-	ProviderBlocks []ProviderBlock                 `yaml:"-" json:"-"`
+	HookFactory func() domain.AnyReconcileHooks `yaml:"-" json:"-"`
+	Constructor NewReconcilerFunc               `yaml:"-" json:"-"`
 
 	// Include is a path to a YAML file whose reconcile: block is merged under this config.
 	// Inline fields take precedence. Cleared after expansion.

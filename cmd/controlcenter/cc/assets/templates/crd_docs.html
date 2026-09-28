@@ -63,7 +63,6 @@
             {{ if .HasRBAC }}<li class="ork-sidebar-item"><a href="#rbac">Access Control</a></li>{{ end }}
             {{ if or .HasAdmission .HasConversion }}<li class="ork-sidebar-item"><a href="#webhooks">Webhooks</a></li>{{ end }}
             {{ if .HasProtection }}<li class="ork-sidebar-item"><a href="#protection">Protection</a></li>{{ end }}
-            {{ if .HasProviders }}<li class="ork-sidebar-item"><a href="#providers">Providers</a></li>{{ end }}
             <li class="ork-sidebar-item"><a href="#endpoints">Endpoints</a></li>
           </ul>
         </div>
@@ -479,27 +478,6 @@
         <hr>
         {{ end }}
 
-        <!-- ── Providers ──────────────────────────────────────── -->
-        {{ if .HasProviders }}
-        <h2 id="providers">Providers</h2>
-        <p>
-          This CRD integrates with the following external providers. Each provider handles a subset of resource kinds and reports its own error rate.
-        </p>
-        <table>
-          <thead><tr><th>Provider</th><th>Kinds</th><th>Total reconciles</th><th>Errors</th><th>Error rate</th></tr></thead>
-          <tbody>
-            {{ range .CRD.Providers }}
-            <tr>
-              <td><strong>{{ .Name }}</strong></td>
-              <td>{{ range .Kinds }}<code>{{ . }}</code> {{ end }}</td>
-              <td>{{ .Total }}</td>
-              <td>{{ .Errors }}</td>
-              <td><code>{{ printf "%.2f" .ErrorRate }}%</code></td>
-            </tr>
-            {{ end }}
-          </tbody>
-        </table>
-        {{ end }}
 
         <!-- ── Endpoints ──────────────────────────────────────── -->
         <h2 id="endpoints">Endpoints</h2>

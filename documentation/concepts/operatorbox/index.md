@@ -20,7 +20,7 @@ Every operatorBox owns exclusively:
 
 **Worker pool** — A fixed number of goroutines pulling from the queue. Configured via `workers:` in the Katalog.
 
-**Reconciler** — A `Generic Reconciler[T]` holding the full CRD entry configuration: normalize rules, mutation rules, validation rules, template declarations, provider registry access, and cross-CRD informer references.
+**Reconciler** — A `Generic Reconciler[T]` holding the full CRD entry configuration: normalize rules, mutation rules, validation rules, template declarations, and cross-CRD informer references.
 
 **Health state** — A `CRDHealth` instance tracking success rate, consecutive failures, and degraded threshold. Visible in the Control Center per operatorBox.
 
@@ -53,7 +53,6 @@ spec:
           onCreate: [...]        # resource creation on first reconcile
           onReconcile: [...]     # drift correction on every reconcile
           onDelete: [...]        # cleanup before finalizer removal
-          providers: [...]       # external infra (AWS, MongoDB, etc.)
         emit:
           status: [...]          # status field declarations
         # reconcile: is optional — omit for declarative-only CRDs (Generic Reconciler is the default)

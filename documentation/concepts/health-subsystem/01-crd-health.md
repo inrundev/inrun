@@ -63,7 +63,7 @@ Each CRD exposes its health through the operator's health server:
 
 ```text
 GET /katalog/{crd}/health   — live health status (200 healthy, 503 unhealthy)
-GET /katalog/{crd}          — configuration + health summary + provider stats
+GET /katalog/{crd}          — configuration + health summary stats
 GET /katalog                — all CRDs with health
 ```
 

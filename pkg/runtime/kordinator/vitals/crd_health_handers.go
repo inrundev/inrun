@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/health"
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/konfig"
 	ork_autoscaler "github.com/orkspace/orkestra/pkg/runtime/autoscaler"
@@ -146,7 +145,6 @@ type CRDInfoResponse struct {
 	Started           bool                       `json:"started"`
 	Pending           bool                       `json:"pending"`
 	ErrorRate         float64                    `json:"errorRate"`
-	Providers         []ProviderInfoResponse     `json:"providers,omitempty"`
 	RBAC              RBACInfo                   `json:"rbac,omitempty"`
 	AutoscalerEnabled bool                       `json:"autoscalerEnabled,omitempty"`
 	AutoscalerWorkers *ork_autoscaler.WorkerInfo `json:"autoscalerWorkers,omitempty"`
@@ -187,15 +185,6 @@ type ConstructorInfo struct {
 	Function   string `json:"function,omitempty"`
 }
 
-// ProviderInfoResponse exposes per-provider metadata and error rate for one CRD.
-// No auth, URLs, or credentials are exposed — metadata only.
-type ProviderInfoResponse struct {
-	Name      string   `json:"name"`
-	Kinds     []string `json:"kinds"`     // declared resource kinds (static, from Katalog)
-	Total     int64    `json:"total"`     // reconcile calls since startup
-	Errors    int64    `json:"errors"`    // failed reconcile calls since startup
-	ErrorRate float64  `json:"errorRate"` // errors / total, 0 when no calls yet
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CRD Info Handler
@@ -219,7 +208,6 @@ func BuildCRDInfoHandler(
 	inf cache.SharedIndexInformer,
 	h *CRDHealth,
 	o *RuntimeHealth,
-	provStats *health.ProviderStats,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		v := resolveCRDDisplayValues(crd, kfg, inf)
@@ -313,43 +301,6 @@ func BuildCRDInfoHandler(
 			response.Rollback = &stats
 		}
 
-		// Provider stats
-		if crd.HasProviders() {
-			// Build a lookup of runtime stats by provider name.
-			statsByProvider := make(map[string]health.ProviderStatEntry)
-			if provStats != nil {
-				for _, e := range provStats.GetSnapshot() {
-					statsByProvider[e.Provider] = e
-				}
-			}
-
-			box := crd.OperatorBox
-			var providerBlocks []orktypes.ProviderBlock
-			if box.Reconcile != nil {
-				providerBlocks = box.Reconcile.ProviderBlocks
-			}
-			providers := make([]ProviderInfoResponse, 0, len(providerBlocks))
-			for _, block := range providerBlocks {
-				kinds := make([]string, 0, len(block.Declarations))
-				seen := make(map[string]struct{})
-				for _, decl := range block.Declarations {
-					if _, ok := seen[decl.Kind]; !ok {
-						seen[decl.Kind] = struct{}{}
-						kinds = append(kinds, decl.Kind)
-					}
-				}
-				e := statsByProvider[block.Name]
-				providers = append(providers, ProviderInfoResponse{
-					Name:      block.Name,
-					Kinds:     kinds,
-					Total:     e.Total,
-					Errors:    e.Errors,
-					ErrorRate: e.ErrorRate,
-				})
-			}
-			response.Providers = providers
-		}
-
 		utils.WriteJSON(w, http.StatusOK, response)
 	}
 }
@@ -431,7 +382,6 @@ type CRDSummaryResponse struct {
 	Endpoints                EndpointInfo       `json:"endpoints"`
 	RBACCount                int                `json:"rbacCount,omitempty"`
 	DeletionProtection       bool               `json:"deletionProtection"`
-	ProviderCount            int                `json:"providerCount,omitempty"`
 	KatalogNamespace         string             `json:"katalogNamespace,omitempty"`
 	ServeEnabled             bool               `json:"serveEnabled,omitempty"`
 	RequireServeName         bool               `json:"requireServeName,omitempty"`
@@ -529,10 +479,6 @@ func BuildKatalogHandler(
 			}
 
 			box := crd.OperatorBox
-			summaryProviderCount := 0
-			if box.Reconcile != nil {
-				summaryProviderCount = len(box.Reconcile.ProviderBlocks)
-			}
 			crds = append(crds, CRDSummaryResponse{
 				Name:                     crd.Name,
 				State:                    state,
@@ -555,7 +501,6 @@ func BuildKatalogHandler(
 				RBACCount:                generateRBACInfo(crd, v).TotalRules,
 				ResourceCount:            v.resourceCount,
 				DeletionProtection:       isCRDProtected(deletionProtectedCRDs, crd.APITypes.Plural, crd.APITypes.Group),
-				ProviderCount:            summaryProviderCount,
 				OperatorBox: OperatorBoxSummary{
 					Type:           "generic",
 					HasTemplates:   box.EffectiveOnCreate() != nil,

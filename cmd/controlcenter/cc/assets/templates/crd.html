@@ -692,39 +692,6 @@
         {{ end }}
       {{ end }}
 
-      <!-- Providers -->
-      {{ if .CRD.Providers }}
-      <div class="cc-section">
-        <h2 class="cc-section-title">Providers</h2>
-        <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
-          <div style="display:flex;flex-direction:column;gap:12px">
-            {{ range .CRD.Providers }}
-            <div style="display:flex;align-items:flex-start;gap:16px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius)">
-              <div style="min-width:120px">
-                <div style="font-size:13px;font-weight:600">{{ .Name }}</div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:2px">{{ range $i, $k := .Kinds }}{{ if $i }}, {{ end }}{{ $k }}{{ end }}</div>
-              </div>
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:1">
-                <div>
-                  <div style="color:var(--text-muted);font-size:11px">Total Calls</div>
-                  <div style="font-size:18px;font-weight:700">{{ .Total }}</div>
-                </div>
-                <div>
-                  <div style="color:var(--text-muted);font-size:11px">Errors</div>
-                  <div style="font-size:18px;font-weight:700{{ if gt .Errors 0 }};color:var(--color-degraded){{ end }}">{{ .Errors }}</div>
-                </div>
-                <div>
-                  <div style="color:var(--text-muted);font-size:11px">Error Rate</div>
-                  <div style="font-size:18px;font-weight:700{{ if gt .ErrorRate 0.0 }};color:var(--color-degraded){{ end }}">{{ printf "%.1f%%" (mulFloat .ErrorRate 100.0) }}</div>
-                </div>
-              </div>
-            </div>
-            {{ end }}
-          </div>
-        </div>
-      </div>
-      {{ end }}
-
       <!-- Dependencies -->
       {{ if .CRD.Dependencies }}
       <div class="cc-section">
