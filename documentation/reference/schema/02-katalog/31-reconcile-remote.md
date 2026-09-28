@@ -44,7 +44,7 @@ operatorBox:
 
 | Field | Required | Default | Description |
 |---|---|---|---|
-| `endpoint` | yes | — | URL that Orkestra POSTs `PreparedRequest` to. Template expressions are supported and evaluated per-reconcile against the CR's resolver context. Use `.ork.inCluster` to switch between local dev and in-cluster: `'{{ if .ork.inCluster }}http://svc.ns.svc.cluster.local/reconcile{{ else }}http://localhost:8025/reconcile{{ end }}'`. See [runtime context](../../runtime-context/index.md). |
+| `endpoint` | yes | — | URL that Orkestra POSTs `PreparedRequest` to. Template expressions are supported and evaluated per-reconcile against the CR's resolver context. Use `.ork.inPod` to switch between local dev and in-cluster: `'{{ if .ork.inPod }}http://svc.ns.svc.cluster.local/reconcile{{ else }}http://localhost:8025/reconcile{{ end }}'`. See [runtime context](../../runtime-context/index.md). |
 | `type` | no | `http` | Wire protocol. `http` is the only supported value; `grpc` is reserved for a future release. |
 | `timeout` | no | `30s` | Per-call deadline. Go duration string: `"5s"`, `"1m"`. |
 | `args` | no | — | Template expressions evaluated against the CR at reconcile time, injected as a flat `args` map in `PreparedRequest`. Useful for derived labels, computed flags, or any value the reconciler needs without parsing the full object. |

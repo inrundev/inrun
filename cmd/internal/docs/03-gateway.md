@@ -38,7 +38,7 @@ without any coordination step.
 ## Cluster-only (production)
 
 `KonductGateway` exits immediately if it is not running inside a Kubernetes pod.
-`utils.IsRunningInCluster()` checks for the service account token that Kubernetes
+`utils.IsRunningInPod()` checks for the service account token that Kubernetes
 injects into every pod. Outside a cluster there is no meaningful webhook endpoint
 to serve (no Kubernetes API server to register with), and `ensureSecurity` would
 fail without cluster credentials.

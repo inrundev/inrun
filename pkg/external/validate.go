@@ -80,10 +80,10 @@ func ValidateCall(location string, call orktypes.ExternalCallSpec) error {
 		if call.Body != "" || call.Method != "" || len(call.Headers) > 0 || call.ExpectedStatus != 0 {
 			return fmt.Errorf("%s: body, method, headers, and expectedStatus are HTTP-only fields", location)
 		}
-	case orktypes.ProtocolGRPC, orktypes.ProtocolNATS, orktypes.ProtocolMQTT:
-		if call.Body != "" || call.Method != "" || len(call.Headers) > 0 || call.ExpectedStatus != 0 {
-			return fmt.Errorf("%s: body, method, headers, and expectedStatus are HTTP-only fields", location)
-		}
+		// case orktypes.ProtocolGRPC, orktypes.ProtocolNATS, orktypes.ProtocolMQTT:
+		// 	if call.Body != "" || call.Method != "" || len(call.Headers) > 0 || call.ExpectedStatus != 0 {
+		// 		return fmt.Errorf("%s: body, method, headers, and expectedStatus are HTTP-only fields", location)
+		// 	}
 	}
 
 	// cacheFor must parse as a duration
@@ -113,12 +113,12 @@ func ValidateCall(location string, call orktypes.ExternalCallSpec) error {
 func validateProtocol(location string, p orktypes.ExternalProtocol) error {
 	switch p {
 	case "", orktypes.ProtocolHTTP, orktypes.ProtocolPrometheus,
-		orktypes.ProtocolRedis, orktypes.ProtocolPostgres, orktypes.ProtocolMongo,
-		orktypes.ProtocolGRPC, orktypes.ProtocolKafka,
-		orktypes.ProtocolNATS, orktypes.ProtocolMQTT:
+		orktypes.ProtocolRedis, orktypes.ProtocolPostgres,
+		orktypes.ProtocolMongo, orktypes.ProtocolKafka:
+		// orktypes.ProtocolGRPC, orktypes.ProtocolNATS, orktypes.ProtocolMQTT — reserved for future support
 		return nil
 	}
-	return fmt.Errorf("%s: unknown protocol %q — valid values: http, prometheus, redis, postgres, mongo, grpc, kafka, nats, mqtt", location, p)
+	return fmt.Errorf("%s: unknown protocol %q — valid values: http, prometheus, redis, postgres, mongo, kafka", location, p)
 }
 
 func validateHTTPCall(location string, call orktypes.ExternalCallSpec) error {
@@ -133,7 +133,7 @@ func validateHTTPCall(location string, call orktypes.ExternalCallSpec) error {
 		return fmt.Errorf("%s: query is not used by protocol: http — use url: to encode query parameters", location)
 	}
 	if call.PoolSize != 0 {
-		return fmt.Errorf("%s: poolSize is only meaningful for stateful protocols (redis, postgres, kafka, nats, mqtt)", location)
+		return fmt.Errorf("%s: poolSize is only meaningful for stateful protocols (redis, postgres, kafka)", location)
 	}
 	return nil
 }

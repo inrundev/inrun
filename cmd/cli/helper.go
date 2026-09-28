@@ -48,7 +48,7 @@ var (
 
 	// other cli utilities
 	orkestraLogo        = utils.OrkestraLogoCLI
-	isRunningInCluster  = utils.IsRunningInCluster
+	isRunningInPod      = utils.IsRunningInPod
 	writeFileAndFormat  = utils.WriteFileAndFormat
 	splitCommaSeparated = utils.SplitCommaSeparated
 	readLocal           = utils.ReadLocal

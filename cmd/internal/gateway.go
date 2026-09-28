@@ -37,7 +37,7 @@ import (
 // No konductor election — the gateway is stateless and supports multiple replicas.
 func KonductGateway(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) {
 
-	if !utils.IsRunningInCluster() {
+	if !utils.IsRunningInPod() {
 		fmt.Println("orkestra: ork gate only runs inside a Kubernetes pod. Use 'ork gate run' for local development.")
 		os.Exit(1)
 	}

@@ -17,7 +17,7 @@ import (
 // or deferred because dependencies were not ready.
 func (k *DependencyKordinator) retryMissingCRDs(ctx context.Context) {
 	retryInterval := postStartRetryInterval
-	if !utils.IsRunningInCluster() {
+	if !utils.IsRunningInPod() {
 		retryInterval = postStartRetryIntervalDev
 	}
 	ticker := time.NewTicker(retryInterval)

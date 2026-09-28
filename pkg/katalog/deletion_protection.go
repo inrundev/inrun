@@ -52,7 +52,7 @@ func (k *Katalog) DeletionProtectionGVRs() []GVREntry {
 	if !k.IsDeletionProtectionEnabled() {
 		return nil
 	}
-	if !utils.IsRunningInCluster() {
+	if !utils.IsRunningInPod() {
 		return nil
 	}
 
@@ -219,7 +219,7 @@ func (k *Katalog) DeletionProtectedCRDNames() map[string]struct{} {
 	if !k.IsDeletionProtectionEnabled() {
 		return nil
 	}
-	if !utils.IsRunningInCluster() {
+	if !utils.IsRunningInPod() {
 		return nil
 	}
 	names := make(map[string]struct{}, k.Len())

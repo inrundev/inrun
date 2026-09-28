@@ -4,10 +4,13 @@ package cli
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
+	"github.com/orkspace/orkestra/pkg/version"
 	"github.com/spf13/cobra"
 )
 
@@ -145,13 +148,12 @@ func findControlCenterBinary() (string, error) {
 	return "", fmt.Errorf("orkcc not found in PATH, ~/.orkestra/bin, or next to ork binary")
 }
 
-// TODO: Replace with real installation logic
 func installControlCenterBinary() error {
-	fmt.Println("[ork] Installing orkcc...")
-	fmt.Println("[ork] TODO: Download and install control center binary")
-	fmt.Println("[ork] For now, build it manually: cd cmd/controlcenter && go build -o ~/.orkestra/bin/orkcc .")
+	ver := version.Short()
+	if !strings.HasPrefix(ver, "v") {
+		return fmt.Errorf("orkcc not found — build it manually: make orkcc")
+	}
 
-	// Create directory if it doesn't exist
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -161,10 +163,44 @@ func installControlCenterBinary() error {
 		return err
 	}
 
-	// TODO: Add actual download logic
-	// Example:
-	// url := fmt.Sprintf("https://github.com/orkspace/orkestra/releases/download/%s/orkcc_%s.tar.gz", version, platform)
-	// Download, extract, and install to binDir
+	goos := runtime.GOOS
+	platform := goos + "_" + runtime.GOARCH
+	archive := fmt.Sprintf("orkcc_%s.tar.gz", platform)
+	url := fmt.Sprintf("https://github.com/orkspace/orkestra/releases/download/%s/%s", ver, archive)
+	dest := binDir + "/orkcc"
+	if goos == "windows" {
+		dest += ".exe"
+	}
 
-	return fmt.Errorf("automatic installation not yet implemented. Please build manually: make orkcc")
+	fmt.Printf("[ork] Downloading %s...\n", archive)
+	resp, err := http.Get(url) //nolint:noctx
+	if err != nil {
+		return fmt.Errorf("download failed: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("orkcc %s not found in release %s (HTTP %d) — build manually: make orkcc", platform, ver, resp.StatusCode)
+	}
+
+	tmp, err := os.CreateTemp(binDir, ".orkcc.tmp.*")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+
+	if err := extractBinaryFromTarGz(resp.Body, "orkcc", tmp); err != nil {
+		tmp.Close()
+		return fmt.Errorf("extract failed: %w", err)
+	}
+	tmp.Close()
+
+	if err := os.Chmod(tmpPath, 0755); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpPath, dest); err != nil {
+		return err
+	}
+	fmt.Printf("[ork] orkcc installed to %s\n", dest)
+	return nil
 }

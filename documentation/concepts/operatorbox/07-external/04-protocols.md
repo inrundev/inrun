@@ -294,21 +294,3 @@ admission:
         lessThan: "0.01"
         message: "error rate {{ promValue .external.errorRate | printf \"%.4f\" }} exceeds 1% SLO"
 ```
-
----
-
-## In development
-
-These protocols are declared in the type system and pass `ork validate`, but their clients are not yet implemented. The runner falls through to HTTP for unknown protocols — using them before implementation will not produce useful results.
-
-### `grpc`
-
-Unary gRPC call. `query:` will be the fully-qualified method name (`package.Service/Method`). The request body will come from `body:`. Planned for a future release.
-
-### `nats`
-
-NATS KV read or JetStream stream info. `query:` syntax: `"bucket.key"` for KV, stream name for stream metadata. Planned for a future release.
-
-### `mqtt`
-
-Reads a retained MQTT topic. `query:` is the topic path. Planned for a future release.
