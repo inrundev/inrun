@@ -6,7 +6,7 @@ Option 04 is the zero-change path. Your `Reconcile` method is completely untouch
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/04-constructor-migration
+cd from-controller-runtime/05-constructor-migration
 ```
 
 ---
@@ -51,7 +51,7 @@ ork migrate ./controller/webapp_controller.go -o ./output
 
 Default mode (`--mode toclient`) does exactly what this option shows: removes `SetupWithManager`, injects the two-line constructor, leaves everything else untouched.
 
-See [06 — ork migrate](./07-ork-migrate.md) or run option 06 in the pack.
+See [07 — ork migrate](./07-ork-migrate.md) or run option 06 in the pack.
 
 ---
 
@@ -59,8 +59,8 @@ See [06 — ork migrate](./07-ork-migrate.md) or run option 06 in the pack.
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/04-constructor-migration
+cd from-controller-runtime/05-constructor-migration
 # Follow steps in README
 ```
 
-→ [06 — Constructor: Orkestra resources](./06-constructor-resources.md)
+→ [06 — Constructor: Orkestra resources](./06-constructor-orkestra-resources.md)

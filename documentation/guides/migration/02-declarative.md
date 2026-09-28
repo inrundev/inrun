@@ -6,7 +6,7 @@ This is the most common surprise for people coming from controller-runtime: not 
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/01-declarative
+cd from-controller-runtime/02-declarative
 ```
 
 ---
@@ -51,7 +51,7 @@ Template expressions — `{{ .spec.image }}`, `{{ .metadata.name }}` — have ac
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/01-declarative
+cd from-controller-runtime/02-declarative
 # Follow steps in README
 ```
 
@@ -108,9 +108,10 @@ This is the same pattern for all options — hooks, constructors, or mixed. The 
 
 ---
 
-## When Go hooks become necessary
+## When to reach for more
 
-Processes that cannot be expressed as a sequence of declarative steps. Live streaming, long-running stateful workflows with runtime branching, anything the exrernal system does not yet cover. When in doubt, try declaring it first — the system keeps expanding.
+If the logic can live outside the cluster — a script, a service, a function — [Remote](./01-remote.md) lets you write it in any language without a Kubernetes client. No Go, no image build.
 
+If any resource needs computed logic that's awkward to declare, [Hybrid](./03-hybrid.md) keeps the declarative side for the straightforward resources and adds a single Go hook for the rest. When in doubt, try declaring it first — the system keeps expanding.
 
-→ [02 — Hybrid](./03-hybrid.md)
+→ [03 — Hybrid](./03-hybrid.md)

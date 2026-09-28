@@ -49,7 +49,7 @@ ork migrate <file> --name <operator>  # set operator name in kebab-case
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/06-ork-migrate
+cd from-controller-runtime/07-ork-migrate
 # Follow steps in README
 ```
 

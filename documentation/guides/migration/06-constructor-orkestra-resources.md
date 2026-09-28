@@ -4,7 +4,7 @@ Option 04 lifted the reconcile logic unchanged and removed the machinery. Option
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/05-constructor-orkestra-resources
+cd from-controller-runtime/06-constructor-orkestra-resources
 ```
 
 ---
