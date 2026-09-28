@@ -4,7 +4,7 @@ All three resources — ServiceAccount, Deployment, and Service — are created 
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/03-hooks-only
+cd from-controller-runtime/04-hooks-only
 ```
 
 ---
@@ -47,8 +47,8 @@ When every resource requires computed logic that would feel artificial to declar
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/03-hooks-only
+cd from-controller-runtime/04-hooks-only
 # Follow steps in README
 ```
 
-→ [04 — Constructor: lift and change](./05-constructor.md)
+→ [05 — Constructor: lift and change](./05-constructor-migration.md)

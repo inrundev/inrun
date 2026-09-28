@@ -108,12 +108,17 @@ Defaults to `true` when neither is set.
 
 ### `operatorBox.runtime.cleanup` — declarative CR deletion
 
-Declares when to delete a CR after it reaches a terminal state. Evaluated before the reconciler is called — works for remote, generic, and typed reconcilers.
+Declares when to delete a CR after it reaches a terminal state.
+Evaluated before the reconciler is called on every cycle. Works for
+remote, generic, and typed reconcilers.
 
 ```yaml
 operatorBox:
   runtime:
     cleanup:
+      when:
+        - field: .status.environment
+          equals: production
       or:
         - field: .status.phase
           equals: Completed
@@ -122,7 +127,18 @@ operatorBox:
       deleteAfter: 60s
 ```
 
-Orkestra removes deletion-protection labels (if present) and issues a foreground delete. Child resources are garbage-collected through owner references. `deleteAfter` stamps `orkestra.orkspace.io/cleanup-pending-since` on the first-met cycle and re-evaluates on the next.
+`when` and `or` follow the same semantics as gate conditions — `when`
+is AND, `or` is OR, both must pass when both are declared. The most
+common pattern is `or`-only: delete when phase is `Completed` or
+`Failed`.
+
+When conditions pass, Orkestra stamps
+`orkestra.orkspace.io/cleanup-pending-since` on the CR and
+re-evaluates on the next cycle. After `deleteAfter` has elapsed,
+deletion-protection labels are removed and a foreground delete is
+issued. Child resources are garbage-collected through owner references.
+Zero `deleteAfter` means delete immediately on the next cycle after
+conditions first pass.
 
 ### `operatorBox.emit.events` — declarative event emission
 

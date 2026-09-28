@@ -73,7 +73,7 @@ The reconcile logic is in `webapp_controller.go`. Everything else is machinery.
 - The worker — single goroutine by default, no control over pool size
 - Leader election — configured in `main.go`
 - Health endpoints — `healthz`, `readyz` registered in `main.go`
-- Metrics — not included by default; instrument yourself
+- Metrics — basic controller metrics exposed via the manager's metrics server; custom metrics instrumented by you
 - Panic recovery — not included; a panic kills the controller
 - The Helm chart — deployed, upgraded, and rolled back by you
 
@@ -101,4 +101,4 @@ kubectl get services
 
 Every subsequent option removes some of this machinery. The baseline is here so you can measure what you actually gave up — and what you got back.
 
-→ [01 — Declarative](./02-declarative.md) — the same operator as a pure Katalog. No Go, no binary.
+→ [02 — Declarative](./02-declarative.md) — the same operator as a pure Katalog. No Go, no binary.
