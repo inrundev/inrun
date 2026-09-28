@@ -1,4 +1,4 @@
-package remote
+package http
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type remoteResource struct {
 // All resources are validated against managedResources before any are applied.
 // Resources in the same namespace as the owner CR get an owner reference so
 // Kubernetes GC cascades on CR deletion.
-func (r *RemoteReconciler) apply(ctx context.Context, owner domain.Object, resources []map[string]interface{}) error {
+func (r *Reconciler) apply(ctx context.Context, owner domain.Object, resources []map[string]interface{}) error {
 	if len(resources) == 0 {
 		return nil
 	}

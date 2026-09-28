@@ -33,7 +33,7 @@ spec:
             - default
         # No declared templates. The hook manages both resources.
         reconcile:
-          default: true   # GenericReconciler still runs — hook is additive
+          default: true   # Generic Reconciler still runs — hook is additive
           hooks:
             location: github.com/orkspace/from-controller-runtime-demo/hooks
             function: WebAppHooks

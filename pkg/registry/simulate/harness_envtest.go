@@ -22,7 +22,7 @@ import (
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/contract"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
-	"github.com/orkspace/orkestra/pkg/runtime/reconciler"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/generic"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"github.com/rs/zerolog/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -240,7 +240,7 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	if factoryFn, ok := orktypes.ReconcilerRegistry[gvk]; ok {
 		r = factoryFn(recKube.WithInformer(inf).WithEventRecorder(event.Discard()))
 	} else {
-		r = reconciler.NewGenericReconciler(
+		r = generic.New(
 			crdEntry,
 			inf,
 			nil,

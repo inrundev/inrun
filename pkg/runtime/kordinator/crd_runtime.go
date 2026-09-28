@@ -11,7 +11,7 @@ import (
 )
 
 // perCRDRuntime holds the per-CRD concurrency and autoscale state owned by
-// the Kontroller. Previously embedded in GenericReconciler.
+// the Kontroller. Previously embedded in generic.Reconciler.
 type perCRDRuntime struct {
 	sem         *ork_autoscaler.ResizableSemaphore
 	autoMetrics *ork_autoscaler.AutoMetrics
@@ -62,7 +62,7 @@ func (t *kordinatorTarget) SetResyncInterval(d time.Duration) {
 
 // startResyncLoop runs the adjustable resync goroutine for a CRD.
 // Idle (polling 500ms) when resyncNs == 0; fires at the stored interval otherwise.
-// Mirrors the resync logic that was previously on GenericReconciler.
+// Mirrors the resync logic that was previously on generic.Reconciler.
 func (k *Kontroller) startResyncLoop(ctx context.Context, gvk string) {
 	rt := k.runtimeMap[gvk]
 	entry, ok := k.katalog.Get(gvk)

@@ -28,7 +28,7 @@
 //	when:
 //	  - field: docker.buildSucceeded
 //	    equals: "true"
-package reconciler
+package generic
 
 import (
 	"context"

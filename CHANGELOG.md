@@ -186,7 +186,7 @@ CRD-level admission fields move to a peer `admission:` block:
 ### Reconciliation preparation moved to kordinator
 
 `prepare.Prepare()` now runs inside the kordinator worker loop before
-any reconciler is called. `GenericReconciler` is a pure dispatcher.
+any reconciler is called. `Generic Reconciler` is a pure dispatcher.
 
 All reconciler types receive a fully-prepared `domain.Request`
 automatically. This enables the remote reconciler to receive enriched

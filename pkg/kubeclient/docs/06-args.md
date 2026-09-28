@@ -56,7 +56,7 @@ func (a Args) BindArgs(dst interface{}) error    // JSON round-trip into a struc
 
 ### Hooks (automatic)
 
-`GenericReconciler` calls `ScopedFor` after building the per-CR resolver, before the hook
+`Generic Reconciler` calls `ScopedFor` after building the per-CR resolver, before the hook
 runs. Hook authors read resolved values directly — no extra wiring:
 
 ```go

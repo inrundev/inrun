@@ -1,4 +1,4 @@
-package remote
+package http
 
 import (
 	"strings"
@@ -41,7 +41,7 @@ func kindToTypeName(kind string) (string, bool) {
 // listChildren reads real cluster state for each managed resource type owned by the
 // CR from the informer store, building a children map for the outbound payload.
 // Returns nil when injection is disabled, no informer store is available, or no owned resources are found.
-func (r *RemoteReconciler) listChildren(owner domain.Object) childrenMap {
+func (r *Reconciler) listChildren(owner domain.Object) childrenMap {
 	if !r.childrenEnabled() {
 		return nil
 	}
@@ -112,7 +112,7 @@ func isOwnedBy(obj metav1.Object, ownerUID types.UID) bool {
 
 // applyChildrenConfig filters by resources allow-list and strips excluded paths.
 // Per-resource exclude takes precedence over the root exclude for each type.
-func (r *RemoteReconciler) applyChildrenConfig(cm childrenMap) childrenMap {
+func (r *Reconciler) applyChildrenConfig(cm childrenMap) childrenMap {
 	cfg := r.childrenConfig()
 
 	// Filter to allowed resource types when resources map is declared.
@@ -159,12 +159,12 @@ func (r *RemoteReconciler) applyChildrenConfig(cm childrenMap) childrenMap {
 }
 
 // childrenEnabled reports whether children injection is active for this reconciler.
-func (r *RemoteReconciler) childrenEnabled() bool {
+func (r *Reconciler) childrenEnabled() bool {
 	return r.decl.Payload.EffectiveChildren() != nil
 }
 
 // childrenConfig returns the effective children config.
 // Always call childrenEnabled() first — this panics if injection is disabled.
-func (r *RemoteReconciler) childrenConfig() *orktypes.RemotePayloadChildrenConfig {
+func (r *Reconciler) childrenConfig() *orktypes.RemotePayloadChildrenConfig {
 	return r.decl.Payload.EffectiveChildren()
 }

@@ -75,7 +75,7 @@ Simulating website/my-site
 ## How it works
 
 - Spins up a fake in-memory Kubernetes cluster using `k8s.io/client-go/kubernetes/fake`
-- Runs the same `GenericReconciler` used in production
+- Runs the same `Generic Reconciler` used in production
 - Records all `create`, `update`, `delete`, `patch` operations per cycle
 - Advances Deployment status to `Available` after cycle 1 to unblock state machines
 - Detects steady state when two consecutive cycles produce identical operations

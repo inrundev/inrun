@@ -1,13 +1,13 @@
-# pkg/runtime/reconciler
+# pkg/runtime/reconcilers/genreic
 
-`GenericReconciler` is a client of Kordinator — one instance per CRD, called by the worker loop exactly like any other `domain.Reconciler`. It receives a fully-prepared `domain.Request` and owns the reconcile logic only: context enrichment, deletion routing, and declarative template dispatch.
+`Generic Reconciler` is a client of Kordinator — one instance per CRD, called by the worker loop exactly like any other `domain.Reconciler`. It receives a fully-prepared `domain.Request` and owns the reconcile logic only: context enrichment, deletion routing, and declarative template dispatch.
 
 Kordinator owns everything around it: worker pool, semaphore, autoscaler, prepare/maintain/post phases.
 
 ## Reconcile flow
 
 ```
-GenericReconciler.Reconcile(ctx, req)
+Generic Reconciler.Reconcile(ctx, req)
   │
   ├── Context enrichment   logger, requestID, CRD name, resource key
   ├── Deletion check       → handleDeletion (hooks.OnDelete or runTemplateOnDelete)
@@ -24,8 +24,8 @@ GenericReconciler.Reconcile(ctx, req)
                            clear failure history
 ```
 
-Per-resource-type runners live in [`pkg/runtime/runners`](../runners/README.md).
+Per-resource-type runners live in [`pkg/runtime/runners`](../../runners/README.md).
 
-forEach expansion and child resource reading live in [`pkg/children`](../children/README.md).
+forEach expansion and child resource reading live in [`pkg/children`](../../../children/README.md).
 
-The `pkg/resources/<kind>` package contract (Create, Apply, DeleteIfOwned, Resolve) is in [`pkg/resources`](../../resources/README.md).
+The `pkg/resources/<kind>` package contract (Create, Apply, DeleteIfOwned, Resolve) is in [`pkg/resources`](../../../resources/README.md).

@@ -344,7 +344,7 @@ func (r *PreReconcileConfig) OrConditions() []Condition {
 
 // ReconcilerConfig declares which reconciler implementation runs and how it is tuned.
 type ReconcilerConfig struct {
-	// Default: true → GenericReconciler (default when omitted).
+	// Default: true → generic.Reconciler (default when omitted).
 	// false → custom reconciler; Constructor must be declared.
 	Default *bool `yaml:"default,omitempty" json:"default,omitempty" validate:"omitempty"`
 
@@ -385,7 +385,7 @@ type RequeueConfig struct {
 	Or   []Condition `yaml:"or,omitempty"`
 }
 
-// IsDefault returns true when the reconciler should use the GenericReconciler.
+// IsDefault returns true when the reconciler should use the generic.Reconciler.
 // When Default is nil (not declared), it defaults to true.
 func (r *ReconcilerConfig) IsDefault() bool {
 	if r == nil {
@@ -478,7 +478,7 @@ type OperatorBoxConfig struct {
 	Runtime *RuntimeConfig `yaml:"runtime,omitempty" json:"runtime,omitempty"`
 
 	// Reconcile declares what runs and how. Default (omitted or default: true) uses the
-	// GenericReconciler driven by onCreate/onReconcile/onDelete templates. Set default: false
+	// generic.Reconciler driven by onCreate/onReconcile/onDelete templates. Set default: false
 	// and declare constructor: to bring a typed Go reconciler. Workers, resync, queue, and
 	// requeue tune execution regardless of which reconciler runs.
 	Reconcile *ReconcileConfig `yaml:"reconcile,omitempty" json:"reconcile,omitempty"`

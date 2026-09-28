@@ -28,8 +28,8 @@ import (
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/vitals"
 	"github.com/orkspace/orkestra/pkg/runtime/queue"
-	"github.com/orkspace/orkestra/pkg/runtime/reconciler"
-	"github.com/orkspace/orkestra/pkg/runtime/reconciler/remote"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/generic"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/remote"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"github.com/orkspace/orkestra/pkg/version"
@@ -169,7 +169,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 	// unavailable providers log a warning and the operator starts regardless.
 	providerRegistry := loadProviders(ctx, kat)
 
-	// One ProviderStats per CRD — shared between GenericReconciler (writes on each
+	// One ProviderStats per CRD — shared between generic.Reconciler (writes on each
 	// provider call) and BuildCRDInfoHandler (reads for the /katalog/{crd} response).
 	// Only created for CRDs that declare provider blocks — others get nil.
 	providerStatsMap := make(map[string]*health.ProviderStats)
@@ -284,7 +284,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 		infCopy := inf
 
 		// Build the reconciler factory.
-		// For default: true CRDs — GenericReconciler interprets the Katalog declaratively.
+		// For default: true CRDs — generic.Reconciler interprets the Katalog declaratively.
 		// For default: false CRDs — a custom Constructor is required.
 		//
 		// The factory is a closure — it captures all values at construction time
@@ -300,7 +300,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 				anyHooks = r.HookFactory()
 			}
 
-			logger.Debug().Str("gvk", gvk).Msg("wiring GenericReconciler factory")
+			logger.Debug().Str("gvk", gvk).Msg("wiring generic.Reconciler factory")
 
 			// Attach hooks.args to a copy of the kube client; hooks read them via kube.Args().
 			var hookKube kubeclient.Interface = kube.
@@ -311,7 +311,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 
 			pStats := providerStatsMap[gvk]
 			factory = func() domain.Reconciler {
-				return reconciler.NewGenericReconciler(
+				return generic.New(
 					crd,
 					infCopy,
 					ev,
@@ -332,14 +332,11 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			crdManagedResources := crd.RemoteManagedResources()
 			remoteKube := kube.WithStoreFor(infFactory.StoreFor)
 			factory = func() domain.Reconciler {
-				return remote.NewRemoteReconciler(
-					remoteDecl,
-					crd.GVK(),
-					remoteKube,
-					ev,
-					crdManagedResources,
-					orkestraNamespace,
-				)
+				r, err := remote.New(remoteDecl, crd.GVK(), remoteKube, ev, crdManagedResources, orkestraNamespace)
+				if err != nil {
+					logger.Fatal().Err(err).Str("gvk", gvk).Msg("failed to build remote reconciler")
+				}
+				return r
 			}
 		} else {
 			if !crd.ConstructorEnabled() {
@@ -391,14 +388,11 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 					targets[targetName] = ctor(targetKube)
 				}
 				for targetName, remoteDecl := range remoteDecls {
-					targets[targetName] = remote.NewRemoteReconciler(
-						remoteDecl,
-						crdCopy.GVK(),
-						kube.WithStoreFor(infFactory.StoreFor),
-						ev,
-						crdCopy.RemoteManagedResources(),
-						orkestraNamespace,
-					)
+					r, err := remote.New(remoteDecl, crdCopy.GVK(), kube.WithStoreFor(infFactory.StoreFor), ev, crdCopy.RemoteManagedResources(), orkestraNamespace)
+					if err != nil {
+						logger.Fatal().Err(err).Str("gvk", gvk).Str("target", targetName).Msg("failed to build remote reconciler")
+					}
+					targets[targetName] = r
 				}
 				return orktarget.NewMuxReconciler(infCopy, targets, baseFactory())
 			}

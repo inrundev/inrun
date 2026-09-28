@@ -26,7 +26,7 @@ spec:
         alias: demov1alpha1
       operatorBox:
         reconcile:
-          default: true   # GenericReconciler is still used — hooks are additive
+          default: true   # Generic Reconciler is still used — hooks are additive
           hooks:
             location: github.com/orkspace/orkestra-hooks-demo/hooks
             function: DatabaseHooks

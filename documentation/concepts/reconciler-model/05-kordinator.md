@@ -80,4 +80,4 @@ See [serve targets](../self-service/02-target-mode.md) for how targets are decla
 
 ## Relationship to the reconciler
 
-The kordinator and the reconciler are separate concerns. The kordinator decides when to call `Reconcile` and how many concurrent calls to allow. The reconciler decides what to do with a specific CR. Neither depends on the other's implementation — the kordinator calls any `domain.Reconciler`, whether it is the GenericReconciler or your own constructor.
+The kordinator and the reconciler are separate concerns. The kordinator decides when to call `Reconcile` and how many concurrent calls to allow. The reconciler decides what to do with a specific CR. Neither depends on the other's implementation — the kordinator calls any `domain.Reconciler`, whether it is the Generic Reconciler, Remote Reconciler or your own constructor.

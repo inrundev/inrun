@@ -8,7 +8,7 @@
 //   - Providers must not write Kubernetes resources (Orkestra owns cluster state)
 //   - A narrow interface is easier to mock in provider tests
 //   - The kubeclient package is internal; providers should not depend on it
-package reconciler
+package generic
 
 import (
 	"context"

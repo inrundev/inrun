@@ -1,4 +1,4 @@
-package reconciler
+package generic
 
 import (
 	"context"
@@ -48,7 +48,7 @@ func runExternal(
 // hooksFor returns the ObjectHooks for the given target name.
 // If the target has a distinct hook binary (registered in TargetHookFactories),
 // those hooks are returned. Otherwise falls back to the CRD-level hooks.
-func (r *GenericReconciler[PTR]) hooksFor(target string) domain.ObjectHooks {
+func (r *Reconciler[PTR]) hooksFor(target string) domain.ObjectHooks {
 	if target != "" {
 		if h, ok := r.targetHooks[target]; ok {
 			return h
@@ -60,7 +60,7 @@ func (r *GenericReconciler[PTR]) hooksFor(target string) domain.ObjectHooks {
 // withTargetArgs returns a context whose kube client carries the per-target
 // merged hooks.args for this reconcile cycle. When the effective box has no
 // args override, the context is returned unchanged.
-func (r *GenericReconciler[PTR]) withTargetArgs(ctx context.Context, box orktypes.OperatorBoxConfig) context.Context {
+func (r *Reconciler[PTR]) withTargetArgs(ctx context.Context, box orktypes.OperatorBoxConfig) context.Context {
 	var args map[string]interface{}
 	if box.Reconcile != nil {
 		args = box.Reconcile.HooksArgs()
@@ -73,7 +73,7 @@ func (r *GenericReconciler[PTR]) withTargetArgs(ctx context.Context, box orktype
 
 // namespaceGuardFunc returns a guard closure pre-bound to this CRD's
 // namespace restrictions, or nil when no restrictions are configured.
-func (r *GenericReconciler[PTR]) namespaceGuardFunc() func(ctx context.Context, obj domain.Object, ns string) bool {
+func (r *Reconciler[PTR]) namespaceGuardFunc() func(ctx context.Context, obj domain.Object, ns string) bool {
 	restricted := r.crd.AllRestrictedNamespaces()
 	allowed := r.crd.AllAllowedNamespaces()
 	if len(restricted) == 0 && len(allowed) == 0 {
@@ -86,7 +86,7 @@ func (r *GenericReconciler[PTR]) namespaceGuardFunc() func(ctx context.Context, 
 }
 
 // patchStripFinalizers removes all box-declared finalizers from obj and patches the API server.
-func (r *GenericReconciler[PTR]) patchStripFinalizers(ctx context.Context, obj PTR, box orktypes.OperatorBoxConfig) error {
+func (r *Reconciler[PTR]) patchStripFinalizers(ctx context.Context, obj PTR, box orktypes.OperatorBoxConfig) error {
 	if len(obj.GetFinalizers()) == 0 {
 		return nil
 	}

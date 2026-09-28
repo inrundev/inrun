@@ -8,7 +8,7 @@
 //  4. onCreate groups            → deployments, services, secrets, configmaps, ...
 //  5. onReconcile groups
 //  6. runProviders               → aws:, mongodb:, ... (external infra)
-package reconciler
+package generic
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 // runTemplateReconcile interprets the Katalog's onCreate and onReconcile blocks.
 // Returns the enriched resolver so callers (reconcileImpl) can pass cross/external
 // data into patchStatusWithChildren for status field evaluation.
-func (r *GenericReconciler[PTR]) runTemplateReconcile(ctx context.Context, resolver *orktmpl.Resolver, obj domain.Object, box orktypes.OperatorBoxConfig) (*orktmpl.Resolver, error) {
+func (r *Reconciler[PTR]) runTemplateReconcile(ctx context.Context, resolver *orktmpl.Resolver, obj domain.Object, box orktypes.OperatorBoxConfig) (*orktmpl.Resolver, error) {
 	kube, ok := kubeclient.FromContext(ctx)
 	if !ok {
 		return resolver, fmt.Errorf("kubeclient not found in context")
@@ -110,7 +110,7 @@ func (r *GenericReconciler[PTR]) runTemplateReconcile(ctx context.Context, resol
 
 // runResourceGroup dispatches all resource types in one HookTemplates block.
 // forEach expansion happens here — run_*.go receives already-expanded slices.
-func (r *GenericReconciler[PTR]) runResourceGroup(
+func (r *Reconciler[PTR]) runResourceGroup(
 	ctx context.Context,
 	kube kubeclient.Interface,
 	resolver *orktmpl.Resolver,
@@ -230,7 +230,7 @@ func (r *GenericReconciler[PTR]) runResourceGroup(
 }
 
 // runTemplateOnDelete interprets the onDelete block.
-func (r *GenericReconciler[PTR]) runTemplateOnDelete(ctx context.Context, resolver *orktmpl.Resolver, obj domain.Object, box orktypes.OperatorBoxConfig) error {
+func (r *Reconciler[PTR]) runTemplateOnDelete(ctx context.Context, resolver *orktmpl.Resolver, obj domain.Object, box orktypes.OperatorBoxConfig) error {
 	kube, ok := kubeclient.FromContext(ctx)
 	if !ok {
 		return fmt.Errorf("kubeclient not found in context")

@@ -200,7 +200,7 @@ func (m *Manager) EnsureDeletionProtectionLabel(obj domain.Object, shouldHave bo
 // exemption label present in the same patch so the webhook allows the UPDATE.
 // Once deletion-protection is gone the webhook objectSelector no longer matches
 // and the exemption label can be removed freely on the next cycle. The
-// GenericReconciler handles this automatically — callers of this method should
+// generic.Reconciler handles this automatically — callers of this method should
 // not need to think about it.
 //
 // Returns true if the label map was modified; false if it was already correct.

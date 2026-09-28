@@ -96,6 +96,6 @@ When multiple CRDs share a location, the generator deduplicates imports and assi
 
 ## Skipping generation
 
-If all enabled CRDs in the Katalog are dynamic-template CRDs (no `apiTypes.location`, no hooks, no constructor), `TypeRegistry` skips file generation entirely — the `GenericReconciler` handles these at runtime without any registered types.
+If all enabled CRDs in the Katalog are dynamic-template CRDs (no `apiTypes.location`, no hooks, no constructor), `TypeRegistry` skips file generation entirely — the `Generic Reconciler` handles these at runtime without any registered types.
 
 → Next: [04-crd-generation.md](04-crd-generation.md)

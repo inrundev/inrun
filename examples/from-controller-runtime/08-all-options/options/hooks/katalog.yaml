@@ -29,7 +29,7 @@ spec:
         alias: hooksv1alpha1
       operatorBox:
         reconcile:
-          default: true   # GenericReconciler still runs — hook is additive
+          default: true   # Generic Reconciler still runs — hook is additive
           hooks:
             location: github.com/orkspace/from-controller-runtime-all-options/options/hooks/hooks
             function: WebAppHooks

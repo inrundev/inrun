@@ -149,7 +149,7 @@ ork serve apply -f intent/intent-v2-ctor.json --token $TOKEN --api http://localh
 ```
 
 The runtime routes this CR to `BlockchainAppWithTargetsReconciler` via `MuxReconciler`
-instead of the CRD-level `GenericReconciler`.
+instead of the CRD-level `Generic Reconciler`.
 
 > Switching targets cleans up the previous surface's resources automatically.
 > `keepPreviousSurface: true` on the target entry skips the cleanup when you

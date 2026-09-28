@@ -28,7 +28,7 @@ spec:
         alias: constructorv1alpha1
       operatorBox:
         reconcile:
-          # default: false — the GenericReconciler is not used.
+          # default: false — the Generic Reconciler is not used.
           # The constructor below owns the full reconcile loop.
           default: false
           constructor:

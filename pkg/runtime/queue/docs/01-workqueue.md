@@ -72,7 +72,7 @@ func (q *Workqueue) SetMaxDepth(n int) {
 }
 ```
 
-Called by `GenericReconciler.SetQueueDepthLimit` when the autoscaler applies or
+Called by `Generic Reconciler.SetQueueDepthLimit` when the autoscaler applies or
 reverts a `do.queueDepth` override. The change is immediately visible to the
 next `Enqueue` call — no lock needed.
 

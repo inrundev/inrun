@@ -117,7 +117,7 @@ func (r *ResourceKatalog) GetInformerByName(name string) (cache.SharedIndexInfor
 //   - Returns the first CRD whose labelSelector contain key=value
 //   - Returns nil, false when no CRD matches
 //
-// This is used by GenericReconciler via the KatalogRegistry interface
+// This is used by generic.Reconciler via the KatalogRegistry interface
 // to support cross‑context reads without importing pkg/kordinator
 // directly (avoiding import cycles).
 func (r *ResourceKatalog) GetInformerByLabelSelector(key, value string) (cache.SharedIndexInformer, bool) {

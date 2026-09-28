@@ -1,4 +1,4 @@
-package remote
+package http
 
 import (
 	"context"
@@ -7,10 +7,11 @@ import (
 
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/remote/contract"
 )
 
-// toResult converts a RemoteReconcileResult to scheduling intent and status patch.
-func (r *RemoteReconciler) toResult(ctx context.Context, req domain.Request, res RemoteReconcileResult) (domain.Result, error) {
+// toResult converts a contract.Result to scheduling intent and status patch.
+func (r *Reconciler) toResult(ctx context.Context, req domain.Request, res contract.Result) (domain.Result, error) {
 	switch res.Result {
 	case "ok", "":
 		return domain.Result{StatusPatch: res.Status}, nil
@@ -49,7 +50,7 @@ func (r *RemoteReconciler) toResult(ctx context.Context, req domain.Request, res
 
 // resolveResources walks the resources array, expanding intent-form entries into full
 // Kubernetes object maps. Full-form entries (with apiVersion) pass through unchanged.
-func (r *RemoteReconciler) resolveResources(raw []map[string]interface{}, req domain.Request) ([]map[string]interface{}, error) {
+func (r *Reconciler) resolveResources(raw []map[string]interface{}, req domain.Request) ([]map[string]interface{}, error) {
 	if len(raw) == 0 {
 		return raw, nil
 	}

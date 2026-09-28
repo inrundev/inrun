@@ -21,7 +21,7 @@ func ToTyped[T any](p *PreparedRequest) (*T, error) {
 
 // ToTypedWith converts a domain.Object to PTR using newObj to instantiate the target.
 // PTR must already be a pointer type (e.g. *Database). Used when the type parameter
-// is itself a pointer — the GenericReconciler pattern.
+// is itself a pointer — the generic.Reconciler pattern.
 //
 //	obj, err := domain.ToTypedWith[PTR](prepared.Object, r.newObj)
 func ToTypedWith[PTR Object](obj Object, newObj func() PTR) (PTR, error) {

@@ -37,12 +37,12 @@ The CR under test is also seeded into the dynamic client (not just the extras), 
 
 ## Cross-CRD observation
 
-All CRs from the multi-doc file that do NOT belong to the CRD being simulated are seeded as peers. `simulate.Run` builds a `*kordinator.ResourceKatalog` with one fake `SharedIndexInformer` per peer CRD and passes it as `katalogRegistry` to `NewGenericReconciler`. When the reconciler hits a `cross:` declaration, `readCross()` looks up the peer informer by CRD name and reads from its indexer — zero API calls, same as production.
+All CRs from the multi-doc file that do NOT belong to the CRD being simulated are seeded as peers. `simulate.Run` builds a `*kordinator.ResourceKatalog` with one fake `SharedIndexInformer` per peer CRD and passes it as `katalogRegistry` to `generic.New`. When the reconciler hits a `cross:` declaration, `readCross()` looks up the peer informer by CRD name and reads from its indexer — zero API calls, same as production.
 
 ## Hook and constructor wiring
 
 When the custom operator binary is used (`make registry && make build`):
-- `HookRegistry[gvk]` is populated → hook binder is passed to `NewGenericReconciler` → hook fires each cycle
+- `HookRegistry[gvk]` is populated → hook binder is passed to `generic.New` → hook fires each cycle
 - `ReconcilerRegistry[gvk]` is populated → constructor is called with `fakeKube`, `informer`, and `event.Discard()` → constructor reconcile loop runs against the fake cluster
 
 The event recorder passed to constructors is `event.Discard()` — a silent no-op. All `Eventf` calls are discarded without panicking; no nil guards are needed in constructor code.

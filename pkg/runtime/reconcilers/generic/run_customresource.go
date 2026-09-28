@@ -1,4 +1,4 @@
-package reconciler
+package generic
 
 import (
 	"context"

@@ -16,12 +16,12 @@ import (
 // instances based on the serve-target annotation on the incoming CR.
 //
 // CRs with no target annotation (or an unknown target) are handled by the
-// fallback reconciler — typically the CRD-level GenericReconciler.
+// fallback reconciler — typically the CRD-level generic.Reconciler.
 //
 // All CRD-level infrastructure concerns (queue injection, autoscale, resync,
 // rollback notifiers, metrics) are forwarded to the fallback reconciler so
 // startCRDWorkers can inject them via the same interface checks it uses for
-// a plain GenericReconciler.
+// a plain generic.Reconciler.
 //
 // The target cache is the only mutable state: it stores "ns/name" → target
 // so that deletion reconcile cycles (where the object is gone and no annotation

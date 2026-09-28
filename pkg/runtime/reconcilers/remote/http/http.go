@@ -1,4 +1,4 @@
-package remote
+package http
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/orkspace/orkestra/pkg/event"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	"github.com/orkspace/orkestra/pkg/logger"
+
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -16,26 +17,10 @@ import (
 
 const defaultRemoteTimeout = 30 * time.Second
 
-// RemoteReconcileResult is the JSON body the remote service returns.
-type RemoteReconcileResult struct {
-	// Result is one of "ok", "requeue", or "error".
-	Result string `json:"result"`
-	// RequeueAfter is the requeue duration string (e.g. "60s"). Required when result is "requeue".
-	RequeueAfter string `json:"requeueAfter,omitempty"`
-	// Error is a human-readable error message. Non-empty triggers backoff retry.
-	Error string `json:"error,omitempty"`
-	// Status is an optional map of fields to patch onto the CR's status.
-	// Merged with any katalog emit.status patch; remote fields win on conflict.
-	Status map[string]interface{} `json:"status,omitempty"`
-	// Resources is an optional list of Kubernetes objects to apply via SSA.
-	// Orkestra sets the CR as owner for same-namespace resources.
-	Resources []map[string]interface{} `json:"resources,omitempty"`
-}
-
-// RemoteReconciler implements domain.Reconciler by POSTing a PreparedRequest
+// Reconciler implements domain.Reconciler by POSTing a PreparedRequest
 // to a remote HTTP endpoint. The remote service owns the reconcile logic;
 // Orkestra owns the queue, backoff, informer, health, and metrics.
-type RemoteReconciler struct {
+type Reconciler struct {
 	decl             *orktypes.RemoteReconcilerDeclaration
 	gvk              schema.GroupVersionKind
 	kube             kubeclient.Interface
@@ -45,24 +30,24 @@ type RemoteReconciler struct {
 	client           httpDoer
 }
 
-// NewRemoteReconciler constructs a RemoteReconciler for the given CRD.
+// New constructs a Reconciler for the given CRD.
 // kube is used for credential resolution and SSA-applying resources returned by the remote reconciler.
 // ev is used to emit Kubernetes events on reconcile success or failure.
 // managedResources is the set of types the remote reconciler is permitted to create.
 // ownNamespace is the Orkestra namespace (used when secretRef.namespace is empty).
-func NewRemoteReconciler(
+func New(
 	decl *orktypes.RemoteReconcilerDeclaration,
 	gvk schema.GroupVersionKind,
 	kube kubeclient.Interface,
 	ev event.Recorder,
 	managedResources []domain.ManagedResource,
 	ownNamespace string,
-) *RemoteReconciler {
+) *Reconciler {
 	timeout := defaultRemoteTimeout
 	if decl.Timeout.Duration > 0 {
 		timeout = decl.Timeout.Duration
 	}
-	return &RemoteReconciler{
+	return &Reconciler{
 		decl:             decl,
 		gvk:              gvk,
 		kube:             kube,
@@ -75,7 +60,7 @@ func NewRemoteReconciler(
 
 // Reconcile dispatches the request to the remote endpoint, resolves the result,
 // applies returned resources, and emits a Kubernetes event for the outcome.
-func (r *RemoteReconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
 	log := logger.FromContext(ctx).With().
 		Str("reconciler", "remote").
 		Str("endpoint", r.resolveEndpoint(req)).
@@ -97,7 +82,7 @@ func (r *RemoteReconciler) Reconcile(ctx context.Context, req domain.Request) (d
 
 // applyAndStore resolves, applies and caches the resources returned by the remote
 // service, then emits a Kubernetes event for the outcome.
-func (r *RemoteReconciler) applyAndStore(ctx context.Context, req domain.Request, rawResources []map[string]interface{}) error {
+func (r *Reconciler) applyAndStore(ctx context.Context, req domain.Request, rawResources []map[string]interface{}) error {
 	log := logger.FromContext(ctx).With().
 		Str("reconciler", "remote").
 		Logger()

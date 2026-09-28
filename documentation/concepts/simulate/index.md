@@ -20,7 +20,7 @@
 
 ## The key property
 
-`ork simulate` does not approximate what the reconciler does. It *is* the reconciler — the same `GenericReconciler` that runs in production, wired to a fake in-memory Kubernetes store. Template expressions, `when:` conditions, `onCreate`/`onReconcile` order, and status propagation all execute identically.
+`ork simulate` does not approximate what the reconciler does. It *is* the reconciler — the same `Generic Reconciler` that runs in production, wired to a fake in-memory Kubernetes store. Template expressions, `when:` conditions, `onCreate`/`onReconcile` order, and status propagation all execute identically.
 
 Use simulate as the fast inner loop while writing an operator. Use `ork e2e` as the outer gate before pushing.
 

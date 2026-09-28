@@ -9,7 +9,7 @@
 // next stage.
 //
 // Deletion order within a stage is undefined; order is enforced between stages.
-package reconciler
+package generic
 
 import (
 	"context"
@@ -38,7 +38,7 @@ type orderedDeleteEntry struct {
 
 // runOrderedDelete deletes resource groups sequentially.
 // For each group: submit all deletes, then poll until every resource is gone.
-func (r *GenericReconciler[PTR]) runOrderedDelete(
+func (r *Reconciler[PTR]) runOrderedDelete(
 	ctx context.Context,
 	kube kubeclient.Interface,
 	resolver *orktmpl.Resolver,
@@ -88,7 +88,7 @@ func (r *GenericReconciler[PTR]) runOrderedDelete(
 
 // submitGroupDeletion issues Delete calls for all resources in a HookTemplates
 // block and returns the list of resources to poll for.
-func (r *GenericReconciler[PTR]) submitGroupDeletion(
+func (r *Reconciler[PTR]) submitGroupDeletion(
 	ctx context.Context,
 	kube kubeclient.Interface,
 	resolver *orktmpl.Resolver,
@@ -155,7 +155,7 @@ type expandedResourceDef struct {
 
 // expandAllForDelete resolves template source names for every resource type
 // in the HookTemplates block. Only types with entries are included.
-func (r *GenericReconciler[PTR]) expandAllForDelete(
+func (r *Reconciler[PTR]) expandAllForDelete(
 	resolver *orktmpl.Resolver,
 	t *orktypes.HookTemplates,
 ) []expandedResourceDef {

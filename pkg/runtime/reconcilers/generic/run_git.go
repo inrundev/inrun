@@ -37,7 +37,7 @@
 //	orkestra.orkspace.io/last-commit
 //
 // This annotation survives pod restarts, preventing spurious rebuilds.
-package reconciler
+package generic
 
 import (
 	"context"

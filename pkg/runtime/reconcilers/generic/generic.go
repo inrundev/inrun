@@ -1,5 +1,5 @@
 // pkg/reconciler/generic.go
-package reconciler
+package generic
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// GenericReconciler manages the full lifecycle of one CRD.
+// Reconciler manages the full lifecycle of one CRD.
 //
 // It coordinates context enrichment, cache reads, deletion handling,
 // metadata management, template execution, reconciliation priority, events,
@@ -33,7 +33,7 @@ import (
 // PTR must be a pointer to the concrete CR struct (for example, *Database).
 // The dynamic registry path uses domain.Object, which is also supported
 // because the informer cache stores the underlying concrete object.
-type GenericReconciler[PTR domain.Object] struct {
+type Reconciler[PTR domain.Object] struct {
 	providerRegistry orktypes.ProviderRegistry
 	providerStats    providerStatsRecorder
 	informer         cache.SharedIndexInformer
@@ -76,7 +76,7 @@ type discardRecorder struct{}
 
 func (discardRecorder) Eventf(_ runtime.Object, _, _, _ string, _ ...interface{}) {}
 
-// NewGenericReconciler constructs a GenericReconciler for the given CRD.
+// New constructs a Reconciler for the given CRD.
 //
 // PTR must be a pointer to the concrete CR type (e.g. *Database). When called
 // from the runtime registry path in runtime_konstructor.go, PTR is inferred as
@@ -86,7 +86,7 @@ func (discardRecorder) Eventf(_ runtime.Object, _, _, _ string, _ ...interface{}
 // anyHooks, if non-nil, must implement domain.HookBinder. Every
 // domain.ReconcileHooks[T] value satisfies HookBinder automatically via its
 // BindToObjectHooks() method. Passing any other type panics at startup.
-func NewGenericReconciler[PTR domain.Object](
+func New[PTR domain.Object](
 	crd orktypes.CRDEntry,
 	informer cache.SharedIndexInformer,
 	ev event.Recorder,
@@ -96,7 +96,7 @@ func NewGenericReconciler[PTR domain.Object](
 	providerRegistry orktypes.ProviderRegistry,
 	providerStats providerStatsRecorder,
 	kat *katalog.Katalog,
-) *GenericReconciler[PTR] {
+) *Reconciler[PTR] {
 
 	// Adapt the user's strongly-typed ReconcileHooks[PTR] to the type-erased
 	// ObjectHooks stored on the reconciler. BindToObjectHooks wraps each hook
@@ -107,7 +107,7 @@ func NewGenericReconciler[PTR domain.Object](
 		binder, ok := anyHooks.(domain.HookBinder)
 		if !ok {
 			panic(fmt.Sprintf(
-				"NewGenericReconciler[%T]: hooks value must implement domain.HookBinder "+
+				"New[%T]: hooks value must implement domain.HookBinder "+
 					"(got %T) — use domain.ReconcileHooks[*YourType]{...} or a type that "+
 					"wraps one and forwards BindToObjectHooks()",
 				newObj(), anyHooks,
@@ -142,7 +142,7 @@ func NewGenericReconciler[PTR domain.Object](
 		box.Runtime.Finalizers = append(box.Runtime.Finalizers, labels.CleanupFinalizer)
 	}
 
-	r := &GenericReconciler[PTR]{
+	r := &Reconciler[PTR]{
 		providerRegistry: providerRegistry,
 		providerStats:    providerStats,
 		crd:              crd,
@@ -172,13 +172,13 @@ func NewGenericReconciler[PTR domain.Object](
 	return r
 }
 
-var _ domain.Reconciler = (*GenericReconciler[domain.Object])(nil)
+var _ domain.Reconciler = (*Reconciler[domain.Object])(nil)
 
 // Reconcile dispatches to the correct reconcile implementation.
 // Order:
 //  1. Conditional provisioning (when blocks) — handled by runTemplateReconcile
 //  2. Go hooks → Declarative templates → No-op (through reconcileImpl())
-func (r *GenericReconciler[PTR]) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
+func (r *Reconciler[PTR]) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
 	ctx = kubeclient.WithKubeclient(ctx, r.kube)
 	if err := ctx.Err(); err != nil {
 		return domain.Result{}, err
@@ -224,7 +224,7 @@ func (r *GenericReconciler[PTR]) Reconcile(ctx context.Context, req domain.Reque
 
 // reconcileImpl dispatches to the correct reconcile implementation.
 // Priority: Go hooks → declarative templates → no-op.
-func (r *GenericReconciler[PTR]) reconcileImpl(ctx context.Context, resolver *orktmpl.Resolver, obj PTR, box orktypes.OperatorBoxConfig, hooks domain.ObjectHooks) error {
+func (r *Reconciler[PTR]) reconcileImpl(ctx context.Context, resolver *orktmpl.Resolver, obj PTR, box orktypes.OperatorBoxConfig, hooks domain.ObjectHooks) error {
 	var err error
 
 	hasTemplates := box.EffectiveOnCreate() != nil || box.EffectiveOnReconcile() != nil
@@ -284,7 +284,7 @@ func (r *GenericReconciler[PTR]) reconcileImpl(ctx context.Context, resolver *or
 // handleDeletion runs cleanup then removes our finalizers.
 // Finalizers are never removed on error — object stays protected until
 // cleanup succeeds.
-func (r *GenericReconciler[PTR]) handleDeletion(ctx context.Context, resolver *orktmpl.Resolver, obj PTR, box orktypes.OperatorBoxConfig, hooks domain.ObjectHooks) error {
+func (r *Reconciler[PTR]) handleDeletion(ctx context.Context, resolver *orktmpl.Resolver, obj PTR, box orktypes.OperatorBoxConfig, hooks domain.ObjectHooks) error {
 	switch {
 	case hooks.OnDelete != nil:
 		if err := hooks.OnDelete(ctx, obj); err != nil {

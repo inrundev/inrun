@@ -26,14 +26,14 @@ Katalog YAML
 konstructRuntime (internal/construct.go)
   └── loadProviders(ctx)         ← builds the ProviderRegistry
   └── factory closure            ← captures providerRegistry
-        └── NewGenericReconciler(..., providerRegistry)
+        └── NewGeneric Reconciler(..., providerRegistry)
 
 DependencyKordinator
   └── startCRDWorkers
         └── entry.ReconcilerFactory()   ← calls the closure
-              └── GenericReconciler
+              └── Generic Reconciler
 
-GenericReconciler.reconcileImpl
+Generic Reconciler.reconcileImpl
   └── runTemplateReconcile
         └── runProviders(ctx, obj, resolver, blocks, registry, kube)
               └── registry.Get("aws")          ← lookup by block name

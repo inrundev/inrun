@@ -14,7 +14,7 @@ cd from-controller-runtime/04-constructor-migration
 ## What you will learn
 
 - How `orkadapter.ToClient` and `domain.ReconcilerFrom` bridge a controller-runtime reconciler into Orkestra
-- What `default: false` means in the Katalog — the GenericReconciler is disabled, the constructor owns the loop
+- What `default: false` means in the Katalog — the Generic Reconciler is disabled, the constructor owns the loop
 - What the runtime provides that `ctrl.NewManager` previously handled
 - How `ork migrate` generates the constructor automatically
 

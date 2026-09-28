@@ -1,4 +1,4 @@
-package reconciler
+package generic
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 // owner key ("<crName>.<prevTarget>"). Template-based deletion is not used because
 // forEach spec fields may have been cleared before this runs (e.g. spec.regions
 // removed when switching away from a regional target).
-func (r *GenericReconciler[PTR]) cleanupPreviousSurface(
+func (r *Reconciler[PTR]) cleanupPreviousSurface(
 	ctx context.Context,
 	rawObj PTR,
 ) error {

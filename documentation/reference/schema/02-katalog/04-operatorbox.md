@@ -5,7 +5,7 @@ Defines the reconciliation strategy and lifecycle configuration for a CRD. Contr
 ```yaml
 operatorBox:
   reconcile:
-    default: true              # true → GenericReconciler | false → custom constructor
+    default: true              # true → Generic Reconciler | false → custom constructor
 
     # Go hooks (default: true, typed mode)
     hooks:
@@ -46,8 +46,8 @@ operatorBox:
     autoscale:
       ...
   # reconcile: determines which reconciler implementation runs.
-  # Omit entirely for declarative-only CRDs (GenericReconciler is the default).
-  # Declarative templates (GenericReconciler only)
+  # Omit entirely for declarative-only CRDs (Generic Reconciler is the default).
+  # Declarative templates (Generic Reconciler only)
   when:
     ...               # → when-conditions.md
   observe:            # → observe
@@ -71,7 +71,7 @@ operatorBox:
 
 ## `reconcile`
 
-Groups the reconciler identity fields. Omit for declarative-only CRDs — GenericReconciler is the default.
+Groups the reconciler identity fields. Omit for declarative-only CRDs — Generic Reconciler is the default.
 
 ### `reconcile.include`
 
@@ -118,12 +118,12 @@ Inline `hooks.args` overrides anything declared in the file's `hooks.args`. The 
 
 | Value | Behaviour |
 |-------|-----------|
-| `true` (default) | GenericReconciler handles reconciliation. Use `onCreate`, `onReconcile`, `onDelete` for declarative templates, and `reconcile.hooks` for Go hooks. |
+| `true` (default) | Generic Reconciler handles reconciliation. Use `onCreate`, `onReconcile`, `onDelete` for declarative templates, and `reconcile.hooks` for Go hooks. |
 | `false` | Fully custom reconciler. Set `reconcile.constructor` to provide it. Templates and hooks are ignored. |
 
 ### `reconcile.hooks`
 
-A Go function invoked by the GenericReconciler. Implements typed reconcile hooks (`OnCreate`, `OnUpdate`, `OnDelete`). Used when you need Go logic that the GenericReconciler calls instead of declarative templates.
+A Go function invoked by the Generic Reconciler. Implements typed reconcile hooks (`OnCreate`, `OnUpdate`, `OnDelete`). Used when you need Go logic that the Generic Reconciler calls instead of declarative templates.
 
 ```yaml
 operatorBox:
@@ -149,7 +149,7 @@ Requires typed mode (`apiTypes.location` set) and `ork generate registry`.
 
 Key/value pairs declared in the Katalog and delivered to the hook function at reconcile time via `kube.Args()`. Values may be strings, booleans, integers, or nested maps.
 
-**String values support Go template expressions.** The GenericReconciler evaluates them against the current CR before the hook runs — the full note FuncMap is available (`default`, `upper`, `lower`, etc.).
+**String values support Go template expressions.** The Generic Reconciler evaluates them against the current CR before the hook runs — the full note FuncMap is available (`default`, `upper`, `lower`, etc.).
 
 ```yaml
 hooks:
@@ -265,7 +265,7 @@ reconcile:
 
 ### `reconcile.constructor`
 
-Replaces the GenericReconciler entirely. Requires `reconcile.default: false`.
+Replaces the Generic Reconciler entirely. Requires `reconcile.default: false`.
 
 ```yaml
 operatorBox:

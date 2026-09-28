@@ -19,7 +19,7 @@ The output still shows whether the declarative layer (templates, status fields, 
 
 ## Standard binary fallback
 
-When running from the standard `ork` binary (not a custom operator binary), `HookRegistry` and `ReconcilerRegistry` are empty for your custom types. Hook bodies and constructor reconcile loops do not execute. Simulate falls back to `GenericReconciler` and runs the status layer only.
+When running from the standard `ork` binary (not a custom operator binary), `HookRegistry` and `ReconcilerRegistry` are empty for your custom types. Hook bodies and constructor reconcile loops do not execute. Simulate falls back to `Generic Reconciler` and runs the status layer only.
 
 Build and use your own `ork` binary to get full hook and constructor simulation:
 

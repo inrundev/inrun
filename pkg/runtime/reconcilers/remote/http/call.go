@@ -1,4 +1,4 @@
-package remote
+package http
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/external"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/remote/contract"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	"github.com/orkspace/orkestra/pkg/utils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -36,49 +37,49 @@ type remoteRequest struct {
 }
 
 // callRemote POSTs the reconcile request to the remote endpoint and returns the decoded result.
-func (r *RemoteReconciler) callRemote(ctx context.Context, req domain.Request) (RemoteReconcileResult, error) {
+func (r *Reconciler) callRemote(ctx context.Context, req domain.Request) (contract.Result, error) {
 	endpoint := r.resolveEndpoint(req)
 
 	body, err := r.buildBody(req)
 	if err != nil {
-		return RemoteReconcileResult{}, fmt.Errorf("remote reconciler: build request: %w", err)
+		return contract.Result{}, fmt.Errorf("remote reconciler: build request: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
-		return RemoteReconcileResult{}, fmt.Errorf("remote reconciler: create request: %w", err)
+		return contract.Result{}, fmt.Errorf("remote reconciler: create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	if err := r.applyAuth(ctx, httpReq); err != nil {
-		return RemoteReconcileResult{}, fmt.Errorf("remote reconciler: auth: %w", err)
+		return contract.Result{}, fmt.Errorf("remote reconciler: auth: %w", err)
 	}
 
 	resp, err := r.client.Do(httpReq)
 	if err != nil {
-		return RemoteReconcileResult{}, fmt.Errorf("remote reconciler: POST %s: %w", endpoint, err)
+		return contract.Result{}, fmt.Errorf("remote reconciler: POST %s: %w", endpoint, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return RemoteReconcileResult{}, fmt.Errorf("remote reconciler: POST %s: unexpected status %d", endpoint, resp.StatusCode)
+		return contract.Result{}, fmt.Errorf("remote reconciler: POST %s: unexpected status %d", endpoint, resp.StatusCode)
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return RemoteReconcileResult{}, fmt.Errorf("remote reconciler: read response: %w", err)
+		return contract.Result{}, fmt.Errorf("remote reconciler: read response: %w", err)
 	}
 
-	var result RemoteReconcileResult
+	var result contract.Result
 	if err := json.Unmarshal(data, &result); err != nil {
-		return RemoteReconcileResult{}, fmt.Errorf("remote reconciler: decode response: %w", err)
+		return contract.Result{}, fmt.Errorf("remote reconciler: decode response: %w", err)
 	}
 	return result, nil
 }
 
 // resolveEndpoint evaluates the endpoint as a template when it contains "{{".
 // Falls back to the static string on failure or when no resolver is available.
-func (r *RemoteReconciler) resolveEndpoint(req domain.Request) string {
+func (r *Reconciler) resolveEndpoint(req domain.Request) string {
 	if req.Prepared == nil || req.Prepared.Context == nil {
 		return r.decl.Endpoint
 	}
@@ -95,7 +96,7 @@ func (r *RemoteReconciler) resolveEndpoint(req domain.Request) string {
 }
 
 // buildBody serialises the remoteRequest payload.
-func (r *RemoteReconciler) buildBody(req domain.Request) ([]byte, error) {
+func (r *Reconciler) buildBody(req domain.Request) ([]byte, error) {
 	var obj interface{}
 	var prepared interface{}
 	if req.Prepared != nil {
@@ -118,7 +119,7 @@ func (r *RemoteReconciler) buildBody(req domain.Request) ([]byte, error) {
 }
 
 // applyObjectExclusions returns a deep copy of obj with the given dot-notation paths removed.
-func (r *RemoteReconciler) applyObjectExclusions(obj domain.Object, paths []string) map[string]interface{} {
+func (r *Reconciler) applyObjectExclusions(obj domain.Object, paths []string) map[string]interface{} {
 	u, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return domain.Raw(obj)
@@ -132,7 +133,7 @@ func (r *RemoteReconciler) applyObjectExclusions(obj domain.Object, paths []stri
 
 // resolveArgs evaluates template expressions in decl.Args against the CR's resolver context.
 // Returns nil when no args are declared.
-func (r *RemoteReconciler) resolveArgs(req domain.Request) map[string]interface{} {
+func (r *Reconciler) resolveArgs(req domain.Request) map[string]interface{} {
 	if len(r.decl.Args) == 0 {
 		return nil
 	}
@@ -147,7 +148,7 @@ func (r *RemoteReconciler) resolveArgs(req domain.Request) map[string]interface{
 }
 
 // applyAuth injects the credential into the request header when auth is declared.
-func (r *RemoteReconciler) applyAuth(ctx context.Context, req *http.Request) error {
+func (r *Reconciler) applyAuth(ctx context.Context, req *http.Request) error {
 	if r.decl.Auth == nil {
 		return nil
 	}

@@ -136,13 +136,13 @@ func (p *RemotePayloadConfig) EffectiveChildren() *RemotePayloadChildrenConfig {
 }
 
 // ReconcileConfig declares what runs and how. Default (omitted or default: true) uses the
-// GenericReconciler driven by onCreate/onReconcile/onDelete templates. Set default: false
+// generic.Reconciler driven by onCreate/onReconcile/onDelete templates. Set default: false
 // and declare constructor: to bring a typed Go reconciler. Workers, resync, queue, and
 // requeue tune execution regardless of which reconciler runs.
 type ReconcileConfig struct {
 	// --- Implementation identity ---
 
-	// Default: true → GenericReconciler (default when omitted).
+	// Default: true → generic.Reconciler (default when omitted).
 	// false → custom reconciler via Constructor.
 	Default *bool `yaml:"default,omitempty" json:"default,omitempty" validate:"omitempty"`
 
@@ -201,7 +201,7 @@ type ReconcileConfig struct {
 
 func (r *ReconcileConfig) Empty() bool { return r == nil }
 
-// IsDefault reports whether the GenericReconciler should be used.
+// IsDefault reports whether the generic.Reconciler should be used.
 func (r *ReconcileConfig) IsDefault() bool {
 	if r == nil || r.Default == nil {
 		return true

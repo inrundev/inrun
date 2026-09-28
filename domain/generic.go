@@ -14,11 +14,10 @@
 //     The unexported isHooks() method prevents accidental implementation.
 //
 //  3. ObjectHooks / HookBinder — the internal adapter layer.
-//     GenericReconciler stores ObjectHooks, not ReconcileHooks[T], so that
+//     generic.Reconciler stores ObjectHooks, not ReconcileHooks[T], so that
 //     a single reconciler type can serve both the typed user-hooks path
 //     (T = *Database) and the dynamic template path (T = domain.Object)
 //     that goes through the runtime registry in runtime_konstructor.go.
-//     See pkg/reconciler/ptr_hooks.go for the full design rationale.
 package domain
 
 import "context"
@@ -70,7 +69,7 @@ func (r ReconcileHooks[T]) isHooks() {}
 
 // ── Internal adapter layer ────────────────────────────────────────────────────
 //
-// GenericReconciler stores ObjectHooks rather than ReconcileHooks[T] so it can
+// generic.Reconciler stores ObjectHooks rather than ReconcileHooks[T] so it can
 // hold a single concrete hooks value that works with both:
 //
 //   - The typed user path: T = *Database, hooks come from ReconcileHooks[*Database]
@@ -83,7 +82,7 @@ func (r ReconcileHooks[T]) isHooks() {}
 // cache IS a *Database even when retrieved as domain.Object.
 
 // ObjectHooks is the type-erased counterpart to ReconcileHooks[T].
-// GenericReconciler stores this internally; users never construct it directly.
+// generic.Reconciler stores this internally; users never construct it directly.
 // Produce it by calling ReconcileHooks[T].BindToObjectHooks().
 type ObjectHooks struct {
 	OnReconcile func(ctx context.Context, obj Object) error
@@ -92,12 +91,12 @@ type ObjectHooks struct {
 }
 
 // HookBinder is satisfied by every ReconcileHooks[T] value.
-// GenericReconciler calls BindToObjectHooks() through this interface at
+// generic.Reconciler calls BindToObjectHooks() through this interface at
 // construction time so it can adapt any typed hooks to ObjectHooks without
 // knowing the concrete T.
 //
 // Third-party hook wrappers that embed or delegate to ReconcileHooks[T] must
-// also implement HookBinder to work with NewGenericReconciler.
+// also implement HookBinder to work with generic.New.
 type HookBinder interface {
 	AnyReconcileHooks
 	// BindToObjectHooks wraps each hook function in a closure that performs

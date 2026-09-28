@@ -7,7 +7,7 @@ import "sync"
 // Thread-safe for concurrent updates from the template reconciler.
 //
 // One ProviderStats instance is created per CRD at startup and shared between:
-//   - GenericReconciler, which writes to it after each provider.Reconcile / provider.Delete call
+//   - generic.Reconciler, which writes to it after each provider.Reconcile / provider.Delete call
 //   - BuildCRDInfoHandler, which reads it to surface error rates in the CRD detail response
 //
 // Detailed per-kind breakdowns are available in Prometheus via RecordProviderReconcile.

@@ -3,12 +3,12 @@
 // reconciler/pipeline_reconciler.go
 //
 // A custom reconciler for the Pipeline CRD. This implements domain.Reconciler
-// directly — the GenericReconciler is not used at all.
+// directly — the generic.Reconciler is not used at all.
 //
 // Use a constructor when:
 //   - The reconcile loop itself must be controlled (state machine, phased execution)
 //   - You are migrating an existing controller-runtime reconciler
-//   - The GenericReconciler's hook model is not sufficient
+//   - The generic.Reconciler's hook model is not sufficient
 //
 // Orkestra still provides — even with a custom constructor:
 //   - Informer watching the Pipeline CRD

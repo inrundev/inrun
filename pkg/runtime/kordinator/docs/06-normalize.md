@@ -63,7 +63,7 @@ prepare.Prepare()
    └── validation          ← validates normalized spec
          │
          ▼
-GenericReconciler.Reconcile()
+Generic Reconciler.Reconcile()
    └── onCreate / onReconcile   ← templates see canonical field values
 ```
 

@@ -1,6 +1,6 @@
 // pkg/reconciler/run_git_helper.go
 
-package reconciler
+package generic
 
 import (
 	"context"

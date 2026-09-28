@@ -13,7 +13,7 @@
 //
 // On CR deletion (finalizer path), runProviderDelete is called instead.
 // It calls provider.Delete for all declarations — no condition filtering.
-package reconciler
+package generic
 
 import (
 	"context"

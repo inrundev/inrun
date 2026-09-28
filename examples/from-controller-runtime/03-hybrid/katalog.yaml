@@ -28,7 +28,7 @@ spec:
       operatorBox:
         # The hook creates the Service with type-safe access to obj.Spec.Port.
         reconcile:
-          default: true   # GenericReconciler still runs — hook is additive
+          default: true   # Generic Reconciler still runs — hook is additive
           hooks:
             location: github.com/orkspace/from-controller-runtime-demo/hooks
             function: WebAppHooks

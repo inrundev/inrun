@@ -520,7 +520,7 @@ func (c *CRDEntry) IsNamespaced() bool {
 	return *c.Namespaced
 }
 
-// DefaultReconcile reports whether this CRD uses the default reconciler (GenericReconciler).
+// DefaultReconcile reports whether this CRD uses the default reconciler (generic.Reconciler).
 // True when reconcile: is absent or .default: is omitted or true.
 func (c *CRDEntry) DefaultReconcile() bool {
 	r := c.Box().Reconcile

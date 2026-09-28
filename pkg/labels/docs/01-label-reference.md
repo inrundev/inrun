@@ -99,8 +99,8 @@ Records when Orkestra first took ownership of the resource. This is a stable aud
 | | |
 |---|---|
 | **Constant** | `FinalizerOrkestra` |
-| **Written by** | `GenericReconciler.ensureFinalizers` |
-| **Read by** | Kubernetes API server (blocks deletion until removed), `GenericReconciler.removeFinalizers` |
+| **Written by** | `Generic Reconciler.ensureFinalizers` |
+| **Read by** | Kubernetes API server (blocks deletion until removed), `Generic Reconciler.removeFinalizers` |
 
 Applied when a CRD declares `operatorBox.finalizers` in the Katalog. Blocks Kubernetes from garbage-collecting the CR until the reconciler has completed its cleanup logic (running `onDelete:` hooks and ordered deletion). The reconciler removes the finalizer after cleanup succeeds.
 

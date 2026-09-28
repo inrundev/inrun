@@ -15,7 +15,7 @@ import (
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/contract"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
-	"github.com/orkspace/orkestra/pkg/runtime/reconciler"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/generic"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -233,13 +233,13 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 
 	// Build the reconciler. Constructor path: use it directly with the fake
 	// kubeclient and a discarding event recorder.
-	// Fallback: GenericReconciler with the typed newObj factory and peer registry
+	// Fallback: generic.Reconciler with the typed newObj factory and peer registry
 	// so hook BindToObjectHooks type-assertions and cross: lookups both work.
 	var r domain.Reconciler
 	if factoryFn, ok := orktypes.ReconcilerRegistry[gvk]; ok {
 		r = factoryFn(fakeKube.WithInformer(informer).WithEventRecorder(event.Discard()))
 	} else {
-		r = reconciler.NewGenericReconciler(
+		r = generic.New(
 			effectiveCRDEntry,
 			informer,
 			nil,

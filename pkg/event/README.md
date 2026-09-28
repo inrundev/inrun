@@ -29,4 +29,4 @@ type Recorder interface {
 }
 ```
 
-`*Event` implements `Recorder` for real clusters. Passing `nil` is safe anywhere that nil-coalesces internally (e.g. `NewGenericReconciler`). Constructor functions (`NewReconcilerFunc`) receive `event.Recorder` and should guard with `if ev != nil` before calling `Eventf`.
+`*Event` implements `Recorder` for real clusters. Passing `nil` is safe anywhere that nil-coalesces internally (e.g. `NewGeneric Reconciler`). Constructor functions (`NewReconcilerFunc`) receive `event.Recorder` and should guard with `if ev != nil` before calling `Eventf`.

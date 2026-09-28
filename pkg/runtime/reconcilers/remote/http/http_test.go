@@ -1,4 +1,4 @@
-package remote
+package http
 
 import (
 	"testing"
@@ -11,8 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func newRemoteReconcilerForTest(endpoint string) *RemoteReconciler {
-	return &RemoteReconciler{
+func newReconcilerForTest(endpoint string) *Reconciler {
+	return &Reconciler{
 		decl: &orktypes.RemoteReconcilerDeclaration{
 			Endpoint: endpoint,
 		},
@@ -27,28 +27,28 @@ func reqWithResolver(data map[string]interface{}) domain.Request {
 }
 
 func TestResolveEndpoint_Static(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc.internal/reconcile")
+	r := newReconcilerForTest("http://svc.internal/reconcile")
 	assert.Equal(t, "http://svc.internal/reconcile", r.resolveEndpoint(domain.Request{}))
 }
 
 func TestResolveEndpoint_Template(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://{{ index . \"namespace\" }}-svc/reconcile")
+	r := newReconcilerForTest("http://{{ index . \"namespace\" }}-svc/reconcile")
 	req := reqWithResolver(map[string]interface{}{"namespace": "prod"})
 	assert.Equal(t, "http://prod-svc/reconcile", r.resolveEndpoint(req))
 }
 
 func TestResolveEndpoint_NilPrepared_FallsBack(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://{{ .metadata.namespace }}-svc/reconcile")
+	r := newReconcilerForTest("http://{{ .metadata.namespace }}-svc/reconcile")
 	assert.Equal(t, "http://{{ .metadata.namespace }}-svc/reconcile", r.resolveEndpoint(domain.Request{}))
 }
 
 func TestResolveArgs_NoArgs(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc/reconcile")
+	r := newReconcilerForTest("http://svc/reconcile")
 	assert.Nil(t, r.resolveArgs(domain.Request{}))
 }
 
 func TestResolveArgs_StaticPassThrough(t *testing.T) {
-	r := &RemoteReconciler{
+	r := &Reconciler{
 		decl: &orktypes.RemoteReconcilerDeclaration{
 			Endpoint: "http://svc/reconcile",
 			Args:     map[string]interface{}{"env": "prod", "replicas": 3},
@@ -60,7 +60,7 @@ func TestResolveArgs_StaticPassThrough(t *testing.T) {
 }
 
 func TestResolveArgs_TemplateCoercion(t *testing.T) {
-	r := &RemoteReconciler{
+	r := &Reconciler{
 		decl: &orktypes.RemoteReconcilerDeclaration{
 			Endpoint: "http://svc/reconcile",
 			Args: map[string]interface{}{
@@ -96,14 +96,14 @@ func reqWithOwner(owner domain.Object) domain.Request {
 }
 
 func TestResolveResources_Empty(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc/reconcile")
+	r := newReconcilerForTest("http://svc/reconcile")
 	got, err := r.resolveResources(nil, domain.Request{})
 	require.NoError(t, err)
 	assert.Nil(t, got)
 }
 
 func TestResolveResources_FullForm_PassThrough(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc/reconcile")
+	r := newReconcilerForTest("http://svc/reconcile")
 	full := map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "Deployment",
@@ -116,7 +116,7 @@ func TestResolveResources_FullForm_PassThrough(t *testing.T) {
 }
 
 func TestResolveResources_IntentForm_Deployment(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc/reconcile")
+	r := newReconcilerForTest("http://svc/reconcile")
 	req := reqWithOwner(ownerObj("my-app", "default"))
 	intent := map[string]interface{}{
 		"type": "deployment",
@@ -133,7 +133,7 @@ func TestResolveResources_IntentForm_Deployment(t *testing.T) {
 }
 
 func TestResolveResources_IntentForm_UnknownType(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc/reconcile")
+	r := newReconcilerForTest("http://svc/reconcile")
 	req := reqWithOwner(ownerObj("my-app", "default"))
 	intent := map[string]interface{}{
 		"type":   "daemonset",
@@ -144,7 +144,7 @@ func TestResolveResources_IntentForm_UnknownType(t *testing.T) {
 }
 
 func TestResolveResources_IntentForm_NilOwner_Errors(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc/reconcile")
+	r := newReconcilerForTest("http://svc/reconcile")
 	intent := map[string]interface{}{
 		"type":   "deployment",
 		"fields": map[string]interface{}{"name": "my-app", "image": "nginx:1.25"},
@@ -154,7 +154,7 @@ func TestResolveResources_IntentForm_NilOwner_Errors(t *testing.T) {
 }
 
 func TestResolveResources_IntentForm_Custom(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc/reconcile")
+	r := newReconcilerForTest("http://svc/reconcile")
 	req := reqWithOwner(ownerObj("my-app", "default"))
 	intent := map[string]interface{}{
 		"type": "custom",
@@ -173,7 +173,7 @@ func TestResolveResources_IntentForm_Custom(t *testing.T) {
 }
 
 func TestResolveResources_IntentForm_Custom_MissingAPIVersion(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc/reconcile")
+	r := newReconcilerForTest("http://svc/reconcile")
 	req := reqWithOwner(ownerObj("my-app", "default"))
 	intent := map[string]interface{}{
 		"type": "custom",
@@ -187,7 +187,7 @@ func TestResolveResources_IntentForm_Custom_MissingAPIVersion(t *testing.T) {
 }
 
 func TestResolveResources_MixedForms(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc/reconcile")
+	r := newReconcilerForTest("http://svc/reconcile")
 	req := reqWithOwner(ownerObj("my-app", "default"))
 	raw := []map[string]interface{}{
 		{"apiVersion": "v1", "kind": "ConfigMap", "metadata": map[string]interface{}{"name": "cfg"}},
@@ -201,7 +201,7 @@ func TestResolveResources_MixedForms(t *testing.T) {
 }
 
 func TestApplyObjectExclusions_RemovesPaths(t *testing.T) {
-	r := &RemoteReconciler{
+	r := &Reconciler{
 		decl: &orktypes.RemoteReconcilerDeclaration{
 			Endpoint: "http://svc/reconcile",
 			Payload: &orktypes.RemotePayloadConfig{
@@ -228,7 +228,7 @@ func TestApplyObjectExclusions_RemovesPaths(t *testing.T) {
 }
 
 func TestApplyObjectExclusions_NoExclusions_ReturnsOriginalMap(t *testing.T) {
-	r := newRemoteReconcilerForTest("http://svc/reconcile")
+	r := newReconcilerForTest("http://svc/reconcile")
 	obj := &unstructured.Unstructured{Object: map[string]interface{}{
 		"metadata": map[string]interface{}{"name": "my-app"},
 	}}
@@ -237,7 +237,7 @@ func TestApplyObjectExclusions_NoExclusions_ReturnsOriginalMap(t *testing.T) {
 }
 
 func TestApplyObjectExclusions_DoesNotMutateOriginal(t *testing.T) {
-	r := &RemoteReconciler{
+	r := &Reconciler{
 		decl: &orktypes.RemoteReconcilerDeclaration{
 			Endpoint: "http://svc/reconcile",
 		},
@@ -255,7 +255,7 @@ func TestApplyObjectExclusions_DoesNotMutateOriginal(t *testing.T) {
 }
 
 func TestApplyChildrenConfig_ResourcesFilter(t *testing.T) {
-	r := &RemoteReconciler{
+	r := &Reconciler{
 		decl: &orktypes.RemoteReconcilerDeclaration{
 			Payload: &orktypes.RemotePayloadConfig{
 				Children: &orktypes.RemotePayloadChildrenConfig{
@@ -276,7 +276,7 @@ func TestApplyChildrenConfig_ResourcesFilter(t *testing.T) {
 }
 
 func TestApplyChildrenConfig_RootExcludeStripsPath(t *testing.T) {
-	r := &RemoteReconciler{
+	r := &Reconciler{
 		decl: &orktypes.RemoteReconcilerDeclaration{
 			Payload: &orktypes.RemotePayloadConfig{
 				Children: &orktypes.RemotePayloadChildrenConfig{
@@ -303,7 +303,7 @@ func TestApplyChildrenConfig_RootExcludeStripsPath(t *testing.T) {
 }
 
 func TestApplyChildrenConfig_PerResourceExcludeOverridesRoot(t *testing.T) {
-	r := &RemoteReconciler{
+	r := &Reconciler{
 		decl: &orktypes.RemoteReconcilerDeclaration{
 			Payload: &orktypes.RemotePayloadConfig{
 				Children: &orktypes.RemotePayloadChildrenConfig{
@@ -346,7 +346,7 @@ func TestApplyChildrenConfig_PerResourceExcludeOverridesRoot(t *testing.T) {
 
 func TestResolveArgs_NilPrepared_FallsBack(t *testing.T) {
 	raw := map[string]interface{}{"env": "{{ .spec.env }}"}
-	r := &RemoteReconciler{
+	r := &Reconciler{
 		decl: &orktypes.RemoteReconcilerDeclaration{
 			Endpoint: "http://svc/reconcile",
 			Args:     raw,

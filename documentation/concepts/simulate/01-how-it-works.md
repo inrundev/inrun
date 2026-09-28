@@ -14,7 +14,7 @@ At startup, the cluster contains only the CR you provide. The informer cache is 
 
 ## The reconciler
 
-`ork simulate` by default runs the same `GenericReconciler` that runs in production. When your operator binary registers a custom constructor or hooks, simulate runs that code instead — still the actual production reconciler, not a mock.
+`ork simulate` by default runs the same `Generic Reconciler` that runs in production. When your operator binary registers a custom constructor or hooks, simulate runs that code instead — still the actual production reconciler, not a mock.
 
 This means simulation catches things that static analysis cannot:
 

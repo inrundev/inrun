@@ -137,7 +137,7 @@ imports:
     - oci://ghcr.io/myorg/katalogs/database-operator:v1.0.0
 ```
 
-The difference is in the binary. When you run `make build` in `10-hooks-katalog/`, the generated type registry includes registrations for the Database type and hook factory. automatically. Declarative katalogs compile into the standard GenericReconciler with no extra code.
+The difference is in the binary. When you run `make build` in `10-hooks-katalog/`, the generated type registry includes registrations for the Database type and hook factory. automatically. Declarative katalogs compile into the standard Generic Reconciler with no extra code.
 
 ---
 

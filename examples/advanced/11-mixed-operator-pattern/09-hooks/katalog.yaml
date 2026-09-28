@@ -26,7 +26,7 @@ spec:
         alias: dbv1alpha1
       operatorBox:
         reconcile:
-          default: true   # GenericReconciler is still used — hooks are additive
+          default: true   # Generic Reconciler is still used — hooks are additive
           hooks:
             location: github.com/orkspace/orkestra-mixed-operator-pattern/09-hooks/hooks
             function: DatabaseHooks

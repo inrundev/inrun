@@ -4,7 +4,7 @@
 //
 // This file registers compiled Go types and external functions.
 // Dynamic template CRDs do not appear here — they are handled at runtime
-// by GenericReconciler without any code generation.
+// by generic.Reconciler without any code generation.
 package typeregistry
 
 import (
@@ -62,7 +62,7 @@ func init() {
 // Hook entries — factory functions for Go hook implementations.
 //
 //	Called by addHooks() during Katalog validation to wire HookFactory
-//	onto the CRD entry. GenericReconciler calls HookFactory() once at
+//	onto the CRD entry. generic.Reconciler calls HookFactory() once at
 //	startCRDWorkers time to obtain the typed hooks.
 //
 // Reconciler entries — constructor functions for custom reconcilers.

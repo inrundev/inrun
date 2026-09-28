@@ -1,6 +1,6 @@
 # Constructor
 
-A constructor replaces the GenericReconciler entirely. Your Go code owns the full reconcile loop — declarative templates are not applied when `default: false`.
+A constructor replaces the Generic Reconciler entirely. Your Go code owns the full reconcile loop — declarative templates are not applied when `default: false`.
 
 Use a constructor when:
 
@@ -28,7 +28,7 @@ spec:
 
       operatorBox:
         reconcile:
-          default: false   # disable GenericReconciler; constructor owns everything
+          default: false   # disable Generic Reconciler; constructor owns everything
           workers: 5
           resync: 10s
 
@@ -46,7 +46,7 @@ spec:
               notifyOnSuccess: true
 ```
 
-`reconcile.default: false` tells Orkestra not to use the GenericReconciler. The constructor at `location` provides the complete reconcile implementation.
+`reconcile.default: false` tells Orkestra not to use the Generic Reconciler. The constructor at `location` provides the complete reconcile implementation.
 
 The `@version` suffix in `location` is shorthand for the `version:` field — `location: github.com/myorg/reconciler@v2.0.0` is equivalent to declaring `version: v2.0.0` separately. Both forms are accepted; the `@` shorthand keeps the declaration compact.
 

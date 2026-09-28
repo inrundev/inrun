@@ -2,7 +2,7 @@
 //
 //	IN DEVELOPMENT
 //
-// Rollback implementation for GenericReconciler.
+// Rollback implementation for Reconciler.
 //
 // Three responsibilities:
 //
@@ -18,7 +18,7 @@
 // The rollback phase state lives in status.phase. The reconciler checks it
 // at the top of reconcileImpl and blocks normal reconciliation while active.
 // The only exit from rollback is a spec generation change.
-package reconciler
+package generic
 
 import (
 	"bytes"
@@ -48,7 +48,7 @@ import (
 //
 // The spec is gzip-compressed and base64-encoded to keep the annotation small.
 // A typical CRD spec compresses to a few hundred bytes.
-func (r *GenericReconciler[PTR]) snapshotSpec(ctx context.Context, obj PTR) error {
+func (r *Reconciler[PTR]) snapshotSpec(ctx context.Context, obj PTR) error {
 	u, ok := any(obj).(*unstructured.Unstructured)
 	if !ok {
 		return nil // only unstructured mode supports snapshotting
@@ -151,7 +151,7 @@ func (h *rollbackFailureHistory) record(required int) {
 // shouldRollback returns true when the rollback trigger conditions are met.
 // Uses the effective trigger from DerivedRollback so that rollBackOnError: true
 // uses the correct default threshold even when no explicit rollback block is set.
-func (r *GenericReconciler[PTR]) shouldRollback(
+func (r *Reconciler[PTR]) shouldRollback(
 	consecutiveFailures int,
 	history *rollbackFailureHistory,
 ) bool {
@@ -193,7 +193,7 @@ func isRollbackActive(obj domain.Object) bool {
 // Explicit path (onRollback: block declared):
 //   - Uses the declared templates as-is.
 //   - Resolver has .previous.* injected — templates use .previous.spec.* references.
-func (r *GenericReconciler[PTR]) runRollback(ctx context.Context, resolver *orktmpl.Resolver, obj PTR) error {
+func (r *Reconciler[PTR]) runRollback(ctx context.Context, resolver *orktmpl.Resolver, obj PTR) error {
 	rollback := r.crd.Box().DerivedRollback()
 	if rollback == nil || rollback.OnRollback == nil {
 		logger.Info().
@@ -245,7 +245,7 @@ func (r *GenericReconciler[PTR]) runRollback(ctx context.Context, resolver *orkt
 
 // markRollbackActive writes RollbackGenerationAnnotation = currentGen, signalling
 // that rollback is active for this generation. isRollbackActive reads this annotation.
-func (r *GenericReconciler[PTR]) markRollbackActive(ctx context.Context, obj PTR) error {
+func (r *Reconciler[PTR]) markRollbackActive(ctx context.Context, obj PTR) error {
 	patchData := fmt.Sprintf(
 		`{"metadata":{"annotations":{%q:%q}}}`,
 		orktypes.RollbackGenerationAnnotation, fmt.Sprintf("%d", obj.GetGeneration()),
@@ -273,7 +273,7 @@ func (r *GenericReconciler[PTR]) markRollbackActive(ctx context.Context, obj PTR
 
 // getFailureHistory returns the failure history for a CR key, creating it if absent.
 // Caller must not hold rollbackMu.
-func (r *GenericReconciler[PTR]) getFailureHistory(key string) *rollbackFailureHistory {
+func (r *Reconciler[PTR]) getFailureHistory(key string) *rollbackFailureHistory {
 	r.rollbackMu.Lock()
 	defer r.rollbackMu.Unlock()
 	h, ok := r.rollbackHistory[key]
@@ -285,7 +285,7 @@ func (r *GenericReconciler[PTR]) getFailureHistory(key string) *rollbackFailureH
 }
 
 // clearFailureHistory resets the failure history for a CR key after a successful reconcile.
-func (r *GenericReconciler[PTR]) clearFailureHistory(key string) {
+func (r *Reconciler[PTR]) clearFailureHistory(key string) {
 	r.rollbackMu.Lock()
 	delete(r.rollbackHistory, key)
 	r.rollbackMu.Unlock()
@@ -293,7 +293,7 @@ func (r *GenericReconciler[PTR]) clearFailureHistory(key string) {
 
 // clearRollback removes the rollback annotation, allowing normal reconciliation
 // to resume after the spec has been corrected.
-func (r *GenericReconciler[PTR]) clearRollback(ctx context.Context, obj PTR) error {
+func (r *Reconciler[PTR]) clearRollback(ctx context.Context, obj PTR) error {
 	patchData := fmt.Sprintf(
 		`{"metadata":{"annotations":{%q:null,%q:null}}}`,
 		orktypes.PreviousSpecAnnotation,
@@ -321,7 +321,7 @@ func (r *GenericReconciler[PTR]) clearRollback(ctx context.Context, obj PTR) err
 
 // SetRollbackNotifiers injects CRDHealth callbacks for rollback tracking.
 // Called once by kordinator after constructing the reconciler.
-func (r *GenericReconciler[PTR]) SetRollbackNotifiers(onTrigger, onClear func()) {
+func (r *Reconciler[PTR]) SetRollbackNotifiers(onTrigger, onClear func()) {
 	r.rollbackTriggerFn = onTrigger
 	r.rollbackClearFn = onClear
 }

@@ -31,7 +31,7 @@ import (
 // When generation is NOT needed:
 //
 //	Dynamic template CRDs (only onCreate/onReconcile/onDelete declared)
-//	  GenericReconciler.runTemplateReconcile() reads the Katalog's operatorBox:Config
+//	  generic.Reconciler.runTemplateReconcile() reads the Katalog's operatorBox:Config
 //	  directly at runtime and calls the OrkestraRegistry functions itself.
 //	  No generated file. No ork generate registry. Just ork run.
 func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) {
@@ -94,7 +94,7 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 		// so addHooks() can wire it at startup.
 		//
 		// This is NOT needed for declarative template CRDs — those are handled
-		// at runtime by GenericReconciler.runTemplateReconcile() with no
+		// at runtime by generic.Reconciler.runTemplateReconcile() with no
 		// registration required.
 		if crd.DefaultReconcile() && crd.Box().Reconcile != nil && crd.Box().Reconcile.Hooks != nil {
 			h := crd.Box().Reconcile.Hooks
@@ -240,7 +240,7 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 
 	// ── Nothing to generate ───────────────────────────────────────────────────
 	// Pure dynamic template Katalogs produce zero entries — this is correct.
-	// GenericReconciler handles them at runtime. Exit cleanly, no file written.
+	// generic.Reconciler handles them at runtime. Exit cleanly, no file written.
 	if len(entries) == 0 && len(recEntries) == 0 && len(hookEntries) == 0 &&
 		len(targetHookEntries) == 0 && len(targetRecEntries) == 0 {
 		return false, nil

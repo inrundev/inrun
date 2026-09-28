@@ -2,7 +2,7 @@
 
 The `pkg/resources` package is the standard library of Kubernetes resource operations used across Orkestra. It provides idempotent, owner-reference-aware Create, Update, Delete, and Resolve functions for every resource type.
 
-It started as the layer `GenericReconciler` dispatches to when processing declarative templates, but it has since grown into a general-purpose library: hooks and constructors call these functions directly too. See `examples/advanced/09-hooks`, `examples/advanced/10-constructor`, and `examples/from-controller-runtime` for real usage from user-written Go code.
+It started as the layer `Generic Reconciler` dispatches to when processing declarative templates, but it has since grown into a general-purpose library: hooks and constructors call these functions directly too. See `examples/advanced/09-hooks`, `examples/advanced/10-constructor`, and `examples/from-controller-runtime` for real usage from user-written Go code.
 
 ---
 

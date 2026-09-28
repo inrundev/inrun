@@ -72,7 +72,7 @@ ork webhook play --webhook payments-repo \
 
 ## The reconciler layer
 
-**`ork simulate`** runs the real reconciler — not a mock, the same `GenericReconciler` that runs in production — against an in-memory Kubernetes store. Template expressions, `when:` conditions, `onCreate`/`onReconcile` order, status propagation, all cycles. Sub-second.
+**`ork simulate`** runs the real reconciler — not a mock, the same `Generic Reconciler` that runs in production — against an in-memory Kubernetes store. Template expressions, `when:` conditions, `onCreate`/`onReconcile` order, status propagation, all cycles. Sub-second.
 
 ```yaml
 # simulate.yaml
