@@ -68,9 +68,9 @@ func Merge(target *string, incoming, sep string) {
 	}
 }
 
-// IsRunningInCluster returns true when running inside a Kubernetes pod.
+// IsRunningInPod returns true when running inside a Kubernetes pod.
 // The service account token is always present inside a pod.
-func IsRunningInCluster() bool {
+func IsRunningInPod() bool {
 	_, err := os.Stat("/var/run/secrets/kubernetes.io/serviceaccount/token")
 	return err == nil
 }

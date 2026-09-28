@@ -48,7 +48,7 @@ func (k *Katalog) NamespaceProtectionGVRs() []GVREntry {
 	if !k.IsNamespaceProtectionEnabled() {
 		return nil
 	}
-	if !utils.IsRunningInCluster() {
+	if !utils.IsRunningInPod() {
 		return nil
 	}
 

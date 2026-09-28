@@ -382,7 +382,7 @@ func (ws *WebhookServer) Start(ctx context.Context) error {
 	if kat.IsNamespaceProtectionEnabled() && len(kat.NamespaceProtectionGVRs()) > 0 {
 		ws.namespaceProtection.Store(true)
 	}
-	if kat.IsStrictModeEnabled() && utils.IsRunningInCluster() {
+	if kat.IsStrictModeEnabled() && utils.IsRunningInPod() {
 		ws.strictMode.Store(true)
 	}
 
@@ -393,7 +393,7 @@ func (ws *WebhookServer) Start(ctx context.Context) error {
 		Bool("webhooks", ws.webhooksEnabled).
 		Msg("webhook server configured")
 
-	if !utils.IsRunningInCluster() {
+	if !utils.IsRunningInPod() {
 		logger.Debug().Msg("not running in cluster — skipping webhook HTTPS setup")
 		return nil
 	}

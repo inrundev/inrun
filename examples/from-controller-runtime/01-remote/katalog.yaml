@@ -20,7 +20,7 @@ notes:
     - name: reconcilerEndpoint
       description: Remote reconciler HTTP endpoint — in-cluster Service or local dev server
       expression: >
-        {{ if .ork.inCluster }}
+        {{ if .ork.inPod }}
           http://webapp-reconciler.default.svc.cluster.local:8025/reconcile
         {{ else }}
           http://localhost:8025/reconcile

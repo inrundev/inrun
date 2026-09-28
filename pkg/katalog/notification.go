@@ -210,7 +210,7 @@ func (k *Katalog) IsNotificationStandalone() bool {
 	}
 	// Outside a cluster there is no gateway infrastructure.
 	// Fall back to standalone so local dev and CLI usage work without one.
-	return !utils.IsRunningInCluster()
+	return !utils.IsRunningInPod()
 }
 
 // HasTeams returns whether a katalog has teams configured or not

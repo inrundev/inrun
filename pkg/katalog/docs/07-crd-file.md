@@ -55,7 +55,7 @@ When a CRD declares multiple versions, `populateAPITypesFromCRDFile` picks:
 
 `crdFile` auto-applies the CRD at `ork run` startup via `applyCRDFilesIfNeeded` in
 `cmd/cli/run_dev.go`. This function is behind `//go:build !runtime` and only runs when
-`!utils.IsRunningInCluster()` — it never executes inside a Helm-deployed Orkestra.
+`!utils.IsRunningInPod()` — it never executes inside a Helm-deployed Orkestra.
 
 For Helm-based deployments, the CRD must be pre-installed (`kubectl apply -f crd.yaml`)
 before deploying the Orkestra chart. The `crdFile` field is still valid in the Katalog

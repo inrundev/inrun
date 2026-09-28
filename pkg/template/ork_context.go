@@ -27,11 +27,11 @@ func orkContextFromCtx(ctx context.Context) OrkContext {
 // lifetime of the process. Injected into every resolver as ".ork.*" so any
 // template expression can read them without a note or a function call.
 //
-//	{{ .ork.inCluster }}   → true when running inside a Kubernetes pod
+//	{{ .ork.inPod }}   → true when running inside a Kubernetes pod
 //	{{ .ork.namespace }}   → the namespace Orkestra is deployed in
 //	{{ .ork.version }}     → the running Orkestra version string
 type OrkContext struct {
-	InCluster bool   `json:"inCluster"`
+	InPod     bool   `json:"inPod"`
 	Namespace string `json:"namespace"`
 	Version   string `json:"version"`
 }
@@ -39,7 +39,7 @@ type OrkContext struct {
 // NewOrkContext builds the runtime context. Called once at startup.
 func NewOrkContext(namespace, version string) OrkContext {
 	return OrkContext{
-		InCluster: utils.IsRunningInCluster(),
+		InPod:     utils.IsRunningInPod(),
 		Namespace: namespace,
 		Version:   version,
 	}
@@ -48,7 +48,7 @@ func NewOrkContext(namespace, version string) OrkContext {
 // asMap returns the context as a plain map for injection into the resolver data map.
 func (o OrkContext) asMap() map[string]interface{} {
 	return map[string]interface{}{
-		"inCluster": o.InCluster,
+		"inPod":     o.InPod,
 		"namespace": o.Namespace,
 		"version":   o.Version,
 	}

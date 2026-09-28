@@ -132,16 +132,16 @@ The katalog declares a `reconcilerEndpoint` note that picks the right URL based 
 notes:
   functions:
     - name: reconcilerEndpoint
-      expression: '{{ if .ork.inCluster }}http://webapp-reconciler.default.svc.cluster.local:8025/reconcile{{ else }}http://localhost:8025/reconcile{{ end }}'
+      expression: '{{ if .ork.inPod }}http://webapp-reconciler.default.svc.cluster.local:8025/reconcile{{ else }}http://localhost:8025/reconcile{{ end }}'
 ```
 
-`.ork.inCluster` is a runtime fact Orkestra injects into every template expression. `false` locally, `true` inside a cluster. The endpoint field then simply reads:
+`.ork.inPod` is a runtime fact Orkestra injects into every template expression. `false` locally, `true` inside a pod. The endpoint field then simply reads:
 
 ```yaml
 endpoint: "{{ reconcilerEndpoint }}"
 ```
 
-One katalog file. No separate variant for E2E or in-cluster deploys.
+One katalog file. No separate variant for E2E or in-pod deploys.
 
 ---
 
@@ -167,11 +167,11 @@ Pure `net/http`. No controller-runtime. No kubeconfig. Still Go.
 
 ## Runtime facts
 
-The `reconcilerEndpoint` note uses `.ork.inCluster` — one of three facts Orkestra injects into every template expression at startup.
+The `reconcilerEndpoint` note uses `.ork.inPod` — one of three facts Orkestra injects into every template expression at startup.
 
 | Key | Description |
 |-----|-------------|
-| `.ork.inCluster` | `true` when running inside a Kubernetes pod |
+| `.ork.inPod` | `true` when running inside a Kubernetes pod |
 | `.ork.namespace` | Namespace Orkestra is deployed in |
 | `.ork.version` | Running Orkestra version string |
 

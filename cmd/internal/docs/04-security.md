@@ -61,7 +61,7 @@ WireWebhookHousekeeperInfra(ws, kube, kat, kfg)
 
 ## Skipped outside a pod
 
-`KonductGateway` calls `utils.IsRunningInCluster()` before calling `ensureSecurity`. Outside a Kubernetes pod there is no service account token, no API server to patch, and no webhook endpoint reachable by the Kubernetes control plane.
+`KonductGateway` calls `utils.IsRunningInPod()` before calling `ensureSecurity`. Outside a Kubernetes pod there is no service account token, no API server to patch, and no webhook endpoint reachable by the Kubernetes control plane.
 
 ---
 

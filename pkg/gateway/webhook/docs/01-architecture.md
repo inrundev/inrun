@@ -24,7 +24,7 @@ gateway.go
       • registers CRDWatcher — housekeeper watches conversion CRDs for MODIFIED events
   → ws.Start(ctx)
       • sets deletionProtection / namespaceProtection / strictMode atomic flags
-      • (skips if !IsRunningInCluster())
+      • (skips if !IsRunningInPod())
       • registers HTTPS endpoints based on Katalog capabilities
       • starts HTTPS server in goroutine
       • registers webhook configurations in goroutine (best-effort)
