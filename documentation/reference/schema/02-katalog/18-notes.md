@@ -87,3 +87,4 @@ A Motif can also use `notes.include:` — the path resolves relative to the Moti
 
 - [Notes concept](../../../concepts/notes/index.md) — built-in reference, composition guide
 - [Motif schema](../01-motif/index.md) — `notes:` on a Motif
+- [Runtime context (.ork.*)](../../runtime-context/index.md) — process-level facts available in every expression

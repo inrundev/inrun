@@ -101,6 +101,9 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	if !ok {
 		return nil, fmt.Errorf("CRD %q not found in Katalog", crdName)
 	}
+	if crdEntry.WithRemoteDecl() {
+		return nil, ErrRemoteReconciler
+	}
 
 	// Strip cross-namespace copy resources (fromNamespace / toNamespaces) from
 	// all hook phases before the fake reconciler runs. These require a live API

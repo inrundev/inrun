@@ -9,15 +9,16 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/orkspace/orkestra/domain"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // EnrichmentResult holds the result of a built-in lookup.
 type EnrichmentResult struct {
-	Found        bool
-	Kind         string // canonical PascalCase name (e.g. "Deployment")
-	BuiltIn      BuiltInKind
-	DisplayGroup string // "core" for empty group, otherwise the group string
+	found        bool
+	kind         string // canonical PascalCase name (e.g. "Deployment")
+	builtIn      BuiltInKind
+	displayGroup string // "core" for empty group, otherwise the group string
 }
 
 // LookupBuiltIn looks up a Kind in the built-in registry.
@@ -39,12 +40,36 @@ func LookupBuiltIn(kind string) EnrichmentResult {
 		displayGroup = "core"
 	}
 	return EnrichmentResult{
-		Found:        true,
-		Kind:         b.Kind,
-		BuiltIn:      b,
-		DisplayGroup: displayGroup,
+		found:        true,
+		kind:         b.Kind,
+		builtIn:      b,
+		displayGroup: displayGroup,
 	}
 }
+
+// Found reports whether the lookup matched a known built-in.
+func (r EnrichmentResult) Found() bool { return r.found }
+
+// Kind returns the canonical PascalCase kind name (e.g. "Deployment").
+func (r EnrichmentResult) Kind() string { return r.kind }
+
+// DisplayGroup returns the display group: "core" for the empty API group, otherwise the group string.
+func (r EnrichmentResult) DisplayGroup() string { return r.displayGroup }
+
+// Group returns the API group (e.g. "apps"; empty string for core resources).
+func (r EnrichmentResult) Group() string { return r.builtIn.Group }
+
+// Version returns the API version (e.g. "v1").
+func (r EnrichmentResult) Version() string { return r.builtIn.Version }
+
+// Plural returns the plural resource name (e.g. "deployments").
+func (r EnrichmentResult) Plural() string { return r.builtIn.Plural }
+
+// Namespaced reports whether the resource is namespace-scoped.
+func (r EnrichmentResult) Namespaced() bool { return r.builtIn.Namespaced }
+
+// APIPath returns the API path prefix used in REST URLs (e.g. "apis" or "api").
+func (r EnrichmentResult) APIPath() string { return r.builtIn.APIPath }
 
 // LookupBuiltInByGVK looks up a native resource by group, version, and kind.
 // Returns the BuiltInKind and true when found. Used to detect custom: declarations
@@ -53,10 +78,10 @@ func LookupBuiltIn(kind string) EnrichmentResult {
 // canonical version matches, preventing false positives on non-Kubernetes GVKs.
 func LookupBuiltInByGVK(group, version, kind string) (BuiltInKind, bool) {
 	res := LookupBuiltIn(kind)
-	if !res.Found {
+	if !res.found {
 		return BuiltInKind{}, false
 	}
-	b := res.BuiltIn
+	b := res.builtIn
 	if !strings.EqualFold(b.Group, group) {
 		return BuiltInKind{}, false
 	}
@@ -66,25 +91,41 @@ func LookupBuiltInByGVK(group, version, kind string) (BuiltInKind, bool) {
 // GVRForBuiltIn returns the GroupVersionResource for a built-in kind.
 func GVRForBuiltIn(kind string) (schema.GroupVersionResource, bool) {
 	res := LookupBuiltIn(kind)
-	if !res.Found {
+	if !res.found {
 		return schema.GroupVersionResource{}, false
 	}
-	b := res.BuiltIn
+	b := res.builtIn
 	return schema.GroupVersionResource{Group: b.Group, Version: b.Version, Resource: b.Plural}, true
+}
+
+// GVKForBuiltIn returns the GroupVersionKind for a built-in kind.
+func GVKForBuiltIn(kind string) (schema.GroupVersionKind, bool) {
+	res := LookupBuiltIn(kind)
+	if !res.found {
+		return schema.GroupVersionKind{}, false
+	}
+	b := res.builtIn
+	return schema.GroupVersionKind{Group: b.Group, Version: b.Version, Kind: b.Kind}, true
 }
 
 // BuiltInMeta returns metadata for a built-in kind. Zero value when unknown.
 func BuiltInMeta(kind string) BuiltInKind {
 	res := LookupBuiltIn(kind)
-	if !res.Found {
+	if !res.found {
 		return BuiltInKind{}
 	}
-	return res.BuiltIn
+	return res.builtIn
 }
 
 // IsBuiltIn reports whether kind is a known Kubernetes built-in (case-insensitive).
+// Also matches plural resource names (e.g. "deployments") so callers that hold
+// only a plural — without an explicit kind — get the right answer.
 func IsBuiltIn(kind string) bool {
-	return LookupBuiltIn(kind).Found
+	if LookupBuiltIn(kind).found {
+		return true
+	}
+	_, ok := LookupBuiltInByResource(kind)
+	return ok
 }
 
 // LookupBuiltInByResource looks up a built-in by singular key, shorthand, or plural
@@ -106,6 +147,38 @@ func LookupBuiltInByResource(resource string) (BuiltInKind, bool) {
 		}
 	}
 	return BuiltInKind{}, false
+}
+
+// ToManagedResourceByKind converts a builtin resource to a domain.ManagedResource
+// definition using kind.
+func ToManagedResourceByKind(kind string) domain.ManagedResource {
+	res := LookupBuiltIn(kind)
+	if !res.found {
+		return domain.ManagedResource{}
+	}
+	return domain.ManagedResource{
+		APIVersion: res.builtIn.APIVersion().String(),
+		Kind:       res.builtIn.Kind,
+		Group:      res.builtIn.Group,
+		Version:    res.builtIn.Version,
+		Plural:     res.builtIn.Plural,
+	}
+}
+
+// ToManagedResourceByResource converts a builtin resource to a domain.ManagedResource
+// deletion using resource.
+func ToManagedResourceByResource(resource string) domain.ManagedResource {
+	res, ok := LookupBuiltInByResource(resource)
+	if !ok {
+		return domain.ManagedResource{}
+	}
+	return domain.ManagedResource{
+		APIVersion: res.APIVersion().String(),
+		Kind:       res.Kind,
+		Group:      res.Group,
+		Version:    res.Version,
+		Plural:     res.Plural,
+	}
 }
 
 // AllBuiltInKinds returns all canonical Kind names, sorted alphabetically.

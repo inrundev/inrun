@@ -66,6 +66,8 @@ Go hooks are available when you need them — complex external API calls not cov
 conditional logic not covered by the `when:` and `or:` blocks. But hooks are additive. The
 declarative layer handles everything else.
 
+If the reconcile logic already lives in a running service — or if Go is not the language you want — `reconcile.remote` is a third path: point Orkestra at an HTTP endpoint in any language. The service receives the CR as JSON and returns resources and status. No Go. No YAML templates. No Kubernetes SDK. See [Remote Reconciler](../concepts/reconciler-model/09-remote-reconciler.md).
+
 !!! note "When Go becomes necessary"
     The 10-20% of operator logic that genuinely requires code — creating a user
     inside PostgreSQL, reading another cluster's state

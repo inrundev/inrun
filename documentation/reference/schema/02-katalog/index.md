@@ -92,6 +92,7 @@ This scaffolds the simplest Katalog — a single CRD that creates a Deployment a
 | [Profiles concept](../../../concepts/profiles/10-user-defined-profiles.md) | `profiles:` — user-defined named profiles |
 | [15-enrich.md](15-enrich.md) | `enrich` — post-reconcile enrichment |
 | [16-resource-types.md](16-resource-types.md) | Supported resource types and placeholder fields |
+| [31-reconcile-remote.md](31-reconcile-remote.md) | `reconcile.remote` — remote HTTP reconciler |
 
 ---
 

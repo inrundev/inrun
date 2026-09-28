@@ -41,6 +41,15 @@ func UnwrapCacheTombstone(obj interface{}) interface{} {
 	return obj
 }
 
+// Raw returns the object's underlying field map without copying.
+// Callers that need to mutate must call DeepCopy first.
+func Raw(obj Object) map[string]interface{} {
+	if u, ok := obj.(*unstructured.Unstructured); ok {
+		return u.Object
+	}
+	return nil
+}
+
 // ToUnstructured unwraps a cache tombstone and converts to *unstructured.Unstructured.
 // Works for both dynamic informers (which store *unstructured.Unstructured) and typed
 // informers (which store scheme-registered concrete types such as *v1alpha1.WebApp).

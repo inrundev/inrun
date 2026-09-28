@@ -205,6 +205,11 @@ func simulateOne(ctx context.Context, kat *katalog.Katalog, crdName string, cr *
 	} else {
 		result, err = simulate.Run(ctx, kat, crdName, cr, maxCycles, opts)
 	}
+	if errors.Is(err, simulate.ErrRemoteReconciler) {
+		spin.Stop()
+		fmt.Printf("  %s remote reconciler — skipping (dispatches to an external endpoint at runtime)\n\n", dim("note:"))
+		return nil
+	}
 	if err != nil {
 		spin.Failure()
 		fmt.Printf("\n  %s %v\n", red("error:"), err)
@@ -887,6 +892,10 @@ observed cycle-1 create operations as expect: rules. Edit and refine from there.
 			crdOpts.Peers = in.peers
 			crdOpts.ExistingInstances = in.existing
 			result, err := simulate.Run(cmd.Context(), kat, name, in.cr, 10, crdOpts)
+			if errors.Is(err, simulate.ErrRemoteReconciler) {
+				fmt.Printf("  %s %s: remote reconciler — skipping\n", dim("note:"), name)
+				continue
+			}
 			if err != nil {
 				return fmt.Errorf("simulating %s: %w", name, err)
 			}

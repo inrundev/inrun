@@ -8,6 +8,7 @@ import (
 
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
+	"github.com/orkspace/orkestra/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -144,7 +145,7 @@ func (f *FakeKubeclient) ScopedFor(eval func(string) (string, bool)) kubeclient.
 	if len(f.rawArgs) == 0 {
 		return &cp
 	}
-	cp.args = kubeclient.ResolveArgsMap(f.rawArgs, eval)
+	cp.args = kubeclient.Args(utils.ResolveArgsMap(f.rawArgs, eval))
 	return &cp
 }
 

@@ -32,6 +32,12 @@ func (k *Katalog) AddReconcilers() error {
 				continue
 			}
 
+			// Remote reconciler: no compiled constructor — dispatched by kordinator at runtime.
+			if crd.WithRemoteDecl() {
+				k.enabledCRDs[name] = crd
+				continue
+			}
+
 			constructorFn, ok := orktypes.ReconcilerRegistry[crd.GroupVersionKind]
 			if !ok {
 				return fmt.Errorf(

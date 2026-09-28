@@ -14,6 +14,7 @@ import (
 	"github.com/orkspace/orkestra/pkg/resources/shared"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/orkspace/orkestra/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -91,7 +92,7 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 	}
 
 	// Build GVR from APIVersion/Kind
-	gvk, err := buildGVK(spec.APIVersion, spec.Kind)
+	gvk, err := utils.GVKFromFields(spec.APIVersion, spec.Kind)
 	if err != nil {
 		return fmt.Errorf("custom.Create: invalid GVK: %w", err)
 	}
@@ -161,7 +162,7 @@ func Update(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 		return err
 	}
 
-	gvk, err := buildGVK(spec.APIVersion, spec.Kind)
+	gvk, err := utils.GVKFromFields(spec.APIVersion, spec.Kind)
 	if err != nil {
 		return fmt.Errorf("custom.Update: invalid GVK: %w", err)
 	}
@@ -279,7 +280,7 @@ func Update(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 // Skips deletion if the resource was created by orkdoctor or if Orkestra is not the owner.
 func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface, owner domain.Object, name, namespace, apiVersion, kind string) error {
 	// Build GVK and resolve GVR
-	gvk, err := buildGVK(apiVersion, kind)
+	gvk, err := utils.GVKFromFields(apiVersion, kind)
 	if err != nil {
 		return fmt.Errorf("custom.DeleteIfOwned: invalid GVK: %w", err)
 	}
@@ -403,17 +404,6 @@ func buildUnstructured(spec ResolvedCustomResourceSpec, owner domain.Object, gvk
 	}
 
 	return u
-}
-
-func buildGVK(apiVersion, kind string) (schema.GroupVersionKind, error) {
-	if apiVersion == "" || kind == "" {
-		return schema.GroupVersionKind{}, fmt.Errorf("apiVersion and kind are required")
-	}
-	gv, err := schema.ParseGroupVersion(apiVersion)
-	if err != nil {
-		return schema.GroupVersionKind{}, err
-	}
-	return gv.WithKind(kind), nil
 }
 
 // Resolve builds a ResolvedCustomResourceSpec from a CustomResource.

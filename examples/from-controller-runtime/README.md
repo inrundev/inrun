@@ -30,19 +30,31 @@ The starting point. A standard controller-runtime operator: `Reconcile(ctx, req)
 
 ---
 
-### [01 — declarative (zero Go)](../from-controller-runtime/01-declarative/README.md)
+### [01 — remote (zero build)](../from-controller-runtime/01-remote/README.md)
+
+The same WebApp operator as an HTTP endpoint. The reconciler is a bash script — no Go, no SDK, no Kubernetes client. Orkestra calls it on every watch event; it returns a Deployment and Service as JSON; Orkestra applies them.
+
+Pick this when the reconcile logic lives outside Go — in any language, on any host.
+
+```
+01-remote/
+```
+
+---
+
+### [02 — declarative (zero Go)](../from-controller-runtime/02-declarative/README.md)
 
 The same WebApp operator as a pure Katalog. No Go, no custom binary, no image to build. Orkestra's runtime creates the Deployment and Service from declared templates.
 
 Pick this when your operator only creates Kubernetes resources and applies rules.
 
 ```
-01-declarative/
+02-declarative/
 ```
 
 ---
 
-### [02 — hybrid (recommended if using hooks)](../from-controller-runtime/02-hybrid/README.md)
+### [03 — hybrid (recommended if using hooks)](../from-controller-runtime/03-hybrid/README.md)
 
 The Deployment is declared in the Katalog. The Service is created in Go with type-safe access to `obj.Spec.Port`. Orkestra runs declared templates first, then the hook adds what templates cannot express.
 
@@ -54,17 +66,17 @@ This is the 90/10 pattern: declare what Orkestra handles well, write Go for the 
 
 ---
 
-### [03 — hooks only](../from-controller-runtime/03-hooks-only/README.md)
+### [04 — hooks only](../from-controller-runtime/04-hooks-only/README.md)
 
 Both resources — Deployment and Service — are created in Go. No declared templates alongside the hook. Use when every resource requires computed logic that templates cannot express, or when type-safe control over the full spec matters more than keeping YAML declarations.
 
 ```
-03-hooks-only/
+04-hooks-only/
 ```
 
 ---
 
-### [04 — constructor: zero changes](../from-controller-runtime/04-constructor-migration/README.md)
+### [05 — constructor: zero changes](../from-controller-runtime/05-constructor-migration/README.md)
 
 The migration path. The existing `Reconcile` method is completely untouched — same signature, same body, same return types. Two lines wire it into Orkestra:
 
@@ -84,7 +96,7 @@ Remove `SetupWithManager`, `Scheme`, and `main.go`. Everything inside `Reconcile
 
 ---
 
-### [05 — constructor: Orkestra resources](../from-controller-runtime/05-constructor-orkestra-resources/README.md)
+### [06 — constructor: Orkestra resources](../from-controller-runtime/06-constructor-orkestra-resources/README.md)
 
 Same constructor, but replace the manual Get / IsNotFound / Create / Patch pattern with the `pkg/resources` library:
 
@@ -104,29 +116,29 @@ return orkdeploy.Update(ctx, kube, obj, spec)
 `Update` handles create-if-absent, drift correction, owner references, and system labels. `DeleteIfOwned` is a no-op if the resource does not exist or belongs to a different CR.
 
 ```
-05-constructor-orkestra-resources/
+06-constructor-orkestra-resources/
 ```
 
 ---
 
-### [06 — ork migrate](../from-controller-runtime/06-ork-migrate/README.md)
+### [07 — ork migrate](../from-controller-runtime/07-ork-migrate/README.md)
 
 Run `ork migrate` against the `00-controller-runtime-baseline` controller and see the constructor path generated automatically. Work through the flagged TODOs, then build and simulate.
 
 ```
-06-ork-migrate/
+07-ork-migrate/
 ```
 
 ---
 
-### [07 — all options](../from-controller-runtime/07-all-options/README.md)
+### [08 — all options](../from-controller-runtime/08-all-options/README.md)
 
 All five patterns running in one binary via Komposer. Each CRD has its own reconcile loop, queue, and worker pool. `hybridApp` and `hooksApp` wait for `declarativeApp` before activating.
 
 Use this to compare patterns side by side, or as the starting point before distributing each katalog independently via OCI.
 
 ```
-07-all-options/
+08-all-options/
 ```
 
 ---
@@ -135,13 +147,14 @@ Use this to compare patterns side by side, or as the starting point before distr
 
 | | Go required | Custom binary | What you own |
 |---|---|---|---|
-| **01 declarative** | No | No | Nothing — pure YAML |
-| **02 hybrid** | Yes — hook only | Yes | The 10% templates can't express |
-| **03 hooks only** | Yes — all resources | Yes | All child resource specs in Go |
-| **04 constructor migration** | Yes — full reconciler | Yes | Reconcile unchanged; manager removed |
-| **05 constructor resources** | Yes — full reconciler | Yes | Reconcile logic; resource ops simplified |
-| **06 ork migrate** | Yes — tool generates it | Yes | Starting from an existing operator |
-| **07 all options** | Depends on options used | Yes | All five patterns in one Komposer |
+| **01 remote** | No | No | An HTTP endpoint in any language |
+| **02 declarative** | No | No | Nothing — pure YAML |
+| **03 hybrid** | Yes — hook only | Yes | The 10% templates can't express |
+| **04 hooks only** | Yes — all resources | Yes | All child resource specs in Go |
+| **05 constructor migration** | Yes — full reconciler | Yes | Reconcile unchanged; manager removed |
+| **06 constructor resources** | Yes — full reconciler | Yes | Reconcile logic; resource ops simplified |
+| **07 ork migrate** | Yes — tool generates it | Yes | Starting from an existing operator |
+| **08 all options** | Depends on options used | Yes | All patterns in one Komposer |
 
 Declarative runs on the standard Orkestra runtime. All typed options require a custom runtime binary — that is what the choice costs.
 
@@ -151,14 +164,22 @@ Declarative runs on the standard Orkestra runtime. All typed options require a c
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/01-declarative
+cd from-controller-runtime/01-remote
+RECONCILER_TOKEN=my-token ./reconciler/reconciler.sh &
+ork run --dev
+```
+
+Declarative (no reconciler process needed):
+
+```bash
+cd from-controller-runtime/02-declarative
 ork run --dev
 ```
 
 Typed operators need a build step first:
 
 ```bash
-cd from-controller-runtime/02-hybrid
+cd from-controller-runtime/03-hybrid
 make registry && make build
 ork run --dev
 ```

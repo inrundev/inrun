@@ -64,6 +64,9 @@ type Katalog interface {
 	// ResolveGVR resolves a ManagedResource into a concrete GroupVersionResource.
 	ResolveGVR(r ManagedResource) (schema.GroupVersionResource, bool)
 
+	// ResolveGVK resolves a ManagedResource into a concrete GroupVersionKind.
+	ResolveGVK(r ManagedResource) (schema.GroupVersionKind, bool)
+
 	// CRD name lookups — resolve a GVK/GVR/kind/target string to the katalog CRD entry name.
 	GetNameByGVKString(gvkString string) string
 	GetNameByGVRString(gvrString string) string

@@ -30,20 +30,20 @@ func TestLookupBuiltIn_CoreGroup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.kind, func(t *testing.T) {
 			result := LookupBuiltIn(tt.kind)
-			if !result.Found {
+			if !result.Found() {
 				t.Fatalf("expected %q to be found in built-in registry", tt.kind)
 			}
-			if result.BuiltIn.Plural != tt.expectedPlural {
-				t.Errorf("plural: expected %q, got %q", tt.expectedPlural, result.BuiltIn.Plural)
+			if result.builtIn.Plural != tt.expectedPlural {
+				t.Errorf("plural: expected %q, got %q", tt.expectedPlural, result.builtIn.Plural)
 			}
-			if result.BuiltIn.Group != tt.expectedGroup {
-				t.Errorf("group: expected %q, got %q", tt.expectedGroup, result.BuiltIn.Group)
+			if result.builtIn.Group != tt.expectedGroup {
+				t.Errorf("group: expected %q, got %q", tt.expectedGroup, result.builtIn.Group)
 			}
-			if result.DisplayGroup != tt.expectedPKG {
-				t.Errorf("display group: expected %q, got %q", tt.expectedPKG, result.DisplayGroup)
+			if result.DisplayGroup() != tt.expectedPKG {
+				t.Errorf("display group: expected %q, got %q", tt.expectedPKG, result.DisplayGroup())
 			}
-			if result.BuiltIn.Namespaced != tt.namespaced {
-				t.Errorf("namespaced: expected %v, got %v", tt.namespaced, result.BuiltIn.Namespaced)
+			if result.builtIn.Namespaced != tt.namespaced {
+				t.Errorf("namespaced: expected %v, got %v", tt.namespaced, result.builtIn.Namespaced)
 			}
 		})
 	}
@@ -63,17 +63,17 @@ func TestLookupBuiltIn_AppsGroup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.kind, func(t *testing.T) {
 			result := LookupBuiltIn(tt.kind)
-			if !result.Found {
+			if !result.Found() {
 				t.Fatalf("expected %q to be found", tt.kind)
 			}
-			if result.BuiltIn.Group != "apps" {
-				t.Errorf("expected group=apps, got %q", result.BuiltIn.Group)
+			if result.builtIn.Group != "apps" {
+				t.Errorf("expected group=apps, got %q", result.builtIn.Group)
 			}
-			if result.BuiltIn.Version != "v1" {
-				t.Errorf("expected version=v1, got %q", result.BuiltIn.Version)
+			if result.builtIn.Version != "v1" {
+				t.Errorf("expected version=v1, got %q", result.builtIn.Version)
 			}
-			if result.BuiltIn.Plural != tt.plural {
-				t.Errorf("expected plural=%q, got %q", tt.plural, result.BuiltIn.Plural)
+			if result.builtIn.Plural != tt.plural {
+				t.Errorf("expected plural=%q, got %q", tt.plural, result.builtIn.Plural)
 			}
 		})
 	}
@@ -84,11 +84,11 @@ func TestLookupBuiltIn_CaseInsensitive(t *testing.T) {
 	for _, v := range variants {
 		t.Run(v, func(t *testing.T) {
 			result := LookupBuiltIn(v)
-			if !result.Found {
+			if !result.Found() {
 				t.Errorf("expected %q to resolve to Deployment", v)
 			}
-			if result.Kind != "Deployment" {
-				t.Errorf("expected canonical Kind=Deployment, got %q", result.Kind)
+			if result.Kind() != "Deployment" {
+				t.Errorf("expected canonical Kind=Deployment, got %q", result.Kind())
 			}
 		})
 	}
@@ -99,7 +99,7 @@ func TestLookupBuiltIn_NotFound(t *testing.T) {
 	for _, kind := range unknowns {
 		t.Run(kind, func(t *testing.T) {
 			result := LookupBuiltIn(kind)
-			if result.Found {
+			if result.Found() {
 				t.Errorf("expected %q to NOT be found in built-in registry", kind)
 			}
 		})
@@ -121,11 +121,11 @@ func TestLookupBuiltIn_CanonicalKindName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			result := LookupBuiltIn(tt.input)
-			if !result.Found {
+			if !result.Found() {
 				t.Fatalf("expected %q to be found", tt.input)
 			}
-			if result.Kind != tt.expected {
-				t.Errorf("canonical name: expected %q, got %q", tt.expected, result.Kind)
+			if result.Kind() != tt.expected {
+				t.Errorf("canonical name: expected %q, got %q", tt.expected, result.Kind())
 			}
 		})
 	}

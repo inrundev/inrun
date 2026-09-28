@@ -80,6 +80,9 @@ type ResolvedDeploymentSpec struct {
 	// nil means use Kubernetes defaults (25%/25%).
 	RollingUpdate *orktypes.RollingUpdateBehavior
 
+	// Command overrides the container entrypoint command.
+	Command []string
+
 	// Volumes / VolumeMounts — pod volumes and container mounts.
 	Volumes      []orktypes.VolumeSource
 	VolumeMounts []orktypes.VolumeMount

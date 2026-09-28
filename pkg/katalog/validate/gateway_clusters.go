@@ -16,7 +16,7 @@ func (e *executor) ValidateGatewayClusters() error {
 		return nil
 	}
 
-	if err := validateClusterEntries(e.k.Gateway); err != nil {
+	if err := validateClusterEntries(e.k.Gateway, &e.k.Warnings); err != nil {
 		return err
 	}
 
@@ -25,7 +25,7 @@ func (e *executor) ValidateGatewayClusters() error {
 
 // validateClusterEntries checks that each gateway.clusters entry is structurally valid:
 // endpoint required, exactly one credential form declared, required fields present.
-func validateClusterEntries(g *orktypes.GatewayConfig) error {
+func validateClusterEntries(g *orktypes.GatewayConfig, warnings *orktypes.Warnings) error {
 	if !g.HasClusters() {
 		return nil
 	}
@@ -47,7 +47,7 @@ func validateClusterEntries(g *orktypes.GatewayConfig) error {
 		}
 
 		if cfg.HasSecretRef() {
-			if err := validateSecretRef(cfg.SecretRef, prefix+".secretRef"); err != nil {
+			if err := validateSecretRefWithKatalogWarning(cfg.SecretRef, prefix+".secretRef", warnings); err != nil {
 				return err
 			}
 			if cfg.Insecure {
@@ -62,25 +62,15 @@ func validateClusterEntries(g *orktypes.GatewayConfig) error {
 			if !cfg.HasCARef() && !cfg.Insecure {
 				return fmt.Errorf("%s %s: tokenRef requires caRef unless insecure: true is set", failureMark(), prefix)
 			}
-			if err := validateSecretRef(cfg.TokenRef, prefix+".tokenRef"); err != nil {
+			if err := validateSecretRefWithKatalogWarning(cfg.TokenRef, prefix+".tokenRef", warnings); err != nil {
 				return err
 			}
 			if cfg.HasCARef() {
-				if err := validateSecretRef(cfg.CARef, prefix+".caRef"); err != nil {
+				if err := validateSecretRefWithKatalogWarning(cfg.CARef, prefix+".caRef", warnings); err != nil {
 					return err
 				}
 			}
 		}
-	}
-	return nil
-}
-
-func validateSecretRef(ref *orktypes.APISecretRef, path string) error {
-	if ref.Name == "" {
-		return fmt.Errorf("%s %s: name is required", failureMark(), path)
-	}
-	if ref.Key == "" {
-		return fmt.Errorf("%s %s: key is required", failureMark(), path)
 	}
 	return nil
 }

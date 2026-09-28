@@ -4,7 +4,6 @@ package kubeclient
 import (
 	"encoding/json"
 	"strconv"
-	"strings"
 )
 
 // Args is the typed view of the args: map declared in katalog.yaml
@@ -66,37 +65,6 @@ func (a Args) Sub(key string) Args {
 func (a Args) Slice(key string) []interface{} {
 	v, _ := a[key].([]interface{})
 	return v
-}
-
-// ResolveArgsMap walks rawArgs and evaluates any string values that contain
-// Go template expressions using eval. Non-string and non-template values pass through unchanged.
-func ResolveArgsMap(rawArgs map[string]interface{}, eval func(string) (string, bool)) Args {
-	out := make(Args, len(rawArgs))
-	for k, v := range rawArgs {
-		out[k] = resolveArgValue(v, eval)
-	}
-	return out
-}
-
-func resolveArgValue(v interface{}, eval func(string) (string, bool)) interface{} {
-	switch val := v.(type) {
-	case string:
-		if !strings.Contains(val, "{{") {
-			return val
-		}
-		if resolved, ok := eval(val); ok {
-			return resolved
-		}
-		return val
-	case map[string]interface{}:
-		sub := make(map[string]interface{}, len(val))
-		for k, sv := range val {
-			sub[k] = resolveArgValue(sv, eval)
-		}
-		return sub
-	default:
-		return v
-	}
 }
 
 // BindArgs JSON-round-trips the args map into dst (must be a pointer to a struct).

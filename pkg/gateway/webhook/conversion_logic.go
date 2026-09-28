@@ -9,6 +9,7 @@ import (
 	"github.com/orkspace/orkestra/pkg/note"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/orkspace/orkestra/pkg/utils"
 )
 
 // applyConversion converts obj from its current version to targetAPIVersion.
@@ -95,7 +96,7 @@ func resolveValue(r *orktmpl.Resolver, v interface{}) (interface{}, error) {
 			if resolved == "" {
 				return nil, nil
 			}
-			return orktypes.TryCoerceString(resolved), nil
+			return utils.TryCoerceString(resolved), nil
 		}
 		return resolved, nil
 	case map[string]interface{}:

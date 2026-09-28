@@ -299,6 +299,13 @@ var BuiltinNotes = []NoteInfo{
 		Keywords:    []string{"domain", "string", "url", "hostname", "protocol", "normalize", "strip"},
 	},
 	{
+		Name:        "inCluster",
+		Domain:      "env",
+		Description: "Reports whether Orkestra is running inside a Kubernetes pod. Determined once at startup by checking for the service account token path. Use with `ternary` to write Katalogs that work both locally (via `ork run`) and deployed in-cluster without a separate file per environment.",
+		Example:     "# Switch a remote reconciler endpoint between local dev and in-cluster service\nnotes:\n  functions:\n    - name: reconcilerEndpoint\n      expression: '{{ ternary inCluster \"http://webapp-reconciler.default.svc.cluster.local:8025/reconcile\" \"http://localhost:8025/reconcile\" }}'\n\noperatorBox:\n  reconcile:\n    default: false\n    remote:\n      endpoint: \"{{ reconcilerEndpoint }}\"",
+		Keywords:    []string{"cluster", "environment", "pod", "local", "dev", "remote", "endpoint", "boolean", "inclu"},
+	},
+	{
 		Name:        "creationTimestamp",
 		Domain:      "fields",
 		Description: "Return `metadata.creationTimestamp` as an RFC3339 string.",
