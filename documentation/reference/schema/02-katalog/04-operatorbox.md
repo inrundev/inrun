@@ -507,3 +507,31 @@ autoscale:
 | `do.resync` | Override resync interval |
 
 ---
+
+## `runtime.cleanup`
+
+Declares when to delete a CR after it reaches a terminal state. Evaluated at the pre-reconcile gate — before the reconciler is called, for every reconciler type (remote, generic, and typed).
+
+When conditions are met, Orkestra removes deletion-protection labels (if present) and deletes the CR. Child resources are garbage-collected through owner references.
+
+```yaml
+operatorBox:
+  runtime:
+    cleanup:
+      or:
+        - field: .status.phase
+          equals: Completed
+        - field: .status.phase
+          equals: Failed
+      deleteAfter: 60s
+```
+
+| Field | Required | Default | Description |
+|---|---|---|---|
+| `when` | no | — | AND conditions — all must be true. |
+| `or` | no | — | OR conditions — at least one must be true. When both `when` and `or` are declared, both must pass. |
+| `deleteAfter` | no | `0` (immediate) | Grace period between the condition being met and deletion. Orkestra annotates the CR with `orkestra.orkspace.io/cleanup-pending-since` on the first-met cycle and re-evaluates on the next. |
+
+Conditions use the same field/operator syntax as `preReconcile.reconcileGate`. See [Conditions reference](../conditions/index.md).
+
+---

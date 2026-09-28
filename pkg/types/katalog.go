@@ -4,6 +4,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -360,6 +361,15 @@ func (r *APISecretRef) SecretNamespace() string {
 		return ""
 	}
 	return r.Namespace
+}
+
+// IsValid reports whether the ref is structurally complete: name and key are required.
+// Namespace is optional — an empty namespace means "use the operator's own namespace".
+func (r *APISecretRef) IsValid() bool {
+	if r == nil {
+		return false
+	}
+	return strings.TrimSpace(r.Name) != "" && strings.TrimSpace(r.Key) != ""
 }
 
 // ── APIConfig methods ─────────────────────────────────────────

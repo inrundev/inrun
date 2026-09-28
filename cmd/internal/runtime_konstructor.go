@@ -29,7 +29,10 @@ import (
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/vitals"
 	"github.com/orkspace/orkestra/pkg/runtime/queue"
 	"github.com/orkspace/orkestra/pkg/runtime/reconciler"
+	"github.com/orkspace/orkestra/pkg/runtime/reconciler/remote"
+	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/orkspace/orkestra/pkg/version"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -55,6 +58,13 @@ type runtimeKfg struct {
 // is visible. Splitting it would scatter the dependency graph across files
 // and make it harder to reason about startup order.
 func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) *runtimeKfg {
+
+	// ── 0. Runtime facts — available to all template expressions as .ork.* ──────
+	orkestraNamespace := kfg.Cluster().Namespace()
+	ctx = orktmpl.ContextWithOrkContext(ctx, orktmpl.NewOrkContext(
+		kfg.Cluster().Namespace(),
+		version.Version,
+	))
 
 	// ── 1a. Instance ────────────────────────────────────────────────────────────
 	kfg.SetInstance(konfig.Runtime())
@@ -83,13 +93,15 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 	// Created here, started later by orkestra in registration order.
 
 	kube := kubeclient.NewKubeclient(kfg, scheme)
-	cs := kube.Clientset()
 
 	// kubeclient is started immediately — the informer factory's missing-CRD
 	// check needs the REST config during construction, before orkestra.Start().
 	if err := kube.Start(ctx); err != nil {
 		logger.Fatal().Err(err).Msg("failed to start kubeclient")
 	}
+
+	// Clientset is built inside Start; capture after Start so cs is never nil.
+	cs := kube.Clientset()
 
 	// HealthServer — HTTP-only (health, readiness, metrics, Katalog API routes).
 	// Routes registered below before Start() binds the port.
@@ -313,6 +325,22 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 					kat,              // Katalog for notification wiring
 				)
 			}
+		} else if crd.WithRemoteDecl() {
+			logger.Debug().Str("gvk", gvk).Msg("wiring RemoteReconciler factory")
+
+			remoteDecl := crd.Box().Reconcile.Remote
+			crdManagedResources := crd.RemoteManagedResources()
+			remoteKube := kube.WithStoreFor(infFactory.StoreFor)
+			factory = func() domain.Reconciler {
+				return remote.NewRemoteReconciler(
+					remoteDecl,
+					crd.GVK(),
+					remoteKube,
+					ev,
+					crdManagedResources,
+					orkestraNamespace,
+				)
+			}
 		} else {
 			if !crd.ConstructorEnabled() {
 				logger.Fatal().
@@ -339,15 +367,17 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			}
 		}
 
-		// Wrap with MuxReconciler when per-target constructors are declared.
-		// MuxReconciler dispatches each reconcile cycle to the matching target's
-		// domain.Reconciler, falling back to the base factory for CRs with no
-		// annotation or an unrecognised target name.
-		if crd.HasTargetConstructorFactories() {
+		// Wrap with MuxReconciler when per-target constructors or remote reconcilers
+		// are declared. MuxReconciler dispatches each reconcile cycle to the matching
+		// target's domain.Reconciler, falling back to the base factory for CRs with
+		// no annotation or an unrecognised target name.
+		if crd.HasTargetConstructorFactories() || crd.HasTargetRemoteDeclarations() {
 			baseFactory := factory
 			crdCopy := crd
 			factory = func() domain.Reconciler {
-				targets := make(map[string]domain.Reconciler, len(crdCopy.TargetReconcilerFactories))
+				ctorCount := len(crdCopy.TargetReconcilerFactories)
+				remoteDecls := crdCopy.TargetRemoteDeclarations()
+				targets := make(map[string]domain.Reconciler, ctorCount+len(remoteDecls))
 				for targetName, ctor := range crdCopy.TargetReconcilerFactories {
 					var targetKube kubeclient.Interface = kube.
 						WithInformer(infCopy).
@@ -360,11 +390,22 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 					}
 					targets[targetName] = ctor(targetKube)
 				}
+				for targetName, remoteDecl := range remoteDecls {
+					targets[targetName] = remote.NewRemoteReconciler(
+						remoteDecl,
+						crdCopy.GVK(),
+						kube.WithStoreFor(infFactory.StoreFor),
+						ev,
+						crdCopy.RemoteManagedResources(),
+						orkestraNamespace,
+					)
+				}
 				return orktarget.NewMuxReconciler(infCopy, targets, baseFactory())
 			}
 			logger.Debug().
 				Str("gvk", gvk).
-				Int("targets", len(crd.TargetReconcilerFactories)).
+				Int("constructorTargets", len(crd.TargetReconcilerFactories)).
+				Int("remoteTargets", len(crd.TargetRemoteDeclarations())).
 				Msg("wiring MuxReconciler factory")
 		}
 

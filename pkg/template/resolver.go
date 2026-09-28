@@ -164,11 +164,23 @@ func NewResolver(ctx context.Context, obj domain.Object) (*Resolver, error) {
 		data["inputs"] = map[string]interface{}{}
 	}
 
+	// Inject runtime facts under .ork.* from the context when available,
+	// falling back to zero values so templates that reference .ork.* never panic.
+	data["ork"] = orkContextFromCtx(ctx).asMap()
+
 	return &Resolver{
 		data:           data,
 		ownerName:      obj.GetName(),
 		ownerNamespace: obj.GetNamespace(),
 	}, nil
+}
+
+// WithOrkContext replaces the ".ork" key in the resolver's data map with the
+// provided runtime context. Call this after NewResolver when the full context
+// (namespace, version) is available.
+func (r *Resolver) WithOrkContext(ctx OrkContext) *Resolver {
+	r.data["ork"] = ctx.asMap()
+	return r
 }
 
 // NewResolverFromMap creates a Resolver from a plain map[string]interface{}.

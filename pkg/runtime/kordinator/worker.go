@@ -9,7 +9,6 @@ import (
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/logger"
 	"github.com/orkspace/orkestra/pkg/metrics"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator/maintain"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/post"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/vitals"
@@ -173,19 +172,42 @@ func (k *Kontroller) processItemForGVK(ctx context.Context, gvk string, item que
 		}
 	}
 
-	// Maintain: apply labels, annotations, and finalizers before reconcile.
+	// Box and resolver are extracted once here and shared by cleanup and maintain.
+	var cleanupTriggered bool
 	if hasEntry && prepared != nil {
-		box := prepare.BoxFrom(prepared)
-		resolver := prepared.Context.(*orktmpl.Resolver)
-		if maintErr := maintain.Apply(ctx, maintain.Input{
-			CRD:      entry.CRD,
-			Kat:      k.kat,
-			Kube:     k.kube,
-			Recorder: k.event,
-		}, prepared.Object, box, resolver); maintErr != nil {
+		box, resolver := prepare.BoxFrom(prepared), prepared.Context.(*orktmpl.Resolver)
+
+		triggered, waitFor, cleanupErr := k.runCleanupGate(ctx, prepared.Object, box, resolver)
+		if cleanupErr != nil {
+			logger.Error().Err(cleanupErr).Str("gvk", gvk).Str("key", item.Key).Msg("cleanup evaluation failed")
+			wq.AddRateLimited(item)
+			k.failedReconcile(gvk)
+			return
+		}
+		if waitFor > 0 {
+			// Grace period running — schedule re-evaluation after the remaining duration.
+			wq.Forget(item)
+			wq.AddAfter(item, waitFor)
+			return
+		}
+		cleanupTriggered = triggered
+
+		if maintErr := k.runMaintain(ctx, entry, prepared.Object, box, resolver, cleanupTriggered); maintErr != nil {
 			logger.Error().Err(maintErr).Str("gvk", gvk).Str("key", item.Key).Msg("maintain failed")
 			wq.AddRateLimited(item)
 			k.failedReconcile(gvk)
+			return
+		}
+
+		if cleanupTriggered {
+			if delErr := k.deleteCR(ctx, prepared.Object); delErr != nil {
+				logger.Error().Err(delErr).Str("gvk", gvk).Str("key", item.Key).Msg("cleanup: delete failed")
+				wq.AddRateLimited(item)
+				k.failedReconcile(gvk)
+				return
+			}
+			wq.Forget(item)
+			k.successReconcile(gvk)
 			return
 		}
 	}
@@ -195,16 +217,15 @@ func (k *Kontroller) processItemForGVK(ctx context.Context, gvk string, item que
 
 	// Post: status patch + emit — always runs, even on reconcile failure.
 	if hasEntry && prepared != nil {
-		box := prepare.BoxFrom(prepared)
-		resolver := prepared.Context.(*orktmpl.Resolver)
-		health := k.crdHealthMap[gvk]
-		post.Apply(ctx, post.Input{
-			CRD:        entry.CRD,
-			Kube:       k.kube,
-			Recorder:   k.event,
-			MetricsMap: health.GetAutoMetrics(),
-			HealthMap:  health.HealthAsMap(),
-		}, prepared.Object, resolver, box, reconcileErr, toPostValResult(valResult))
+		reconcileErr = runPost(ctx, PostInput{
+			Kube:      k.kube,
+			Event:     k.event,
+			Health:    k.crdHealthMap[gvk],
+			CRD:       entry.CRD,
+			Prepared:  prepared,
+			Result:    result,
+			ValResult: toPostValResult(valResult),
+		}, reconcileErr)
 	}
 
 	if reconcileErr != nil {
@@ -215,27 +236,7 @@ func (k *Kontroller) processItemForGVK(ctx context.Context, gvk string, item que
 	}
 
 	wq.Forget(item)
-
-	requeueAfter := result.RequeueAfter
-	if requeueAfter == 0 {
-		if hasEntry {
-			obj := k.objectFromCache(entry, item.Key)
-			var resolver *orktmpl.Resolver
-			if prepared != nil {
-				resolver = prepared.Context.(*orktmpl.Resolver)
-			} else if obj != nil {
-				if r, err := orktmpl.NewResolver(ctx, obj); err == nil {
-					health := k.crdHealthMap[gvk]
-					resolver = r.WithUserNotes(k.kat.UserNotes()).
-						WithProfiles(k.kat.UserProfiles()).
-						WithHealth(health.HealthAsMap()).
-						WithMetrics(health.GetAutoMetrics())
-				}
-			}
-			requeueAfter = k.kat.EvaluateRequeue(ctx, entry.CRD.Name, obj, resolver)
-		}
-	}
-	if requeueAfter > 0 {
+	if requeueAfter := k.resolveRequeueAfter(ctx, gvk, entry, item.Key, result, prepared); requeueAfter >= 0 {
 		wq.AddAfter(item, requeueAfter)
 	}
 }

@@ -251,10 +251,21 @@ func (c *CRDEntry) WithConstructorManagedResources() bool {
 	return c.WithConstructorDecl() && r != nil && r.ConstructorDecl != nil && len(r.ConstructorDecl.ManagedResources) > 0
 }
 
-// WithAnyManagedResources reports whether hooks or constructor declare resources,
+// WithRemoteDecl returns true if the CRD has a remote reconciler declaration.
+func (c *CRDEntry) WithRemoteDecl() bool {
+	return c.Box().Reconcile.HasRemoteDecl()
+}
+
+// WithRemoteManagedResources reports whether this CRD has a remote reconciler with managed resources.
+func (c *CRDEntry) WithRemoteManagedResources() bool {
+	r := c.Box().Reconcile
+	return c.WithRemoteDecl() && r != nil && r.Remote != nil && len(r.Remote.ManagedResources) > 0
+}
+
+// WithAnyManagedResources reports whether hooks, constructor, or remote reconciler declare resources,
 // including per-target operatorBox declarations.
 func (c *CRDEntry) WithAnyManagedResources() bool {
-	if c.WithHookManagedResources() || c.WithConstructorManagedResources() {
+	if c.WithHookManagedResources() || c.WithConstructorManagedResources() || c.WithRemoteManagedResources() {
 		return true
 	}
 	if c.Serve == nil || c.Serve.Target.Entries == nil {
@@ -287,15 +298,26 @@ func (c *CRDEntry) ConstructorManagedResources() []domain.ManagedResource {
 	return r.ConstructorDecl.ManagedResources
 }
 
+// RemoteManagedResources returns the list of managed resources declared under the remote reconciler block.
+func (c *CRDEntry) RemoteManagedResources() []domain.ManagedResource {
+	r := c.Box().Reconcile
+	if r == nil || r.Remote == nil {
+		return nil
+	}
+	return r.Remote.ManagedResources
+}
+
 // AllManagedResources returns the combined list of managed resources from hooks,
 // constructor, and per-target operatorBox declarations. Duplicates across targets
 // are fine — startWatchInformers deduplicates by GVR via the covered set.
 func (c *CRDEntry) AllManagedResources() []domain.ManagedResource {
 	hooks := c.HookManagedResources()
 	ctor := c.ConstructorManagedResources()
-	out := make([]domain.ManagedResource, 0, len(hooks)+len(ctor))
+	remote := c.RemoteManagedResources()
+	out := make([]domain.ManagedResource, 0, len(hooks)+len(ctor)+len(remote))
 	out = append(out, hooks...)
 	out = append(out, ctor...)
+	out = append(out, remote...)
 	if c.Serve != nil {
 		for _, entry := range c.Serve.Target.Entries {
 			out = append(out, targetManagedResources(entry.OperatorBox)...)
@@ -646,6 +668,49 @@ func (c *CRDEntry) HasTargetConstructorFactories() bool {
 		}
 	}
 	return false
+}
+
+// HasTargetRemoteDeclarations reports whether any serve target declares a
+// remote reconciler (operatorBox.reconcile.remote:).
+func (c *CRDEntry) HasTargetRemoteDeclarations() bool {
+	if c.Serve == nil || c.Serve.Target.Entries == nil {
+		return false
+	}
+	for _, entry := range c.Serve.Target.Entries {
+		box := entry.OperatorBox
+		if box.Empty() {
+			continue
+		}
+		if r := box.Reconcile; !r.Empty() && r.HasRemoteDecl() {
+			return true
+		}
+	}
+	return false
+}
+
+// TargetRemoteDeclarations returns a map of target name → RemoteReconcilerDeclaration
+// for every target entry that declares a remote reconciler.
+// Returns nil when no target declares one.
+func (c *CRDEntry) TargetRemoteDeclarations() map[string]*RemoteReconcilerDeclaration {
+	if c.Serve == nil || c.Serve.Target.Entries == nil {
+		return nil
+	}
+	var out map[string]*RemoteReconcilerDeclaration
+	for name, entry := range c.Serve.Target.Entries {
+		box := entry.OperatorBox
+		if box.Empty() {
+			continue
+		}
+		r := box.Reconcile
+		if r.Empty() || !r.HasRemoteDecl() {
+			continue
+		}
+		if out == nil {
+			out = make(map[string]*RemoteReconcilerDeclaration)
+		}
+		out[name] = r.Remote
+	}
+	return out
 }
 
 // IsEnabledAllEndpoints reports whether the all endpoints are disabled for this CRD.

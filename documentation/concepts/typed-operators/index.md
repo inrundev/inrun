@@ -73,6 +73,10 @@ Watches on secondary resources, retry backoff, enqueue filtering — declared. Y
 !!! note "Templates already see the full spec"
     Template expressions have access to the complete CR — `{{ .spec.* }}`, `{{ .status.* }}`, `{{ .metadata.* }}` — regardless of whether `apiTypes.location` is set. The template resolver converts any object to `map[string]interface{}` before executing expressions. Setting `location` is for Go code only.
 
+## When not to write Go at all
+
+If the reconcile logic already lives in a running service — or if Go is not the language you want — `reconcile.remote` is the path. Point Orkestra at an HTTP endpoint; the service receives the CR as JSON and returns resources and status. No Go, no YAML templates, no Kubernetes SDK. See [Remote Reconciler](../reconciler-model/09-remote-reconciler.md).
+
 ## When to write Go
 
 Stay declarative when your operator creates Kubernetes resources and applies rules. Reach for Go when you need:

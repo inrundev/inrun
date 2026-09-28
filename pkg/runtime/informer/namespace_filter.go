@@ -148,6 +148,17 @@ func extractNamespace(obj interface{}) string {
 	return ""
 }
 
+// extractGeneration returns metadata.generation for obj, or 0 if unavailable.
+func extractGeneration(obj interface{}) int64 {
+	obj = domain.UnwrapCacheTombstone(obj)
+	if rObj, ok := obj.(runtime.Object); ok {
+		if accessor, err := meta.Accessor(rObj); err == nil {
+			return accessor.GetGeneration()
+		}
+	}
+	return 0
+}
+
 // NamespaceFilterSummary returns a human-readable description of the filter
 // for logging. Called once at informer registration, not on the hot path.
 func NamespaceFilterSummary(f *NamespaceFilter) string {

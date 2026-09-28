@@ -2,9 +2,12 @@
 
 When a CR is applied to your cluster, Orkestra reconciles it — reads your Katalog, acts on it, and keeps the declared state correct over time. How it does that depends on which reconciler model you are using.
 
+!!! tip "What is a reconciler"
+    A reconciler in Orkestra is anything that can receive a PreparedRequest and return a result. That includes Go constructors, declarative YAML, and any HTTP server — in any language, running anywhere.
+
 ---
 
-## Two reconciler models
+## Reconciler models
 
 ### Generic Reconciler
 
@@ -52,9 +55,27 @@ operatorBox:
 
 Orkestra provides the informer, workqueue, worker pool, leader election, and metrics. Your `Reconcile` method handles the business logic. If you are migrating from controller-runtime, `ork migrate` automates the initial scaffolding — see [from-controller-runtime](../typed-operators/05-migration.md).
 
+### Remote Reconciler
+
+When the reconcile logic lives in a separate service — or when Go is not the language you want to use — declare a remote endpoint. Orkestra POSTs the CR to the endpoint after every watch event; the service returns resources and status. The service needs no kubeconfig, no Kubernetes SDK, and no cluster access.
+
+```yaml
+operatorBox:
+  reconcile:
+    default: false
+    remote:
+      endpoint: "http://my-service/reconcile"
+      timeout: 15s
+      managedResources:
+        - group: apps
+          plural: deployments
+```
+
+Any language. Any runtime. Any host that speaks HTTP. A bash script, a Python service, a payments API with one extra endpoint — all are valid reconcilers. See [Remote Reconciler](09-remote-reconciler.md).
+
 ---
 
-## What the runtime provides to both models
+## What the runtime provides to all models
 
 Regardless of which model you use, Orkestra manages:
 

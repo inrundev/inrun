@@ -43,3 +43,14 @@ func GvkFromObject(obj interface{}, scheme *runtime.Scheme) (*schema.GroupVersio
 
 	return &gvks[0], nil
 }
+
+func GVKFromFields(apiVersion, kind string) (schema.GroupVersionKind, error) {
+	if apiVersion == "" || kind == "" {
+		return schema.GroupVersionKind{}, fmt.Errorf("apiVersion and kind are required")
+	}
+	gv, err := schema.ParseGroupVersion(apiVersion)
+	if err != nil {
+		return schema.GroupVersionKind{}, err
+	}
+	return gv.WithKind(kind), nil
+}

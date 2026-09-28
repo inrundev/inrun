@@ -22,6 +22,11 @@ type Input struct {
 	Kat      *katalog.Katalog
 	Kube     kubeclient.Interface
 	Recorder event.Recorder
+
+	// ForCleanup signals that the CR is about to be deleted by the cleanup gate.
+	// When true, maintain sets shouldHaveProtection=false so the two-phase
+	// deletion-protection label removal runs in this cycle — before the Delete call.
+	ForCleanup bool
 }
 
 // Apply ensures finalizers, labels, and annotations are up to date.

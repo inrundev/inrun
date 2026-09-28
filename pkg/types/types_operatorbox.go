@@ -550,6 +550,19 @@ func (c *OperatorBoxConfig) EffectiveRollBackOnError() bool {
 	return c != nil && c.Runtime != nil && c.Runtime.RollBackOnError
 }
 
+// HasCleanup reports whether operatorBox.runtime.cleanup has at least one condition.
+func (c *OperatorBoxConfig) HasCleanup() bool {
+	return c != nil && c.Runtime != nil && c.Runtime.HasCleanup()
+}
+
+// EffectiveCleanup returns the cleanup config or nil when absent. Safe on nil receiver.
+func (c *OperatorBoxConfig) EffectiveCleanup() *CleanupConfig {
+	if c == nil || c.Runtime == nil {
+		return nil
+	}
+	return c.Runtime.EffectiveCleanup()
+}
+
 // EffectiveRemoveFinalizers reports whether runtime.removeFinalizers is set. Safe on nil receiver.
 func (c *OperatorBoxConfig) EffectiveRemoveFinalizers() bool {
 	return c != nil && c.Runtime != nil && c.Runtime.RemoveFinalizers

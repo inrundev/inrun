@@ -62,7 +62,7 @@ func EnrichCRDEntry(entry *orktypes.CRDEntry) (orktypes.EnrichmentOutcome, error
 	}
 
 	result := children.LookupBuiltIn(apiTypes.Kind)
-	if !result.Found {
+	if !result.Found() {
 		return orktypes.EnrichmentFailed, fmt.Errorf(
 			"CRD %q: kind %q is not a known Kubernetes built-in and apiTypes "+
 				"is incomplete (missing group, version, plural).\n\n"+
@@ -86,27 +86,27 @@ func EnrichCRDEntry(entry *orktypes.CRDEntry) (orktypes.EnrichmentOutcome, error
 
 	// Apply enrichment
 	IsNamespaced := true
-	if !result.BuiltIn.Namespaced {
+	if !result.Namespaced() {
 		IsNamespaced = false
 	}
 
-	apiTypes.Kind = result.Kind
-	apiTypes.Group = result.BuiltIn.Group
-	apiTypes.Version = result.BuiltIn.Version
-	apiTypes.Plural = result.BuiltIn.Plural
-	apiTypes.APIPath = result.BuiltIn.APIPath
+	apiTypes.Kind = result.Kind()
+	apiTypes.Group = result.Group()
+	apiTypes.Version = result.Version()
+	apiTypes.Plural = result.Plural()
+	apiTypes.APIPath = result.APIPath()
 	entry.Namespaced = &IsNamespaced
 
 	// Mark as a built-in for informational logging and ork validate output
 	entry.IsBuiltIn = true
-	entry.BuiltInGroup = result.DisplayGroup
+	entry.BuiltInGroup = result.DisplayGroup()
 
 	logger.Debug().
 		Str("crd", entry.Name).
-		Str("kind", result.Kind).
-		Str("group", result.DisplayGroup).
-		Str("version", result.BuiltIn.Version).
-		Str("plural", result.BuiltIn.Plural).
+		Str("kind", result.Kind()).
+		Str("group", result.DisplayGroup()).
+		Str("version", result.Version()).
+		Str("plural", result.Plural()).
 		Msg("built-in: enriched kind-only declaration")
 
 	return orktypes.EnrichmentApplied, nil

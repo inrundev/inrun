@@ -35,7 +35,9 @@ func applyLabels(ctx context.Context, in Input, obj domain.Object, resolver *ork
 	mgr.EnsureManagedLabel(obj)
 
 	if in.Kat.IsDeletionProtectionEnabled() {
-		shouldHaveProtection := in.Kat.IsDeletionProtectionEnabled() && in.CRD.ShouldProtectCRs()
+		// ForCleanup overrides protection so the two-phase label removal runs
+		// before the kordinator issues the Delete call on this same cycle.
+		shouldHaveProtection := !in.ForCleanup && in.Kat.IsDeletionProtectionEnabled() && in.CRD.ShouldProtectCRs()
 		mgr.EnsureDeletionProtectionLabel(obj, shouldHaveProtection)
 
 		effectiveStrict := in.CRD.IsStrictDeletionProtection(in.Kat.IsStrictModeEnabled())

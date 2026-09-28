@@ -20,6 +20,7 @@ package children
 
 import (
 	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // BuiltInKind holds the fully-qualified API metadata for a Kubernetes
@@ -487,6 +488,11 @@ var builtInRegistry = map[string]BuiltInKind{
 		Namespaced: true, APIPath: "/apis",
 		SkipObservedGeneration: true, OrkestraInternal: true,
 	},
+}
+
+func (b BuiltInKind) APIVersion() schema.GroupVersion {
+	gvk, _ := GVKForBuiltIn(b.Kind)
+	return gvk.GroupVersion()
 }
 
 // shorthandIndex maps each shorthand alias to its canonical registry key.

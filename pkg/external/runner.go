@@ -61,7 +61,7 @@ func Run(
 		if err != nil {
 			return resolver, fmt.Errorf("external[%d].body: %w", i, err)
 		}
-		credential, _, err := resolveAuth(ctx, call.Auth, cs)
+		credential, _, err := ResolveAuth(ctx, call.Auth, cs)
 		if err != nil {
 			return resolver, fmt.Errorf("external[%d] %q: %w", i, call.Name, err)
 		}

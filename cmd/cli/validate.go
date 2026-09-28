@@ -193,6 +193,7 @@ Examples:
 			}
 			printRuntimePermissionsSection(k.GenerateRuntimeRBACRules())
 			printGatewayPermissionsSection(k.GenerateGatewayRBACRules())
+			printRuntimeContext()
 			fmt.Println()
 		}
 
@@ -756,6 +757,14 @@ func printValidateProfiles(reg orktypes.ProfileRegistry) {
 	for _, e := range entries {
 		fmt.Printf("  %s   %s\n", padRight(cyan(e.kind), maxLen), gray(e.name))
 	}
+}
+
+func printRuntimeContext() {
+	fmt.Println()
+	fmt.Printf("%s\n", bold("Runtime context (.ork.*)"))
+	fmt.Printf("  %s   %s\n", padRight(cyan(".ork.inCluster"), 16), gray("true when Orkestra is running inside a Kubernetes pod"))
+	fmt.Printf("  %s   %s\n", padRight(cyan(".ork.namespace"), 16), gray("namespace Orkestra is deployed in"))
+	fmt.Printf("  %s   %s\n", padRight(cyan(".ork.version"), 16), gray("running Orkestra version string"))
 }
 
 func printValidateNotes(reg orktypes.NoteRegistry) {

@@ -3,6 +3,7 @@ package katalog_test
 import (
 	"testing"
 
+	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/katalog"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -314,6 +315,224 @@ func TestGenerateGatewayClusterRBACRules_TemplateCluster(t *testing.T) {
 		if !ok || len(rules) == 0 {
 			t.Errorf("template-routed CRD should appear in cluster %q, but it didn't", cluster)
 		}
+	}
+}
+
+// ── secretNamesFrom / scoped secrets rules ───────────────────────────────────
+
+func hasSecretRuleScoped(rules []rbacv1.PolicyRule, names ...string) bool {
+	for _, r := range rules {
+		if !contains(r.Resources, "secrets") || !contains(r.APIGroups, "") {
+			continue
+		}
+		if len(r.ResourceNames) == 0 {
+			continue
+		}
+		match := true
+		for _, n := range names {
+			if !contains(r.ResourceNames, n) {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+func hasSecretRuleUnscoped(rules []rbacv1.PolicyRule) bool {
+	for _, r := range rules {
+		if contains(r.Resources, "secrets") && contains(r.APIGroups, "") && len(r.ResourceNames) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func remoteCRD(endpoint, secretName string, resources []domain.ManagedResource) orktypes.CRDEntry {
+	auth := (*orktypes.ExternalAuth)(nil)
+	if secretName != "" {
+		auth = &orktypes.ExternalAuth{
+			SecretRef: &orktypes.APISecretRef{Name: secretName, Key: "token", Namespace: "orkestra"},
+		}
+	}
+	return orktypes.CRDEntry{
+		APITypes: orktypes.APITypes{Group: "example.io", Version: "v1alpha1", Kind: "Widget", Plural: "widgets"},
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				Remote: &orktypes.RemoteReconcilerDeclaration{
+					Endpoint:         endpoint,
+					ManagedResources: resources,
+					Auth:             auth,
+				},
+			},
+		},
+	}
+}
+
+// Remote managedResources feed into all three RBAC generators.
+func TestGenerateRBACRules_RemoteManagedResources(t *testing.T) {
+	crd := remoteCRD("https://svc/reconcile", "", []domain.ManagedResource{
+		{Group: "apps", Version: "v1", Plural: "deployments"},
+	})
+	k := katalog.NewKatalogForTest(map[string]orktypes.CRDEntry{"widget": crd})
+
+	for _, tc := range []struct {
+		name  string
+		rules []rbacv1.PolicyRule
+	}{
+		{"GenerateRBACRules", k.GenerateRBACRules()},
+		{"GenerateRuntimeRBACRules", k.GenerateRuntimeRBACRules()},
+	} {
+		found := false
+		for _, r := range tc.rules {
+			if contains(r.APIGroups, "apps") && contains(r.Resources, "deployments") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("%s: expected deployments rule from remote.managedResources — not found", tc.name)
+		}
+	}
+}
+
+// Static remote auth.secretRef → scoped rule.
+func TestGenerateRuntimeRBACRules_RemoteSecretRef_Static(t *testing.T) {
+	crd := remoteCRD("https://svc/reconcile", "my-token", nil)
+	k := katalog.NewKatalogForTest(map[string]orktypes.CRDEntry{"widget": crd})
+	rules := k.GenerateRuntimeRBACRules()
+
+	if !hasSecretRuleScoped(rules, "my-token") {
+		t.Error("expected scoped secrets rule for 'my-token'")
+	}
+	if hasSecretRuleUnscoped(rules) {
+		t.Error("did not expect unscoped secrets rule for all-static refs")
+	}
+}
+
+// Template remote auth.secretRef → unscoped rule only.
+func TestGenerateRuntimeRBACRules_RemoteSecretRef_Template(t *testing.T) {
+	crd := remoteCRD("https://svc/reconcile", `{{ .request.token }}`, nil)
+	k := katalog.NewKatalogForTest(map[string]orktypes.CRDEntry{"widget": crd})
+	rules := k.GenerateRuntimeRBACRules()
+
+	if !hasSecretRuleUnscoped(rules) {
+		t.Error("expected unscoped secrets rule for template ref")
+	}
+}
+
+// Mixed: one static CRD + one template CRD → both a scoped rule and an unscoped rule.
+func TestGenerateRuntimeRBACRules_RemoteSecretRef_Mixed(t *testing.T) {
+	k := katalog.NewKatalogForTest(map[string]orktypes.CRDEntry{
+		"static-crd":   remoteCRD("https://svc/reconcile", "static-token", nil),
+		"template-crd": remoteCRD("https://svc2/reconcile", `{{ .request.token }}`, nil),
+	})
+	rules := k.GenerateRuntimeRBACRules()
+
+	if !hasSecretRuleScoped(rules, "static-token") {
+		t.Error("expected scoped secrets rule for 'static-token' even when template ref exists")
+	}
+	if !hasSecretRuleUnscoped(rules) {
+		t.Error("expected unscoped secrets rule for template ref")
+	}
+}
+
+// Gateway API token with static secretRef → scoped get/create rule.
+func TestGenerateGatewayRBACRules_GatewaySecretRef_Static(t *testing.T) {
+	k := katalog.NewKatalogForTest(nil)
+	k.Gateway = &orktypes.GatewayConfig{
+		Enabled: true,
+		API: &orktypes.GatewayAPIConfig{
+			Enabled: true,
+			Auth: orktypes.APIAuth{
+				Tokens: []orktypes.APIToken{
+					{SecretRef: &orktypes.APISecretRef{Name: "gw-token", Key: "token"}},
+				},
+			},
+		},
+	}
+
+	rules := k.GenerateGatewayRBACRules()
+
+	hasScoped := false
+	for _, r := range rules {
+		if contains(r.Resources, "secrets") && contains(r.Verbs, "create") && contains(r.ResourceNames, "gw-token") {
+			hasScoped = true
+			break
+		}
+	}
+	if !hasScoped {
+		t.Error("expected scoped secrets get/create rule for gateway static secretRef")
+	}
+}
+
+// Gateway API token with template secretRef → unscoped get/create rule.
+func TestGenerateGatewayRBACRules_GatewaySecretRef_Template(t *testing.T) {
+	k := katalog.NewKatalogForTest(nil)
+	k.Gateway = &orktypes.GatewayConfig{
+		Enabled: true,
+		API: &orktypes.GatewayAPIConfig{
+			Enabled: true,
+			Auth: orktypes.APIAuth{
+				Tokens: []orktypes.APIToken{
+					{SecretRef: &orktypes.APISecretRef{Name: `{{ .request.tokenName }}`, Key: "token"}},
+				},
+			},
+		},
+	}
+
+	rules := k.GenerateGatewayRBACRules()
+
+	hasUnscoped := false
+	for _, r := range rules {
+		if contains(r.Resources, "secrets") && contains(r.Verbs, "create") && len(r.ResourceNames) == 0 {
+			hasUnscoped = true
+			break
+		}
+	}
+	if !hasUnscoped {
+		t.Error("expected unscoped secrets get/create rule for gateway template secretRef")
+	}
+}
+
+// Gateway API: one static + one template → both rules emitted.
+func TestGenerateGatewayRBACRules_GatewaySecretRef_Mixed(t *testing.T) {
+	k := katalog.NewKatalogForTest(nil)
+	k.Gateway = &orktypes.GatewayConfig{
+		Enabled: true,
+		API: &orktypes.GatewayAPIConfig{
+			Enabled: true,
+			Auth: orktypes.APIAuth{
+				Tokens: []orktypes.APIToken{
+					{SecretRef: &orktypes.APISecretRef{Name: "static-gw", Key: "token"}},
+					{SecretRef: &orktypes.APISecretRef{Name: `{{ .request.dynamic }}`, Key: "token"}},
+				},
+			},
+		},
+	}
+
+	rules := k.GenerateGatewayRBACRules()
+
+	hasScoped, hasUnscoped := false, false
+	for _, r := range rules {
+		if !contains(r.Resources, "secrets") || !contains(r.Verbs, "create") {
+			continue
+		}
+		if contains(r.ResourceNames, "static-gw") {
+			hasScoped = true
+		}
+		if len(r.ResourceNames) == 0 {
+			hasUnscoped = true
+		}
+	}
+	if !hasScoped {
+		t.Error("expected scoped secrets rule for 'static-gw' even when template token exists")
+	}
+	if !hasUnscoped {
+		t.Error("expected unscoped secrets rule for template token")
 	}
 }
 

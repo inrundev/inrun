@@ -45,7 +45,7 @@
       <strong>Reconciliation, security, and intent delivery</strong> — as runtime services.<br>
       You declare behavior; Orkestra runs it.<br>
       <s style="text-decoration-thickness:1px;text-decoration-color:rgba(255,255,255,0.35);">No boilerplate. No scaffolding. No ceremony.</s><br>
-      Or keep your existing <a href="/docs/guides/migration/" target="_blank" title="Migrate an existing reconciler" style="color:#fff;font-family:var(--mono);font-size:13px;font-weight:700;text-decoration:none;">Reconcile()</a> function and shed the rest.
+      Keep your existing <a href="/docs/guides/migration/" target="_blank" title="Migrate an existing reconciler" style="color:#fff;font-family:var(--mono);font-size:13px;font-weight:700;text-decoration:none;">Reconcile()</a> — or point to <a href="/docs/concepts/reconciler-model/remote-reconciler/" target="_blank" title="Remote reconciler — any HTTP server in any language" style="color:#fff;font-family:var(--mono);font-size:13px;font-weight:700;text-decoration:none;">an HTTP server in any language</a>.
     </p>
 
     <div class="hero-actions" data-reveal data-delay="3">
@@ -157,6 +157,10 @@
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           From controller-runtime
         </button>
+        <button class="cw-tab" onclick="switchTab('panel-remote',this)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Remote server
+        </button>
         <span class="cw-badge"><s>Infrastructure</s> removed</span>
       </div>
 
@@ -209,6 +213,36 @@
     Client: orkadapter.<span class="k">ToClient</span>(kube),
   })
 }</pre>
+        </div>
+      </div>
+
+      <div class="cw-panel" id="panel-remote" hidden>
+        <div class="cw-panel-hd">
+          <span class="cw-fname">katalog.yaml</span>
+          <span class="cw-pill">Any language · No binary · No cluster access</span>
+        </div>
+        <div class="cb">
+<pre><span class="c"># The reconciler is any HTTP server — bash, Python, Go, Rust.</span>
+<span class="c"># It receives the CR as JSON and returns resources + status.</span>
+<span class="c"># No kubeconfig. No SDK. No Kubernetes knowledge required.</span>
+
+<span class="k">operatorBox</span>:
+  <span class="k">reconcile</span>:
+    <span class="k">default</span>: <span class="v">false</span>
+    <span class="k">remote</span>:
+      <span class="k">endpoint</span>: <span class="s">"http://my-service/reconcile"</span>
+      <span class="k">timeout</span>:  <span class="s">15s</span>
+      <span class="k">auth</span>:
+        <span class="k">secretRef</span>:
+          <span class="k">name</span>: <span class="s">reconciler-token</span>
+          <span class="k">key</span>:  <span class="s">token</span>
+      <span class="k">managedResources</span>:
+        - <span class="k">group</span>:  <span class="s">apps</span>
+          <span class="k">plural</span>: <span class="s">deployments</span>
+
+<span class="c"># Orkestra owns: queue · backoff · SSA apply · owner refs</span>
+<span class="c">#                RBAC · health · events · annotation stamping</span>
+<span class="c"># The server owns: everything else.</span></pre>
         </div>
       </div>
     </div>
@@ -493,6 +527,7 @@
     <a class="eco-tag" href="/docs/reference/cli/push/" title="Publish a pattern to the registry">ork push</a>
     <a class="eco-tag" href="/docs/reference/cli/pull/" title="Pull a pattern from the registry">ork pull</a>
     <a class="eco-tag" href="/docs/reference/cli/token/" title="Manage serve tokens">ork token</a>
+    <a class="eco-tag" href="/docs/reference/schema/katalog/reconcile-remote/" title="Any HTTP server as a Kubernetes operator">Remote Reconciler</a>
     <a class="eco-tag" href="/docs/concepts/reconciler-model/" title="The reconciliation controller and execution model">Reconciler Model</a>
     <a class="eco-tag" href="/docs/concepts/execution-model/" title="How reconciliation tasks are scheduled and executed">Execution Model</a>
     <a class="eco-tag" href="/docs/concepts/operator-of-operators/" title="Compose operators into higher-order control planes">Operator of Operators</a>

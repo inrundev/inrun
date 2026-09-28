@@ -46,7 +46,7 @@ func ensureClusterReady(dev bool) error {
 			return fmt.Errorf("installing dependencies: %w", err)
 		}
 
-		fmt.Println("\n  Cannot reach Kubernetes cluster.")
+		fmt.Println("\n  Cannot reach a Kubernetes cluster.")
 		fmt.Printf("  Creating local Kind cluster '%s'...\n", orkpkg.KindClusterName)
 
 		if err := orkpkg.EnsureKindCluster(orkpkg.KindClusterName, 0, ""); err != nil {
@@ -61,7 +61,7 @@ func ensureClusterReady(dev bool) error {
 		return nil
 	}
 
-	fmt.Println("\n  Cannot reach Kubernetes cluster.")
+	fmt.Println("\n  Cannot reach a Kubernetes cluster.")
 	fmt.Println("  Check your kubeconfig, or run with --dev to deploy to a local kind cluster.")
 
 	var missing []string

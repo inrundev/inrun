@@ -2,7 +2,9 @@ package validate
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/orkspace/orkestra/pkg/children"
 	"github.com/orkspace/orkestra/pkg/logger"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 )
@@ -40,6 +42,11 @@ func (e *executor) validateReconcilerMode() error {
 
 		// Constructor validation
 		if err := e.validateConstructor(name, &crd); err != nil {
+			return err
+		}
+
+		// Remote reconciler validation
+		if err := e.validateRemote(name, &crd); err != nil {
 			return err
 		}
 
@@ -173,6 +180,154 @@ func (e *executor) validateConstructor(name string, crd *orktypes.CRDEntry) erro
 }
 
 // -----------------------------------------------------------------------------
+// validateRemote — structural checks for remote reconciler declarations
+// -----------------------------------------------------------------------------
+
+func (e *executor) validateRemote(name string, crd *orktypes.CRDEntry) error {
+	if !crd.WithRemoteDecl() {
+		return nil
+	}
+
+	// Remote and hooks cannot both be declared
+	if crd.WithHooksDecl() {
+		return fmt.Errorf(
+			"%s CRD %q: cannot declare both 'hooks' and 'remote' – choose one",
+			failureMark(), name,
+		)
+	}
+
+	// Remote and constructor cannot both be declared
+	if crd.WithConstructorDecl() {
+		return fmt.Errorf(
+			"%s CRD %q: cannot declare both 'constructor' and 'remote' – choose one",
+			failureMark(), name,
+		)
+	}
+
+	remote := crd.Box().Reconcile.Remote
+
+	// Endpoint is required (HasRemoteDecl guards this, but be explicit)
+	if remote.Endpoint == "" {
+		return fmt.Errorf("%s CRD %q: reconcile.remote.endpoint is required", failureMark(), name)
+	}
+
+	funcMap := buildFuncMapForValidation(e.k.Notes)
+	// If the endpoint contains template expressions, validate them.
+	if isTemplate(remote.Endpoint) {
+		if err := validateTemplate("reconcile.remote", name, name, "endpoint", remote.Endpoint, funcMap); err != nil {
+			return err
+		}
+	}
+
+	// Args — validate template expressions in values
+	if len(remote.Args) > 0 {
+		for k, v := range remote.Args {
+			s, ok := v.(string)
+			if !ok || !isTemplate(s) {
+				continue
+			}
+			field := fmt.Sprintf("reconcile.remote.args.%s", k)
+			if err := validateTemplate("reconcile.remote.args", name, name, field, s, funcMap); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Auth secretRef — name and key required; namespace warning if empty
+	if remote.Auth != nil && remote.Auth.SecretRef != nil {
+		context := fmt.Sprintf("CRD %q: reconcile.remote.auth", name)
+		if err := validateSecretRefWithCRDWarning(remote.Auth.SecretRef, context, &crd.Warnings); err != nil {
+			return err
+		}
+	}
+
+	// Type must be valid when set
+	if remote.Type != "" && !orktypes.IsValidRemoteReconcileType(remote.Type.String()) {
+		return fmt.Errorf(
+			"%s CRD %q: reconcile.remote.type %q is not valid — valid values: %s",
+			failureMark(), name, remote.Type,
+			strings.Join(orktypes.ValidRemoteReconcileTypes(), ", "),
+		)
+	}
+
+	if err := e.validateRemotePayload(name, crd, remote); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateRemotePayload validates payload.object.exclude and payload.children.
+func (e *executor) validateRemotePayload(name string, crd *orktypes.CRDEntry, remote *orktypes.RemoteReconcilerDeclaration) error {
+	if remote.Payload == nil {
+		return nil
+	}
+
+	// payload.object.exclude — dot-notation paths
+	if remote.Payload.Object != nil {
+		for i, p := range remote.Payload.Object.Exclude {
+			if err := validatePathFormat(p); err != nil {
+				return fmt.Errorf(
+					"%s CRD %q: reconcile.remote.payload.object.exclude[%d] %q: %w",
+					failureMark(), name, i, p, err,
+				)
+			}
+		}
+	}
+
+	ch := remote.Payload.EffectiveChildren()
+	if ch == nil {
+		return nil // children injection explicitly disabled
+	}
+
+	// Build the set of declared managed resource type names for membership checks.
+	// Built-ins are resolved through the registry; custom resources use mr.Kind directly.
+	managedTypes := make(map[string]bool, len(crd.RemoteManagedResources()))
+	for _, mr := range crd.RemoteManagedResources() {
+		res := children.LookupBuiltIn(mr.Kind)
+		if res.Found() {
+			managedTypes[strings.ToLower(res.Kind())] = true
+		} else if mr.Kind != "" {
+			managedTypes[strings.ToLower(mr.Kind)] = true
+		}
+	}
+
+	// payload.children.resources — keys must match a declared managed resource type.
+	for typeName, resCfg := range ch.Resources {
+		if len(managedTypes) > 0 && !managedTypes[typeName] {
+			return fmt.Errorf(
+				"%s CRD %q: reconcile.remote.payload.children.resources: %q is not declared in reconcile.remote.resources — declare it there first",
+				failureMark(), name, typeName,
+			)
+		}
+		// Per-resource exclude — dot-notation paths
+		if resCfg == nil {
+			continue
+		}
+		for i, p := range resCfg.Exclude {
+			if err := validatePathFormat(p); err != nil {
+				return fmt.Errorf(
+					"%s CRD %q: reconcile.remote.payload.children.resources[%q].exclude[%d] %q: %w",
+					failureMark(), name, typeName, i, p, err,
+				)
+			}
+		}
+	}
+
+	// payload.children.exclude (root) — dot-notation paths
+	for i, p := range ch.Exclude {
+		if err := validatePathFormat(p); err != nil {
+			return fmt.Errorf(
+				"%s CRD %q: reconcile.remote.payload.children.exclude[%d] %q: %w",
+				failureMark(), name, i, p, err,
+			)
+		}
+	}
+
+	return nil
+}
+
+// -----------------------------------------------------------------------------
 // validateManagedResources — RBAC requirements for typed mode
 // -----------------------------------------------------------------------------
 
@@ -213,6 +368,30 @@ func (e *executor) validateManagedResources(name string, crd *orktypes.CRDEntry)
 			crd.Box().Reconcile.ConstructorDecl.Location,
 			crd.Box().Reconcile.ConstructorDecl.Function,
 		)
+	}
+
+	// Remote with no managedResources is valid — the service may have no Kubernetes footprint.
+	// Surface as info so ork validate makes it visible without blocking.
+	if crd.WithRemoteDecl() && !crd.WithRemoteManagedResources() {
+		crd.Info.AddInfo(fmt.Sprintf(
+			"CRD %q: reconcile.remote has no managedResources — RBAC will not be generated for this reconciler",
+			name,
+		))
+	}
+
+	// Custom managed resources (not in the built-in registry) must declare kind
+	// so GVK resolution and children injection work correctly.
+	for _, mr := range crd.AllManagedResources() {
+		if children.IsBuiltIn(mr.Kind) || children.IsBuiltIn(mr.Plural) {
+			continue
+		}
+		if mr.Kind == "" {
+			return fmt.Errorf(
+				"%s CRD %q: custom managed resource %q must declare 'kind' — "+
+					"built-in types are resolved automatically but custom CRDs require an explicit kind",
+				failureMark(), name, mr.Plural,
+			)
+		}
 	}
 
 	return nil

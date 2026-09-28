@@ -5,6 +5,7 @@ import (
 
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/orkspace/orkestra/pkg/utils"
 )
 
 // ExpandForEachCustomResources expands any CustomResource entries that declare a ForEach.
@@ -110,7 +111,7 @@ func resolveValueTemplates(ir *orktmpl.Resolver, v any) any {
 		// custom resource's numeric/boolean/JSON fields would be submitted
 		// as literal strings instead of native types.
 		if orktypes.IsTemplate(vv) {
-			return orktypes.TryCoerceString(rv)
+			return utils.TryCoerceString(rv)
 		}
 		return rv
 	case map[string]any:

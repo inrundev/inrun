@@ -8,6 +8,5 @@ metadata:
     hooks, and constructor examples. No cluster needed.
 
 imports:
-  - ./01-declarative/simulate.yaml
-  - ./02-hooks/simulate.yaml
-  - ./03-constructor/simulate.yaml
+  - ./02-declarative/simulate.yaml
+  - ./04-hooks-only/simulate.yaml

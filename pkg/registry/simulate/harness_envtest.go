@@ -97,6 +97,9 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	if !ok {
 		return nil, fmt.Errorf("CRD %q not found in Katalog", crdName)
 	}
+	if crdEntry.WithRemoteDecl() {
+		return nil, ErrRemoteReconciler
+	}
 
 	result := &Result{}
 	box := effectiveOperatorBox(crdEntry, cr, opts.Target)

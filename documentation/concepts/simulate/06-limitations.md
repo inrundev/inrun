@@ -8,6 +8,7 @@ The fake cluster has no external connectivity and no real API server. Some opera
 
 | Block | Status | What you see |
 |-------|--------|--------------|
+| `reconcile.remote:` | **Skipped** — dispatches to an external endpoint at runtime; a note is printed and the CRD is omitted from the simulation | Use `ork e2e` to test against a live cluster |
 | `external:` HTTP calls | Active by default — calls hit the real network; pass `--skip-external` to stub with empty 200 | Without `--skip-external`: real HTTP; with it: `external.*` fields are empty, note printed |
 | `cross:` informer reads | Active when peer CRs are in the CR file | Include all sibling CRDs' CRs separated by `---` in the CR file. Each is seeded into a fake informer so `cross.*` fields populate. Without a peer CR, `cross.*` fields are empty and a note is printed. |
 | `fromNamespace` / `toNamespaces` copies | **Automatically skipped** — no real API server to read from | A `note:` line is printed for each skipped resource before the first cycle. All other resources in the same phase proceed normally. Use `ork e2e` to verify the copy against a live cluster. |

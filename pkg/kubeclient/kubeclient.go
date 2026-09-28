@@ -255,7 +255,7 @@ func (k *Kubeclient) ScopedFor(eval func(string) (string, bool)) Interface {
 	if len(k.rawArgs) == 0 {
 		return &cp
 	}
-	cp.args = ResolveArgsMap(k.rawArgs, eval)
+	cp.args = Args(utils.ResolveArgsMap(k.rawArgs, eval))
 	return &cp
 }
 

@@ -41,6 +41,10 @@ type Input struct {
 	// HealthMap carries live CRD health data for resolver enrichment and health
 	// annotation injection. Nil is safe — enrichment is skipped.
 	HealthMap map[string]interface{}
+	// StatusPatch is an optional map of status fields returned by the reconciler
+	// (e.g. RemoteReconciler). Applied after emit.status fields; remote fields win
+	// on conflict. Nil or empty is safe — skipped.
+	StatusPatch map[string]interface{}
 }
 
 // Apply runs the full post-reconcile phase.
@@ -73,7 +77,7 @@ func Apply(
 
 	// Annotate the object with runtime metrics/health
 	// for gateway and preReconcile gating.
-	injectRuntimeAnnotations(obj, in)
+	injectRuntimeAnnotations(ctx, obj, in)
 
 	applyStatus(ctx, in, obj, resolver, reconcileErr, valResult, box)
 	applyEmit(ctx, in, obj, resolver, box, reconcileErr)

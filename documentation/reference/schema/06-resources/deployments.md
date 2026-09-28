@@ -340,6 +340,18 @@ rollingUpdate:
 
 ---
 
+### `command`
+
+Type: list
+
+Command overrides the container entrypoint command. Each element is a command token. Supports template expressions.
+
+```yaml
+command: ["sh", "-c", "echo {{ .spec.greeting }}"]
+```
+
+---
+
 ### `volumes`
 
 Type: list
@@ -443,6 +455,7 @@ autoscale:
 | `securityContext` | object |
 | `podSecurity` | object |
 | `rollingUpdate` | object |
+| `command` | list |
 | `volumes` | list |
 | `volumeMounts` | list |
 | `sleep` | string |

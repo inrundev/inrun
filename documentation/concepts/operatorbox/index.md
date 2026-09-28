@@ -65,7 +65,7 @@ spec:
           cross: [...]         # cross-CRD observations
 ```
 
-Omitting `reconcile:` uses the declarative GenericReconciler — no Go code required. Add `reconcile.constructor:` with `default: false` when you need a typed Go reconciler.
+Omitting `reconcile:` uses the declarative GenericReconciler — no Go code required. Add `reconcile.constructor:` with `default: false` when you need a typed Go reconciler. Add `reconcile.remote:` with `default: false` when the reconcile logic lives in a separate HTTP service — any language, no Kubernetes SDK required.
 
 ---
 

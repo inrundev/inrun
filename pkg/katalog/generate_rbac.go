@@ -182,6 +182,21 @@ func (k *Katalog) GenerateRBACRules() []rbacv1.PolicyRule {
 			}
 		}
 
+		// Remote-managed resources
+		if crd.WithRemoteManagedResources() {
+			for _, r := range crd.RemoteManagedResources() {
+				gvr, ok := k.ResolveGVR(r)
+				if !ok {
+					continue
+				}
+				rules = append(rules, rbacv1.PolicyRule{
+					APIGroups: []string{gvr.Group},
+					Resources: []string{gvr.Resource},
+					Verbs:     defaultVerbs,
+				})
+			}
+		}
+
 		// Watch-entry resources — read-only
 		for _, w := range crd.WatchEntries() {
 			gvr, ok := k.ResolveGVR(w.ToManagedResource())
@@ -251,9 +266,35 @@ func (k *Katalog) WebhookResources() []string {
 	return resources
 }
 
+// secretNamesFrom partitions a slice of APISecretRef pointers into static names
+// and a flag indicating whether any name is a template expression.
+// Nil entries are skipped. Static and template names are collected independently
+// so a single template does not suppress the scoped rule for the rest.
+func secretNamesFrom(refs []*orktypes.APISecretRef) (names []string, hasTemplate bool) {
+	for _, ref := range refs {
+		if ref == nil {
+			continue
+		}
+		if isTemplate(ref.Name) {
+			hasTemplate = true
+		} else {
+			names = append(names, ref.Name)
+		}
+	}
+	return names, hasTemplate
+}
+
 // HasExternalSecretRefs returns true when any enabled CRD declares an external call
 // with auth.secretRef. Used to gate automatic secrets-get RBAC generation.
 func (k *Katalog) HasExternalSecretRefs() bool {
+	names, hasTemplate := secretNamesFrom(k.collectExternalSecretRefs())
+	return hasTemplate || len(names) > 0
+}
+
+// collectExternalSecretRefs gathers all auth.secretRef from external call
+// declarations across all lifecycle blocks of every enabled CRD.
+func (k *Katalog) collectExternalSecretRefs() []*orktypes.APISecretRef {
+	var refs []*orktypes.APISecretRef
 	for _, crd := range k.enabledCRDs {
 		var calls []orktypes.ExternalCallSpec
 		if crd.Box().EffectiveOnReconcile() != nil {
@@ -270,12 +311,45 @@ func (k *Katalog) HasExternalSecretRefs() bool {
 			calls = append(calls, crd.EffectiveMutation().External...)
 		}
 		for _, call := range calls {
-			if call.HasSecretRef() {
-				return true
+			if call.Auth != nil {
+				refs = append(refs, call.Auth.SecretRef)
 			}
 		}
 	}
-	return false
+	return refs
+}
+
+// HasRemoteSecretRefs returns true when any enabled CRD declares a remote reconciler
+// with auth.secretRef. Used to gate automatic secrets-get RBAC generation.
+func (k *Katalog) HasRemoteSecretRefs() bool {
+	names, hasTemplate := secretNamesFrom(k.collectRemoteSecretRefs())
+	return hasTemplate || len(names) > 0
+}
+
+// collectRemoteSecretRefs gathers all auth.secretRef from remote reconciler
+// declarations across every enabled CRD.
+func (k *Katalog) collectRemoteSecretRefs() []*orktypes.APISecretRef {
+	var refs []*orktypes.APISecretRef
+	for _, crd := range k.enabledCRDs {
+		r := crd.Box().Reconcile
+		if r == nil || r.Remote == nil || r.Remote.Auth == nil {
+			continue
+		}
+		refs = append(refs, r.Remote.Auth.SecretRef)
+	}
+	return refs
+}
+
+// collectGatewayAPISecretRefs gathers all secretRef from Gateway API token entries.
+func (k *Katalog) collectGatewayAPISecretRefs() []*orktypes.APISecretRef {
+	if !k.IsGatewayAPIEnabled() {
+		return nil
+	}
+	var refs []*orktypes.APISecretRef
+	for _, t := range k.Gateway.API.Auth.Tokens {
+		refs = append(refs, t.SecretRef)
+	}
+	return refs
 }
 
 // GenerateRuntimeRBACRules returns the RBAC rules required by the runtime reconciler process.
@@ -301,9 +375,21 @@ func (k *Katalog) GenerateRuntimeRBACRules() []rbacv1.PolicyRule {
 	)
 
 	// ───────────────────────────────────────────────
-	// External auth.secretRef — secrets get
+	// External / remote auth.secretRef — secrets get
+	// Static names get a scoped rule; template names get a separate unscoped
+	// rule so one template does not prevent the others from being scoped.
 	// ───────────────────────────────────────────────
-	if k.HasExternalSecretRefs() {
+	extNames, extTemplate := secretNamesFrom(k.collectExternalSecretRefs())
+	remoteNames, remoteTemplate := secretNamesFrom(k.collectRemoteSecretRefs())
+	if allStatic := append(extNames, remoteNames...); len(allStatic) > 0 {
+		rules = append(rules, rbacv1.PolicyRule{
+			APIGroups:     []string{""},
+			Resources:     []string{"secrets"},
+			ResourceNames: allStatic,
+			Verbs:         []string{"get"},
+		})
+	}
+	if extTemplate || remoteTemplate {
 		rules = append(rules, rbacv1.PolicyRule{
 			APIGroups: []string{""},
 			Resources: []string{"secrets"},
@@ -359,6 +445,21 @@ func (k *Katalog) GenerateRuntimeRBACRules() []rbacv1.PolicyRule {
 		// Constructor-managed resources
 		if crd.WithConstructorManagedResources() {
 			for _, r := range crd.ConstructorManagedResources() {
+				gvr, ok := k.ResolveGVR(r)
+				if !ok {
+					continue
+				}
+				rules = append(rules, rbacv1.PolicyRule{
+					APIGroups: []string{gvr.Group},
+					Resources: []string{gvr.Resource},
+					Verbs:     defaultVerbs,
+				})
+			}
+		}
+
+		// Remote-managed resources
+		if crd.WithRemoteManagedResources() {
+			for _, r := range crd.RemoteManagedResources() {
 				gvr, ok := k.ResolveGVR(r)
 				if !ok {
 					continue
@@ -456,7 +557,17 @@ func (k *Katalog) GenerateGatewayRBACRules() []rbacv1.PolicyRule {
 	// ───────────────────────────────────────────────
 	// get: read existing token; create: self-bootstrap when Secret is absent.
 	// Uses the same annotation-based rotation as pkg/runners secrets_once.go.
-	if k.HasGatewayAPISecretRefs() {
+	// Scoped to ResourceNames when all names are static.
+	gatewayNames, gatewayTemplate := secretNamesFrom(k.collectGatewayAPISecretRefs())
+	if len(gatewayNames) > 0 {
+		rules = append(rules, rbacv1.PolicyRule{
+			APIGroups:     []string{""},
+			Resources:     []string{"secrets"},
+			ResourceNames: gatewayNames,
+			Verbs:         []string{"get", "create"},
+		})
+	}
+	if gatewayTemplate {
 		rules = append(rules, rbacv1.PolicyRule{
 			APIGroups: []string{""},
 			Resources: []string{"secrets"},
@@ -604,102 +715,13 @@ func (k *Katalog) GenerateGatewayClusterRBACRules() (map[string][]rbacv1.PolicyR
 }
 
 // ResolveGVR resolves a ManagedResource into a concrete GroupVersionResource.
-//
-// Resolution priority (explicit always wins):
-//
-//  1. Full explicit GVR:
-//     - group + version + plural are all provided
-//     → use them directly.
-//
-//  2. Explicit group + version (plural omitted)
-//     → infer plural as strings.ToLower(kind) + "s".
-//
-//  3. APIVersion + plural:
-//     - apiVersion: "group/version"
-//     - plural provided
-//     → parse apiVersion and use provided plural.
-//
-//  4. APIVersion only:
-//     - apiVersion: "group/version"
-//     - plural omitted
-//     → parse apiVersion and infer plural as strings.ToLower(kind) + "s".
-//
-//  5. Built‑in Kubernetes resource:
-//     - kind matches Orkestra's built‑in registry
-//     → use children.GVRForBuiltIn(kind).
-//
-//  6. Otherwise:
-//     → resolution fails and (GVR{}, false) is returned.
-//
-// This ensures:
-//   - Explicit declarations always override inference.
-//   - Custom resources can be fully specified without guessing.
-//   - Built‑ins remain simple (kind‑only).
-//   - RBAC generation remains deterministic and zero‑footprint safe.
-func (k *Katalog) ResolveGVR(r domain.ManagedResource) (schema.GroupVersionResource, bool) {
-	// ───────────────────────────────────────────────
-	// 1. Full explicit GVR: group + version + plural
-	// ───────────────────────────────────────────────
-	if r.Group != "" && r.Version != "" && r.Plural != "" {
-		return schema.GroupVersionResource{
-			Group:    r.Group,
-			Version:  r.Version,
-			Resource: r.Plural,
-		}, true
-	}
+func (k *Katalog) ResolveGVR(mr domain.ManagedResource) (schema.GroupVersionResource, bool) {
+	return children.ResolveGVR(mr)
+}
 
-	// ───────────────────────────────────────────────
-	// 2. Explicit group + version, infer plural
-	// ───────────────────────────────────────────────
-	if r.Group != "" && r.Version != "" {
-		return schema.GroupVersionResource{
-			Group:    r.Group,
-			Version:  r.Version,
-			Resource: strings.ToLower(r.Kind) + "s",
-		}, true
-	}
-
-	// ───────────────────────────────────────────────
-	// 3. APIVersion + plural
-	// ───────────────────────────────────────────────
-	if r.APIVersion != "" && r.Plural != "" {
-		gv, err := schema.ParseGroupVersion(r.APIVersion)
-		if err != nil {
-			return schema.GroupVersionResource{}, false
-		}
-		return schema.GroupVersionResource{
-			Group:    gv.Group,
-			Version:  gv.Version,
-			Resource: r.Plural,
-		}, true
-	}
-
-	// ───────────────────────────────────────────────
-	// 4. APIVersion only, infer plural
-	// ───────────────────────────────────────────────
-	if r.APIVersion != "" {
-		gv, err := schema.ParseGroupVersion(r.APIVersion)
-		if err != nil {
-			return schema.GroupVersionResource{}, false
-		}
-		return schema.GroupVersionResource{
-			Group:    gv.Group,
-			Version:  gv.Version,
-			Resource: strings.ToLower(r.Kind) + "s",
-		}, true
-	}
-
-	// ───────────────────────────────────────────────
-	// 5. Built‑in resource
-	// ───────────────────────────────────────────────
-	if gvr, ok := children.GVRForBuiltIn(r.Kind); ok {
-		return gvr, true
-	}
-
-	// ───────────────────────────────────────────────
-	// 6. Could not resolve
-	// ───────────────────────────────────────────────
-	return schema.GroupVersionResource{}, false
+// ResolveGVK resolves a ManagedResource into a concrete GroupVersionKind.
+func (k *Katalog) ResolveGVK(mr domain.ManagedResource) (schema.GroupVersionKind, bool) {
+	return children.ResolveGVK(mr)
 }
 
 // GeneratePerCRDRBACRules returns the RBAC rules attributed to each enabled CRD.
@@ -751,6 +773,18 @@ func (k *Katalog) GeneratePerCRDRBACRules() map[string][]rbacv1.PolicyRule {
 
 		if crd.WithConstructorManagedResources() {
 			for _, r := range crd.ConstructorManagedResources() {
+				if gvr, ok := k.ResolveGVR(r); ok {
+					rules = append(rules, rbacv1.PolicyRule{
+						APIGroups: []string{gvr.Group},
+						Resources: []string{gvr.Resource},
+						Verbs:     defaultVerbs,
+					})
+				}
+			}
+		}
+
+		if crd.WithRemoteManagedResources() {
+			for _, r := range crd.RemoteManagedResources() {
 				if gvr, ok := k.ResolveGVR(r); ok {
 					rules = append(rules, rbacv1.PolicyRule{
 						APIGroups: []string{gvr.Group},

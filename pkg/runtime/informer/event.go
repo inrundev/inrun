@@ -59,6 +59,18 @@ func (f *Factory) handleUpdate(
 ) {
 	<-f.ready
 
+	// Skip enqueue when only status or metadata (annotations, labels) changed —
+	// i.e. generation is unchanged. Inspire by controller-runtime's
+	// GenerationChangedPredicate and prevents Orkestra's own status/annotation
+	// patches from re-triggering the reconciler in a tight loop.
+	// Fall through when generation is 0: the resource does not track generation
+	// and we must not suppress real events.
+	oldGen := extractGeneration(oldObj)
+	newGen := extractGeneration(newObj)
+	if oldGen != 0 && oldGen == newGen {
+		return
+	}
+
 	sentinels := f.ComputeSentinels(gvkStr, oldObj, newObj)
 	wq, _ := f.queueRegistry.For(gvkStr)
 
