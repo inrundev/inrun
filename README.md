@@ -1,6 +1,6 @@
 # Orkestra Helm Chart
 
-![Chart Version](https://img.shields.io/badge/chart%20version-0.7.17-blue?style=flat-square) ![App Version](https://img.shields.io/badge/app%20version-0.7.17-blue?style=flat-square)
+![Chart Version](https://img.shields.io/badge/chart%20version-0.7.18-blue?style=flat-square) ![App Version](https://img.shields.io/badge/app%20version-0.7.18-blue?style=flat-square)
 
 
 Declarative Kubernetes Operator Runtime • Security-First • GitOps-Native
@@ -46,18 +46,17 @@ metadata:
 spec:
   crds:
     website:
-      enabled: true
       apiTypes:
         group: demo.orkestra.io
         version: v1alpha1
         kind: Website
         plural: websites
       operatorBox:
-        default: true
-        onCreate:
-          deployments:
-            - image: nginx
-              replicas: 1
+        reconcile:
+          onCreate:
+            deployments:
+              - image: nginx
+                replicas: 1
 ```
 
 If your CRD is not installed yet:
