@@ -36,9 +36,11 @@ type PDBProfileResult struct {
 // ApplyPDBProfile expands a named PDB profile into disruption limit values.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyPDBProfile(name string, reg orktypes.ProfileRegistry) (PDBProfileResult, error) {
-	if def, found := reg.LookupPDB(name); found {
-		return PDBProfileResult{MinAvailable: def.MinAvailable, MaxUnavailable: def.MaxUnavailable}, nil
+func ApplyPDBProfile(name string, reg *orktypes.ProfileRegistry) (PDBProfileResult, error) {
+	if reg != nil {
+		if def, found := reg.LookupPDB(name); found {
+			return PDBProfileResult{MinAvailable: def.MinAvailable, MaxUnavailable: def.MaxUnavailable}, nil
+		}
 	}
 	switch PDBProfile(strings.ToLower(name)) {
 	case PDBZeroDowntime:

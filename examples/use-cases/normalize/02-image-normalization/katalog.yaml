@@ -12,64 +12,61 @@ spec:
   crds:
     app:
       crdFile: ./crd.yaml
-
-
       # ── Normalize ──────────────────────────────────────────────────────────
-      normalize:
-        spec:
-          # Image normalization — three accepted input forms:
-          #   "nginx"                        → "registry.internal/nginx:latest"
-          #   "nginx:1.25"                   → "registry.internal/nginx:1.25"
-          #   "registry.internal/nginx:1.25" → "registry.internal/nginx:1.25" (unchanged)
-          #
-          # Step 1: strip registry prefix if already present (idempotent).
-          # Step 2: if no tag present, append ":latest".
-          # Step 3: prepend the internal registry.
-          image: >-
-            {{- $base := trimPrefix .spec.image "registry.internal/" -}}
-            {{- $tagged := ternary (contains $base ":") $base (printf "%s:latest" $base) -}}
-            {{- printf "registry.internal/%s" $tagged -}}
-
-          # Replicas — default to 1 when omitted.
-          replicas: "{{ default 1 .spec.replicas }}"
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+          onCreate:
+            deployments:
+              # .spec.image is always fully-qualified here — no conditional needed.
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+          normalize:
+            spec:
+              # Image normalization — three accepted input forms:
+              #   "nginx"                        → "registry.internal/nginx:latest"
+              #   "nginx:1.25"                   → "registry.internal/nginx:1.25"
+              #   "registry.internal/nginx:1.25" → "registry.internal/nginx:1.25" (unchanged)
+              #
+              # Step 1: strip registry prefix if already present (idempotent).
+              # Step 2: if no tag present, append ":latest".
+              # Step 3: prepend the internal registry.
+              image: >-
+                {{- $base := trimPrefix .spec.image "registry.internal/" -}}
+                {{- $tagged := ternary (contains $base ":") $base (printf "%s:latest" $base) -}}
+                {{- printf "registry.internal/%s" $tagged -}}
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              # Replicas — default to 1 when omitted.
+              replicas: "{{ default 1 .spec.replicas }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-            # Normalized image — confirms what normalize produced.
-            - path: image
-              value: "{{ .spec.image }}"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: replicas
-              value: "{{ .spec.replicas }}"
+              # Normalized image — confirms what normalize produced.
+              - path: image
+                value: "{{ .spec.image }}"
 
-        onCreate:
-          deployments:
-            # .spec.image is always fully-qualified here — no conditional needed.
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
+              - path: replicas
+                value: "{{ .spec.replicas }}"
+

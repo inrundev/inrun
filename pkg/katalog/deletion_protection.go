@@ -52,7 +52,7 @@ func (k *Katalog) DeletionProtectionGVRs() []GVREntry {
 	if !k.IsDeletionProtectionEnabled() {
 		return nil
 	}
-	if !utils.IsRunningInCluster() {
+	if !utils.IsRunningInPod() {
 		return nil
 	}
 
@@ -163,11 +163,11 @@ func (k *Katalog) customResourceGVRs() []GVREntry {
 // onCreate and onReconcile, skipping any already in seen.
 func customChildGVRs(crd orktypes.CRDEntry, seen map[string]bool) []GVREntry {
 	var entries []orktypes.CustomResourceTemplateSource
-	if crd.OperatorBox.OnCreate != nil {
-		entries = append(entries, crd.OperatorBox.OnCreate.CustomResource...)
+	if crd.Box().EffectiveOnCreate() != nil {
+		entries = append(entries, crd.Box().EffectiveOnCreate().CustomResource...)
 	}
-	if crd.OperatorBox.OnReconcile != nil {
-		entries = append(entries, crd.OperatorBox.OnReconcile.CustomResource...)
+	if crd.Box().EffectiveOnReconcile() != nil {
+		entries = append(entries, crd.Box().EffectiveOnReconcile().CustomResource...)
 	}
 
 	var out []GVREntry
@@ -219,7 +219,7 @@ func (k *Katalog) DeletionProtectedCRDNames() map[string]struct{} {
 	if !k.IsDeletionProtectionEnabled() {
 		return nil
 	}
-	if !utils.IsRunningInCluster() {
+	if !utils.IsRunningInPod() {
 		return nil
 	}
 	names := make(map[string]struct{}, k.Len())
@@ -247,11 +247,11 @@ func (k *Katalog) DeletionProtectedCRDNames() map[string]struct{} {
 			continue
 		}
 		var entries []orktypes.CustomResourceTemplateSource
-		if crd.OperatorBox.OnCreate != nil {
-			entries = append(entries, crd.OperatorBox.OnCreate.CustomResource...)
+		if crd.Box().EffectiveOnCreate() != nil {
+			entries = append(entries, crd.Box().EffectiveOnCreate().CustomResource...)
 		}
-		if crd.OperatorBox.OnReconcile != nil {
-			entries = append(entries, crd.OperatorBox.OnReconcile.CustomResource...)
+		if crd.Box().EffectiveOnReconcile() != nil {
+			entries = append(entries, crd.Box().EffectiveOnReconcile().CustomResource...)
 		}
 		for _, entry := range entries {
 			if entry.APIVersion == "" || entry.Kind == "" {

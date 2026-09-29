@@ -44,7 +44,7 @@ spec:
   crds:
     website:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
 ```
 

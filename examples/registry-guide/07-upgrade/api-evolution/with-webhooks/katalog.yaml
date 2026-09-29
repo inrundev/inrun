@@ -36,7 +36,6 @@ spec:
         version: v2
         kind: WebApp
         plural: webapps
-
       # ── Lossless bidirectional conversion ────────────────────────────────
       #
       # v1 → v2: lift flat fields into the expose struct
@@ -49,52 +48,52 @@ spec:
       #   spec.expose.host → spec.host
       #   spec.expose.protocol is dropped (no v1 equivalent)
       #
-      conversion:
-        storageVersion: v1
-        updateCRD: true
-        paths:
-          - from: v1
-            to: v2
-            spec:
-              image:    "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              expose:
-                port:     "{{ .spec.port }}"
-                host:     '{{ default "" .spec.host }}'
-                protocol: HTTP
-
-          - from: v2
-            to: v1
-            spec:
-              image:    "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port:     "{{ .spec.expose.port }}"
-              host:     '{{ default "" .spec.expose.host }}'
-
       # Import the web-service motif — unchanged from v1.1.0.
       # All downstream logic uses v2 spec (storage format).
-      imports:
-        - motif: oci://ghcr.io/myorg/motifs/web-service:v1.1.0
-          with:
-            image:    "{{ .spec.image }}"
-            port:     "{{ .spec.expose.port }}"
-            host:     "{{ .spec.expose.host }}"
-            replicas: "{{ .spec.replicas }}"
+      admission:
+        conversion:
+          storageVersion: v1
+          updateCRD: true
+          paths:
+            - from: v1
+              to: v2
+              spec:
+                image:    "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                expose:
+                  port:     "{{ .spec.port }}"
+                  host:     '{{ default "" .spec.host }}'
+                  protocol: HTTP
 
+            - from: v2
+              to: v1
+              spec:
+                image:    "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port:     "{{ .spec.expose.port }}"
+                host:     '{{ default "" .spec.expose.host }}'
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: ready
-              value: "{{ allReplicasReady .children.deployment }}"
-            - path: endpoint
-              value: "http://{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
-            - path: protocol
-              value: "{{ .spec.expose.protocol }}"
+          imports:
+            - motif: oci://ghcr.io/myorg/motifs/web-service:v1.1.0
+              with:
+                image:    "{{ .spec.image }}"
+                port:     "{{ .spec.expose.port }}"
+                host:     "{{ .spec.expose.host }}"
+                replicas: "{{ .spec.replicas }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: ready
+                value: "{{ allReplicasReady .children.deployment }}"
+              - path: endpoint
+                value: "http://{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+              - path: protocol
+                value: "{{ .spec.expose.protocol }}"
 
     # ── v1 — legacy API surface ───────────────────────────────────────────
     # Objects written as v1 are converted to v2 before storage.
@@ -107,15 +106,18 @@ spec:
         version: v1
         kind: WebApp
         plural: webapps
-      conversion:
-        participant: true
+      admission:
+        conversion:
+          participant: true
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "http://{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "http://{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+

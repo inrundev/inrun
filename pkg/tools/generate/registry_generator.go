@@ -31,7 +31,7 @@ import (
 // When generation is NOT needed:
 //
 //	Dynamic template CRDs (only onCreate/onReconcile/onDelete declared)
-//	  GenericReconciler.runTemplateReconcile() reads the Katalog's operatorBox:Config
+//	  generic.Reconciler.runTemplateReconcile() reads the Katalog's operatorBox:Config
 //	  directly at runtime and calls the OrkestraRegistry functions itself.
 //	  No generated file. No ork generate registry. Just ork run.
 func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) {
@@ -94,10 +94,10 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 		// so addHooks() can wire it at startup.
 		//
 		// This is NOT needed for declarative template CRDs — those are handled
-		// at runtime by GenericReconciler.runTemplateReconcile() with no
+		// at runtime by generic.Reconciler.runTemplateReconcile() with no
 		// registration required.
-		if crd.DefaultReconcile() && crd.OperatorBox.Reconciler != nil && crd.OperatorBox.Reconciler.Hooks != nil {
-			h := crd.OperatorBox.Reconciler.Hooks
+		if crd.DefaultReconcile() && crd.Box().Reconcile != nil && crd.Box().Reconcile.Hooks != nil {
+			h := crd.Box().Reconcile.Hooks
 
 			if err := validateHookEntry(h, crd.Name); err != nil {
 				return false, err
@@ -127,7 +127,7 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 		// We need to import their constructor and register it in ReconcilerRegistry
 		// so addReconcilers() can wire it at startup.
 		if !crd.DefaultReconcile() {
-			if crd.OperatorBox.Reconciler == nil || crd.OperatorBox.Reconciler.ConstructorDecl == nil {
+			if crd.Box().Reconcile == nil || crd.Box().Reconcile.ConstructorDecl == nil {
 				return false, fmt.Errorf(
 					"CRD %q: reconciler.default is false but no constructor declared — "+
 						"add reconciler.constructor with location and function, "+
@@ -136,7 +136,7 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 				)
 			}
 
-			c := crd.OperatorBox.Reconciler.ConstructorDecl
+			c := crd.Box().Reconcile.ConstructorDecl
 
 			if err := validateConstructorEntry(c, crd.Name); err != nil {
 				return false, err
@@ -168,14 +168,14 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 		// are handled at runtime by mergeReconcilerConfig in EffectiveOperatorBox.
 		if crd.Serve != nil && crd.Serve.Target.Entries != nil {
 			crdLevelHookLocation := ""
-			if crd.OperatorBox.Reconciler != nil && crd.OperatorBox.Reconciler.Hooks != nil {
-				crdLevelHookLocation = crd.OperatorBox.Reconciler.Hooks.Location
+			if crd.Box().Reconcile != nil && crd.Box().Reconcile.Hooks != nil {
+				crdLevelHookLocation = crd.Box().Reconcile.Hooks.Location
 			}
 			for targetName, targetCfg := range crd.Serve.Target.Entries {
-				if targetCfg.OperatorBox == nil || targetCfg.OperatorBox.Reconciler == nil {
+				if targetCfg.OperatorBox == nil || targetCfg.Box().Reconcile == nil {
 					continue
 				}
-				h := targetCfg.OperatorBox.Reconciler.Hooks
+				h := targetCfg.Box().Reconcile.Hooks
 				if h == nil || h.Location == "" || h.Location == crdLevelHookLocation {
 					continue
 				}
@@ -207,10 +207,10 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 		// MuxReconciler with the right sub-reconciler per target.
 		if crd.Serve != nil && crd.Serve.Target.Entries != nil {
 			for targetName, targetCfg := range crd.Serve.Target.Entries {
-				if targetCfg.OperatorBox == nil || targetCfg.OperatorBox.Reconciler == nil {
+				if targetCfg.OperatorBox == nil || targetCfg.Box().Reconcile == nil {
 					continue
 				}
-				rec := targetCfg.OperatorBox.Reconciler
+				rec := targetCfg.Box().Reconcile
 				if rec.Default == nil || *rec.Default || rec.ConstructorDecl == nil {
 					continue
 				}
@@ -240,7 +240,7 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 
 	// ── Nothing to generate ───────────────────────────────────────────────────
 	// Pure dynamic template Katalogs produce zero entries — this is correct.
-	// GenericReconciler handles them at runtime. Exit cleanly, no file written.
+	// generic.Reconciler handles them at runtime. Exit cleanly, no file written.
 	if len(entries) == 0 && len(recEntries) == 0 && len(hookEntries) == 0 &&
 		len(targetHookEntries) == 0 && len(targetRecEntries) == 0 {
 		return false, nil

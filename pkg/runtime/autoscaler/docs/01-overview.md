@@ -67,7 +67,7 @@ On clean shutdown (ctx cancelled), `restoreBaseline()` is called so that persist
 
 ## Thread safety
 
-`Autoscaler.evaluate` runs on a single goroutine. `AutoscaleTarget` methods (`ResizeWorkers`, `SetQueueDepthLimit`, `SetResyncInterval`) must be safe to call from any goroutine — `GenericReconciler` implements these with atomic operations and mutex-guarded semaphore resize.
+`Autoscaler.evaluate` runs on a single goroutine. `AutoscaleTarget` methods (`ResizeWorkers`, `SetQueueDepthLimit`, `SetResyncInterval`) must be safe to call from any goroutine — The `kordinator` implements these with atomic operations and mutex-guarded semaphore resize.
 
 ---
 

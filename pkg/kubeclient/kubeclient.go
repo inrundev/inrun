@@ -248,14 +248,14 @@ func (k *Kubeclient) WithArgs(args Args) Interface {
 }
 
 // ScopedFor evaluates template expressions in rawArgs using eval and returns a
-// copy with the resolved args attached. Called by GenericReconciler after building
+// copy with the resolved args attached. Called by generic.Reconciler after building
 // the per-CR resolver so hook authors see evaluated args automatically.
 func (k *Kubeclient) ScopedFor(eval func(string) (string, bool)) Interface {
 	cp := *k
 	if len(k.rawArgs) == 0 {
 		return &cp
 	}
-	cp.args = ResolveArgsMap(k.rawArgs, eval)
+	cp.args = Args(utils.ResolveArgsMap(k.rawArgs, eval))
 	return &cp
 }
 

@@ -171,12 +171,13 @@ func (reg *InMemoryAdmissionRegistry) registerAdmissionRulesFromEntry(entry orkt
 	}
 
 	gvrKey := buildGVRKey(entry.APITypes.Group, entry.APITypes.Version, entry.APITypes.Plural)
-	ops := entry.Webhooks.EffectiveOperations()
+	webhooks := entry.EffectiveWebhooks()
+	ops := webhooks.EffectiveOperations()
 
 	// Register validation rules if declared and webhook is enabled
-	if entry.HasValidationRules() && entry.Webhooks.WebhookValidationEnabled() {
+	if entry.HasValidationRules() && webhooks.WebhookValidationEnabled() {
 
-		reg.RegisterValidationRules(gvrKey, entry.Validation)
+		reg.RegisterValidationRules(gvrKey, entry.EffectiveValidation())
 		reg.addValidationGVR(GVREntry{
 			Key:        gvrKey,
 			Group:      entry.APITypes.Group,
@@ -187,9 +188,9 @@ func (reg *InMemoryAdmissionRegistry) registerAdmissionRulesFromEntry(entry orkt
 	}
 
 	// Register mutation rules if declared and webhook is enabled
-	if entry.HasMutationRules() && entry.Webhooks.WebhookMutationEnabled() {
+	if entry.HasMutationRules() && webhooks.WebhookMutationEnabled() {
 
-		reg.RegisterMutationRules(gvrKey, entry.Mutation)
+		reg.RegisterMutationRules(gvrKey, entry.EffectiveMutation())
 		reg.addMutationGVR(GVREntry{
 			Key:        gvrKey,
 			Group:      entry.APITypes.Group,

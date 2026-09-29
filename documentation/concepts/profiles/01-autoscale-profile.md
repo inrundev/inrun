@@ -22,11 +22,12 @@ Profiles are **relative** — they use the CRD's declared `workers` and `queue.m
 
 ```yaml
 operatorBox:
+  runtime:
+    autoscale:
+      profile: steady
   workers: 4
   queue:
     maxDepth: 100
-  autoscale:
-    profile: steady
 ```
 
 For `steady` with the above baseline (workers=4, queueDepth=100):

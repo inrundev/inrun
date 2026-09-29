@@ -24,24 +24,25 @@ spec:
             namespace: platform
             timeout: 15s
       namespaced: false             # Default: (true)
-
       operatorBox:
-        status:
-          fields:
-            - path: phase
-              value: "Distributed"
-            - path: sourceConfigMap
-              value: "{{ .spec.configMapName }}"
-            - path: sourceNamespace
-              value: "{{ .spec.sourceNamespace }}"
+        reconcile:
+          onCreate:
+            configMaps:
+              - name: "{{ .spec.configMapName }}"
+                fromConfigMap: "{{ .spec.configMapName }}"
+                fromNamespace: "{{ .spec.sourceNamespace }}"
+                # toNamespaces copies the ConfigMap to each target namespace.
+                # Each element supports template expressions.
+                toNamespaces:
+                  - "{{ .spec.targetNamespaces }}"
+                reconcile: true   # re-sync if source ConfigMap changes
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Distributed"
+              - path: sourceConfigMap
+                value: "{{ .spec.configMapName }}"
+              - path: sourceNamespace
+                value: "{{ .spec.sourceNamespace }}"
 
-        onCreate:
-          configMaps:
-            - name: "{{ .spec.configMapName }}"
-              fromConfigMap: "{{ .spec.configMapName }}"
-              fromNamespace: "{{ .spec.sourceNamespace }}"
-              # toNamespaces copies the ConfigMap to each target namespace.
-              # Each element supports template expressions.
-              toNamespaces:
-                - "{{ .spec.targetNamespaces }}"
-              reconcile: true   # re-sync if source ConfigMap changes

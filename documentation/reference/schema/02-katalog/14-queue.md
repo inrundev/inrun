@@ -6,7 +6,7 @@ The `queue:` block controls how reconcile events accumulate and when the operato
 crds:
   myapp:
     operatorBox:
-      reconciler:
+      reconcile:
         workers: 4
         resync: 30s
         queue:
@@ -50,17 +50,18 @@ When the autoscaler is active, `maxDepth` becomes the baseline. The autoscaler c
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     queue:
       maxDepth: 100       # baseline — what you start with
-  autoscale:
-    conditions:
-      when:
-        - field: metrics.queueDepth
-          greaterThan: "80"
-    do:
-      workers: 8
-      queueDepth: 500   # raised when conditions are met
+  runtime:
+    autoscale:
+      conditions:
+        when:
+          - field: metrics.queueDepth
+            greaterThan: "80"
+      do:
+        workers: 8
+        queueDepth: 500   # raised when conditions are met
 ```
 
 **Try it:**
@@ -88,7 +89,7 @@ The default of `5` is appropriate for most operators. Increase it for operators 
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     queue:
       failureThreshold: 20   # external service can be down for a few minutes
 ```
@@ -97,7 +98,7 @@ Decrease it for operators managing critical infrastructure where you want immedi
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     queue:
       failureThreshold: 2   # degrade fast — this CRD must be healthy
 ```
@@ -135,7 +136,7 @@ A per-CRD `queue:` declaration overrides the global default for that CRD only.
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     queue:
       maxDepth: 500
       behaviour:

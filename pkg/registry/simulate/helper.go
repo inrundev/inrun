@@ -2,6 +2,7 @@ package simulate
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -13,6 +14,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
 )
+
+// ErrRemoteReconciler is returned by Run and RunWithEnvtest when the requested
+// CRD declares reconcile.remote:. Remote reconcilers dispatch to an external
+// HTTP endpoint at runtime — there is nothing to simulate in-process.
+var ErrRemoteReconciler = errors.New("remote reconciler: cannot simulate — dispatches to an external endpoint at runtime")
 
 // effectiveOperatorBox returns the effective operatorBox for a given CR.
 func effectiveOperatorBox(entry orktypes.CRDEntry, cr *unstructured.Unstructured, target string) *orktypes.OperatorBoxConfig {

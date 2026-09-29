@@ -13,12 +13,10 @@ spec:
         version: v1alpha1
         kind: Database
         plural: databases
-      allowedNamespaces:
-        - databases
-
       operatorBox:
-        onCreate:
-          statefulSets:
+        reconcile:
+          onCreate:
+            statefulSets:
             - name: "{{ .metadata.name }}"
               namespace: "{{ .metadata.namespace }}"
               image: "{{ .spec.image }}"
@@ -54,41 +52,45 @@ spec:
                       name: "{{ .metadata.name }}-creds"
                       key: password
 
-          # Headless service required by StatefulSet for pod DNS
-          services:
-            - name: "{{ .metadata.name }}-headless"
-              namespace: "{{ .metadata.namespace }}"
-              port: "5432"
-              headless: true
-              reconcile: true
+            # Headless service required by StatefulSet for pod DNS
+            services:
+              - name: "{{ .metadata.name }}-headless"
+                namespace: "{{ .metadata.namespace }}"
+                port: "5432"
+                headless: true
+                reconcile: true
 
-          # Regular service for client connections
-            - name: "{{ .metadata.name }}"
-              namespace: "{{ .metadata.namespace }}"
-              port: "5432"
-              reconcile: true
+              # Regular service for client connections
+              - name: "{{ .metadata.name }}"
+                namespace: "{{ .metadata.namespace }}"
+                port: "5432"
+                reconcile: true
 
-          secrets:
-            - name: "{{ .metadata.name }}-creds"
-              namespace: "{{ .metadata.namespace }}"
-              data:
-                username: '{{ .spec.username | default "postgres" }}'
-                password: "{{ .spec.password }}"
-              reconcile: true
-              when:
-                - field: spec.password
-                  exists: true
+            secrets:
+              - name: "{{ .metadata.name }}-creds"
+                namespace: "{{ .metadata.namespace }}"
+                data:
+                  username: '{{ .spec.username | default "postgres" }}'
+                  password: "{{ .spec.password }}"
+                reconcile: true
+                when:
+                  - field: spec.password
+                    exists: true
+        runtime:
+          allowedNamespaces:
+            - databases
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: spec.image
+                    notExists: true
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: spec.image
-                  notExists: true
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: spec.image
+                    exists: true
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: spec.image
-                  exists: true

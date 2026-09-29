@@ -2,9 +2,14 @@ package simulate
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/orkspace/orkestra/domain"
+	"github.com/orkspace/orkestra/pkg/event"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/post"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
+	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 )
@@ -22,7 +27,7 @@ type loopKube interface {
 
 // runLoop runs the reconciler for up to maxCycles and returns the aggregate
 // result. Notes must be appended by the caller.
-func runLoop(ctx context.Context, r domain.Reconciler, kube loopKube, key string, maxCycles int) *Result {
+func runLoop(ctx context.Context, r domain.Reconciler, kube loopKube, key string, maxCycles int, prepInput prepare.Input) *Result {
 	result := &Result{}
 	var prevCycleOps []Op
 
@@ -31,10 +36,38 @@ func runLoop(ctx context.Context, r domain.Reconciler, kube loopKube, key string
 
 		cycleResult := CycleResult{Cycle: cycle}
 		ns, name, _ := cache.SplitMetaNamespaceKey(key)
-		_, cycleResult.Error = r.Reconcile(ctx, domain.Request{
+
+		prepared, _, err := prepare.Prepare(ctx, prepInput)
+		if err != nil {
+			cycleResult.Error = fmt.Errorf("prepare: %w", err)
+			result.Cycles = append(result.Cycles, cycleResult)
+			continue
+		}
+		if prepared == nil {
+			// Object not found, deleted, or namespace-blocked — nothing to reconcile.
+			result.Cycles = append(result.Cycles, cycleResult)
+			continue
+		}
+
+		req := domain.Request{
 			Key:            key,
 			NamespacedName: apitypes.NamespacedName{Namespace: ns, Name: name},
-		})
+			Prepared:       prepared,
+		}
+		_, cycleResult.Error = r.Reconcile(ctx, req)
+
+		// Post-reconcile: status patch + emit — mirrors the kordinator worker.
+		// Status patching lives in post.Apply; without this call the CR's status
+		// fields would never be written and status-subresource assertions would fail.
+		if resolver, ok := prepared.Context.(*orktmpl.Resolver); ok {
+			box := prepare.BoxFrom(prepared)
+			post.Apply(ctx, post.Input{
+				CRD:      prepInput.Entry.CRD,
+				Kube:     kube,
+				Recorder: event.Discard(),
+			}, prepared.Object, resolver, box, cycleResult.Error, nil)
+		}
+
 		cycleResult.Ops = kube.OpsForCycle(cycle)
 		result.Cycles = append(result.Cycles, cycleResult)
 

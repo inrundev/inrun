@@ -60,4 +60,4 @@ The Control Center renders this as a clickable autoscaler panel on the CRD detai
 
 ## Goroutine model
 
-Workers are started at the declared `baseline.workers` count. When the autoscaler calls `ResizeWorkers(n)` with `n > old`, `GenericReconciler.ResizeWorkers` calls the injected `spawnWorker` callback once per new slot, starting additional goroutines on demand. This keeps the initial goroutine count at the baseline and avoids pre-allocating goroutines for a scale-up that may never occur.
+Workers are started at the declared `baseline.workers` count. When the autoscaler calls `ResizeWorkers(n)` with `n > old`, `kordinator.ResizeWorkers` calls the injected `spawnWorker` callback once per new slot, starting additional goroutines on demand. This keeps the initial goroutine count at the baseline and avoids pre-allocating goroutines for a scale-up that may never occur.

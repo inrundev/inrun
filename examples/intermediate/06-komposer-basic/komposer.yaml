@@ -31,6 +31,7 @@ spec:
       # All other fields (reconciler, status, onCreate) are inherited from
       # website-katalog.yaml — only overridden fields change
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 4        # production: more workers than the base katalog's 2
           resync: 15s       # production: faster resync than the base katalog's 30s
+

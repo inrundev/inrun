@@ -73,7 +73,7 @@ type Interface interface {
 
 	// ScopedFor evaluates any template expressions in the rawArgs using eval and
 	// returns a copy of this Interface with the resolved args attached.
-	// Called by GenericReconciler after building the resolver so hook authors see
+	// Called by generic.Reconciler after building the resolver so hook authors see
 	// fully-evaluated args without any extra wiring. Constructor authors call it
 	// themselves using their own resolver.
 	ScopedFor(eval func(string) (string, bool)) Interface

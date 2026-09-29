@@ -12,51 +12,49 @@ spec:
   crds:
     flex-app:
       crdFile: ./crd.yaml
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+          onReconcile:
+            jobs:
+              - name: "{{ .metadata.name }}-cleanup"
+                image: alpine:3.19
+                command: ["/bin/sh", "-c", "echo 'cleanup complete'"]
+                or:
+                  - field: status.phase
+                    equals: "Failed"
+                  - field: status.phase
+                    equals: "Succeeded"
 
-        onReconcile:
-          jobs:
-            - name: "{{ .metadata.name }}-cleanup"
-              image: alpine:3.19
-              command: ["/bin/sh", "-c", "echo 'cleanup complete'"]
-              or:
-                - field: status.phase
-                  equals: "Failed"
-                - field: status.phase
-                  equals: "Succeeded"
+              - name: "{{ .metadata.name }}-notify"
+                image: alpine:3.19
+                command: ["/bin/sh", "-c", "echo 'notification sent'"]
+                when:
+                  - field: spec.notify
+                    equals: "true"
+                or:
+                  - field: status.phase
+                    equals: "Running"
+                  - field: status.phase
+                    equals: "Failed"
+                  - field: status.phase
+                    equals: "Succeeded"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Succeeded"
+                when:
+                  - field: "{{ jobSucceeded .children.job }}"
+                    equals: "true"
 
-            - name: "{{ .metadata.name }}-notify"
-              image: alpine:3.19
-              command: ["/bin/sh", "-c", "echo 'notification sent'"]
-              when:
-                - field: spec.notify
-                  equals: "true"
-              or:
-                - field: status.phase
-                  equals: "Running"
-                - field: status.phase
-                  equals: "Failed"
-                - field: status.phase
-                  equals: "Succeeded"
-
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Succeeded"
-              when:
-                - field: "{{ jobSucceeded .children.job }}"
-                  equals: "true"

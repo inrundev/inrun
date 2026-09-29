@@ -13,9 +13,11 @@ spec:
           sentinels:
             - generationChanged
             - labelsChanged
-        watch:
-          - apiVersion: apps/v1
-            kind: Deployment
-          - apiVersion: v1
-            kind: Node
-            on: [update]
+        observe:
+          watch:
+            - apiVersion: apps/v1
+              kind: Deployment
+            - apiVersion: v1
+              kind: Node
+              on: [update]
+

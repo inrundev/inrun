@@ -24,24 +24,23 @@ spec:
         version: v1alpha1
         kind: Monitor
         plural: monitors
-
       operatorBox:
-        reconciler:
+        reconcile:
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Watching"
-            - path: interval
-              value: "{{ .spec.interval }}"
-
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-monitor-config"
-              reconcile: true
-              data:
-                interval: "{{ .spec.interval }}"
-                endpoint: "{{ .spec.endpoint }}"
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-monitor-config"
+                reconcile: true
+                data:
+                  interval: "{{ .spec.interval }}"
+                  endpoint: "{{ .spec.endpoint }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Watching"
+              - path: interval
+                value: "{{ .spec.interval }}"
 
     queue:
       apiTypes:
@@ -49,24 +48,23 @@ spec:
         version: v1alpha1
         kind: Queue
         plural: queues
-
       operatorBox:
-        reconciler:
+        reconcile:
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: maxSize
-              value: "{{ .spec.maxSize }}"
-
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-queue-config"
-              reconcile: true
-              data:
-                maxSize: "{{ .spec.maxSize }}"
-                processingTimeout: "{{ .spec.processingTimeout }}"
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-queue-config"
+                reconcile: true
+                data:
+                  maxSize: "{{ .spec.maxSize }}"
+                  processingTimeout: "{{ .spec.processingTimeout }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: maxSize
+                value: "{{ .spec.maxSize }}"
 
     app:
       apiTypes:
@@ -78,9 +76,8 @@ spec:
         objectList: AppList
         location: github.com/orkspace/safe-reconcile-demo/api/v1alpha1
         alias: safev1alpha1
-
       operatorBox:
-        reconciler:
+        reconcile:
           hooks:
             location: github.com/orkspace/safe-reconcile-demo/hooks
             function: AppHooks
@@ -88,3 +85,4 @@ spec:
             managedResources:
               - kind: Deployment
           resync: 30s
+

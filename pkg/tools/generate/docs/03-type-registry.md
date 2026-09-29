@@ -45,17 +45,18 @@ orktypes.ListRegistry["myorg/v1/MyApp"]   = func() client.ObjectList { return &t
 
 Also generates `RegisterScheme()` which calls each package's `AddToScheme` — required for the runtime to decode CRs by GVK.
 
-### 2. Go hooks (`reconciler.hooks` is declared)
+### 2. Go hooks (`reconcile.hooks` is declared)
 
 The CRD delegates part of the reconcile to a user-supplied Go function:
 
 ```yaml
 crds:
   myApp:
-    reconciler:
-      hooks:
-        location: github.com/myorg/myoperator/hooks
-        function: Reconcile
+    operatorBox:
+      reconcile:
+        hooks:
+          location: github.com/myorg/myoperator/hooks
+          function: Reconcile
 ```
 
 Generated output registers the hook:
@@ -66,18 +67,19 @@ orktypes.HookRegistry["myorg/v1/MyApp"] = func(ctx context.Context, ...) error {
 }
 ```
 
-### 3. Custom constructor (`reconciler.default: false`)
+### 3. Custom constructor (`reconcile.default: false`)
 
 The CRD owns its entire reconcile loop:
 
 ```yaml
 crds:
   myApp:
-    reconciler:
-      default: false
-      constructor:
-        location: github.com/myorg/myoperator/reconciler
-        function: New
+    operatorBox:
+      reconcile:
+        default: false
+        constructor:
+          location: github.com/myorg/myoperator/reconciler
+          function: New
 ```
 
 Generated output registers the constructor:
@@ -94,6 +96,6 @@ When multiple CRDs share a location, the generator deduplicates imports and assi
 
 ## Skipping generation
 
-If all enabled CRDs in the Katalog are dynamic-template CRDs (no `apiTypes.location`, no hooks, no constructor), `TypeRegistry` skips file generation entirely — the `GenericReconciler` handles these at runtime without any registered types.
+If all enabled CRDs in the Katalog are dynamic-template CRDs (no `apiTypes.location`, no hooks, no constructor), `TypeRegistry` skips file generation entirely — the `Generic Reconciler` handles these at runtime without any registered types.
 
 → Next: [04-crd-generation.md](04-crd-generation.md)

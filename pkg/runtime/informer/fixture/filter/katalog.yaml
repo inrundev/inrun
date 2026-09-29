@@ -18,22 +18,22 @@ spec:
         version: v1alpha1
         kind: FilterProbe
         plural: filterprobes
-
       operatorBox:
+        reconcile:
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-config"
+                namespace: "{{ .metadata.namespace }}"
+                data:
+                  observed: "{{ .metadata.name }}"
         preReconcile:
           enqueueGate:
             when:
               - field: "{{ .spec.active }}"
                 equals: "true"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: Running
 
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-config"
-              namespace: "{{ .metadata.namespace }}"
-              data:
-                observed: "{{ .metadata.name }}"
-
-        status:
-          fields:
-            - path: phase
-              value: Running

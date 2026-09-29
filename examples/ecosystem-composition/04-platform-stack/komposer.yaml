@@ -31,24 +31,25 @@ spec:
   crds:
     app:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 30s
 
     securityconfig:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
 
     monitoringconfig:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
 
     infra:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
+

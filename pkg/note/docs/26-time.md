@@ -49,7 +49,7 @@ Keywords: time, until, remaining, duration, expiry, cert, requeue, schedule
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     requeue:
       after: "{{ timeUntil .status.certExpiry }}"
       when:

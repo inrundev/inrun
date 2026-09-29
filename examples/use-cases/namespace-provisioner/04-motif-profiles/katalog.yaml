@@ -16,6 +16,15 @@ metadata:
     - multi-tenancy
 
 spec:
+  # spec.imports merges profiles and notes from the motif into the katalog-wide
+  # registry. Resources from the motif are ignored at this level — they are
+  # picked up by the CRD-level import below.
+  imports:
+    - motif: ../motifs/tenant-policies/motif.yaml
+      with:
+        namespace: "{{ .spec.targetNamespace }}"
+        team: "{{ .spec.team }}"
+
   crds:
     namespaceclaim:
       crdFile: ../crd.yaml
@@ -29,128 +38,126 @@ spec:
             name: database-credentials
             namespace: platform
             timeout: 15s
-
-
-      imports:
-        # tenant-policies brings all six profile classes into this Katalog's registry
-        # and creates the three NetworkPolicies (deny-all, allow-dns, allow-monitoring).
-        - motif: ../motifs/tenant-policies/motif.yaml
-          with:
-            namespace: "{{ .spec.targetNamespace }}"
-            team: "{{ .spec.team }}"
-
-        - motif: ../motifs/tenant-rbac/motif.yaml
-          with:
-            team: "{{ .spec.team }}"
-            targetNamespace: "{{ .spec.targetNamespace }}"
-            owner: "{{ .spec.owner }}"
-            ownerNamespace: "{{ .spec.ownerNamespace }}"
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
-        status:
-          fields:
-            - path: phase
-              value: Provisioning
-              when:
-                - field: status.phase
-                  operator: notExists
+          onCreate:
+            namespaces:
+              - name: "{{ .spec.targetNamespace }}"
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
 
-            - path: phase
-              value: Ready
-              when:
-                - field: "{{ resourceExists .children.namespaces }}"
-                  equals: "true"
+            serviceAccounts:
+              - name: "{{ .spec.owner }}"
+                namespace: "{{ .spec.targetNamespace }}"
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
 
-            - path: namespace
-              value: "{{ .spec.targetNamespace }}"
+            # Profile names come from the tenant-policies motif — no profiles: block here.
+            resourceQuotas:
+              - name: "{{ .spec.team }}-quota"
+                namespace: "{{ .spec.targetNamespace }}"
+                profile: "{{ printf \"org-%s\" .spec.tier }}"
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
 
-            - path: team
-              value: "{{ .spec.team }}"
+            limitRanges:
+              - name: "{{ .spec.team }}-container-limits"
+                namespace: "{{ .spec.targetNamespace }}"
+                profile: org-container-defaults
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
 
-        onCreate:
-          namespaces:
-            - name: "{{ .spec.targetNamespace }}"
-              labels:
+            deployments:
+              - name: "{{ .spec.team }}-ns-agent"
+                namespace: "{{ .spec.targetNamespace }}"
+                image: orkspace/ns-agent:v1
+                replicas: "2"
+                rollingUpdate:
+                  profile: org-safe
+                labels:
+                  team: "{{ .spec.team }}"
+                  app: ns-agent
+                  managed-by: orkestra
+                reconcile: true
+
+            hpa:
+              - name: "{{ .spec.team }}-ns-agent-hpa"
+                namespace: "{{ .spec.targetNamespace }}"
+                scaleTargetRef:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  name: "{{ .spec.team }}-ns-agent"
+                minReplicas: "2"
+                maxReplicas: "8"
+                behavior:
+                  profile: org-conservative
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
+
+            pdb:
+              - name: "{{ .spec.team }}-ns-agent-pdb"
+                namespace: "{{ .spec.targetNamespace }}"
+                selector:
+                  app: ns-agent
+                  team: "{{ .spec.team }}"
+                behavior:
+                  profile: org-at-least-one
+                labels:
+                  team: "{{ .spec.team }}"
+                  managed-by: orkestra
+                reconcile: true
+
+            secrets:
+              - name: registry-credentials
+                fromSecret: registry-credentials
+                fromNamespace: platform
+                toNamespaces:
+                  - "{{ .spec.targetNamespace }}"
+                reconcile: true
+          imports:
+            # tenant-policies brings all six profile classes into this Katalog's registry
+            # and creates the three NetworkPolicies (deny-all, allow-dns, allow-monitoring).
+            - motif: ../motifs/tenant-policies/motif.yaml
+              with:
+                namespace: "{{ .spec.targetNamespace }}"
                 team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
 
-          serviceAccounts:
-            - name: "{{ .spec.owner }}"
-              namespace: "{{ .spec.targetNamespace }}"
-              labels:
+            - motif: ../motifs/tenant-rbac/motif.yaml
+              with:
                 team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
+                targetNamespace: "{{ .spec.targetNamespace }}"
+                owner: "{{ .spec.owner }}"
+                ownerNamespace: "{{ .spec.ownerNamespace }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: Provisioning
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-          # Profile names come from the tenant-policies motif — no profiles: block here.
-          resourceQuotas:
-            - name: "{{ .spec.team }}-quota"
-              namespace: "{{ .spec.targetNamespace }}"
-              profile: "{{ printf \"org-%s\" .spec.tier }}"
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
+              - path: phase
+                value: Ready
+                when:
+                  - field: "{{ resourceExists .children.namespaces }}"
+                    equals: "true"
 
-          limitRanges:
-            - name: "{{ .spec.team }}-container-limits"
-              namespace: "{{ .spec.targetNamespace }}"
-              profile: org-container-defaults
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
+              - path: namespace
+                value: "{{ .spec.targetNamespace }}"
 
-          deployments:
-            - name: "{{ .spec.team }}-ns-agent"
-              namespace: "{{ .spec.targetNamespace }}"
-              image: orkspace/ns-agent:v1
-              replicas: "2"
-              rollingUpdate:
-                profile: org-safe
-              labels:
-                team: "{{ .spec.team }}"
-                app: ns-agent
-                managed-by: orkestra
-              reconcile: true
+              - path: team
+                value: "{{ .spec.team }}"
 
-          hpa:
-            - name: "{{ .spec.team }}-ns-agent-hpa"
-              namespace: "{{ .spec.targetNamespace }}"
-              scaleTargetRef:
-                apiVersion: apps/v1
-                kind: Deployment
-                name: "{{ .spec.team }}-ns-agent"
-              minReplicas: "2"
-              maxReplicas: "8"
-              behavior:
-                profile: org-conservative
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
-
-          pdb:
-            - name: "{{ .spec.team }}-ns-agent-pdb"
-              namespace: "{{ .spec.targetNamespace }}"
-              selector:
-                app: ns-agent
-                team: "{{ .spec.team }}"
-              behavior:
-                profile: org-at-least-one
-              labels:
-                team: "{{ .spec.team }}"
-                managed-by: orkestra
-              reconcile: true
-
-          secrets:
-            - name: registry-credentials
-              fromSecret: registry-credentials
-              fromNamespace: platform
-              toNamespaces:
-                - "{{ .spec.targetNamespace }}"
-              reconcile: true

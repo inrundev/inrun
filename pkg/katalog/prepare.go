@@ -112,24 +112,27 @@ func (k *Katalog) SetDefaults(kfg *konfig.Konfig) error {
 			crd.APITypes.Plural = fmt.Sprintf("%ss", strings.ToLower(crd.APITypes.Kind))
 		}
 
-		boxFinalizers := crd.OperatorBox.Finalizers
+		boxFinalizers := crd.Box().EffectiveFinalizers()
 		boxFinalizers = append(boxFinalizers, k.Spec.Finalizers...)
 		if crd.HasServeTarget() {
 			for _, target := range crd.Serve.Target.Entries {
 				if target.OperatorBox.Empty() {
 					continue
 				}
-				boxFinalizers = append(boxFinalizers, target.OperatorBox.Finalizers...)
+				boxFinalizers = append(boxFinalizers, target.OperatorBox.EffectiveFinalizers()...)
 			}
 		}
-		crd.OperatorBox.Finalizers = boxFinalizers
-
-		if crd.OperatorBox.Reconciler == nil {
-			crd.OperatorBox.Reconciler = &orktypes.ReconcilerConfig{}
+		if crd.Box().Runtime == nil {
+			crd.Box().Runtime = &orktypes.RuntimeConfig{}
 		}
-		rec := crd.OperatorBox.Reconciler
+		crd.Box().Runtime.Finalizers = boxFinalizers
+
+		if crd.Box().Reconcile == nil {
+			crd.Box().Reconcile = &orktypes.ReconcileConfig{}
+		}
+		rec := crd.Box().Reconcile
 		if rec.Profile != "" {
-			result, err := profiles.ApplyReconcilerProfile(rec.Profile, k.Profiles)
+			result, err := profiles.ApplyReconcilerProfile(rec.Profile, &k.Profiles)
 			if err != nil {
 				return fmt.Errorf("%s CRD %q: %w", failureMark(), name, err)
 			}
@@ -149,13 +152,10 @@ func (k *Katalog) SetDefaults(kfg *konfig.Konfig) error {
 		if rec.Resync.Duration == 0 {
 			rec.Resync.Duration = kfg.Katalog().DefaultResync()
 		}
-		if rec.Queue.MaxDepth == 0 {
-			crd.Warnings.AddWarning(fmt.Sprintf("CRD %q has uses unlimited queue: 'queue.maxDepth: 0'", name))
-		}
 		if rec.Queue.FailureThreshold == 0 {
 			rec.Queue.FailureThreshold = kfg.Katalog().DefaultFailureThreshold()
 		}
-		crd.OperatorBox.Reconciler = rec
+		crd.Box().Reconcile = rec
 
 		if k.IsEmailNotificationEnabled() || k.IsSlackNotificationEnabled() {
 			enabled := true

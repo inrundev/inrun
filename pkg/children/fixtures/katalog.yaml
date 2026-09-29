@@ -12,15 +12,16 @@ spec:
       crdFile: crd.yaml
       crFiles:
         - cr.yaml
-
-      imports:
-        - motif: motifs/01-namespaced/motif.yaml
-        - motif: motifs/02-rbac/motif.yaml
-        - motif: motifs/03-workloads/motif.yaml
-        - motif: motifs/04-network/motif.yaml
-        - motif: motifs/05-config/motif.yaml
-        - motif: motifs/06-storage/motif.yaml
-        - motif: motifs/07-custom/motif.yaml
+      operatorBox:
+        reconcile:
+          imports:
+            - motif: motifs/01-namespaced/motif.yaml
+            - motif: motifs/02-rbac/motif.yaml
+            - motif: motifs/03-workloads/motif.yaml
+            - motif: motifs/04-network/motif.yaml
+            - motif: motifs/05-config/motif.yaml
+            - motif: motifs/06-storage/motif.yaml
+            - motif: motifs/07-custom/motif.yaml
 
     tenant-plan:
       apiTypes:
@@ -28,6 +29,8 @@ spec:
         version: v1alpha1
         kind: TenantPlan
         plural: tenantplans
+      operatorBox:
+        reconcile:
+          imports:
+            - motif: motifs/08-plan/motif.yaml
 
-      imports:
-        - motif: motifs/08-plan/motif.yaml

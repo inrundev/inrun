@@ -5,7 +5,7 @@
 // here; startup is handled by orkestra.Start() in declaration order.
 //
 // The resulting registry contains the Katalog, Kubernetes clients and
-// informers, resource and provider registries, Kordinator, and health server.
+// informers, resource registries, Kordinator, and health server.
 package internal
 
 import (
@@ -28,8 +28,11 @@ import (
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/vitals"
 	"github.com/orkspace/orkestra/pkg/runtime/queue"
-	"github.com/orkspace/orkestra/pkg/runtime/reconciler"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/generic"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/remote"
+	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/orkspace/orkestra/pkg/version"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -55,6 +58,13 @@ type runtimeKfg struct {
 // is visible. Splitting it would scatter the dependency graph across files
 // and make it harder to reason about startup order.
 func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) *runtimeKfg {
+
+	// ── 0. Runtime facts — available to all template expressions as .ork.* ──────
+	orkestraNamespace := kfg.Cluster().Namespace()
+	ctx = orktmpl.ContextWithOrkContext(ctx, orktmpl.NewOrkContext(
+		kfg.Cluster().Namespace(),
+		version.Version,
+	))
 
 	// ── 1a. Instance ────────────────────────────────────────────────────────────
 	kfg.SetInstance(konfig.Runtime())
@@ -83,13 +93,15 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 	// Created here, started later by orkestra in registration order.
 
 	kube := kubeclient.NewKubeclient(kfg, scheme)
-	cs := kube.Clientset()
 
 	// kubeclient is started immediately — the informer factory's missing-CRD
 	// check needs the REST config during construction, before orkestra.Start().
 	if err := kube.Start(ctx); err != nil {
 		logger.Fatal().Err(err).Msg("failed to start kubeclient")
 	}
+
+	// Clientset is built inside Start; capture after Start so cs is never nil.
+	cs := kube.Clientset()
 
 	// HealthServer — HTTP-only (health, readiness, metrics, Katalog API routes).
 	// Routes registered below before Start() binds the port.
@@ -150,23 +162,6 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 		QueueRegistry: queueRegistry,
 	})
 
-	// ── 4c. Provider registry ─────────────────────────────────────────────────
-	// External infrastructure providers (AWS, MongoDB, etc.).
-	// Must be built BEFORE the factory loop so all reconciler closures capture
-	// the same fully-initialised registry. loadProviders is non-fatal —
-	// unavailable providers log a warning and the operator starts regardless.
-	providerRegistry := loadProviders(ctx, kat)
-
-	// One ProviderStats per CRD — shared between GenericReconciler (writes on each
-	// provider call) and BuildCRDInfoHandler (reads for the /katalog/{crd} response).
-	// Only created for CRDs that declare provider blocks — others get nil.
-	providerStatsMap := make(map[string]*health.ProviderStats)
-	for _, crd := range kat.Enabled() {
-		if crd.HasProviders() {
-			providerStatsMap[crd.GVKString()] = health.NewProviderStats()
-		}
-	}
-
 	// ── 4d. Kordinator registry + per-CRD wiring ──────────────────────────────
 	// ktrlRegistry maps GVK → (CRDEntry, SharedIndexInformer, ReconcilerFactory).
 	// It also implements reconciler.KatalogRegistry via GetInformerByName,
@@ -199,7 +194,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 
 		opts := informer.Options{
 			Name:          crd.APITypes.Kind,
-			Resync:        crd.OperatorBox.Reconciler.Resync.Duration,
+			Resync:        crd.SetResync(0),
 			LabelSelector: labelSelector,
 			FieldSelector: fieldSelector,
 		}
@@ -222,8 +217,8 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 					Msg("informer: namespace-scoped watch (Tier 1)")
 			}
 			filter := &informer.NamespaceFilter{
-				AllowedNamespaces:    []string(crd.AllowedNamespaces),
-				RestrictedNamespaces: []string(crd.RestrictedNamespaces),
+				AllowedNamespaces:    []string(crd.AllAllowedNamespaces()),
+				RestrictedNamespaces: []string(crd.AllRestrictedNamespaces()),
 			}
 			infFactory.RegisterNamespaceFilter(gvk, filter)
 			logger.Debug().
@@ -267,12 +262,12 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			inf = infFactory.For(object, ctx, opts)
 		}
 
-		finalizers = append(finalizers, crd.OperatorBox.Finalizers...)
+		finalizers = append(finalizers, crd.Box().EffectiveFinalizers()...)
 
 		infCopy := inf
 
 		// Build the reconciler factory.
-		// For default: true CRDs — GenericReconciler interprets the Katalog declaratively.
+		// For default: true CRDs — generic.Reconciler interprets the Katalog declaratively.
 		// For default: false CRDs — a custom Constructor is required.
 		//
 		// The factory is a closure — it captures all values at construction time
@@ -284,11 +279,11 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			objCopy := object
 
 			var anyHooks domain.AnyReconcileHooks
-			if crd.OperatorBox.HookFactory != nil {
-				anyHooks = crd.OperatorBox.HookFactory()
+			if r := crd.Box().Reconcile; r != nil && r.HookFactory != nil {
+				anyHooks = r.HookFactory()
 			}
 
-			logger.Debug().Str("gvk", gvk).Msg("wiring GenericReconciler factory")
+			logger.Debug().Str("gvk", gvk).Msg("wiring generic.Reconciler factory")
 
 			// Attach hooks.args to a copy of the kube client; hooks read them via kube.Args().
 			var hookKube kubeclient.Interface = kube.
@@ -297,9 +292,8 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 				hookKube = kube.WithArgs(kubeclient.Args(args))
 			}
 
-			pStats := providerStatsMap[gvk]
 			factory = func() domain.Reconciler {
-				return reconciler.NewGenericReconciler(
+				return generic.New(
 					crd,
 					infCopy,
 					ev,
@@ -308,12 +302,21 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 					func() domain.Object {
 						return objCopy.DeepCopyObject().(domain.Object)
 					},
-					ktrlRegistry,     // cross-CRD informer lookup via GetInformerByName
-					crdHealthMap,     // cross-CRD health map via HealthProvider
-					providerRegistry, // aws:, mongodb:, etc. block dispatch
-					pStats,           // per-CRD provider error rate tracking
-					kat,              // Katalog for notification wiring
+					kat,
 				)
+			}
+		} else if crd.WithRemoteDecl() {
+			logger.Debug().Str("gvk", gvk).Msg("wiring RemoteReconciler factory")
+
+			remoteDecl := crd.Box().Reconcile.Remote
+			crdManagedResources := crd.RemoteManagedResources()
+			remoteKube := kube.WithStoreFor(infFactory.StoreFor)
+			factory = func() domain.Reconciler {
+				r, err := remote.New(remoteDecl, crd.GVK(), remoteKube, ev, crdManagedResources, orkestraNamespace)
+				if err != nil {
+					logger.Fatal().Err(err).Str("gvk", gvk).Msg("failed to build remote reconciler")
+				}
+				return r
 			}
 		} else {
 			if !crd.ConstructorEnabled() {
@@ -337,19 +340,21 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			}
 
 			factory = func() domain.Reconciler {
-				return crd.OperatorBox.Constructor(ctorKube)
+				return crd.Box().Reconcile.Constructor(ctorKube)
 			}
 		}
 
-		// Wrap with MuxReconciler when per-target constructors are declared.
-		// MuxReconciler dispatches each reconcile cycle to the matching target's
-		// domain.Reconciler, falling back to the base factory for CRs with no
-		// annotation or an unrecognised target name.
-		if crd.HasTargetConstructorFactories() {
+		// Wrap with MuxReconciler when per-target constructors or remote reconcilers
+		// are declared. MuxReconciler dispatches each reconcile cycle to the matching
+		// target's domain.Reconciler, falling back to the base factory for CRs with
+		// no annotation or an unrecognised target name.
+		if crd.HasTargetConstructorFactories() || crd.HasTargetRemoteDeclarations() {
 			baseFactory := factory
 			crdCopy := crd
 			factory = func() domain.Reconciler {
-				targets := make(map[string]domain.Reconciler, len(crdCopy.TargetReconcilerFactories))
+				ctorCount := len(crdCopy.TargetReconcilerFactories)
+				remoteDecls := crdCopy.TargetRemoteDeclarations()
+				targets := make(map[string]domain.Reconciler, ctorCount+len(remoteDecls))
 				for targetName, ctor := range crdCopy.TargetReconcilerFactories {
 					var targetKube kubeclient.Interface = kube.
 						WithInformer(infCopy).
@@ -362,11 +367,19 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 					}
 					targets[targetName] = ctor(targetKube)
 				}
+				for targetName, remoteDecl := range remoteDecls {
+					r, err := remote.New(remoteDecl, crdCopy.GVK(), kube.WithStoreFor(infFactory.StoreFor), ev, crdCopy.RemoteManagedResources(), orkestraNamespace)
+					if err != nil {
+						logger.Fatal().Err(err).Str("gvk", gvk).Str("target", targetName).Msg("failed to build remote reconciler")
+					}
+					targets[targetName] = r
+				}
 				return orktarget.NewMuxReconciler(infCopy, targets, baseFactory())
 			}
 			logger.Debug().
 				Str("gvk", gvk).
-				Int("targets", len(crd.TargetReconcilerFactories)).
+				Int("constructorTargets", len(crd.TargetReconcilerFactories)).
+				Int("remoteTargets", len(crd.TargetRemoteDeclarations())).
 				Msg("wiring MuxReconciler factory")
 		}
 
@@ -419,7 +432,6 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 				vitals.BuildCRDInfoHandler(
 					crd, kfg, inf, crdHealth,
 					orkHealth,
-					providerStatsMap[gvk],
 				),
 			)
 			hs.Register(
@@ -428,7 +440,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			)
 			hs.Register(
 				"/katalog/"+crdName+"/cr/",
-				vitals.BuildCRDetailAndEventsHandler(crd, inf, kube, crd.OperatorBox, orkHealth),
+				vitals.BuildCRDetailAndEventsHandler(crd, inf, kube, crd.Box(), orkHealth),
 			)
 		}
 

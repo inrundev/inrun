@@ -14,20 +14,18 @@ spec:
         version: v1alpha1
         kind: Pipeline
         plural: pipelines
-
-
-      imports:
-        - motif: ./motif/admission.yaml
-        - motif: ./motif/resources.yaml
-        - motif: ./motif/status.yaml
-
       # operatorBox:
       #   default: true
+      # No inline code – everything comes from motifs
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 4
           resync: 10s
           queue:
             maxDepth: 1000
             failureThreshold: 0.5
-      # No inline code – everything comes from motifs
+          imports:
+            - motif: ./motif/admission.yaml
+            - motif: ./motif/resources.yaml
+            - motif: ./motif/status.yaml
+

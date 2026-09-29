@@ -9,7 +9,7 @@ Both run for the operator's lifetime and stop only when the context is cancelled
 
 ## retryMissingCRDs
 
-Runs on `postStartRetryInterval` (90s in-cluster, 10s when running locally via `ork run`). The interval is selected at startup using `utils.IsRunningInCluster()` — no configuration required. Each tick executes four phases in order.
+Runs on `postStartRetryInterval` (90s in-cluster, 10s when running locally via `ork run`). The interval is selected at startup using `utils.IsRunningInPod()` — no configuration required. Each tick executes four phases in order.
 
 ### Phase 1 — Detect runtime disappearances
 

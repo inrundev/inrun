@@ -22,7 +22,6 @@ Each CRD gets its own page. The sections shown depend on what the operator has c
 | Access Control | — | RBAC rules present |
 | Webhooks | — | admission or conversion webhooks enabled |
 | Protection | — | deletion or namespace protection enabled |
-| Providers | — | provider blocks declared |
 | Endpoints | ✓ | — |
 
 ---

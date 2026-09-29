@@ -20,22 +20,21 @@ spec:
         version: v1alpha1
         kind: Loader
         plural: loaders
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 60s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 8080
+                reconcile: true
+            services:
+              - port: "8080"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
 
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 8080
-              reconcile: true
-          services:
-            - port: "8080"

@@ -43,7 +43,7 @@ func (e *executor) validateGateFailPolicies(crdName string) error {
 	if !ok {
 		return nil
 	}
-	pr := crd.OperatorBox.PreReconcile
+	pr := crd.Box().PreReconcile
 	if pr == nil {
 		return nil
 	}
@@ -117,7 +117,7 @@ func validateCRDWatchEntries(crdName string, crd orktypes.CRDEntry) error {
 			return fmt.Errorf("%s crd %q: watch[%d]: kind must not be empty", failureMark(), crdName, i)
 		}
 
-		if invalid := crd.OperatorBox.Observe.InvalidOnValues(w.On); len(invalid) > 0 {
+		if invalid := crd.Box().Observe.InvalidOnValues(w.On); len(invalid) > 0 {
 			return fmt.Errorf("%s crd %q: watch[%d] %s/%s: unknown on: value(s) [%s] — valid values: %s",
 				failureMark(), crdName, i, w.APIVersion, w.Kind,
 				strings.Join(invalid, ", "), strings.Join(orktypes.ValidObserveEvents(), ", "))
@@ -161,7 +161,7 @@ func validateWatchKeyFrom(crdName string, location string, w orktypes.WatchEntry
 }
 
 func validateCRDSentinels(crdName string, crd orktypes.CRDEntry) error {
-	pr := crd.OperatorBox.PreReconcile
+	pr := crd.Box().PreReconcile
 	invalid := pr.InvalidSentinels()
 	if len(invalid) == 0 {
 		if pr.HasEnqueueGateSentinel() {
@@ -191,7 +191,7 @@ func validateCRDSentinels(crdName string, crd orktypes.CRDEntry) error {
 // references an undeclared sentinel name fails to parse — caught here at validate
 // time, not at runtime.
 func (e *executor) validatePreReconcileGateTemplates(crdName string, crd orktypes.CRDEntry) error {
-	pr := crd.OperatorBox.PreReconcile
+	pr := crd.Box().PreReconcile
 	if pr == nil {
 		return nil
 	}

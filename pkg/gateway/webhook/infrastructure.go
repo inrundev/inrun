@@ -192,12 +192,12 @@ func (ws *WebhookServer) reconcileCRDConversionWebhooks() {
 	defer cancel()
 
 	for _, crd := range ws.katalog.EnabledCRDs() {
-		if crd.Conversion == nil || !crd.UpdateCRDCaBundle() {
+		if !crd.UpdateCRDCaBundle() {
 			continue
 		}
 
 		crdName := crd.APITypes.Plural + "." + crd.APITypes.Group
-		storageVersion := crd.Conversion.StorageVersion
+		storageVersion := crd.EffectiveConversion().StorageVersion
 
 		if err := ws.patchConversionCRD(ctx, crdName, caBundle64, storageVersion); err != nil {
 			logger.Error().Err(err).Str("crd", crdName).
@@ -225,7 +225,7 @@ func (ws *WebhookServer) watchConversionCRDs(ctx context.Context, trigger chan<-
 	}
 
 	for _, crd := range ws.katalog.EnabledCRDs() {
-		if crd.Conversion == nil || !crd.UpdateCRDCaBundle() {
+		if !crd.UpdateCRDCaBundle() {
 			continue
 		}
 		crdName := crd.APITypes.Plural + "." + crd.APITypes.Group

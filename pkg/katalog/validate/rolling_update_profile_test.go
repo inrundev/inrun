@@ -11,9 +11,11 @@ import (
 func katalogWithDeployment(crdName string, deps ...orktypes.DeploymentTemplateSource) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		crdName: {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				OnCreate: &orktypes.HookTemplates{
-					Deployments: deps,
+			OperatorBox: &orktypes.OperatorBoxConfig{
+				Reconcile: &orktypes.ReconcileConfig{
+					OnCreate: &orktypes.HookTemplates{
+						Deployments: deps,
+					},
 				},
 			},
 		},
@@ -99,10 +101,12 @@ func TestValidateRollingUpdateProfiles_TemplateExprSkipped(t *testing.T) {
 func TestValidateRollingUpdateProfiles_StatefulSet(t *testing.T) {
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				OnCreate: &orktypes.HookTemplates{
-					StatefulSets: []orktypes.StatefulSetTemplateSource{
-						{Name: "db", RollingUpdate: &orktypes.RollingUpdateBehavior{Profile: "safe"}},
+			OperatorBox: &orktypes.OperatorBoxConfig{
+				Reconcile: &orktypes.ReconcileConfig{
+					OnCreate: &orktypes.HookTemplates{
+						StatefulSets: []orktypes.StatefulSetTemplateSource{
+							{Name: "db", RollingUpdate: &orktypes.RollingUpdateBehavior{Profile: "safe"}},
+						},
 					},
 				},
 			},

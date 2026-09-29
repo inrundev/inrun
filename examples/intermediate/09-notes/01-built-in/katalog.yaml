@@ -14,33 +14,33 @@ spec:
       crFiles: 
         - ./cr.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
+          onReconcile:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                # default returns the second argument when the first is empty or absent.
+                replicas: "{{ default .spec.replicas 1 }}"
+        emit:
+          status:
+            fields:
+              # allReplicasReady reads the live Deployment state after every reconcile.
+              # Returns "true" once all pods are up, "false" while they are starting.
+              - path: ready
+                value: "{{ allReplicasReady .children.deployment }}"
 
-        status:
-          fields:
-            # allReplicasReady reads the live Deployment state after every reconcile.
-            # Returns "true" once all pods are up, "false" while they are starting.
-            - path: ready
-              value: "{{ allReplicasReady .children.deployment }}"
+              # Gate the phase field on the computed ready value.
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.ready
+                    notEquals: "true"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: status.ready
+                    equals: "true"
 
-            # Gate the phase field on the computed ready value.
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.ready
-                  notEquals: "true"
-            - path: phase
-              value: "Ready"
-              when:
-                - field: status.ready
-                  equals: "true"
-
-        onReconcile:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              # default returns the second argument when the first is empty or absent.
-              replicas: "{{ default .spec.replicas 1 }}"

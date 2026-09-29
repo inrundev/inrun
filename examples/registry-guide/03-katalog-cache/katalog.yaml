@@ -25,28 +25,28 @@ spec:
         version: v1
         kind: Cache
         plural: caches
-
-      imports:
-        - motif: ../01-motifs/data-store/motif.yaml
-          with:
-            image: "{{ .spec.image }}"
-            port: "{{ .spec.port }}"
-            storageSize: "{{ .spec.storageSize }}"
-            storageClass: "{{ .spec.storageClass }}"
-            replicas: "{{ .spec.replicas }}"
-            resourceProfile: "{{ .spec.resourceProfile }}"
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: ready
-              value: "{{ allReplicasReady .children.statefulset }}"
-            - path: connectionSecret
-              value: "{{ .metadata.name }}-creds"
-            - path: endpoint
-              value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:{{ .spec.port }}"
+          imports:
+            - motif: ../01-motifs/data-store/motif.yaml
+              with:
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                storageSize: "{{ .spec.storageSize }}"
+                storageClass: "{{ .spec.storageClass }}"
+                replicas: "{{ .spec.replicas }}"
+                resourceProfile: "{{ .spec.resourceProfile }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: ready
+                value: "{{ allReplicasReady .children.statefulset }}"
+              - path: connectionSecret
+                value: "{{ .metadata.name }}-creds"
+              - path: endpoint
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:{{ .spec.port }}"
+

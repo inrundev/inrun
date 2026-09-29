@@ -11,8 +11,9 @@ spec:
         kind: AppCert
         plural: appcerts
       operatorBox:
-        onCreate:
-          custom:
+        reconcile:
+          onCreate:
+            custom:
             - apiVersion: cert-manager.io/v1
               kind: Issuer
               metadata:
@@ -27,3 +28,4 @@ spec:
                 namespace: "{{ .metadata.namespace }}"
               spec:
                 secretName: "{{ .metadata.name }}-tls"
+

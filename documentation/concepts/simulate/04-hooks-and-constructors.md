@@ -20,7 +20,7 @@ var ReconcilerRegistry = map[schema.GroupVersionKind]NewReconcilerFunc{}
 
 ## Typed hooks
 
-For hook operators (`operatorBox.reconciler.hooks:`), `HookRegistry` contains the hook function. Simulate wires it into `GenericReconciler` and calls it on every cycle against the fake cluster.
+For hook operators (`operatorBox.reconciler.hooks:`), `HookRegistry` contains the hook function. Simulate wires it into `Generic Reconciler` and calls it on every cycle against the fake cluster.
 
 ```bash
 # From your operator directory, using your compiled binary
@@ -64,11 +64,11 @@ The constructor owns its full reconcile loop — simulate just provides the fake
 
 ## Standard ork binary
 
-When running `ork simulate` from the standard `ork` binary (not a custom operator binary), both registries are empty for your custom types. Simulate falls back to `GenericReconciler` with a nil hook binder:
+When running `ork simulate` from the standard `ork` binary (not a custom operator binary), both registries are empty for your custom types. Simulate falls back to `Generic Reconciler` with a nil hook binder:
 
 - Declarative operatorBox (status fields, templates) — simulated normally
 - Hook body — not executed
-- Constructor body — not executed (GenericReconciler runs the status layer instead)
+- Constructor body — not executed (Generic Reconciler runs the status layer instead)
 
 This is still useful for verifying template logic before building the binary.
 

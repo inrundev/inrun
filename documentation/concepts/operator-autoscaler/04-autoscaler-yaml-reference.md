@@ -11,16 +11,17 @@ Autoscaling is optional. When omitted, the CRD runs with its declared baseline f
 
 ```yaml
 operatorBox:
-  autoscale:
-    interval: <duration>
-    cooldown: <duration>
-    conditions:
-      or: [<condition>, ...]
-      when:  [<condition>, ...]
-    do:
-      workers: <int>
-      queueDepth: <int>
-      resync: <duration>
+  runtime:
+    autoscale:
+      interval: <duration>
+      cooldown: <duration>
+      conditions:
+        or: [<condition>, ...]
+        when:  [<condition>, ...]
+      do:
+        workers: <int>
+        queueDepth: <int>
+        resync: <duration>
 ```
 
 ---

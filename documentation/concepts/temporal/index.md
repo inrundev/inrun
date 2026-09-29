@@ -110,7 +110,7 @@ All three patterns work because Orkestra's reconciler runs on a configurable res
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     resync: 1m
 ```
 

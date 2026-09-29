@@ -4,10 +4,8 @@ Defines the reconciliation strategy and lifecycle configuration for a CRD. Contr
 
 ```yaml
 operatorBox:
-  # reconciler: determines which reconciler implementation runs.
-  # Omit entirely for declarative-only CRDs (GenericReconciler is the default).
-  reconciler:
-    default: true              # true → GenericReconciler | false → custom constructor
+  reconcile:
+    default: true              # true → Generic Reconciler | false → custom constructor
 
     # Go hooks (default: true, typed mode)
     hooks:
@@ -32,24 +30,26 @@ operatorBox:
       args:
         maxRetries: 3
         timeoutSeconds: 300
-
-  finalizers:
-    - example.io/cleanup
-
-  # Declarative templates (GenericReconciler only)
-  onCreate:
-    ...
-  onReconcile:
-    ...
-  onDelete:
-    ...
-
-  status:
-    ...               # → status.md
-
+    onCreate:
+      ...
+    onReconcile:
+      ...
+    onDelete:
+      ...
+  emit:
+    status:
+      ...               # → status.md
+  runtime:
+    finalizers:
+      - example.io/cleanup
+    rollBackOnError: false
+    autoscale:
+      ...
+  # reconcile: determines which reconciler implementation runs.
+  # Omit entirely for declarative-only CRDs (Generic Reconciler is the default).
+  # Declarative templates (Generic Reconciler only)
   when:
     ...               # → when-conditions.md
-
   observe:            # → observe
   preReconcile:
     external:         # → preReconcile.external section below (shared calls)
@@ -67,19 +67,15 @@ operatorBox:
         - ...
       or:
         - ...
-
-  rollBackOnError: false
-  autoscale:
-    ...
 ```
 
-## `reconciler`
+## `reconcile`
 
-Groups the reconciler identity fields. Omit for declarative-only CRDs — GenericReconciler is the default.
+Groups the reconciler identity fields. Omit for declarative-only CRDs — Generic Reconciler is the default.
 
-### `reconciler.include`
+### `reconcile.include`
 
-Loads a shared reconciler config from a file. The file's `reconciler:` block is merged under the inline config — inline fields take precedence over included ones. The path is resolved relative to the Katalog file. Cleared after expansion.
+Loads a shared reconciler config from a file. The file's `reconcile:` block is merged under the inline config — inline fields take precedence over included ones. The path is resolved relative to the Katalog file. Cleared after expansion.
 
 Use this to share hooks location, function, resources, and tuning across targets that only differ in `args` or `preReconcile`:
 
@@ -89,15 +85,14 @@ serve:
   target:
     v2-enabled:
       operatorBox:
-        reconciler:
+        reconcile:
           include: ./shared-reconciler.yaml
           hooks:
             args:
               featureEnabled: "true"
-
     v2-disabled:
       operatorBox:
-        reconciler:
+        reconcile:
           include: ./shared-reconciler.yaml
           hooks:
             args:
@@ -106,7 +101,7 @@ serve:
 
 ```yaml
 # shared-reconciler.yaml
-reconciler:
+reconcile:
   hooks:
     location: github.com/myorg/operator/hooks
     function: AppHooks
@@ -119,20 +114,20 @@ reconciler:
 
 Inline `hooks.args` overrides anything declared in the file's `hooks.args`. The location, function, resources, workers, and resync are inherited from the file.
 
-### `reconciler.default`
+### `reconcile.default`
 
 | Value | Behaviour |
 |-------|-----------|
-| `true` (default) | GenericReconciler handles reconciliation. Use `onCreate`, `onReconcile`, `onDelete` for declarative templates, and `reconciler.hooks` for Go hooks. |
-| `false` | Fully custom reconciler. Set `reconciler.constructor` to provide it. Templates and hooks are ignored. |
+| `true` (default) | Generic Reconciler handles reconciliation. Use `onCreate`, `onReconcile`, `onDelete` for declarative templates, and `reconcile.hooks` for Go hooks. |
+| `false` | Fully custom reconciler. Set `reconcile.constructor` to provide it. Templates and hooks are ignored. |
 
-### `reconciler.hooks`
+### `reconcile.hooks`
 
-A Go function invoked by the GenericReconciler. Implements typed reconcile hooks (`OnCreate`, `OnUpdate`, `OnDelete`). Used when you need Go logic that the GenericReconciler calls instead of declarative templates.
+A Go function invoked by the Generic Reconciler. Implements typed reconcile hooks (`OnCreate`, `OnUpdate`, `OnDelete`). Used when you need Go logic that the Generic Reconciler calls instead of declarative templates.
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     hooks:
       location: github.com/example/operator   # Go module path
       function: DatabaseHooks                  # exported function name
@@ -150,11 +145,11 @@ operatorBox:
 
 Requires typed mode (`apiTypes.location` set) and `ork generate registry`.
 
-#### `reconciler.hooks.args`
+#### `reconcile.hooks.args`
 
 Key/value pairs declared in the Katalog and delivered to the hook function at reconcile time via `kube.Args()`. Values may be strings, booleans, integers, or nested maps.
 
-**String values support Go template expressions.** The GenericReconciler evaluates them against the current CR before the hook runs — the full note FuncMap is available (`default`, `upper`, `lower`, etc.).
+**String values support Go template expressions.** The Generic Reconciler evaluates them against the current CR before the hook runs — the full note FuncMap is available (`default`, `upper`, `lower`, etc.).
 
 ```yaml
 hooks:
@@ -208,7 +203,7 @@ func onReconcile(ctx context.Context, obj *apiv1.Database) error {
 
 `kube.Args()` always returns a non-nil `Args` — absent keys return zero values, so no nil checks are needed.
 
-#### `reconciler.hooks.external`
+#### `reconcile.hooks.external`
 
 HTTP calls the runtime makes **before** the hook runs. Results are injected into the resolver so their values are available as `args` template expressions (`{{ .external.<name>.body }}`, `.status`, `.headers`). This keeps the hook free of HTTP client code — the Katalog owns the call, the hook receives the resolved value via `kube.Args()`.
 
@@ -252,7 +247,7 @@ func onReconcile(ctx context.Context, obj *apiv1.App) error {
 
 The full `external:` field reference (shared with the top-level `external:` block) is in [13-external.md](13-external.md).
 
-#### `reconciler.hooks.runHooksFirst`
+#### `reconcile.hooks.runHooksFirst`
 
 Controls the order in which the hook and declared templates run within the same reconcile cycle.
 
@@ -262,19 +257,19 @@ Controls the order in which the hook and declared templates run within the same 
 | `true` | Hook runs first, then declared templates. Use when the hook creates resources that declared templates depend on. |
 
 ```yaml
-reconciler:
+reconcile:
   hooks:
     runHooksFirst: true   # hook → then declared templates
                           # false (default): declared templates → then hook
 ```
 
-### `reconciler.constructor`
+### `reconcile.constructor`
 
-Replaces the GenericReconciler entirely. Requires `reconciler.default: false`.
+Replaces the Generic Reconciler entirely. Requires `reconcile.default: false`.
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     default: false
     constructor:
       location: github.com/example/operator
@@ -289,7 +284,7 @@ operatorBox:
         notifyOnSuccess: true
 ```
 
-#### `reconciler.constructor.managedResources`
+#### `reconcile.constructor.managedResources`
 
 Declares the Kubernetes resource types this constructor creates, updates, or deletes. Two things happen for each entry:
 
@@ -298,7 +293,7 @@ Declares the Kubernetes resource types this constructor creates, updates, or del
 
 If you need a field index, event filtering, or a different key resolution strategy, declare an explicit `watch:` entry for that type. It takes priority over the implicit informer from `managedResources:`.
 
-#### `reconciler.constructor.args`
+#### `reconcile.constructor.args`
 
 Key/value pairs delivered to the constructor function via `kube.Args()`. The constructor receives `kube` with args already attached — no additional wiring required.
 
@@ -318,7 +313,7 @@ func (r *PipelineReconciler) Reconcile(ctx context.Context, obj domain.Object) e
 
 Integers and booleans have no template syntax — YAML parsed them as native types, so `ScopedFor` returns them as-is. Nested maps are recursed into: every string inside a nested map is evaluated; the map container itself is not a template.
 
-`args` follow the same accessor rules as `reconciler.hooks.args` — see above.
+`args` follow the same accessor rules as `reconcile.hooks.args` — see above.
 
 ## `finalizers`
 
@@ -455,7 +450,7 @@ Evaluated by the **kordinator** after the item is dequeued. When conditions fail
 
 ### `preReconcile.external`
 
-HTTP or gRPC calls declared here run before either gate. Results are available to both `enqueueGate` and `reconcileGate` conditions. Follows the same `external:` contract as `reconciler.hooks.external` — see [external reference](13-external.md).
+HTTP or gRPC calls declared here run before either gate. Results are available to both `enqueueGate` and `reconcileGate` conditions. Follows the same `external:` contract as `reconcile.hooks.external` — see [external reference](13-external.md).
 
 ### Comparison
 
@@ -510,5 +505,33 @@ autoscale:
 | `do.workers` | Override concurrent goroutines when conditions are met |
 | `do.queueDepth` | Override max queue depth |
 | `do.resync` | Override resync interval |
+
+---
+
+## `runtime.cleanup`
+
+Declares when to delete a CR after it reaches a terminal state. Evaluated at the pre-reconcile gate — before the reconciler is called, for every reconciler type (remote, generic, and typed).
+
+When conditions are met, Orkestra removes deletion-protection labels (if present) and deletes the CR. Child resources are garbage-collected through owner references.
+
+```yaml
+operatorBox:
+  runtime:
+    cleanup:
+      or:
+        - field: .status.phase
+          equals: Completed
+        - field: .status.phase
+          equals: Failed
+      deleteAfter: 60s
+```
+
+| Field | Required | Default | Description |
+|---|---|---|---|
+| `when` | no | — | AND conditions — all must be true. |
+| `or` | no | — | OR conditions — at least one must be true. When both `when` and `or` are declared, both must pass. |
+| `deleteAfter` | no | `0` (immediate) | Grace period between the condition being met and deletion. Orkestra annotates the CR with `orkestra.orkspace.io/cleanup-pending-since` on the first-met cycle and re-evaluates on the next. |
+
+Conditions use the same field/operator syntax as `preReconcile.reconcileGate`. See [Conditions reference](../conditions/index.md).
 
 ---

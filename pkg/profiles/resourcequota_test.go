@@ -8,7 +8,7 @@ import (
 )
 
 func TestResourceQuotaProfiles(t *testing.T) {
-	empty := orktypes.ProfileRegistry{}
+	var empty *orktypes.ProfileRegistry
 
 	tests := []struct {
 		name      string
@@ -65,7 +65,7 @@ func TestResourceQuotaProfileUserDefined(t *testing.T) {
 		},
 	}
 
-	res, err := profiles.ApplyResourceQuotaProfile("ci", reg)
+	res, err := profiles.ApplyResourceQuotaProfile("ci", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestResourceQuotaProfileUserDefinedOverridesBuiltIn(t *testing.T) {
 			{Name: "small", Hard: map[string]string{"pods": "999"}},
 		},
 	}
-	res, err := profiles.ApplyResourceQuotaProfile("small", reg)
+	res, err := profiles.ApplyResourceQuotaProfile("small", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -5,7 +5,7 @@ metadata:
   author: orkspace
   version: 0.1.0
   description: >
-    Custom constructor for the Pipeline CRD. The GenericReconciler is
+    Custom constructor for the Pipeline CRD. The Generic Reconciler is
     replaced entirely — the constructor owns the full reconcile loop.
     Demonstrates the state machine pattern: Pending → Running → Succeeded/Failed.
 
@@ -23,14 +23,13 @@ spec:
         # instead of *unstructured.Unstructured.
         location: github.com/orkspace/orkestra-mixed-operator-pattern/10-constructor/api/v1alpha1
         alias: pipev1alpha1
-
       operatorBox:
-        reconciler:
-          # default: false tells Orkestra NOT to use the GenericReconciler.
+        reconcile:
+          # default: false tells Orkestra NOT to use the Generic Reconciler.
           # The constructor below provides the complete reconcile implementation.
           default: false
 
-          # constructor replaces the GenericReconciler entirely.
+          # constructor replaces the Generic Reconciler entirely.
           # The function must match:
           #   func(kube *kubeclient.Kubeclient,
           #        informer cache.SharedIndexInformer,
@@ -49,7 +48,7 @@ spec:
                 plural: jobs
           workers: 5       # pipelines can be IO-bound — more workers tolerated
           resync: 10s      # short resync to check Job completion quickly
-
         # Note: onCreate, onReconcile, onDelete, hooks, and status.fields
         # are all ignored when reconciler.default is false. The constructor
         # owns everything. Status is managed directly by PipelineReconciler.patchStatus.
+

@@ -10,11 +10,12 @@ Orkestra enriches them automatically from its internal registry:
 - name: deployment-governance
   apiTypes:
     kind: Deployment   # ← only field needed for built-in kinds
-  validation:
-    - field: metadata.labels.team
-      operator: exists
-      message: "all deployments must declare a team owner"
-      action: warn
+  admission:
+    validation:
+      - field: metadata.labels.team
+        operator: exists
+        message: "all deployments must declare a team owner"
+        action: warn
 ```
 
 !!! tip "Governance without a separate policy engine"
@@ -60,8 +61,9 @@ Orkestra restarts.
 
 ```yaml
 # To change to blocking behaviour (requires high-availability Orkestra deployment):
-webhooks:
-  failurePolicy: Fail    # default: Ignore
+admission:
+  webhooks:
+    failurePolicy: Fail    # default: Ignore
 ```
 
 !!! warning "Before setting Fail"
@@ -102,7 +104,7 @@ spec:
   crds:
     database:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 8
     application:
       dependsOn:
@@ -194,14 +196,15 @@ No webhook registration. No TLS. No infrastructure cost.
 **`conversion.paths:`** — runs in the gateway's `/convert` HTTPS endpoint, called by the Kubernetes API server. Use it when you have a real multi-version CRD (`v1`, `v2`) and need Kubernetes to translate between stored and requested versions:
 
 ```yaml
-conversion:
-  storageVersion: v1
-  updateCRD: true
-  paths:
-    - from: v1
-      to: v2
-      spec:
-        schedule: "{{ cronToMap .spec.schedule }}"
+admission:
+  conversion:
+    storageVersion: v1
+    updateCRD: true
+    paths:
+      - from: v1
+        to: v2
+        spec:
+          schedule: "{{ cronToMap .spec.schedule }}"
 ```
 
 The rule: if you control the CRD and want to tolerate different input shapes — `normalize:`. If you have committed to multiple API versions and need the API server to convert between them — `conversion.paths:`.
@@ -219,13 +222,11 @@ Hooks become necessary when the work is genuinely outside HTTP:
 - **Non-HTTP protocols** — gRPC, database connections, message queue operations, anything that isn't an HTTP endpoint
 - **Complex computed fields from non-HTTP sources** — deriving values that require SDK calls, database queries, or binary protocols where there is no HTTP endpoint to call
 
-For AWS, GCP, and Stripe — providers are in development for common SDK integrations (`aws:`, `gcp:`, `stripe:` blocks in the Katalog). Until a provider covers your case, hooks are the path.
-
 Hooks are additive: the hook runs, then Orkestra applies `onCreate`/`onReconcile` templates as normal. The template layer does not disappear.
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     hooks:
       location: github.com/myorg/database-operator/hooks
       function: DatabaseHooks
@@ -249,13 +250,13 @@ When you need to own the full reconcile loop — typically when integrating an e
 
 ```yaml
 operatorBox:
-  reconciler:
-    default: false   # GenericReconciler is replaced; constructor owns everything
+  reconcile:
+    default: false   # Generic Reconciler is replaced; constructor owns everything
 ```
 
-`reconciler.default: false` is the one field change. Your constructor receives `kubeclient.Interface` — Orkestra's single interface for informer, kube calls, events, and args. If you are migrating from controller-runtime, `orkadapter.ToClient(kube)` returns a `client.Client` so your existing `Reconcile` body compiles unchanged. `domain.ReconcilerFrom` adapts the `ctrl.Request` signature.
+`reconcile.default: false` is the one field change. Your constructor receives `kubeclient.Interface` — Orkestra's single interface for informer, kube calls, events, and args. If you are migrating from controller-runtime, `orkadapter.ToClient(kube)` returns a `client.Client` so your existing `Reconcile` body compiles unchanged. `domain.ReconcilerFrom` adapts the `ctrl.Request` signature.
 
-Declarative templates (`onCreate`, `onReconcile`, `status.fields`) are not applied when `reconciler.default: false` — the constructor is responsible for all state.
+Declarative templates (`onCreate`, `onReconcile`, `status.fields`) are not applied when `reconcile.default: false` — the constructor is responsible for all state.
 
 Try it:
 
@@ -279,7 +280,7 @@ spec:
   crds:
     database:          # typed hooks — Go SDK calls alongside declarative templates
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 5
     website:           # dynamic — pure YAML, no Go
       dependsOn:
@@ -291,7 +292,7 @@ spec:
           condition: started
 ```
 
-You promote along a single axis: start pure YAML, add `reconciler.hooks:` when you need Go logic, flip `reconciler.default: false` when you need full control. No project restructure. No framework switch.
+You promote along a single axis: start pure YAML, add `reconcile.hooks:` when you need Go logic, flip `reconcile.default: false` when you need full control. No project restructure. No framework switch.
 
 Try it:
 

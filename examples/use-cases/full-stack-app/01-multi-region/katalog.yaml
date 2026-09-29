@@ -11,52 +11,50 @@ spec:
   crds:
     multi-region-app:
       crdFile: ./crd.yaml
-
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-          - field: spec.regions
-            operator: exists
-            message: "spec.regions is required"
-            action: deny
-
-      mutation:
-        rules:
-          - field: spec.defaultReplicas
-            default: 1
-            valueType: int
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
+            - field: spec.regions
+              operator: exists
+              message: "spec.regions is required"
+              action: deny
+        mutation:
+          rules:
+            - field: spec.defaultReplicas
+              default: 1
+              valueType: int
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        onReconcile:
-          deployments:
-            - name: "{{ .metadata.name }}-{{ .item }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.defaultReplicas }}"
-              forEach:
-                field: spec.regions
-                as: item
+          onReconcile:
+            deployments:
+              - name: "{{ .metadata.name }}-{{ .item }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.defaultReplicas }}"
+                forEach:
+                  field: spec.regions
+                  as: item
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ readyReplicas .children.deployment }}"
+                    operator: gt
+                    value: "0"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ readyReplicas .children.deployment }}"
-                  operator: gt
-                  value: "0"
+              - path: regionsDeployed
+                value: "{{ len .spec.regions }}"
 
-            - path: regionsDeployed
-              value: "{{ len .spec.regions }}"

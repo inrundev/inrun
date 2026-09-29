@@ -5,7 +5,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/orkspace/orkestra/pkg/runtime/reconciler"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"github.com/orkspace/orkestra/pkg/utils"
@@ -77,8 +77,9 @@ func evalAdmissionValidation(obj map[string]interface{}, crd *orktypes.CRDEntry,
 	if !crd.HasValidationRules() {
 		return admissionValidationResult{}
 	}
-	result := admissionValidationResult{total: len(crd.Validation.Rules)}
-	for _, rule := range crd.Validation.Rules {
+	validation := crd.EffectiveValidation()
+	result := admissionValidationResult{total: len(validation.Rules)}
+	for _, rule := range validation.Rules {
 		if !orktypes.EvaluateConditions(obj, rule.When, rule.Or, eval) {
 			result.passed++
 			continue
@@ -104,7 +105,7 @@ func evalAdmissionMutation(obj map[string]interface{}, crd *orktypes.CRDEntry, r
 	if !crd.HasMutationRules() {
 		return result
 	}
-	for _, rule := range crd.Mutation.Rules {
+	for _, rule := range crd.EffectiveMutation().Rules {
 		if !orktypes.EvaluateConditions(obj, rule.When, rule.Or, eval) {
 			continue
 		}
@@ -115,7 +116,7 @@ func evalAdmissionMutation(obj map[string]interface{}, crd *orktypes.CRDEntry, r
 			}
 		}
 		currentVal, found := orktypes.ResolveScalarField(obj, field)
-		desired, mutType, err := reconciler.ResolveRuleValue(rule, found, currentVal, resolver)
+		desired, mutType, err := prepare.ResolveRuleValue(rule, found, currentVal, resolver)
 		if err != nil || desired == nil {
 			continue
 		}

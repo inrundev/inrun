@@ -120,7 +120,7 @@ spec:
 
       operatorBox:
 %s        reconciler:
-          # default: false — the GenericReconciler is not used.
+          # default: false — the generic.Reconciler is not used.
           # Your constructor owns the full reconcile loop.
           default: false
 

@@ -18,13 +18,15 @@ spec:
         version: v1alpha1
         kind: Website
         plural: websites
-      allowedNamespaces:
-        - default
-
       operatorBox:
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              # name defaults to: <cr-name>-deployment
-              # namespace defaults to: <cr-namespace>
-              # replicas defaults to: 1
+        reconcile:
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                # name defaults to: <cr-name>-deployment
+                # namespace defaults to: <cr-namespace>
+                # replicas defaults to: 1
+        runtime:
+          allowedNamespaces:
+            - default
+

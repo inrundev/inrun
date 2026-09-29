@@ -96,17 +96,19 @@ func TestDerivedRollback_NeitherSet(t *testing.T) {
 }
 
 func TestDerivedRollback_OnlyExplicitBlock(t *testing.T) {
+	rollback := &orktypes.RollbackBlock{}
 	c := orktypes.OperatorBoxConfig{
-		RollBackOnError: false,
-		Rollback:        &orktypes.RollbackBlock{},
+		Runtime: &orktypes.RuntimeConfig{
+			Rollback: rollback,
+		},
 	}
 	result := c.DerivedRollback()
 	assert.NotNil(t, result)
-	assert.Same(t, c.Rollback, result)
+	assert.Same(t, rollback, result)
 }
 
 func TestDerivedRollback_ShorthandNoOnCreate(t *testing.T) {
-	c := orktypes.OperatorBoxConfig{RollBackOnError: true}
+	c := orktypes.OperatorBoxConfig{Runtime: &orktypes.RuntimeConfig{RollBackOnError: true}}
 	result := c.DerivedRollback()
 	assert.NotNil(t, result)
 	// No reconcile:true resources declared → empty OnRollback templates
@@ -115,11 +117,13 @@ func TestDerivedRollback_ShorthandNoOnCreate(t *testing.T) {
 
 func TestDerivedRollback_ShorthandWithReconcileDeployment(t *testing.T) {
 	c := orktypes.OperatorBoxConfig{
-		RollBackOnError: true,
-		OnCreate: &orktypes.HookTemplates{
-			Deployments: []orktypes.DeploymentTemplateSource{
-				{Reconcile: true},
-				{Reconcile: false}, // excluded
+		Runtime: &orktypes.RuntimeConfig{RollBackOnError: true},
+		Reconcile: &orktypes.ReconcileConfig{
+			OnCreate: &orktypes.HookTemplates{
+				Deployments: []orktypes.DeploymentTemplateSource{
+					{Reconcile: true},
+					{Reconcile: false}, // excluded
+				},
 			},
 		},
 	}
@@ -134,10 +138,14 @@ func TestDerivedRollback_ShorthandExplicitOnRollbackTakesPrecedence(t *testing.T
 		Services: []orktypes.ServiceTemplateSource{{Name: "override"}},
 	}
 	c := orktypes.OperatorBoxConfig{
-		RollBackOnError: true,
-		Rollback:        &orktypes.RollbackBlock{OnRollback: explicit},
-		OnCreate: &orktypes.HookTemplates{
-			Deployments: []orktypes.DeploymentTemplateSource{{Reconcile: true}},
+		Runtime: &orktypes.RuntimeConfig{
+			RollBackOnError: true,
+			Rollback:        &orktypes.RollbackBlock{OnRollback: explicit},
+		},
+		Reconcile: &orktypes.ReconcileConfig{
+			OnCreate: &orktypes.HookTemplates{
+				Deployments: []orktypes.DeploymentTemplateSource{{Reconcile: true}},
+			},
 		},
 	}
 	result := c.DerivedRollback()

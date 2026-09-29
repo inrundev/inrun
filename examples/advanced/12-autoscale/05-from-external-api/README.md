@@ -128,15 +128,17 @@ Payment system queue drops back to 12. After the **3 minute cooldown**, Processo
 
 ## How It Works
 
-The katalog declares the external source in the `cross:` block, and the autoscale condition references it by field path — no repeated endpoint:
+The katalog declares the external source in the `observe.cross:` block, and the autoscale condition references it by field path — no repeated endpoint:
 
 ```yaml
-cross:
-  - crd: payment-system
-    source:
-      endpoint: "http://localhost:9999/autoscale-metrics"
-      cacheFor: 10s
-    as: paymentSystem
+operatorBox:
+  observe:
+    cross:
+      - crd: payment-system
+        source:
+          endpoint: "http://localhost:9999/autoscale-metrics"
+          cacheFor: 10s
+        as: paymentSystem
 
 autoscale:
   interval: 20s

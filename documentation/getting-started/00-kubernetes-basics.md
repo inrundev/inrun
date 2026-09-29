@@ -149,27 +149,28 @@ spec:
     blockchainapp:
       crdFile: blockchainapp-crd.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: endpoint
-              value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
-          services:
-            - name: "{{ .metadata.name }}-svc"
-              port: "5432"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
+            services:
+              - name: "{{ .metadata.name }}-svc"
+                port: "5432"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: endpoint
+                value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
 ```
 
 `ork run` starts the operator locally against a real cluster.

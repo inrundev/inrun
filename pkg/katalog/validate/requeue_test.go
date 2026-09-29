@@ -10,8 +10,8 @@ import (
 
 func katalogWithRequeue(crdName string, rq *orktypes.RequeueConfig) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
-		crdName: {OperatorBox: orktypes.OperatorBoxConfig{
-			Reconciler: &orktypes.ReconcilerConfig{Requeue: rq},
+		crdName: {OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{Requeue: rq},
 		}},
 	})
 }

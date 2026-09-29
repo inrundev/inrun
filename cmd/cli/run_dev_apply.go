@@ -26,7 +26,7 @@ import (
 // starts. Relative paths are resolved against the katalog directory. This
 // function is a no-op when running inside the cluster.
 func applyPreRuntimeResources(ctx context.Context, katalogPath string, m *merger.Merger) {
-	if isRunningInCluster() {
+	if isRunningInPod() {
 		return
 	}
 
@@ -46,7 +46,7 @@ func ensureClusterReady(dev bool) error {
 			return fmt.Errorf("installing dependencies: %w", err)
 		}
 
-		fmt.Println("\n  Cannot reach Kubernetes cluster.")
+		fmt.Println("\n  Cannot reach a Kubernetes cluster.")
 		fmt.Printf("  Creating local Kind cluster '%s'...\n", orkpkg.KindClusterName)
 
 		if err := orkpkg.EnsureKindCluster(orkpkg.KindClusterName, 0, ""); err != nil {
@@ -61,7 +61,7 @@ func ensureClusterReady(dev bool) error {
 		return nil
 	}
 
-	fmt.Println("\n  Cannot reach Kubernetes cluster.")
+	fmt.Println("\n  Cannot reach a Kubernetes cluster.")
 	fmt.Println("  Check your kubeconfig, or run with --dev to deploy to a local kind cluster.")
 
 	var missing []string
@@ -94,7 +94,7 @@ func ensureClusterReady(dev bool) error {
 // applyCRFilesIfNeeded applies crFiles declarations via kubectl in order before
 // the runtime starts. Only runs outside the cluster (dev mode).
 func applyCRFilesIfNeeded(ctx context.Context, katalogPath string, m *merger.Merger) {
-	if isRunningInCluster() {
+	if isRunningInPod() {
 		return
 	}
 
@@ -131,7 +131,7 @@ func applyCRFilesIfNeeded(ctx context.Context, katalogPath string, m *merger.Mer
 // waitForCRDsEstablished waits for any CRDs that have crFiles to be Established
 // in the cluster before CRs are applied. Only blocks for CRDs that need it.
 func waitForCRDsEstablished(ctx context.Context, m *merger.Merger) {
-	if isRunningInCluster() {
+	if isRunningInPod() {
 		return
 	}
 
@@ -173,7 +173,7 @@ func waitForCRDsEstablished(ctx context.Context, m *merger.Merger) {
 // operator starts. Only runs outside the cluster (dev mode). In production,
 // CRDs must be pre-applied by the platform operator.
 func applyCRDFilesIfNeeded(ctx context.Context, katalogPath string, m *merger.Merger) {
-	if isRunningInCluster() {
+	if isRunningInPod() {
 		return
 	}
 
@@ -238,7 +238,7 @@ func applyPatternExamples(ctx context.Context, katalogPath string, m *merger.Mer
 // applySetupIfNeeded applies setup YAML files via kubectl in order before
 // Orkestra starts. Only runs outside the cluster (dev mode).
 func applySetupIfNeeded(ctx context.Context, katalogPath string, m *merger.Merger) {
-	if isRunningInCluster() {
+	if isRunningInPod() {
 		return
 	}
 

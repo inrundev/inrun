@@ -84,7 +84,7 @@ Simulating app/my-database
 
 **What this means:**
 - Simulate models the App reconciler in isolation — it shows what the reconciler produces when it runs. The `dependsOn` enforcement that gates the reconcile in production is a coordinator-level concern, not part of the individual reconciler.
-- Cycle 1 shows the Deployment and Service the App would create once its reconcile is allowed to proceed. The `cross:` read for the database endpoint returns empty (no database in the in-memory cluster), so `DB_HOST` would be absent or empty in the Deployment env — you can verify this by inspecting the template output.
+- Cycle 1 shows the Deployment and Service the App would create once its reconcile is allowed to proceed. The `cross:` read for the database endpoint returns empty (no database in the in-memory cluster), so will be validated against a real cluster in **Step 4**.
 - **Steady state at cycle 3** — the reconciler is idempotent. On a real cluster, Orkestra only runs this reconcile after the Database CR reaches `healthy`. Simulate confirms the reconciler itself is correct; the dependency gate ensures it runs at the right time.
 
 ---

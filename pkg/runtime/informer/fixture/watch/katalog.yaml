@@ -21,28 +21,29 @@ spec:
       setup:
         - configmap-shared.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           resync: 30s
-        watch:
-          - apiVersion: v1
-            kind: ConfigMap
-            name: shared-config
-            namespace: default
-            on: [update]
-            keyFrom:
-              name: probe-alpha
+          onReconcile:
+            configMaps:
+              - name: "{{ .metadata.name }}-output"
+                namespace: "{{ .metadata.namespace }}"
+                reconcile: true
+                data:
+                  observed: "{{ .metadata.name }}"
+                  phase: active
+        observe:
+          watch:
+            - apiVersion: v1
+              kind: ConfigMap
+              name: shared-config
               namespace: default
+              on: [update]
+              keyFrom:
+                name: probe-alpha
+                namespace: default
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: Watching
 
-        onReconcile:
-          configMaps:
-            - name: "{{ .metadata.name }}-output"
-              namespace: "{{ .metadata.namespace }}"
-              reconcile: true
-              data:
-                observed: "{{ .metadata.name }}"
-                phase: active
-
-        status:
-          fields:
-            - path: phase
-              value: Watching

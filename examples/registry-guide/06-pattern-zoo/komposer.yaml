@@ -27,7 +27,7 @@ spec:
     # Heavy stateful — single worker avoids concurrent mutation; 1m resync is enough
     postgres:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 1m
           queue:
@@ -35,7 +35,7 @@ spec:
 
     mysql:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 1m
           queue:
@@ -43,7 +43,7 @@ spec:
 
     mongodb:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 1m
           queue:
@@ -52,14 +52,14 @@ spec:
     # Semi-stateful cache
     redis:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
 
     # Messaging brokers — deeper queue absorbs burst
     kafka:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
           queue:
@@ -67,7 +67,7 @@ spec:
 
     rabbitmq:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
           queue:
@@ -76,21 +76,22 @@ spec:
     # Stateless deployments
     application:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 30s
 
     # Team katalogs
     webapp:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
 
     cache:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 30s
           queue:
             failureThreshold: 3
+

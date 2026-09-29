@@ -84,13 +84,14 @@ spec:
       crFiles:
         - ./cr.yaml
       operatorBox:
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
 ```
 
 Values inside `{{ }}` are Go templates evaluated against the live CR. `reconcile: true` means the Deployment is drift-corrected on every reconcile — if someone edits it manually, Orkestra corrects it back.
@@ -138,18 +139,20 @@ Write values back to the CR after every reconcile:
 
 ```yaml
 operatorBox:
-  status:
-    fields:
-      - path: phase
-        value: "Running"
-      - path: observedReplicas
-        value: "{{ .spec.replicas }}"
-  onCreate:
-    deployments:
-      - name: "{{ .metadata.name }}"
-        image: "{{ .spec.image }}"
-        replicas: "{{ .spec.replicas }}"
-        reconcile: true
+  reconcile:
+    onCreate:
+      deployments:
+        - name: "{{ .metadata.name }}"
+          image: "{{ .spec.image }}"
+          replicas: "{{ .spec.replicas }}"
+          reconcile: true
+  emit:
+    status:
+      fields:
+        - path: phase
+          value: "Running"
+        - path: observedReplicas
+          value: "{{ .spec.replicas }}"
 ```
 
 The CRD must declare `subresources: status: {}` for status writes to work.

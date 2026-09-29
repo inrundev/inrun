@@ -66,6 +66,8 @@ Go hooks are available when you need them — complex external API calls not cov
 conditional logic not covered by the `when:` and `or:` blocks. But hooks are additive. The
 declarative layer handles everything else.
 
+If the reconcile logic already lives in a running service — or if Go is not the language you want — `reconcile.remote` is a third path: point Orkestra at an HTTP endpoint in any language. The service receives the CR as JSON and returns resources and status. No Go. No YAML templates. No Kubernetes SDK. See [Remote Reconciler](../concepts/reconciler-model/09-remote-reconciler.md).
+
 !!! note "When Go becomes necessary"
     The 10-20% of operator logic that genuinely requires code — creating a user
     inside PostgreSQL, reading another cluster's state
@@ -113,11 +115,12 @@ spec:
         kind: Website
         plural: websites
       operatorBox:
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
+        reconcile:
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
 ```
 
 !!! note "Why Katalog is not a CRD"
@@ -155,7 +158,7 @@ spec:
   crds:
     postgres:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 8      # override for production
 ```
 
@@ -228,11 +231,12 @@ A Katalog imports it with `with:` bindings:
 
 ```yaml
 operatorBox:
-  imports:
-    - motif: postgres
-      with:
-        image: "{{ .spec.dbImage }}"
-        volumeSize: "{{ .spec.storage }}"
+  reconcile:
+    imports:
+      - motif: postgres
+        with:
+          image: "{{ .spec.dbImage }}"
+          volumeSize: "{{ .spec.storage }}"
 ```
 
 Orkestra expands the Motif at Katalog load time — bindings resolved, resources and rules merged into the operatorBox as if declared inline.
@@ -247,9 +251,10 @@ Import it in a Katalog by OCI address, or by bare name if `ORK_MOTIFS_REGISTRY` 
 
 ```yaml
 operatorBox:
-  imports:
-    - motif: ghcr.io/myorg/motifs/postgres:v1   # full OCI ref
-    - motif: postgres                            # bare name — resolved via ORK_MOTIFS_REGISTRY
+  reconcile:
+    imports:
+      - motif: ghcr.io/myorg/motifs/postgres:v1   # full OCI ref
+      - motif: postgres                            # bare name — resolved via ORK_MOTIFS_REGISTRY
 ```
 
 Motifs can share the same registry address as Katalogs — separate them with folders (`/katalogs/`, `/motifs/`) rather than separate registries.
@@ -354,15 +359,16 @@ declared alongside reconcile templates:
 
 ```yaml
 - name: website-v1
-  conversion:
-    storageVersion: v1
-    paths:
-      - from: v1alpha1
-        to: v1
-        spec:
-          image: "{{ .spec.image }}"
-          seo:
-            enabled: false   # v1alpha1 has no seo field — supply default
+  admission:
+    conversion:
+      storageVersion: v1
+      paths:
+        - from: v1alpha1
+          to: v1
+          spec:
+            image: "{{ .spec.image }}"
+            seo:
+              enabled: false   # v1alpha1 has no seo field — supply default
 ```
 
 **Production results:** 62 conversions, 0 failures, sub-millisecond average latency.
@@ -371,6 +377,28 @@ declared alongside reconcile templates:
     Conversion runs on Orkestra Gateway — the same server that serves
     `/validate` and `/mutate`. No separate conversion webhook binary. No separate
     TLS certificate. No separate deployment.
+
+---
+
+## What is the OPRE execution model?
+
+OPRE is the name for the execution model Orkestra implements:
+**O**bserve, **P**re-reconcile, **R**econcile, **E**mit.
+
+Each phase is owned by a distinct layer:
+
+| Phase | Layer | Responsibility |
+|---|---|---|
+| Observe | Informer | Watch CRDs, secondary resources, and Kubernetes Events; produce reconcile triggers |
+| Pre-reconcile | Kordinator | Gate events before the queue (enqueueGate) and before the reconciler (reconcileGate) |
+| Reconcile | Reconciler | Receive a fully-prepared request and reconcile exactly that |
+| Emit | Post-reconcile | Write status, emit events, stamp health and metrics onto the CR |
+
+The `operatorBox` schema follows this order: `observe → preReconcile → runtime → reconcile → emit`.
+
+One mental model applies everywhere conditions, gates, and outputs are declared.
+
+See [Execution Model](../concepts/execution-model/index.md) for the full picture.
 
 ---
 

@@ -8,22 +8,23 @@ Calls run sequentially in declaration order. The resolver is updated after each 
 
 ```yaml
 operatorBox:
-  onReconcile:
-    external:
-      - name: healthCheck
-        url: "{{ .spec.serviceUrl }}/health"
-        method: GET
-        body: ""
-        token: "$API_TOKEN"
-        headers:
-          X-Request-Source: orkestra
-        timeout: 5s
-        expectedStatus: 200
-        continueOnError: false
-        when:
-          - field: status.phase
-            notEquals: "Ready"
-        sleep: ""
+  reconcile:
+    onReconcile:
+      external:
+        - name: healthCheck
+          url: "{{ .spec.serviceUrl }}/health"
+          method: GET
+          body: ""
+          token: "$API_TOKEN"
+          headers:
+            X-Request-Source: orkestra
+          timeout: 5s
+          expectedStatus: 200
+          continueOnError: false
+          when:
+            - field: status.phase
+              notEquals: "Ready"
+          sleep: ""
 ```
 
 ## Fields
@@ -124,20 +125,20 @@ External calls can be declared in three locations:
 `fires.reconcile: false` is useful when an external call is expensive or irrelevant after the CR is persisted — for example, a pre-admission health check that only makes sense at `kubectl apply` time.
 
 ```yaml
-validation:
-  external:
-    - name: healthCheck
-      url: "{{ .spec.serviceUrl }}/health"
-      expectedStatus: 200
-      continueOnError: true
-      fires:
-        reconcile: false   # checked once at apply — not repeated every resync
-
-  rules:
-    - field: "{{ .external.healthCheck.status }}"
-      equals: "200"
-      action: deny
-      message: "health check failed — deployment blocked"
+admission:
+  validation:
+    external:
+      - name: healthCheck
+        url: "{{ .spec.serviceUrl }}/health"
+        expectedStatus: 200
+        continueOnError: true
+        fires:
+          reconcile: false   # checked once at apply — not repeated every resync
+    rules:
+      - field: "{{ .external.healthCheck.status }}"
+        equals: "200"
+        action: deny
+        message: "health check failed — deployment blocked"
 ```
 
 ## Constraints
@@ -152,37 +153,38 @@ validation:
 
 ```yaml
 operatorBox:
-  onReconcile:
-    external:
-      - name: healthCheck
-        url: "{{ .spec.serviceUrl }}/health"
-        expectedStatus: 200
-        continueOnError: true
-        timeout: 5s
+  reconcile:
+    onReconcile:
+      external:
+        - name: healthCheck
+          url: "{{ .spec.serviceUrl }}/health"
+          expectedStatus: 200
+          continueOnError: true
+          timeout: 5s
 
-    deployments:
-      - name: "{{ .metadata.name }}"
-        image: "{{ .spec.image }}"
-        when:
-          - field: external.healthCheck.status
-            equals: "200"
-
-  status:
-    fields:
-      - path: phase
-        value: "Degraded"
-        when:
-          - field: external.healthCheck.status
-            notEquals: "200"
-      - path: phase
-        value: "Ready"
-        when:
-          - field: external.healthCheck.status
-            equals: "200"
-          - field: "{{ allReplicasReady .children.deployment }}"
-            equals: "true"
-      - path: lastHealthCheck
-        value: "{{ .external.healthCheck.status }}"
+      deployments:
+        - name: "{{ .metadata.name }}"
+          image: "{{ .spec.image }}"
+          when:
+            - field: external.healthCheck.status
+              equals: "200"
+  emit:
+    status:
+      fields:
+        - path: phase
+          value: "Degraded"
+          when:
+            - field: external.healthCheck.status
+              notEquals: "200"
+        - path: phase
+          value: "Ready"
+          when:
+            - field: external.healthCheck.status
+              equals: "200"
+            - field: "{{ allReplicasReady .children.deployment }}"
+              equals: "true"
+        - path: lastHealthCheck
+          value: "{{ .external.healthCheck.status }}"
 ```
 
 See the [External concept doc](../../../concepts/operatorbox/07-external/index.md) for patterns and best practices.

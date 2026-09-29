@@ -175,7 +175,6 @@ func (c *Client) FetchCRDDetail(name string, endpoints EndpointInfo, summary *CR
 		Admission:                info.Admission,
 		DeletionProtection:       info.DeletionProtection,
 		NamespaceProtection:      nsProtection,
-		Providers:                info.Providers,
 		State:                    health.State,
 		StartedAt:                health.StartedAt,
 		Uptime:                   health.Uptime,

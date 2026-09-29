@@ -24,28 +24,26 @@ spec:
         version: v1alpha1
         kind: Producer
         plural: producers
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: '{{ get .children.service "spec" "clusterIP" }}:8080'
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 8080
-              reconcile: true
-          services:
-            - port: "8080"
-              reconcile: true
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 8080
+                reconcile: true
+            services:
+              - port: "8080"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: '{{ get .children.service "spec" "clusterIP" }}:8080'
 
     # ── Consumer ──────────────────────────────────────────────────────────────
     # Reads Producer's status.endpoint via the cross block.
@@ -57,37 +55,36 @@ spec:
         version: v1alpha1
         kind: Consumer
         plural: consumers
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 9090
+                env:
+                  - name: PRODUCER_HOST
+                    value: "{{ .cross.producer.status.endpoint }}"
+                reconcile: true
+            services:
+              - port: "9090"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: producerEndpoint
+                value: "{{ .cross.producer.status.endpoint }}"
         # Declare the cross-CRD observation.
         # Orkestra resolves the Producer CR with the same name in the same
         # namespace and makes it available as .cross.producer.*
-        cross:
-          - crd: producer
-            selector:
-              name: "{{ .metadata.name }}"
-              namespace: "{{ .metadata.namespace }}"
-            as: producer
+        observe:
+          cross:
+            - crd: producer
+              selector:
+                name: "{{ .metadata.name }}"
+                namespace: "{{ .metadata.namespace }}"
+              as: producer
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: producerEndpoint
-              value: "{{ .cross.producer.status.endpoint }}"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 9090
-              env:
-                - name: PRODUCER_HOST
-                  value: "{{ .cross.producer.status.endpoint }}"
-              reconcile: true
-          services:
-            - port: "9090"

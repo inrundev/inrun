@@ -10,11 +10,13 @@ spec:
         version: v1alpha1
         kind: Platform
         plural: platforms
-      validation:
-        include: ./validation-rules.yaml
-        rules:
-          - field: spec.replicas
-            operator: lte
-            value: "10"
-            message: "replicas must not exceed 10"
-            action: deny
+      admission:
+        validation:
+          include: ./validation-rules.yaml
+          rules:
+            - field: spec.replicas
+              operator: lte
+              value: "10"
+              message: "replicas must not exceed 10"
+              action: deny
+

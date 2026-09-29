@@ -13,84 +13,82 @@ spec:
   crds:
     webapp:
       crdFile: ../crd.yaml
-
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            message: "spec.image is required"
-            action: deny
-          - field: spec.healthCheckUrl
-            operator: exists
-            message: "spec.healthCheckUrl is required — full URL of the health endpoint to call before reconciling"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              message: "spec.image is required"
+              action: deny
+            - field: spec.healthCheckUrl
+              operator: exists
+              message: "spec.healthCheckUrl is required — full URL of the health endpoint to call before reconciling"
+              action: deny
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 15s
-        onReconcile:
-          # ── External call ──────────────────────────────────────────────────
-          # continueOnError: true — a failed health check does not halt the
-          # reconcile. Instead the phase state machine below surfaces the
-          # failure in status.phase, and the Deployment when: condition prevents
-          # a broken app from being created or updated.
-          external:
-            - name: healthCheck
-              url: "{{ .spec.healthCheckUrl }}"
-              method: GET
-              expectedStatus: 200
-              continueOnError: true
-              timeout: 5s
+          onReconcile:
+            # ── External call ──────────────────────────────────────────────────
+            # continueOnError: true — a failed health check does not halt the
+            # reconcile. Instead the phase state machine below surfaces the
+            # failure in status.phase, and the Deployment when: condition prevents
+            # a broken app from being created or updated.
+            external:
+              - name: healthCheck
+                url: "{{ .spec.healthCheckUrl }}"
+                method: GET
+                expectedStatus: 200
+                continueOnError: true
+                timeout: 5s
 
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              when:
-                - field: external.healthCheck.status
-                  equals: "200"
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                when:
+                  - field: external.healthCheck.status
+                    equals: "200"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              # Health check not yet called — waiting for first reconcile result.
+              - path: phase
+                value: "Waiting"
+                when:
+                  - field: external.healthCheck.called
+                    equals: "false"
 
-            # Health check not yet called — waiting for first reconcile result.
-            - path: phase
-              value: "Waiting"
-              when:
-                - field: external.healthCheck.called
-                  equals: "false"
+              - path: phase
+                value: "Degraded"
+                when:
+                  - field: external.healthCheck.called
+                    equals: "true"
+                  - field: external.healthCheck.status
+                    notEquals: "200"
 
-            - path: phase
-              value: "Degraded"
-              when:
-                - field: external.healthCheck.called
-                  equals: "true"
-                - field: external.healthCheck.status
-                  notEquals: "200"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: external.healthCheck.status
+                    equals: "200"
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: external.healthCheck.status
-                  equals: "200"
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              # Surface the last health check result for visibility.
+              - path: lastExternalStatus
+                value: "{{ .external.healthCheck.status }}"
 
-            # Surface the last health check result for visibility.
-            - path: lastExternalStatus
-              value: "{{ .external.healthCheck.status }}"
+              - path: lastExternalError
+                value: "{{ .external.healthCheck.error }}"
+                clearOnFalse: true
+                when:
+                  - field: external.healthCheck.error
+                    operator: exists
 
-            - path: lastExternalError
-              value: "{{ .external.healthCheck.error }}"
-              clearOnFalse: true
-              when:
-                - field: external.healthCheck.error
-                  operator: exists

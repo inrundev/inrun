@@ -22,17 +22,16 @@ var (
 // Structs
 // -----------------------------------------------------------------------------
 type Katalog struct {
-	APIVersion   string                                `yaml:"apiVersion"`
-	Kind         string                                `yaml:"kind"`
-	Spec         orktypes.KatalogSpec                  `yaml:"spec"`
-	Security     orktypes.KatalogSecurity              `yaml:"security"`
-	Notes        orktypes.NoteRegistry                 `yaml:"notes,omitempty"`
-	Profiles     orktypes.ProfileRegistry              `yaml:"profiles,omitempty"`
-	Gateway      *orktypes.GatewayConfig               `yaml:"gateway,omitempty"`
-	Publish      *orktypes.PublishConfig               `yaml:"publish,omitempty"`
-	Notification *orktypes.KatalogNotification         `yaml:"notification,omitempty"`
-	Providers    []orktypes.KatalogProviderRequirement `yaml:"providers,omitempty"`
-	projectInfo  interface{}                           `yaml:"projectInfo,omitempty"`
+	APIVersion   string                        `yaml:"apiVersion"`
+	Kind         string                        `yaml:"kind"`
+	Spec         orktypes.KatalogSpec          `yaml:"spec"`
+	Security     orktypes.KatalogSecurity      `yaml:"security"`
+	Notes        orktypes.NoteRegistry         `yaml:"notes,omitempty"`
+	Profiles     orktypes.ProfileRegistry      `yaml:"profiles,omitempty"`
+	Gateway      *orktypes.GatewayConfig       `yaml:"gateway,omitempty"`
+	Publish      *orktypes.PublishConfig       `yaml:"publish,omitempty"`
+	Notification *orktypes.KatalogNotification `yaml:"notification,omitempty"`
+	projectInfo  interface{}                   `yaml:"projectInfo,omitempty"`
 
 	KomposerMetadata orktypes.KatalogMeta `yaml:"metadata"`
 
@@ -52,6 +51,8 @@ type Katalog struct {
 
 	// Warnings collects non‑fatal validation messages for this CRD.
 	Warnings orktypes.Warnings `json:"-"` // not serialized
+	// Info collects additional validation information for this CRD
+	Info orktypes.Info `json:"-"` // not serialized
 
 	// Indexes for O(1) lookups
 	kindIndex       map[string]string `yaml:"-" json:"-"` // kind -> crd name
@@ -137,11 +138,11 @@ func (k *Katalog) UserNotes() orktypes.NoteRegistry {
 }
 
 // UserProfiles returns all user defined profiles in the katalog
-func (k *Katalog) UserProfiles() orktypes.ProfileRegistry {
+func (k *Katalog) UserProfiles() *orktypes.ProfileRegistry {
 	if k == nil {
-		return orktypes.ProfileRegistry{}
+		return nil
 	}
-	return k.Profiles
+	return &k.Profiles
 }
 
 // Empty reports true when the katalog is nil.

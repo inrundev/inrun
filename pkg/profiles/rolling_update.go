@@ -37,9 +37,11 @@ type RollingUpdateProfileResult struct {
 // ApplyRollingUpdateProfile expands a named rolling update profile into MaxSurge and MaxUnavailable.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyRollingUpdateProfile(name string, reg orktypes.ProfileRegistry) (RollingUpdateProfileResult, error) {
-	if def, found := reg.LookupRollingUpdate(name); found {
-		return RollingUpdateProfileResult{MaxSurge: def.MaxSurge, MaxUnavailable: def.MaxUnavailable}, nil
+func ApplyRollingUpdateProfile(name string, reg *orktypes.ProfileRegistry) (RollingUpdateProfileResult, error) {
+	if reg != nil {
+		if def, found := reg.LookupRollingUpdate(name); found {
+			return RollingUpdateProfileResult{MaxSurge: def.MaxSurge, MaxUnavailable: def.MaxUnavailable}, nil
+		}
 	}
 	switch RollingUpdateProfile(strings.ToLower(name)) {
 	case RollingUpdateSafe:

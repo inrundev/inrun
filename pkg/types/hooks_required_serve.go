@@ -273,10 +273,16 @@ func (c *CRDEntry) DeduplicateSynthesizedServeRules(synth SynthDedup) {
 
 	switch {
 	case synth.HasValidation:
+		if c.Admission == nil {
+			c.Admission = &AdmissionConfig{}
+		}
+		if c.Admission.Validation == nil {
+			c.Admission.Validation = &ValidationConfig{}
+		}
 		var toAddVal []ValidationRule
 		for _, s := range synth.ValidationRules {
 			dup := false
-			for _, existing := range c.Validation.Rules {
+			for _, existing := range c.Admission.Validation.Rules {
 				if reflect.DeepEqual(s, existing) {
 					dup = true
 					break
@@ -287,13 +293,19 @@ func (c *CRDEntry) DeduplicateSynthesizedServeRules(synth SynthDedup) {
 			}
 		}
 		if len(toAddVal) > 0 {
-			c.Validation.Rules = append(toAddVal, c.Validation.Rules...)
+			c.Admission.Validation.Rules = append(toAddVal, c.Admission.Validation.Rules...)
 		}
 	case synth.HasMutation:
+		if c.Admission == nil {
+			c.Admission = &AdmissionConfig{}
+		}
+		if c.Admission.Mutation == nil {
+			c.Admission.Mutation = &MutationConfig{}
+		}
 		var toAddMut []MutationRule
 		for _, s := range synth.MutationRules {
 			dup := false
-			for _, existing := range c.Mutation.Rules {
+			for _, existing := range c.Admission.Mutation.Rules {
 				if reflect.DeepEqual(s, existing) {
 					dup = true
 					break
@@ -304,7 +316,7 @@ func (c *CRDEntry) DeduplicateSynthesizedServeRules(synth SynthDedup) {
 			}
 		}
 		if len(toAddMut) > 0 {
-			c.Mutation.Rules = append(toAddMut, c.Mutation.Rules...)
+			c.Admission.Mutation.Rules = append(toAddMut, c.Admission.Mutation.Rules...)
 		}
 
 	}

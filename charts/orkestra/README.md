@@ -43,18 +43,17 @@ metadata:
 spec:
   crds:
     website:
-      enabled: true
       apiTypes:
         group: demo.orkestra.io
         version: v1alpha1
         kind: Website
         plural: websites
       operatorBox:
-        default: true
-        onCreate:
-          deployments:
-            - image: nginx
-              replicas: 1
+        reconcile:
+          onCreate:
+            deployments:
+              - image: nginx
+                replicas: 1
 ```
 
 If your CRD is not installed yet:

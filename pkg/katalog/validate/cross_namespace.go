@@ -24,9 +24,9 @@ func (e *executor) validateCrossNamespaceOps() error {
 			name string
 			ht   *orktypes.HookTemplates
 		}{
-			{"onCreate", crd.OperatorBox.OnCreate},
-			{"onReconcile", crd.OperatorBox.OnReconcile},
-			{"onDelete", crd.OperatorBox.OnDelete},
+			{"onCreate", crd.Box().EffectiveOnCreate()},
+			{"onReconcile", crd.Box().EffectiveOnReconcile()},
+			{"onDelete", crd.Box().EffectiveOnDelete()},
 		} {
 			if phase.ht == nil {
 				continue

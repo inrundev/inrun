@@ -21,15 +21,14 @@ spec:
         objectList: ResourceProbeList
         location: github.com/orkspace/orkestra-resource-probe/api/v1alpha1
         alias: rpv1alpha1
-
       operatorBox:
-        reconciler:
+        reconcile:
           default: true
           hooks:
             location: github.com/orkspace/orkestra-resource-probe/hooks
             function: ResourceProbeHooks
             alias: rphooks
-            resources:
+            managedResources:
               - kind: Namespace
               - kind: ConfigMap
               - kind: Secret
@@ -55,12 +54,13 @@ spec:
               - kind: PersistentVolumeClaim
           workers: 3
           resync: 30s
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: image
+                value: "{{ .spec.image }}"
+              - path: replicas
+                value: "{{ .spec.replicas }}"
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: image
-              value: "{{ .spec.image }}"
-            - path: replicas
-              value: "{{ .spec.replicas }}"

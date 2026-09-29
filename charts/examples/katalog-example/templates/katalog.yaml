@@ -20,9 +20,9 @@ spec:
       enabled: {{ $crd.enabled | default true }}
       namespaced: {{ $crd.namespaced | default true }}
       operatorBox:
-        reconciler:
-          workers: {{ $crd.reconciler.workers | default 2 }}
-          resync: {{ $crd.reconciler.resync | default "30s" }}
+        reconcile:
+          workers: {{ $crd.reconcile.workers | default 2 }}
+          resync: {{ $crd.reconcile.resync | default "30s" }}
 
       apiTypes:
         group: {{ $.Values.apiGroup }}

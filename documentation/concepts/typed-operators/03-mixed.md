@@ -33,7 +33,7 @@ spec:
   crds:
     database:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 5
     website:
       dependsOn:

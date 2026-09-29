@@ -222,7 +222,7 @@ func resolveNamespace() string {
 	if os.Getenv("ORK_NAMESPACE") == "" {
 		// Set namespace to default if running outside a pod
 		// This is helpful for quick testing using an 'always available' namespace
-		if !utils.IsRunningInCluster() {
+		if !utils.IsRunningInPod() {
 			return "default"
 		}
 	}

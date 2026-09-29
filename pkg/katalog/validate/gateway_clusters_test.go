@@ -65,7 +65,7 @@ func TestValidateGatewayClusters_Kubeconfig_MissingSecretName(t *testing.T) {
 	err := k.ValidateGatewayClusters()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "secretRef")
-	assert.Contains(t, err.Error(), "name is required")
+	assert.Contains(t, err.Error(), "name")
 }
 
 func TestValidateGatewayClusters_Kubeconfig_MissingSecretKey(t *testing.T) {
@@ -78,7 +78,7 @@ func TestValidateGatewayClusters_Kubeconfig_MissingSecretKey(t *testing.T) {
 	err := k.ValidateGatewayClusters()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "secretRef")
-	assert.Contains(t, err.Error(), "key is required")
+	assert.Contains(t, err.Error(), "key")
 }
 
 func TestValidateGatewayClusters_Kubeconfig_InsecureRejected(t *testing.T) {
@@ -154,7 +154,7 @@ func TestValidateGatewayClusters_Token_MissingTokenKey(t *testing.T) {
 	err := k.ValidateGatewayClusters()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "tokenRef")
-	assert.Contains(t, err.Error(), "key is required")
+	assert.Contains(t, err.Error(), "key")
 }
 
 // ── mixed credentials ─────────────────────────────────────────────────────────

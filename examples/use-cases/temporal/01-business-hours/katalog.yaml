@@ -23,56 +23,54 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas | default 2 }}"
+                port: "{{ .spec.port | default 8080 }}"
+                reconcile: true
+                when:
+                  - time:
+                      after: "09:00"
+                      before: "18:00"
+                  - dayOfWeek:
+                      weekday: true
 
-        status:
-          fields:
-            - path: phase
-              value: "Suspended"
-            - path: phase
-              value: "Active"
-              when:
-                - field: "{{ inBusinessHours }}"
-                  equals: "true"
-            - path: message
-              value: "Suspended — resumes {{ nextBusinessHour }}"
-            - path: message
-              value: "Environment is running"
-              when:
-                - field: "{{ inBusinessHours }}"
-                  equals: "true"
+            services:
+              - name: "{{ .metadata.name }}-svc"
+                port: "{{ .spec.port | default 8080 }}"
+                reconcile: true
+                when:
+                  - time:
+                      after: "09:00"
+                      before: "18:00"
+                  - dayOfWeek:
+                      weekday: true
+          onDelete:
+            deployments:
+              - name: "{{ .metadata.name }}"
+            services:
+              - name: "{{ .metadata.name }}-svc"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Suspended"
+              - path: phase
+                value: "Active"
+                when:
+                  - field: "{{ inBusinessHours }}"
+                    equals: "true"
+              - path: message
+                value: "Suspended — resumes {{ nextBusinessHour }}"
+              - path: message
+                value: "Environment is running"
+                when:
+                  - field: "{{ inBusinessHours }}"
+                    equals: "true"
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas | default 2 }}"
-              port: "{{ .spec.port | default 8080 }}"
-              reconcile: true
-              when:
-                - time:
-                    after: "09:00"
-                    before: "18:00"
-                - dayOfWeek:
-                    weekday: true
-
-          services:
-            - name: "{{ .metadata.name }}-svc"
-              port: "{{ .spec.port | default 8080 }}"
-              reconcile: true
-              when:
-                - time:
-                    after: "09:00"
-                    before: "18:00"
-                - dayOfWeek:
-                    weekday: true
-
-        onDelete:
-          deployments:
-            - name: "{{ .metadata.name }}"
-          services:
-            - name: "{{ .metadata.name }}-svc"

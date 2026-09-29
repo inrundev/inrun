@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/health"
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/konfig"
 	ork_autoscaler "github.com/orkspace/orkestra/pkg/runtime/autoscaler"
@@ -146,7 +145,6 @@ type CRDInfoResponse struct {
 	Started           bool                       `json:"started"`
 	Pending           bool                       `json:"pending"`
 	ErrorRate         float64                    `json:"errorRate"`
-	Providers         []ProviderInfoResponse     `json:"providers,omitempty"`
 	RBAC              RBACInfo                   `json:"rbac,omitempty"`
 	AutoscalerEnabled bool                       `json:"autoscalerEnabled,omitempty"`
 	AutoscalerWorkers *ork_autoscaler.WorkerInfo `json:"autoscalerWorkers,omitempty"`
@@ -187,16 +185,6 @@ type ConstructorInfo struct {
 	Function   string `json:"function,omitempty"`
 }
 
-// ProviderInfoResponse exposes per-provider metadata and error rate for one CRD.
-// No auth, URLs, or credentials are exposed — metadata only.
-type ProviderInfoResponse struct {
-	Name      string   `json:"name"`
-	Kinds     []string `json:"kinds"`     // declared resource kinds (static, from Katalog)
-	Total     int64    `json:"total"`     // reconcile calls since startup
-	Errors    int64    `json:"errors"`    // failed reconcile calls since startup
-	ErrorRate float64  `json:"errorRate"` // errors / total, 0 when no calls yet
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // CRD Info Handler
 // Returns static + dynamic metadata about a CRD:
@@ -219,7 +207,6 @@ func BuildCRDInfoHandler(
 	inf cache.SharedIndexInformer,
 	h *CRDHealth,
 	o *RuntimeHealth,
-	provStats *health.ProviderStats,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		v := resolveCRDDisplayValues(crd, kfg, inf)
@@ -313,39 +300,6 @@ func BuildCRDInfoHandler(
 			response.Rollback = &stats
 		}
 
-		// Provider stats
-		if crd.HasProviders() {
-			// Build a lookup of runtime stats by provider name.
-			statsByProvider := make(map[string]health.ProviderStatEntry)
-			if provStats != nil {
-				for _, e := range provStats.GetSnapshot() {
-					statsByProvider[e.Provider] = e
-				}
-			}
-
-			box := crd.OperatorBox
-			providers := make([]ProviderInfoResponse, 0, len(box.ProviderBlocks))
-			for _, block := range box.ProviderBlocks {
-				kinds := make([]string, 0, len(block.Declarations))
-				seen := make(map[string]struct{})
-				for _, decl := range block.Declarations {
-					if _, ok := seen[decl.Kind]; !ok {
-						seen[decl.Kind] = struct{}{}
-						kinds = append(kinds, decl.Kind)
-					}
-				}
-				e := statsByProvider[block.Name]
-				providers = append(providers, ProviderInfoResponse{
-					Name:      block.Name,
-					Kinds:     kinds,
-					Total:     e.Total,
-					Errors:    e.Errors,
-					ErrorRate: e.ErrorRate,
-				})
-			}
-			response.Providers = providers
-		}
-
 		utils.WriteJSON(w, http.StatusOK, response)
 	}
 }
@@ -427,7 +381,6 @@ type CRDSummaryResponse struct {
 	Endpoints                EndpointInfo       `json:"endpoints"`
 	RBACCount                int                `json:"rbacCount,omitempty"`
 	DeletionProtection       bool               `json:"deletionProtection"`
-	ProviderCount            int                `json:"providerCount,omitempty"`
 	KatalogNamespace         string             `json:"katalogNamespace,omitempty"`
 	ServeEnabled             bool               `json:"serveEnabled,omitempty"`
 	RequireServeName         bool               `json:"requireServeName,omitempty"`
@@ -547,10 +500,9 @@ func BuildKatalogHandler(
 				RBACCount:                generateRBACInfo(crd, v).TotalRules,
 				ResourceCount:            v.resourceCount,
 				DeletionProtection:       isCRDProtected(deletionProtectedCRDs, crd.APITypes.Plural, crd.APITypes.Group),
-				ProviderCount:            len(box.ProviderBlocks),
 				OperatorBox: OperatorBoxSummary{
 					Type:           "generic",
-					HasTemplates:   box.OnCreate != nil,
+					HasTemplates:   box.EffectiveOnCreate() != nil,
 					HasHooks:       crd.HasHooks(),
 					HasConstructor: crd.HasConstructor(),
 				},
@@ -678,20 +630,20 @@ func operatorBoxInfoStruct(crd orktypes.CRDEntry) OperatorBoxInfo {
 		Source: "default",
 		Values: []string{},
 	}
-	if len(box.Finalizers) > 0 {
+	if finalizers := box.EffectiveFinalizers(); len(finalizers) > 0 {
 		finalizersInfo.Source = "configured"
-		finalizersInfo.Values = box.Finalizers
+		finalizersInfo.Values = finalizers
 	}
 
 	hooksInfo := HooksInfo{Configured: false}
-	if box.Reconciler != nil && box.Reconciler.Hooks != nil {
+	if r := box.Reconcile; r != nil && r.Hooks != nil {
 		hooksInfo = HooksInfo{
 			Configured: true,
 			Source:     "yaml",
-			Location:   box.Reconciler.Hooks.Location,
-			Function:   box.Reconciler.Hooks.Function,
+			Location:   r.Hooks.Location,
+			Function:   r.Hooks.Function,
 		}
-	} else if box.HookFactory != nil {
+	} else if r := box.Reconcile; r != nil && r.HookFactory != nil {
 		hooksInfo = HooksInfo{
 			Configured: true,
 			Source:     "go",
@@ -699,14 +651,14 @@ func operatorBoxInfoStruct(crd orktypes.CRDEntry) OperatorBoxInfo {
 	}
 
 	constructorInfo := ConstructorInfo{Configured: false}
-	if box.Reconciler != nil && box.Reconciler.ConstructorDecl != nil {
+	if r := box.Reconcile; r != nil && r.ConstructorDecl != nil {
 		constructorInfo = ConstructorInfo{
 			Configured: true,
 			Source:     "yaml",
-			Location:   box.Reconciler.ConstructorDecl.Location,
-			Function:   box.Reconciler.ConstructorDecl.Function,
+			Location:   r.ConstructorDecl.Location,
+			Function:   r.ConstructorDecl.Function,
 		}
-	} else if box.Constructor != nil {
+	} else if r := box.Reconcile; r != nil && r.Constructor != nil {
 		constructorInfo = ConstructorInfo{
 			Configured: true,
 			Source:     "go",
@@ -720,23 +672,42 @@ func operatorBoxInfoStruct(crd orktypes.CRDEntry) OperatorBoxInfo {
 		Constructor: constructorInfo,
 	}
 
-	if box.OnCreate != nil || box.OnReconcile != nil || box.OnDelete != nil {
+	hasTemplates := (box.EffectiveOnCreate() != nil || box.EffectiveOnReconcile() != nil || box.EffectiveOnDelete() != nil)
+	if r := box.Reconcile; r != nil {
+		hasTemplates = hasTemplates || r.OnCreate != nil || r.OnReconcile != nil || r.OnDelete != nil
+	}
+	if hasTemplates {
 		result.Templates = make(map[string]interface{})
-		if box.OnCreate != nil {
-			onCreate := templateSummary(box.OnCreate)
-			if hasAutoReconcile(box.OnCreate) {
+		// Resolve templates: reconcile block first (new), then flat fields (legacy).
+		onCreate := box.EffectiveOnCreate()
+		onReconcile := box.EffectiveOnReconcile()
+		onDelete := box.EffectiveOnDelete()
+		if r := box.Reconcile; r != nil {
+			if r.OnCreate != nil {
+				onCreate = r.OnCreate
+			}
+			if r.OnReconcile != nil {
+				onReconcile = r.OnReconcile
+			}
+			if r.OnDelete != nil {
+				onDelete = r.OnDelete
+			}
+		}
+		if onCreate != nil {
+			summary := templateSummary(onCreate)
+			if hasAutoReconcile(onCreate) {
 				result.Templates["onReconcile"] = map[string]interface{}{
 					"source": "auto",
 					"from":   "onCreate[reconcile:true]",
 				}
 			}
-			result.Templates["onCreate"] = onCreate
+			result.Templates["onCreate"] = summary
 		}
-		if box.OnReconcile != nil {
-			result.Templates["onReconcile"] = templateSummary(box.OnReconcile)
+		if onReconcile != nil {
+			result.Templates["onReconcile"] = templateSummary(onReconcile)
 		}
-		if box.OnDelete != nil {
-			result.Templates["onDelete"] = templateSummary(box.OnDelete)
+		if onDelete != nil {
+			result.Templates["onDelete"] = templateSummary(onDelete)
 		}
 	}
 
@@ -863,8 +834,11 @@ func resolveCRDDisplayValues(
 ) crdDisplayValues {
 	box := crd.OperatorBox
 
-	// Queue depth
-	maxDepth := box.Reconciler.Queue.MaxDepth
+	effectiveReconcile := box.Reconcile
+	maxDepth := 0
+	if effectiveReconcile != nil && effectiveReconcile.Queue.MaxDepth != 0 {
+		maxDepth = effectiveReconcile.Queue.MaxDepth
+	}
 	maxDepthSource := "configured"
 	if maxDepth == 0 {
 		maxDepth = kfg.Katalog().DefaultQueueDepth()
@@ -872,17 +846,24 @@ func resolveCRDDisplayValues(
 	}
 
 	// Resync
-	resync := box.Reconciler.Resync.String()
+	var resyncDuration orktypes.Duration
+	if effectiveReconcile != nil && effectiveReconcile.Resync.Duration != 0 {
+		resyncDuration = effectiveReconcile.Resync
+	}
+	resync := resyncDuration.String()
 	resyncSource := "configured"
-	if box.Reconciler.Resync.Duration == 0 {
+	if resyncDuration.Duration == 0 {
 		resyncSource = "default"
 		resync = kfg.Katalog().DefaultResync().String()
 	}
 
 	// Workers
-	workers := box.Reconciler.Workers
+	workers := 0
+	if effectiveReconcile != nil && effectiveReconcile.Workers != 0 {
+		workers = effectiveReconcile.Workers
+	}
 	workersSource := "configured"
-	if box.Reconciler.Workers == 0 {
+	if workers == 0 {
 		workers = kfg.Katalog().DefaultWorkers()
 		workersSource = "default"
 	}

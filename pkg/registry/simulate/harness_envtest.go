@@ -20,7 +20,9 @@ import (
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator"
-	"github.com/orkspace/orkestra/pkg/runtime/reconciler"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/contract"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/generic"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"github.com/rs/zerolog/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,13 +97,16 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	if !ok {
 		return nil, fmt.Errorf("CRD %q not found in Katalog", crdName)
 	}
+	if crdEntry.WithRemoteDecl() {
+		return nil, ErrRemoteReconciler
+	}
 
 	result := &Result{}
 	box := effectiveOperatorBox(crdEntry, cr, opts.Target)
 	for _, phase := range []*orktypes.HookTemplates{
-		box.OnCreate,
-		box.OnReconcile,
-		box.OnDelete,
+		box.EffectiveOnCreate(),
+		box.EffectiveOnReconcile(),
+		box.EffectiveOnDelete(),
 	} {
 		if phase == nil {
 			continue
@@ -235,14 +240,13 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	if factoryFn, ok := orktypes.ReconcilerRegistry[gvk]; ok {
 		r = factoryFn(recKube.WithInformer(inf).WithEventRecorder(event.Discard()))
 	} else {
-		r = reconciler.NewGenericReconciler(
+		r = generic.New(
 			crdEntry,
 			inf,
 			nil,
 			recKube,
 			hookBinder,
 			newObjFn,
-			peerRegistry, nil, nil, nil,
 			kat,
 		)
 	}
@@ -254,7 +258,18 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 
 	r = wrapWithGate(r, box.PreReconcile, kat.Notes, getFromIndexerOrFallback(inf.GetIndexer(), key, cr))
 
-	loopResult := runLoop(ctx, r, recKube, key, maxCycles)
+	prepInput := prepare.Input{
+		Entry: contract.RegistryEntry{
+			CRD:      crdEntry,
+			Informer: inf,
+		},
+		Key:      key,
+		Kat:      kat,
+		Kube:     recKube,
+		Registry: peerRegistry,
+	}
+
+	loopResult := runLoop(ctx, r, recKube, key, maxCycles, prepInput)
 	loopResult.Notes = result.Notes
 	return loopResult, nil
 }

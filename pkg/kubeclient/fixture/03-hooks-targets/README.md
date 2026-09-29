@@ -24,7 +24,7 @@ serve:
             when:
               - field: '{{ inBusinessHours }}'
                 equals: "true"
-        reconciler:
+        reconcile:
           hooks:
             args:
               featureEnabled: "true"
@@ -32,7 +32,7 @@ serve:
 
     v2-disabled:
       operatorBox:
-        reconciler:
+        reconcile:
           hooks:
             args:
               featureEnabled: "false"
@@ -46,7 +46,7 @@ dispatch time:
 ```yaml
     v2-ctor:
       operatorBox:
-        reconciler:
+        reconcile:
           default: false
           constructor:
             location: github.com/orkspace/orkestra-args-hooks-targets/constructor
@@ -149,7 +149,7 @@ ork serve apply -f intent/intent-v2-ctor.json --token $TOKEN --api http://localh
 ```
 
 The runtime routes this CR to `BlockchainAppWithTargetsReconciler` via `MuxReconciler`
-instead of the CRD-level `GenericReconciler`.
+instead of the CRD-level `Generic Reconciler`.
 
 > Switching targets cleans up the previous surface's resources automatically.
 > `keepPreviousSurface: true` on the target entry skips the cleanup when you

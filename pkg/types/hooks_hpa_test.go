@@ -10,9 +10,11 @@ import (
 
 func crdWithHPAOnCreate(hpas ...orktypes.HPATemplateSource) orktypes.CRDEntry {
 	return orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnCreate: &orktypes.HookTemplates{
-				HorizontalPodAutoscalers: hpas,
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnCreate: &orktypes.HookTemplates{
+					HorizontalPodAutoscalers: hpas,
+				},
 			},
 		},
 	}
@@ -86,10 +88,12 @@ func TestCollectHPAProfileEntries_TemplateExpr(t *testing.T) {
 
 func TestCollectHPAProfileEntries_OnReconcile(t *testing.T) {
 	c := orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnReconcile: &orktypes.HookTemplates{
-				HorizontalPodAutoscalers: []orktypes.HPATemplateSource{
-					{Name: "hpa", Behavior: &orktypes.HPABehavior{Profile: "api"}},
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnReconcile: &orktypes.HookTemplates{
+					HorizontalPodAutoscalers: []orktypes.HPATemplateSource{
+						{Name: "hpa", Behavior: &orktypes.HPABehavior{Profile: "api"}},
+					},
 				},
 			},
 		},

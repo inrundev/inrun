@@ -10,7 +10,6 @@ informer cache → DeepCopy → normalize → mutation → validation
         → forEach expansion      (list field: .item=element | map field: .item=key, .value=value)
         → onCreate resource groups
         → onReconcile resource groups
-        → provider dispatch
     → patchStatusWithChildren
 ```
 

@@ -94,7 +94,7 @@ func ReadChildren(
 
 	// Collect all template sources across onCreate and onReconcile.
 	// We only read resources that are declared — not all resources in the namespace.
-	templates := mergeTemplates(crd.OperatorBox)
+	templates := mergeTemplates(crd.Box())
 
 	// ── Deployments ───────────────────────────────────────────────────────
 	if len(templates.Deployments) > 0 {

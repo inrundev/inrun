@@ -23,7 +23,7 @@ func katalogWithPreReconcile(pr orktypes.PreReconcileConfig) *Katalog {
 					Version: "v1",
 					Group:   "test.orkestra.katalog",
 				},
-				OperatorBox: orktypes.OperatorBoxConfig{
+				OperatorBox: &orktypes.OperatorBoxConfig{
 					PreReconcile: &pr,
 				},
 			},
@@ -183,7 +183,7 @@ func TestEffectiveBox_ResolvesTargetSpecificOperatorBox(t *testing.T) {
 					Version: "v1",
 					Group:   "test.orkestra.katalog",
 				},
-				OperatorBox: orktypes.OperatorBoxConfig{
+				OperatorBox: &orktypes.OperatorBoxConfig{
 					PreReconcile: &orktypes.PreReconcileConfig{
 						ReconcileGate: &orktypes.GateConditions{
 							EventAware: crdEventAware,

@@ -178,5 +178,5 @@ func deleteOwnedCustomResources(
 
 // allHooks returns all three lifecycle hook blocks in declaration order.
 func allHooks(box orktypes.OperatorBoxConfig) []*orktypes.HookTemplates {
-	return []*orktypes.HookTemplates{box.OnCreate, box.OnReconcile, box.OnDelete}
+	return []*orktypes.HookTemplates{box.EffectiveOnCreate(), box.EffectiveOnReconcile(), box.EffectiveOnDelete()}
 }

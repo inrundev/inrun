@@ -52,7 +52,7 @@ Just the problem you came to solve.
 
 That is what Kubernetes intended when it introduced CRDs. The CRD was the declaration. The operator was supposed to answer one question about it: what should happen when someone creates one of these? We turned that one question into years of infrastructure work.
 
-Orkestra gives the question back. Whichever you pick — no code, hybrid, hooks, constructor, or constructor with Orkestra resources — you are solving exactly one problem.
+Orkestra gives the question back. Whichever you pick — no code, hybrid, hooks, constructor, constructor with Orkestra resources, or a remote HTTP server in any language — you are solving exactly one problem.
 
 Yours.
 

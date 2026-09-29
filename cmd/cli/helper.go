@@ -44,10 +44,11 @@ var (
 	healthIcon      = utils.HealthIcon
 	healthIconReady = utils.HealthIconReady
 	healthIconWarn  = utils.HealthIconWarning
+	healthIconInfo  = utils.HealthIconInfo
 
 	// other cli utilities
 	orkestraLogo        = utils.OrkestraLogoCLI
-	isRunningInCluster  = utils.IsRunningInCluster
+	isRunningInPod      = utils.IsRunningInPod
 	writeFileAndFormat  = utils.WriteFileAndFormat
 	splitCommaSeparated = utils.SplitCommaSeparated
 	readLocal           = utils.ReadLocal
@@ -167,11 +168,11 @@ func printTemplateSummary(k *katalog.Katalog, crds map[string]orktypes.CRDEntry,
 		// Workers / resync
 		fmt.Printf("%sworkers:%s  resync:%s",
 			indent,
-			green(fmt.Sprintf("%d", crd.OperatorBox.Reconciler.Workers)),
-			green(crd.OperatorBox.Reconciler.Resync.String()),
+			green(fmt.Sprintf("%d", crd.SetWorkers(0))),
+			green(crd.SetResync(0).String()),
 		)
-		if crd.OperatorBox.Reconciler.Queue.MaxDepth > 0 {
-			fmt.Printf("  queue:%s", green(fmt.Sprintf("%d", crd.OperatorBox.Reconciler.Queue.MaxDepth)))
+		if d := crd.SetQueueDepth(0); d > 0 {
+			fmt.Printf("  queue:%s", green(fmt.Sprintf("%d", d)))
 		}
 		fmt.Println()
 
@@ -207,21 +208,21 @@ func printTemplateSummary(k *katalog.Katalog, crds map[string]orktypes.CRDEntry,
 		fmt.Printf("%smode: %s\n", indent, mode)
 
 		// onCreate resources
-		if crd.OperatorBox.OnCreate != nil && !crd.OperatorBox.OnCreate.Empty() {
+		if crd.Box().EffectiveOnCreate() != nil && !crd.Box().EffectiveOnCreate().Empty() {
 			fmt.Printf("%s%s  %s\n", indent, cyan("onCreate:"),
-				summarizeHookTemplates(crd.OperatorBox.OnCreate))
+				summarizeHookTemplates(crd.Box().EffectiveOnCreate()))
 		}
 
 		// onReconcile resources
-		if crd.OperatorBox.OnReconcile != nil && !crd.OperatorBox.OnReconcile.Empty() {
+		if crd.Box().EffectiveOnReconcile() != nil && !crd.Box().EffectiveOnReconcile().Empty() {
 			fmt.Printf("%s%s  %s\n", indent, cyan("onReconcile:"),
-				summarizeHookTemplates(crd.OperatorBox.OnReconcile))
+				summarizeHookTemplates(crd.Box().EffectiveOnReconcile()))
 		}
 
 		// Status fields
-		if crd.OperatorBox.Status != nil && len(crd.OperatorBox.Status.Fields) > 0 {
-			fieldNames := make([]string, 0, len(crd.OperatorBox.Status.Fields))
-			for _, f := range crd.OperatorBox.Status.Fields {
+		if s := crd.Box().EffectiveStatus(); s != nil && len(s.Fields) > 0 {
+			fieldNames := make([]string, 0, len(s.Fields))
+			for _, f := range s.Fields {
 				fieldNames = append(fieldNames, f.Path)
 			}
 			fmt.Printf("%s%s  %s\n", indent, cyan("status:"),
@@ -229,8 +230,8 @@ func printTemplateSummary(k *katalog.Katalog, crds map[string]orktypes.CRDEntry,
 		}
 
 		// Autoscale
-		if crd.AutoscaleEnabled() && crd.OperatorBox.Autoscale != nil {
-			a := crd.OperatorBox.Autoscale
+		if crd.AutoscaleEnabled() {
+			a := crd.Box().EffectiveAutoscale()
 			if a.Profile != "" {
 				fmt.Printf("%s%s  profile=%s\n", indent, magenta("autoscale:"), a.Profile)
 			} else {
@@ -386,10 +387,10 @@ func printCRDDetail(crd orktypes.CRDEntry, g *katalog.DependencyGraph) {
 
 	// ── Runtime config ───────────────────────────────────────────────────────
 	fmt.Printf("  %s\n", cyan(bold("Runtime")))
-	fmt.Printf("    Workers:       %s\n", green(fmt.Sprintf("%d", crd.OperatorBox.Reconciler.Workers)))
-	fmt.Printf("    Resync:        %s\n", green(crd.OperatorBox.Reconciler.Resync.String()))
-	if crd.OperatorBox.Reconciler.Queue.MaxDepth > 0 {
-		fmt.Printf("    MaxDepth: %s\n", green(fmt.Sprintf("%d", crd.OperatorBox.Reconciler.Queue.MaxDepth)))
+	fmt.Printf("    Workers:       %s\n", green(fmt.Sprintf("%d", crd.SetWorkers(0))))
+	fmt.Printf("    Resync:        %s\n", green(crd.SetResync(0).String()))
+	if d := crd.SetQueueDepth(0); d > 0 {
+		fmt.Printf("    MaxDepth: %s\n", green(fmt.Sprintf("%d", d)))
 	}
 	fmt.Println()
 
@@ -407,31 +408,31 @@ func printCRDDetail(crd orktypes.CRDEntry, g *katalog.DependencyGraph) {
 	}
 
 	// ── OperatorBox.OnCreate ──────────────────────────────────────────────────
-	if crd.OperatorBox.OnCreate != nil && !crd.OperatorBox.OnCreate.Empty() {
+	if crd.Box().EffectiveOnCreate() != nil && !crd.Box().EffectiveOnCreate().Empty() {
 		fmt.Printf("  %s\n", cyan(bold("onCreate")))
-		printHookTemplateDetail("    ", crd.OperatorBox.OnCreate)
+		printHookTemplateDetail("    ", crd.Box().EffectiveOnCreate())
 		fmt.Println()
 	}
 
 	// ── OperatorBox.OnReconcile ───────────────────────────────────────────────
-	if crd.OperatorBox.OnReconcile != nil && !crd.OperatorBox.OnReconcile.Empty() {
+	if crd.Box().EffectiveOnReconcile() != nil && !crd.Box().EffectiveOnReconcile().Empty() {
 		fmt.Printf("  %s\n", cyan(bold("onReconcile")))
-		printHookTemplateDetail("    ", crd.OperatorBox.OnReconcile)
+		printHookTemplateDetail("    ", crd.Box().EffectiveOnReconcile())
 		fmt.Println()
 	}
 
 	// ── Status ────────────────────────────────────────────────────────────────
-	if crd.OperatorBox.Status != nil && len(crd.OperatorBox.Status.Fields) > 0 {
+	if s := crd.Box().EffectiveStatus(); s != nil && len(s.Fields) > 0 {
 		fmt.Printf("  %s\n", cyan(bold("Status Fields")))
-		for _, f := range crd.OperatorBox.Status.Fields {
+		for _, f := range s.Fields {
 			fmt.Printf("    - %s: %s\n", green(f.Path), dim(f.Value))
 		}
 		fmt.Println()
 	}
 
 	// ── Autoscale ─────────────────────────────────────────────────────────────
-	if crd.AutoscaleEnabled() && crd.OperatorBox.Autoscale != nil {
-		a := crd.OperatorBox.Autoscale
+	if crd.AutoscaleEnabled() {
+		a := crd.Box().EffectiveAutoscale()
 		fmt.Printf("  %s\n", magenta(bold("Autoscale")))
 		if a.Profile != "" {
 			fmt.Printf("    Profile:  %s\n", magenta(a.Profile))
@@ -464,9 +465,9 @@ func printCRDDetail(crd orktypes.CRDEntry, g *katalog.DependencyGraph) {
 	}
 
 	// ── Finalizers ────────────────────────────────────────────────────────────
-	if len(crd.OperatorBox.Finalizers) > 0 {
+	if finals := crd.Box().EffectiveFinalizers(); len(finals) > 0 {
 		fmt.Printf("  %s\n", cyan(bold("Finalizers")))
-		for _, f := range crd.OperatorBox.Finalizers {
+		for _, f := range finals {
 			fmt.Printf("    - %s\n", f)
 		}
 		fmt.Println()
@@ -795,10 +796,10 @@ func crdModeLabel(crd orktypes.CRDEntry) string {
 		return "default"
 	}
 	if crd.CustomHooksEnabled() {
-		return fmt.Sprintf("hooks(%s)", crd.OperatorBox.Reconciler.Hooks.Function)
+		return fmt.Sprintf("hooks(%s)", crd.Box().Reconcile.Hooks.Function)
 	}
 	if crd.ConstructorEnabled() {
-		return fmt.Sprintf("constructor(%s)", crd.OperatorBox.Reconciler.ConstructorDecl.Function)
+		return fmt.Sprintf("constructor(%s)", crd.Box().Reconcile.ConstructorDecl.Function)
 	}
 	if crd.Mode != "" {
 		return string(crd.Mode)

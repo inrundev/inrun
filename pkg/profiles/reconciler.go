@@ -37,13 +37,15 @@ type ReconcilerProfileResult struct {
 // ApplyReconcilerProfile expands a named reconciler profile into its tuning values.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyReconcilerProfile(name string, reg orktypes.ProfileRegistry) (ReconcilerProfileResult, error) {
-	if def, found := reg.LookupReconciler(name); found {
-		return ReconcilerProfileResult{
-			Workers:  def.Workers,
-			Resync:   def.Resync.Duration,
-			MaxDepth: def.Queue.MaxDepth,
-		}, nil
+func ApplyReconcilerProfile(name string, reg *orktypes.ProfileRegistry) (ReconcilerProfileResult, error) {
+	if reg != nil {
+		if def, found := reg.LookupReconciler(name); found {
+			return ReconcilerProfileResult{
+				Workers:  def.Workers,
+				Resync:   def.Resync.Duration,
+				MaxDepth: def.Queue.MaxDepth,
+			}, nil
+		}
 	}
 	switch ReconcilerProfile(strings.ToLower(name)) {
 	case ReconcilerHighThroughput:

@@ -6,7 +6,7 @@ This is the 90/10 pattern. Most operators have some resources that are straightf
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/02-hybrid
+cd from-controller-runtime/03-hybrid
 ```
 
 ---
@@ -26,7 +26,7 @@ The ServiceAccount and Deployment stay declared in the Katalog. The Service move
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     hooks:
       location: github.com/myorg/webapp-operator/hooks
       function: WebAppHooks
@@ -59,8 +59,8 @@ Processes that cannot be expressed as a sequence of declarative steps. Before ad
 
 ```bash
 ork init --pack from-controller-runtime
-cd from-controller-runtime/02-hybrid
+cd from-controller-runtime/03-hybrid
 # Follow steps in README
 ```
 
-→ [03 — Hooks only](./04-hooks-only.md)
+→ [04 — Hooks only](./04-hooks-only.md)

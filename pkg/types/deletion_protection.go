@@ -21,64 +21,47 @@ type DeletionProtectionOverride struct {
 	StrictMode *bool `yaml:"strictMode,omitempty" json:"strictMode,omitempty"`
 }
 
+// deletionProtection returns the effective DeletionProtectionOverride from operatorBox.runtime.
+func (c *CRDEntry) deletionProtection() *DeletionProtectionOverride {
+	if c.OperatorBox.Runtime == nil {
+		return nil
+	}
+	return c.OperatorBox.Runtime.DeletionProtection
+}
+
 // HasDeletionProtectionOverride reports whether deletion protection override is set for this CRD.
 func (c *CRDEntry) HasDeletionProtectionOverride() bool {
-	return c.DeletionProtection != nil
+	return c.deletionProtection() != nil
 }
 
-// ShouldProtectCRD reports whether the CRD *type definition* itself should be
-// protected from deletion when global deletion protection is enabled.
-//
-// Semantics:
-//   - When DeletionProtection is nil → default to true
-//   - When ProtectCRD is nil         → default to true
-//   - When ProtectCRD is false       → CRD deletion is allowed
-//
-// This controls whether DELETE operations on the CRD object
-// (apiextensions.k8s.io/v1/customresourcedefinitions/<name>) are intercepted
-// and blocked by the deletion‑protection webhook.
+// ShouldProtectCRD reports whether the CRD *type definition* itself should be protected.
+// Defaults to true when not configured.
 func (c *CRDEntry) ShouldProtectCRD() bool {
-	if c.DeletionProtection == nil || c.DeletionProtection.ProtectCRD == nil {
+	dp := c.deletionProtection()
+	if dp == nil || dp.ProtectCRD == nil {
 		return true
 	}
-	return *c.DeletionProtection.ProtectCRD
+	return *dp.ProtectCRD
 }
 
-// ShouldProtectCRs reports whether *instances* of this CRD should be protected
-// from deletion when global deletion protection is enabled.
-//
-// Semantics:
-//   - When DeletionProtection is nil → default to true
-//   - When ProtectCRs is nil         → default to true
-//   - When ProtectCRs is false       → CR deletion is allowed
-//
-// This controls whether DELETE operations on CR instances are blocked unless
-// the object explicitly opts out via the orkestra.io/deletion-protection label.
+// ShouldProtectCRs reports whether *instances* of this CRD should be protected.
+// Defaults to true when not configured.
 func (c *CRDEntry) ShouldProtectCRs() bool {
-	if c.DeletionProtection == nil || c.DeletionProtection.ProtectCRs == nil {
+	dp := c.deletionProtection()
+	if dp == nil || dp.ProtectCRs == nil {
 		return true
 	}
-	return *c.DeletionProtection.ProtectCRs
+	return *dp.ProtectCRs
 }
 
-// IsStrictDeletionProtection returns whether strict deletion‑protection semantics
-// apply to this CRD, taking into account the katalog‑level strict mode.
-//
-// Strict mode is only possible when the katalog‑level strictMode is true.
-// If the katalog‑level strictMode is false, this function always returns false.
-//
-// When katalog‑level strictMode is true:
-//   - If the CRD has its own StrictMode value (non‑nil), that value is returned.
-//   - Otherwise, default to true.
-//
-// This override only applies when global deletion protection is enabled
-// (security.deletionProtection.enabled = true).
+// IsStrictDeletionProtection returns whether strict deletion-protection semantics apply.
 func (c *CRDEntry) IsStrictDeletionProtection(katalogStrictMode bool) bool {
 	if !katalogStrictMode {
 		return false
 	}
-	if c.DeletionProtection == nil || c.DeletionProtection.StrictMode == nil {
+	dp := c.deletionProtection()
+	if dp == nil || dp.StrictMode == nil {
 		return true
 	}
-	return *c.DeletionProtection.StrictMode
+	return *dp.StrictMode
 }

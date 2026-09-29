@@ -12,48 +12,46 @@ spec:
   crds:
     service:
       crdFile: ../crd.yaml
-
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ resourceExists .children.resourceQuotas }}"
-                  equals: "true"
+          onCreate:
+            resourceQuotas:
+              # small — prototype and CI workloads
+              - name: "{{ .metadata.name }}-quota-small"
+                namespace: "{{ .metadata.namespace }}"
+                profile: small
+                reconcile: true
 
-        onCreate:
-          resourceQuotas:
-            # small — prototype and CI workloads
-            - name: "{{ .metadata.name }}-quota-small"
-              namespace: "{{ .metadata.namespace }}"
-              profile: small
-              reconcile: true
+              # medium — standard team namespace
+              - name: "{{ .metadata.name }}-quota-medium"
+                namespace: "{{ .metadata.namespace }}"
+                profile: medium
+                reconcile: true
 
-            # medium — standard team namespace
-            - name: "{{ .metadata.name }}-quota-medium"
-              namespace: "{{ .metadata.namespace }}"
-              profile: medium
-              reconcile: true
+              # large — high-traffic or data-intensive namespaces
+              - name: "{{ .metadata.name }}-quota-large"
+                namespace: "{{ .metadata.namespace }}"
+                profile: large
+                reconcile: true
 
-            # large — high-traffic or data-intensive namespaces
-            - name: "{{ .metadata.name }}-quota-large"
-              namespace: "{{ .metadata.namespace }}"
-              profile: large
-              reconcile: true
+              # xlarge — very large or shared platform namespaces
+              - name: "{{ .metadata.name }}-quota-xlarge"
+                namespace: "{{ .metadata.namespace }}"
+                profile: xlarge
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ resourceExists .children.resourceQuotas }}"
+                    equals: "true"
 
-            # xlarge — very large or shared platform namespaces
-            - name: "{{ .metadata.name }}-quota-xlarge"
-              namespace: "{{ .metadata.namespace }}"
-              profile: xlarge
-              reconcile: true

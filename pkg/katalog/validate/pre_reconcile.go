@@ -8,7 +8,7 @@ import (
 //   - EnqueueGate should not declare 'eventAware'. Only makes sense in reconcileGate
 func (e *executor) validatePreReconcile() error {
 	for crdName, crd := range e.k.EnabledCRDs() {
-		pr := crd.OperatorBox.PreReconcile
+		pr := crd.Box().PreReconcile
 		if pr == nil {
 			continue
 		}

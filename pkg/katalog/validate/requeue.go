@@ -7,7 +7,7 @@ import "fmt"
 // Empty string is allowed — it means no requeue.
 func (e *executor) validateRequeue() error {
 	for crdName, crd := range e.k.EnabledCRDs() {
-		rc := crd.OperatorBox.Reconciler
+		rc := crd.Box().Reconcile
 		if rc == nil || rc.Requeue == nil {
 			continue
 		}

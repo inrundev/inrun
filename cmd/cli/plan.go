@@ -237,7 +237,7 @@ func printKatalogSummary(data []byte) {
 }
 
 func init() {
-	rootCmd.AddCommand(planCmd)
+	// rootCmd.AddCommand(planCmd) // in development
 
 	planCmd.Flags().StringP("file", "f", "", "Path to local katalog.yaml")
 	planCmd.Flags().StringP("bundle", "b", "", "Path to a bundle YAML file — reads the ConfigMap from it instead of the cluster")

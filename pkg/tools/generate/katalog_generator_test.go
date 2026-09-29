@@ -170,15 +170,6 @@ func TestKatalogScaffold_MutualExclusion_ConstructorAndTyped(t *testing.T) {
 	)
 }
 
-// ── Provider validation ────────────────────────────────────────────────────────
-
-func TestKatalogScaffold_InvalidProvider(t *testing.T) {
-	scaffoldErr(t,
-		generate.KatalogScaffoldOptions{Provider: "digitalocean"},
-		"unknown provider",
-	)
-}
-
 // ── Optional block: security ──────────────────────────────────────────────────
 
 func TestKatalogScaffold_AddSecurity(t *testing.T) {
@@ -221,42 +212,6 @@ func TestKatalogScaffold_NoNotification_WhenNotRequested(t *testing.T) {
 	assertAbsent(t, out, "notification:", "no notification block in default mode")
 }
 
-// ── Optional block: providers ─────────────────────────────────────────────────
-
-func TestKatalogScaffold_ProviderAWS(t *testing.T) {
-	out := scaffold(t, generate.KatalogScaffoldOptions{Provider: "aws"})
-
-	assertContains(t, out, "--add-provider aws", "flag in header")
-	assertContains(t, out, "providers:", "providers block")
-	assertContains(t, out, "aws:", "aws block")
-	assertContains(t, out, "AWS_ACCESS_KEY_ID", "aws credentials")
-	assertAbsent(t, out, "azure:", "no azure block")
-	assertAbsent(t, out, "gcp:", "no gcp block")
-}
-
-func TestKatalogScaffold_ProviderAzure(t *testing.T) {
-	out := scaffold(t, generate.KatalogScaffoldOptions{Provider: "azure"})
-
-	assertContains(t, out, "--add-provider azure", "flag in header")
-	assertContains(t, out, "azure:", "azure block")
-	assertContains(t, out, "AZURE_SUBSCRIPTION_ID", "azure credentials")
-	assertAbsent(t, out, "aws:", "no aws block")
-}
-
-func TestKatalogScaffold_ProviderGCP(t *testing.T) {
-	out := scaffold(t, generate.KatalogScaffoldOptions{Provider: "gcp"})
-
-	assertContains(t, out, "--add-provider gcp", "flag in header")
-	assertContains(t, out, "gcp:", "gcp block")
-	assertContains(t, out, "GOOGLE_APPLICATION_CREDENTIALS", "gcp creds")
-}
-
-func TestKatalogScaffold_ProviderCaseInsensitive(t *testing.T) {
-	// Users might type "AWS" or "GCP" — should still work.
-	out := scaffold(t, generate.KatalogScaffoldOptions{Provider: "AWS"})
-	assertContains(t, out, "aws:", "aws block from upper-case input")
-}
-
 // ── Combination tests ─────────────────────────────────────────────────────────
 
 func TestKatalogScaffold_HookWithAllOptionals(t *testing.T) {
@@ -264,14 +219,12 @@ func TestKatalogScaffold_HookWithAllOptionals(t *testing.T) {
 		AddHook:         true,
 		AddSecurity:     true,
 		AddNotification: true,
-		Provider:        "gcp",
 	})
 
 	assertContains(t, out, "mode: typed", "typed")
 	assertContains(t, out, "# hooks:", "hooks")
 	assertContains(t, out, "security:", "security")
 	assertContains(t, out, "notification:", "notification")
-	assertContains(t, out, "gcp:", "gcp")
 	assertAbsent(t, out, "# constructor:", "no constructor")
 }
 
@@ -340,9 +293,7 @@ func TestValidate_Valid(t *testing.T) {
 		{AddHook: true},
 		{AddConstructor: true},
 		{Typed: true},
-		{AddHook: true, AddSecurity: true, Provider: "aws"},
-		{Provider: "gcp"},
-		{Provider: "GCP"},
+		{AddHook: true, AddSecurity: true},
 	}
 	for _, c := range cases {
 		if err := c.Validate(); err != nil {
@@ -360,8 +311,6 @@ func TestValidate_Invalid(t *testing.T) {
 		{generate.KatalogScaffoldOptions{AddHook: true, Typed: true}, "mutually exclusive"},
 		{generate.KatalogScaffoldOptions{AddConstructor: true, Typed: true}, "mutually exclusive"},
 		{generate.KatalogScaffoldOptions{AddHook: true, AddConstructor: true, Typed: true}, "mutually exclusive"},
-		{generate.KatalogScaffoldOptions{Provider: "aws-bad"}, "unknown provider"},
-		{generate.KatalogScaffoldOptions{Provider: "digitalocean"}, "unknown provider"},
 	}
 	for _, c := range cases {
 		err := c.opts.Validate()

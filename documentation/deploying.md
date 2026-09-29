@@ -42,10 +42,11 @@ spec:
         kind: Website
         plural: websites
       operatorBox:
-        onCreate:
-          deployments:
-            - image: nginx
-              replicas: 1
+        reconcile:
+          onCreate:
+            deployments:
+              - image: nginx
+                replicas: 1
 ```
 
 > **Tip:** This assumes you have the Website CRD installed in your cluster. If not, generate one from your Katalog:

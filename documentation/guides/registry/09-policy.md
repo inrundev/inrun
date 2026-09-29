@@ -16,12 +16,13 @@ inputs:
     description: Only images from this registry prefix are allowed
 
 resources:
-  validation:
-    - field: spec.image
-      operator: startsWith
-      value: "{{ .inputs.allowedRegistry }}"
-      message: "spec.image must be from {{ .inputs.allowedRegistry }}"
-      action: deny
+  admission:
+    validation:
+      - field: spec.image
+        operator: startsWith
+        value: "{{ .inputs.allowedRegistry }}"
+        message: "spec.image must be from {{ .inputs.allowedRegistry }}"
+        action: deny
 ```
 
 Any Katalog that imports this Motif inherits the image policy. The allowed registry is an input — platform teams set it per-environment.
@@ -57,10 +58,10 @@ Enable Orkestra's admission webhook in the Komposer:
 ```yaml
 # komposer.yaml
 security:
-  webhooks:
-    admission:
-      enabled: true
-
+  admission:
+    webhooks:
+      admission:
+        enabled: true
 gateway:
   endpoint: http://orkestra-gateway.orkestra-system.svc:8080
 ```

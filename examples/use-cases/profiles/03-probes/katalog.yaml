@@ -13,84 +13,82 @@ spec:
   crds:
     service:
       crdFile: ../crd.yaml
-
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployments.my-service-standard }}"
-                  equals: "true"
+          onCreate:
+            deployments:
+              # fast — HTTP APIs that start in seconds
+              - name: "{{ .metadata.name }}-fast"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                probes:
+                  liveness:
+                    type: http
+                    path: /healthz
+                    profile: fast
+                  readiness:
+                    type: http
+                    path: /readyz
+                    profile: fast
+                reconcile: true
 
-        onCreate:
-          deployments:
-            # fast — HTTP APIs that start in seconds
-            - name: "{{ .metadata.name }}-fast"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              probes:
-                liveness:
-                  type: http
-                  path: /healthz
-                  profile: fast
-                readiness:
-                  type: http
-                  path: /readyz
-                  profile: fast
-              reconcile: true
+              # standard — most web services (default)
+              - name: "{{ .metadata.name }}-standard"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                probes:
+                  liveness:
+                    type: http
+                    path: /healthz
+                    profile: standard
+                  readiness:
+                    type: http
+                    path: /readyz
+                    profile: standard
+                reconcile: true
 
-            # standard — most web services (default)
-            - name: "{{ .metadata.name }}-standard"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              probes:
-                liveness:
-                  type: http
-                  path: /healthz
-                  profile: standard
-                readiness:
-                  type: http
-                  path: /readyz
-                  profile: standard
-              reconcile: true
+              # patient — batch workers, slow-starting services
+              - name: "{{ .metadata.name }}-patient"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                probes:
+                  liveness:
+                    type: http
+                    path: /healthz
+                    profile: patient
+                  readiness:
+                    type: http
+                    path: /readyz
+                    profile: patient
+                reconcile: true
 
-            # patient — batch workers, slow-starting services
-            - name: "{{ .metadata.name }}-patient"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              probes:
-                liveness:
-                  type: http
-                  path: /healthz
-                  profile: patient
-                readiness:
-                  type: http
-                  path: /readyz
-                  profile: patient
-              reconcile: true
+              # slow-start — JVM apps, databases (5-minute startup window via startup probe)
+              - name: "{{ .metadata.name }}-slow-start"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                probes:
+                  startup:
+                    type: http
+                    path: /healthz
+                    profile: slow-start
+                  liveness:
+                    type: http
+                    path: /healthz
+                    profile: standard
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployments.my-service-standard }}"
+                    equals: "true"
 
-            # slow-start — JVM apps, databases (5-minute startup window via startup probe)
-            - name: "{{ .metadata.name }}-slow-start"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              probes:
-                startup:
-                  type: http
-                  path: /healthz
-                  profile: slow-start
-                liveness:
-                  type: http
-                  path: /healthz
-                  profile: standard
-              reconcile: true

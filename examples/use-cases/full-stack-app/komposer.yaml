@@ -18,3 +18,51 @@ imports:
     - ./04-once-secret/katalog.yaml
     - ./05-or/katalog.yaml
     - ./06-full-stack/katalog.yaml
+
+spec:
+  crds:
+    managed-database:
+      crdFile: ./03-cross-crd/crd-managed-database.yaml
+      operatorBox:
+        reconcile:
+          workers: 2
+          resync: 30s
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-postgres"
+                image: "postgres:17"
+                env:
+                  - name: POSTGRES_PASSWORD
+                    value: "postgres"
+                  - name: POSTGRES_USER
+                    value: "postgres"
+                  - name: POSTGRES_DB
+                    value: "postgres"
+            services:
+              - name: "{{ .metadata.name }}-postgres"
+                port: "5432"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: resourceExists
+                value: "ResourceExists"
+                when:
+                  - field: "{{ resourceExists .children.deployment }}"
+                    equals: "true"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
+              - path: endpoint
+                value: "{{ .metadata.name }}-postgres.{{ .metadata.namespace }}.svc.cluster.local:5432"
+              - path: replicasReady
+                value: "{{ allReplicasReady .children.deployment }}"
+              - path: resourceExists
+                value: "{{ resourceExists .children.deployment }}"

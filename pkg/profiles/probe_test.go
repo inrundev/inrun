@@ -47,7 +47,7 @@ func TestProbeProfiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, ok := profiles.ApplyProbeProfile(tt.profile, orktypes.ProfileRegistry{})
+			got, ok := profiles.ApplyProbeProfile(tt.profile, nil)
 			if ok != tt.ok {
 				t.Fatalf("ok: want %v got %v", tt.ok, ok)
 			}
@@ -59,7 +59,7 @@ func TestProbeProfiles(t *testing.T) {
 }
 
 func TestDefaultProbeTimingsMatchStandard(t *testing.T) {
-	standard, ok := profiles.ApplyProbeProfile("standard", orktypes.ProfileRegistry{})
+	standard, ok := profiles.ApplyProbeProfile("standard", nil)
 	if !ok {
 		t.Fatal("standard profile not found")
 	}
@@ -76,7 +76,7 @@ func TestProbeProfileUserDefined(t *testing.T) {
 		},
 	}
 
-	timings, ok := profiles.ApplyProbeProfile("aggressive", reg)
+	timings, ok := profiles.ApplyProbeProfile("aggressive", &reg)
 	if !ok {
 		t.Fatal("expected user-defined profile to be found")
 	}
@@ -94,7 +94,7 @@ func TestProbeProfileUserDefinedOverridesBuiltIn(t *testing.T) {
 			{Name: "fast", InitialDelaySeconds: 99, PeriodSeconds: 99},
 		},
 	}
-	timings, ok := profiles.ApplyProbeProfile("fast", reg)
+	timings, ok := profiles.ApplyProbeProfile("fast", &reg)
 	if !ok {
 		t.Fatal("expected profile to be found")
 	}

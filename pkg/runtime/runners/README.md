@@ -34,15 +34,13 @@ Each runner takes a resolved list of template sources and applies them to the cl
 Runners that are specific to the reconciler's dispatch logic stay in `pkg/runtime/reconciler/`:
 
 - `run_template_reconcile.go` — the dispatcher that calls each runner in sequence
-- `run_admission.go`, `run_validations.go`, `run_mutations.go` — admission/validation/mutation pipeline
-- `run_status.go` — status field writing
-- `run_namespace_guard.go` — namespace allow/restrict enforcement
 - `run_delete_ordered.go` — sequential staged deletion
-- `run_external.go`, `run_git.go`, `run_docker.go` — external integration runners
-- `run_providers.go`, `run_cross.go`, `run_customresource.go` — provider and cross-CRD runners
+- `run_git.go`, `run_docker.go` — external integration runners
+- `run_customresource.go` — cross-CRD runners
+- `run_surface_cleanup.go` — removes resources from a previous surface that are no longer declared
+
+Admission, validation, mutation, status writing, and namespace enforcement all moved to `pkg/runtime/kordinator/prepare/` as part of the kordinator refactor.
 
 ## Adding a new resource type
 
-See [docs/01-runner-contract.md](docs/01-runner-contract.md) for the canonical shape every runner must follow.
-
-For the full end-to-end walkthrough (types → resource package → resolver → runner → dispatcher), see [pkg/runtime/reconciler/docs/07-adding-a-resource.md](../reconciler/docs/07-adding-a-resource.md).
+See [docs/](docs/README.md) for the full reference: runner contract, condition evaluation, forEach expansion, and the end-to-end walkthrough.

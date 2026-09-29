@@ -10,8 +10,9 @@ spec:
     widget:
       crdFile: ../crd.yaml
       operatorBox:
-        onCreate:
-          hpa:
+        reconcile:
+          onCreate:
+            hpa:
             - name: widget-hpa
               minReplicas: 1
               maxReplicas: 10
@@ -21,3 +22,4 @@ spec:
                 name: widget-controller
               behavior:
                 profile: aggressive
+

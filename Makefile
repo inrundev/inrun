@@ -447,10 +447,9 @@ docs-build: docs-sync
 	hugo --source website --minify
 	@echo "✅ Hugo site built to website/public/"
 
-docs-serve: docs-sync
-	@if [ -z "$(HUGO)" ]; then echo "Hugo not found. Run: make hugo-install"; exit 1; fi
-	@echo "Serving production Hugo build on port $(DOCS_PORT)..."
-	hugo server --source website --port $(DOCS_PORT) --bind 0.0.0.0 --renderStaticToDisk
+docs-serve:
+	hugo server --source website --port $(DOCS_PORT) --bind 0.0.0.0 --disableFastRender --logLevel warn
+
 
 # ── Vet ───────────────────────────────────────────────────────────────────────
 vet:

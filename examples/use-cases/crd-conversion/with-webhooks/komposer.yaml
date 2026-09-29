@@ -15,12 +15,13 @@ spec:
   crds:
     cronjob-v2:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 8
           resync: 15s
 
     cronjob-v1:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 4
           resync: 15s
+

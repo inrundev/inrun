@@ -108,6 +108,12 @@ func (r *Resolver) ResolveEnvFromRefs(refs []orktypes.EnvFromRef, field string) 
 // identically regardless of whether the operator uses typed or unstructured mode.
 // The 5% of patterns that still require Go hooks do so because of business logic
 // complexity — not because of any templating limitation.
+// ObjectToMap is the exported variant of objectToMap for external packages
+// (e.g. kordinator/prepare) that need the same typed/unstructured unification.
+func ObjectToMap(obj domain.Object) (map[string]interface{}, error) {
+	return objectToMap(obj)
+}
+
 func objectToMap(obj domain.Object) (map[string]interface{}, error) {
 	// Unstructured — already a map, use directly
 	if u, ok := obj.(*unstructured.Unstructured); ok {

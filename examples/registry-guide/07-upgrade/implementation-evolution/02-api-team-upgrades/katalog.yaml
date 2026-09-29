@@ -23,27 +23,27 @@ spec:
         version: v1
         kind: WebApp
         plural: webapps
-
-      imports:
-        - motif: oci://ghcr.io/myorg/motifs/web-service:v1.1.0   # bumped from v1.0.0
-          with:
-            image: "{{ .spec.image }}"
-            port: "{{ .spec.port }}"
-            replicas: "{{ .spec.replicas }}"
-            host: "{{ .spec.host }}"
-            resourceProfile: "{{ .spec.resourceProfile }}"
-            probeProfile: "{{ .spec.probeProfile }}"             # new in v1.1.0
-            probePath: "{{ .spec.probePath }}"                   # new in v1.1.0
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: ready
-              value: "{{ allReplicasReady .children.deployment }}"
-            - path: endpoint
-              value: "http://{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+          imports:
+            - motif: oci://ghcr.io/myorg/motifs/web-service:v1.1.0   # bumped from v1.0.0
+              with:
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "{{ .spec.replicas }}"
+                host: "{{ .spec.host }}"
+                resourceProfile: "{{ .spec.resourceProfile }}"
+                probeProfile: "{{ .spec.probeProfile }}"             # new in v1.1.0
+                probePath: "{{ .spec.probePath }}"                   # new in v1.1.0
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: ready
+                value: "{{ allReplicasReady .children.deployment }}"
+              - path: endpoint
+                value: "http://{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+

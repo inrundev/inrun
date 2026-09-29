@@ -138,54 +138,31 @@ type CRDEntry struct {
 	DependsOn DependsOnMap `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
 
 	// ── Enrichment ─────────────────────────────────────────────────────────────
-	// Controls which secondary data is fetched and embedded into child resource
-	// maps before they are available in template context.
-	//
-	// Only one of EnrichAll or Enrich may be set — setting both is a validation error.
-	//
-	//	enrichAll: true    — enrich all supported resource types
-	//	enrich: [pods]     — enrich only the listed targets (shorthand)
-	//	enrich:            — conditional enrichment (struct form)
-	//	  - events:
-	//	      when:
-	//	        - field: "{{ replicasReady .children.deployment }}"
-	//	          equals: "false"
+	// Controls which child resource types are fetched into template context.
+	// Only one of EnrichAll or Enrich may be declared — both is a validation error.
 	EnrichAll bool           `yaml:"enrichAll,omitempty" json:"enrichAll,omitempty"`
 	Enrich    []EnrichTarget `yaml:"enrich,omitempty"    json:"enrich,omitempty"`
 
 	// ── OperatorBox ────────────────────────────────────────────────────
-	OperatorBox OperatorBoxConfig `yaml:"operatorBox,omitempty" json:"operatorBox,omitempty"`
+	OperatorBox *OperatorBoxConfig `yaml:"operatorBox,omitempty" json:"operatorBox,omitempty"`
 
-	// Labels specifies additional metadata labels to attach to the CR of this CRD entry.
-	// These labels can be used for organization, watch filtering, or identification purposes.
-	// They are not used for reconciliation filtering (see LabelSelector for that).
+	// Annotations attaches additional metadata annotationa to CRs of this entry.
+	// Not used for reconciliation filtering — see AnnotationSelector for that.
+	Annotations Labels `yaml:"annotations,omitempty" json:"annotations,omitempty" validate:"omitempty"`
+
+	// Labels attaches additional metadata labels to CRs of this entry.
+	// Not used for reconciliation filtering — see LabelSelector for that.
 	Labels Labels `yaml:"labels,omitempty" json:"labels,omitempty" validate:"omitempty"`
 
-	// LabelSelector filters which resources this CRD entry reconciles.
-	// Only resources whose labels match ALL declared key-value pairs are watched.
-	// Required for built-in types (ConfigMap, Pod, etc.) — without a selector,
-	// Orkestra would reconcile every instance in the cluster.
-	// For custom CRDs this is optional — can narrow scope within a CRD.
+	// LabelSelector filters which resources are watched and reconciled.
+	// Required for built-in types (ConfigMap, Pod, etc.) to avoid reconciling
+	// every instance in the cluster. Optional for custom CRDs.
 	LabelSelector Labels `yaml:"labelSelector,omitempty"`
 
-	// FieldSelector filters which resources this CRD entry reconciles.
-	// Only resources whose *fields* match ALL declared key-value expressions
-	// are listed or watched. Field selectors operate on the server side and
-	// support exact-match comparisons on well-known metadata paths
+	// FieldSelector filters resources by server-side field expressions.
+	// Supports exact-match on well-known metadata paths only
 	// (e.g. "metadata.name", "metadata.namespace").
-	//
-	// Unlike label selectors, field selectors cannot match arbitrary user-defined
-	// keys — only fields exposed by the Kubernetes API server. They are evaluated
-	// before any client-side filtering, reducing load on the informer pipeline.
-	//
-	// Common use cases:
-	//   - Restricting reconciliation to a specific namespace:
-	//       {key: "metadata.namespace", value: "default"}
-	//   - Targeting a single object by name:
-	//       {key: "metadata.name", value: "my-config"}
-	//
-	// Field selectors are optional for all types. When omitted, Orkestra will
-	// watch all objects permitted by LabelSelector and namespace restrictions.
+	// Evaluated server-side, before client-side label filtering.
 	FieldSelector Labels `yaml:"fieldSelector,omitempty"`
 
 	// RegistryRef is the OCI or Git reference this CRD entry was loaded from.
@@ -198,12 +175,6 @@ type CRDEntry struct {
 	// and informational logging only — does not affect runtime behavior.
 	IsBuiltIn bool `yaml:"-" json:"-"` // never serialized — runtime state only
 
-	// IgnoreStatusPatch reports whether or not to patch the status of this CRD
-	IgnoreStatusPatch bool `yaml:"ignoreStatusPatch,omitempty" json:"ignoreStatusPatch,omitempty"`
-
-	// IgnoreObservedGeneration reports whether or not to ignore the observedGeneration field for this CRD.
-	IgnoreObservedGeneration bool `yaml:"ignoreObservedGeneration,omitempty" json:"ignoreObservedGeneration,omitempty"`
-
 	// IsStatusless reports whether this CRD has no meaningful readiness semantics.
 	// These resources become "Ready" immediately upon creation.
 	IsStatusless bool `yaml:"-" json:"IsStatusless,omitempty"`
@@ -214,47 +185,14 @@ type CRDEntry struct {
 	BuiltInGroup string `yaml:"-" json:"-"` // never serialized
 
 	// EnrichmentOutcome records the result of the API type enrichment phase.
-	// During validation, built‑in Kubernetes kinds (e.g., Pod, Deployment, Secret)
-	// are automatically enriched with their full API metadata — group, version,
-	// plural, API path, and namespaced scope. This allows users to specify only:
-	//
-	//	apiTypes:
-	//	  kind: Pod
-	//
-	// and rely on Orkestra to resolve all remaining fields based on the
-	// Kubernetes discovery API. Custom resources are enriched using their declared
-	// group/version/kind. This field is never serialized and is used internally to
-	// report enrichment status and drive downstream runtime behavior.
-	EnrichmentOutcome EnrichmentOutcome `yaml:"-" json:"-"` // never serialized
+	// Set during validation; never serialized.
+	EnrichmentOutcome EnrichmentOutcome `yaml:"-" json:"-"`
 
 	// Endpoints defines which operator HTTP endpoints are enabled for this CRD.
 	Endpoints EndpointsConfig `yaml:"endpoints,omitempty" json:"endpoints,omitempty"`
 
-	// Restricted Namespaces
-	RestrictedNamespaces RestrictedNamespaces `yaml:"restrictedNamespaces,omitempty" json:"restrictedNamespaces,omitempty"`
-
-	// Allowed Namespaces
-	AllowedNamespaces AllowedNamespaces `yaml:"allowedNamespaces,omitempty" json:"allowedNamespaces,omitempty"`
-
-	// Conversion is useful for handling multi-version crd
-	Conversion *CRDConversion `yaml:"conversion,omitempty" json:"conversion,omitempty"`
-
-	// Validation is a list of rules
-	Validation *ValidationConfig `yaml:"validation,omitempty" json:"validation,omitempty"`
-
-	// Mutation is a list of rules
-	Mutation *MutationConfig `yaml:"mutation,omitempty" json:"mutation,omitempty"`
-
-	// Webhooks controls per-CRD admission webhook behaviour.
-	// Only meaningful when ENABLE_ADMISSION_WEBHOOK=true.
-	// By default, any CRD with Validation or Mutation rules is included
-	// in the corresponding webhook configuration automatically.
-	// Set validation: false or mutation: false to opt a specific CRD out of
-	// admission-time interception while keeping its reconcile-time enforcement.
-	Webhooks AdmissionWebhookConfig `yaml:"webhooks,omitempty" json:"webhooks,omitempty"`
-
-	// Normalize Spec fields before rendering
-	Normalize *NormalizeConfig `yaml:"normalize,omitempty"`
+	// Admission groups validation, mutation, conversion, and webhook configuration.
+	Admission *AdmissionConfig `yaml:"admission,omitempty" json:"admission,omitempty"`
 
 	// NotificationEnabled returns whether this CRD belongs to katalog with notification access
 	NotificationEnabled *bool `yaml:"-" json:"-"`
@@ -270,22 +208,11 @@ type CRDEntry struct {
 	// Populated by addTargetConstructors() from TargetReconcilerRegistry.
 	TargetReconcilerFactories map[string]NewReconcilerFunc `yaml:"-" json:"-"`
 
-	// RemoveFinalizers -> testing
-	RemoveFinalizers bool `yaml:"removeFinalizers,omitempty" json:"removeFinalizers,omitempty"`
-
-	// DeletionProtection overrides the global deletion protection policy
-	// for this specific CRD. If nil, both ProtectCRD and ProtectCRs default to true.
-	DeletionProtection *DeletionProtectionOverride `yaml:"deletionProtection,omitempty" json:"deletionProtection,omitempty"`
-
 	// Warnings collects non‑fatal validation messages for this CRD.
 	Warnings Warnings `json:"-"` // not serialized
 
-	// Imports declares Motif imports for this operatorBox.
-	// Each import references a Motif by OCI reference, file path, or short name,
-	// and binds its inputs via with:. Resources from imported Motifs are merged
-	// into OnReconcile at Katalog load time.
-	// Required inputs not provided in with: are a validation error.
-	Imports []MotifImport `yaml:"imports,omitempty" json:"imports,omitempty"`
+	// Info collects additional validation information for this CRD
+	Info Info `json:"-"` // not serialized
 
 	// Serve exposes this CRD through the Gateway API as a stable delivery surface.
 	// When enabled, the Control Center renders a [+ Create] button for this CRD
@@ -297,6 +224,17 @@ type CRDEntry struct {
 	// ownership of conflicting fields instead of returning a conflict error.
 	// Default: true.
 	ForceConflict *bool `yaml:"forceConflict,omitempty" json:"forceConflict,omitempty"`
+}
+
+// Box returns the operatorBox configuration for this CRD.
+// Initialises OperatorBox to an empty config if it is nil, so the pointer is always
+// safe to read from and write to without a separate nil guard.
+// For target-resolved access use EffectiveOperatorBox.
+func (c *CRDEntry) Box() *OperatorBoxConfig {
+	if c.OperatorBox == nil {
+		c.OperatorBox = &OperatorBoxConfig{}
+	}
+	return c.OperatorBox
 }
 
 // EffectiveOperatorBox returns the operatorBox for a given target.
@@ -312,31 +250,38 @@ type CRDEntry struct {
 // propagated so the hook binary is reachable from every target surface.
 func (c *CRDEntry) EffectiveOperatorBox(target string) *OperatorBoxConfig {
 	if target == "" {
-		return &c.OperatorBox
+		return c.Box()
 	}
 	if c.Serve != nil && c.Serve.Target.Entries != nil {
 		if cfg, ok := c.Serve.Target.Entries[target]; ok && cfg.OperatorBox != nil {
+			base := c.Box()
 			box := *cfg.OperatorBox
 			if box.PreReconcile == nil {
-				box.PreReconcile = c.OperatorBox.PreReconcile
+				box.PreReconcile = base.PreReconcile
 			}
-			if box.Status == nil {
-				box.Status = c.OperatorBox.Status
+			// Reconcile, Runtime, and Emit fall through from CRD-level when absent on the target.
+			if box.Reconcile == nil {
+				box.Reconcile = base.Reconcile
+			} else {
+				box.Reconcile = mergeReconcileConfig(base.Reconcile, box.Reconcile)
 			}
-			box.Reconciler = mergeReconcilerConfig(c.OperatorBox.Reconciler, box.Reconciler)
-			// HookFactory is set at load time on the CRD-level box only.
-			box.HookFactory = c.OperatorBox.HookFactory
+			if box.Runtime == nil {
+				box.Runtime = base.Runtime
+			}
+			if box.Emit == nil {
+				box.Emit = base.Emit
+			}
 			return &box
 		}
 	}
-	return &c.OperatorBox
+	return c.Box()
 }
 
-// mergeReconcilerConfig merges a per-target reconciler on top of the CRD-level one.
-// Workers, resync, queue, and profile are always taken from the CRD-level (they stay
-// fixed). Hook identity fields (location, function, alias, resources) come from the
-// CRD-level when the target omits them. Args are merged key-by-key with target winning.
-func mergeReconcilerConfig(base, target *ReconcilerConfig) *ReconcilerConfig {
+// mergeReconcileConfig merges a per-target reconcile block on top of the CRD-level one.
+// Workers, resync, queue, and profile are always inherited from the CRD-level.
+// Hook identity fields (location, function, alias, resources) come from CRD-level when
+// the target omits them. Args are merged key-by-key with target winning.
+func mergeReconcileConfig(base, target *ReconcileConfig) *ReconcileConfig {
 	if target == nil {
 		return base
 	}

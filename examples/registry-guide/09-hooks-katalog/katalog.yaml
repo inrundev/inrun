@@ -25,18 +25,9 @@ spec:
         # After setting this, run: ork generate registry --file katalog.yaml
         location: github.com/orkspace/orkestra-registry-guide/api/v1alpha1
         alias: rkguidev1alpha1
-
-
       operatorBox:
-
-        # The ServiceAccount is declared here — Orkestra creates it before hooks run.
-        # The hook references it by the same naming convention: obj.Name + "-sa".
-        onCreate:
-          serviceAccounts:
-            - name: "{{ .metadata.name }}-sa"
-
-        reconciler:
-          default: true   # GenericReconciler is still used — hooks are additive
+        reconcile:
+          default: true   # Generic Reconciler is still used — hooks are additive
           hooks:
             location: github.com/orkspace/orkestra-registry-guide/hooks
             function: DatabaseHooks
@@ -47,14 +38,17 @@ spec:
               - kind: CronJob
           workers: 3
           resync: 30s
-
-        # Status Layer 1 (Ready condition) is always automatic.
-        # Layer 2 fields are written after the hook completes.
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: engine
-              value: "{{ .spec.engine }}"
-            - path: endpoint
-              value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+          # The ServiceAccount is declared here — Orkestra creates it before hooks run.
+          # The hook references it by the same naming convention: obj.Name + "-sa".
+          onCreate:
+            serviceAccounts:
+              - name: "{{ .metadata.name }}-sa"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: engine
+                value: "{{ .spec.engine }}"
+              - path: endpoint
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"

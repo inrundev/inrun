@@ -14,28 +14,29 @@ No declaration required. Every managed CR gets this.
 
 ```yaml
 operatorBox:
-  status:
-    conditions: true    # optional — default true
+  emit:
+    status:
+      conditions: true    # optional — default true
 
-    fields:
-      - path: phase
-        value: "Running"
+      fields:
+        - path: phase
+          value: "Running"
 
-      - path: replicas
-        type: int
-        value: "{{ toInt .spec.replicas }}"
+        - path: replicas
+          type: int
+          value: "{{ toInt .spec.replicas }}"
 
-      - path: database.host    # dot-notation → status.database.host
-        value: "{{ .spec.host }}"
+        - path: database.host    # dot-notation → status.database.host
+          value: "{{ .spec.host }}"
 
-      - path: endpoint
-        value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
+        - path: endpoint
+          value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
 
-      - path: phase
-        value: "Pending"
-        when:
-          - field: status.phase
-            operator: notExists
+        - path: phase
+          value: "Pending"
+          when:
+            - field: status.phase
+              operator: notExists
 ```
 
 ## `conditions`

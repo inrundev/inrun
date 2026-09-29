@@ -229,8 +229,10 @@ Deletion protection attaches a label to every managed CR and CRD, and registers 
 
 ```yaml
 security:
-  deletionProtection:
-    enabled: true
+  operatorBox:
+    runtime:
+      deletionProtection:
+        enabled: true
 ```
 
 Per-CRD overrides let you opt individual CRDs out of CR-level or CRD-level protection independently. See [Deletion Protection](../../security/04-deletion-protection.md) for the full configuration, strict mode, and gateway-only behavior.

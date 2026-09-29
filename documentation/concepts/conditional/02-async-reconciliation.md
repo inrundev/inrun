@@ -10,26 +10,25 @@ The `when:` gate on `onReconcile` bridges this gap. If the condition is not met,
 
 ```yaml
 operatorBox:
+  reconcile:
+    onCreate:
+      deployments:
+        - name: "{{ .metadata.name }}"
+          image: "{{ .spec.image }}"
+          replicas: "{{ .spec.replicas }}"
+          reconcile: true
+    onReconcile:
+      services:
+        - name: "{{ .metadata.name }}-svc"
+          port: 80
+          targetPort: 8080
+          reconcile: true
+          when:
+            - field: children.deployment.status.readyReplicas
+              equals: "{{ .spec.replicas }}"
   crdFile: my-operator-crd.yaml
-
   # Phase 1 — runs once on CR creation
-  onCreate:
-    deployments:
-      - name: "{{ .metadata.name }}"
-        image: "{{ .spec.image }}"
-        replicas: "{{ .spec.replicas }}"
-        reconcile: true
-
   # Phase 2 — runs only when Phase 1 is complete
-  onReconcile:
-    services:
-      - name: "{{ .metadata.name }}-svc"
-        port: 80
-        targetPort: 8080
-        reconcile: true
-        when:
-          - field: children.deployment.status.readyReplicas
-            equals: "{{ .spec.replicas }}"
 ```
 
 What happens:
@@ -77,7 +76,6 @@ onReconcile:
   configMaps:
     - name: "{{ .metadata.name }}-config"
       reconcile: true
-
   # Phase B — runs only when Deployment is ready
   services:
     - name: "{{ .metadata.name }}-svc"

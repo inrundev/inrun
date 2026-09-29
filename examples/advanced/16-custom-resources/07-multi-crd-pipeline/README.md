@@ -29,23 +29,24 @@ A single `onCreate.custom` block can declare as many child CRs as needed. They a
 
 ```yaml
 operatorBox:
-  onCreate:
-    custom:
-      - apiVersion: autoscale.orkestra.io/v1alpha1
-        kind: Loader
-        metadata:
-          name: "{{ .metadata.name }}-loader"
-          ...
-      - apiVersion: autoscale.orkestra.io/v1alpha1
-        kind: Processor
-        metadata:
-          name: "{{ .metadata.name }}-processor"
-          ...
-      - apiVersion: autoscale.orkestra.io/v1alpha1
-        kind: Auditor
-        metadata:
-          name: "{{ .metadata.name }}-auditor"
-          ...
+  reconcile:
+    onCreate:
+      custom:
+        - apiVersion: autoscale.orkestra.io/v1alpha1
+          kind: Loader
+          metadata:
+            name: "{{ .metadata.name }}-loader"
+            ...
+        - apiVersion: autoscale.orkestra.io/v1alpha1
+          kind: Processor
+          metadata:
+            name: "{{ .metadata.name }}-processor"
+            ...
+        - apiVersion: autoscale.orkestra.io/v1alpha1
+          kind: Auditor
+          metadata:
+            name: "{{ .metadata.name }}-auditor"
+            ...
 ```
 
 ### Motif import with `with:` overrides

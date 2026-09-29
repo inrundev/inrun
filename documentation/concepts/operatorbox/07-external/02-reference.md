@@ -4,23 +4,24 @@
 
 ```yaml
 operatorBox:
-  onReconcile:
-    external:
-      - name: healthCheck
-        url: "{{ .spec.serviceUrl }}/health"
-        method: GET
-        body: ""
-        token: "$API_TOKEN"
-        headers:
-          X-Request-ID: "{{ .metadata.name }}"
-        timeout: 5s
-        expectedStatus: 200
-        continueOnError: false
-        when:
-          - field: status.phase
-            notEquals: "Ready"
-        or: []
-        sleep: ""
+  reconcile:
+    onReconcile:
+      external:
+        - name: healthCheck
+          url: "{{ .spec.serviceUrl }}/health"
+          method: GET
+          body: ""
+          token: "$API_TOKEN"
+          headers:
+            X-Request-ID: "{{ .metadata.name }}"
+          timeout: 5s
+          expectedStatus: 200
+          continueOnError: false
+          when:
+            - field: status.phase
+              notEquals: "Ready"
+          or: []
+          sleep: ""
 ```
 
 ## Field reference

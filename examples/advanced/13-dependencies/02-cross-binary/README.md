@@ -10,18 +10,20 @@ Same `dependsOn: database: healthy` ordering as `01-in-binary`, but Database run
 
 ## How it works
 
-App's `cross:` block includes `source.endpoint` pointing at the Database Orkestra:
+App's `observe.cross:` block includes `source.endpoint` pointing at the Database Orkestra:
 
 ```yaml
-cross:
-  - crd: database
-    selector:
-      name: "{{ .metadata.name }}"
-      namespace: "{{ .metadata.namespace }}"
-    as: database
-    source:
-      endpoint: "http://orkestra.db-system:8080/katalog/database/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
-      cacheFor: 15s
+operatorBox:
+  observe:
+    cross:
+      - crd: database
+        selector:
+          name: "{{ .metadata.name }}"
+          namespace: "{{ .metadata.namespace }}"
+        as: database
+        source:
+          endpoint: "http://orkestra.db-system:8080/katalog/database/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
+          cacheFor: 15s
 ```
 
 When `dependsOn: database: healthy` is evaluated, Orkestra checks `cross.database.status.phase`. If the remote call returns `phase: Running`, the condition is satisfied and App's reconcile begins.

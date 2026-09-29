@@ -167,7 +167,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 //
 // Orkestra system labels (managed-by, orkestra-owner) are always added
 // and cannot be overridden by the user.
-func Resolve(src orktypes.PodTemplateSource, ownerName string, reg orktypes.ProfileRegistry) ResolvedPodSpec {
+func Resolve(src orktypes.PodTemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedPodSpec {
 	spec := ResolvedPodSpec{
 		Labels:        make(map[string]string),
 		Annotations:   make(map[string]string),

@@ -8,18 +8,18 @@ Attach a `when:` or `or:` block to any resource declaration under `onCreate`, `o
 
 ```yaml
 operatorBox:
+  reconcile:
+    onCreate:
+      services:
+        - name: "{{ .metadata.name }}-public"
+          type: LoadBalancer
+          port: "80"
+          targetPort: "{{ .spec.port }}"
+          reconcile: true
+          when:
+            - field: spec.exposePublicly
+              equals: "true"
   crdFile: my-operator-crd.yaml
-
-  onCreate:
-    services:
-      - name: "{{ .metadata.name }}-public"
-        type: LoadBalancer
-        port: "80"
-        targetPort: "{{ .spec.port }}"
-        reconcile: true
-        when:
-          - field: spec.exposePublicly
-            equals: "true"
 ```
 
 If the CR has `spec.exposePublicly: "false"`, the service is skipped. No error. No partial state.

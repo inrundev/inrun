@@ -28,13 +28,15 @@ type NetworkPolicyExpansion struct {
 // ApplyNetworkPolicyProfile expands a named profile into ingress/egress rules and policy types.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyNetworkPolicyProfile(name string, reg orktypes.ProfileRegistry) (*NetworkPolicyExpansion, error) {
-	if def, found := reg.LookupNetworkPolicy(name); found {
-		return &NetworkPolicyExpansion{
-			Ingress:     def.Ingress,
-			Egress:      def.Egress,
-			PolicyTypes: def.PolicyTypes,
-		}, nil
+func ApplyNetworkPolicyProfile(name string, reg *orktypes.ProfileRegistry) (*NetworkPolicyExpansion, error) {
+	if reg != nil {
+		if def, found := reg.LookupNetworkPolicy(name); found {
+			return &NetworkPolicyExpansion{
+				Ingress:     def.Ingress,
+				Egress:      def.Egress,
+				PolicyTypes: def.PolicyTypes,
+			}, nil
+		}
 	}
 	switch NetworkPolicyProfile(strings.ToLower(name)) {
 	case NetworkPolicyDenyAll:

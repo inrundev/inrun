@@ -84,12 +84,10 @@ func (g *CRDGenerator) buildSpec() apiextv1.CustomResourceDefinitionSpec {
 	}
 
 	// Conversion webhook — when conversion paths are declared
-	if g.crd.Conversion != nil && len(g.crd.Conversion.Paths) > 0 {
+	if conv := g.crd.EffectiveConversion(); conv != nil && len(conv.Paths) > 0 {
 		storageVersion := g.crd.APITypes.Version
-		if g.crd.Conversion != nil {
-			if g.crd.Conversion.StorageVersion != "" {
-				storageVersion = g.crd.Conversion.StorageVersion
-			}
+		if conv.StorageVersion != "" {
+			storageVersion = conv.StorageVersion
 		}
 
 		spec.Conversion = &apiextv1.CustomResourceConversion{
@@ -126,10 +124,8 @@ func (g *CRDGenerator) buildVersion() apiextv1.CustomResourceDefinitionVersion {
 	}
 
 	storageVersion := g.crd.APITypes.Version
-	if g.crd.Conversion != nil {
-		if g.crd.Conversion.StorageVersion != "" {
-			storageVersion = g.crd.Conversion.StorageVersion
-		}
+	if conv := g.crd.EffectiveConversion(); conv != nil && conv.StorageVersion != "" {
+		storageVersion = conv.StorageVersion
 	}
 
 	storage := false
@@ -159,8 +155,8 @@ func (g *CRDGenerator) inferSpecProperties() map[string]apiextv1.JSONSchemaProps
 	fields := make(map[string]fieldInfo)
 
 	// Source 1: validation rules
-	if g.crd.Validation != nil {
-		for _, rule := range g.crd.Validation.Rules {
+	if v := g.crd.EffectiveValidation(); v != nil {
+		for _, rule := range v.Rules {
 			path := trimSpecPrefix(rule.Field)
 			if path == "" || strings.Contains(path, ".") {
 				continue // skip status.* and nested fields at spec level
@@ -181,8 +177,8 @@ func (g *CRDGenerator) inferSpecProperties() map[string]apiextv1.JSONSchemaProps
 	}
 
 	// Source 2: mutation defaults — type inferred from default value
-	if g.crd.Mutation != nil {
-		for _, rule := range g.crd.Mutation.Rules {
+	if m := g.crd.EffectiveMutation(); m != nil {
+		for _, rule := range m.Rules {
 			path := trimSpecPrefix(rule.Field)
 			if path == "" || strings.Contains(path, ".") {
 				continue
@@ -225,7 +221,7 @@ func (g *CRDGenerator) inferSpecProperties() map[string]apiextv1.JSONSchemaProps
 
 // inferStatusProperties derives the status schema from status.fields declarations.
 func (g *CRDGenerator) inferStatusProperties() map[string]apiextv1.JSONSchemaProps {
-	if g.crd.OperatorBox.Status == nil {
+	if g.crd.Box().EffectiveStatus() == nil {
 		return nil
 	}
 
@@ -242,7 +238,7 @@ func (g *CRDGenerator) inferStatusProperties() map[string]apiextv1.JSONSchemaPro
 		"observedGeneration": {Type: "integer"},
 	}
 
-	for _, field := range g.crd.OperatorBox.Status.Fields {
+	for _, field := range g.crd.Box().EffectiveStatus().Fields {
 		path := field.Path
 		if strings.Contains(path, ".") {
 			continue // nested — handled by x-kubernetes-preserve-unknown-fields
@@ -257,12 +253,13 @@ func (g *CRDGenerator) inferStatusProperties() map[string]apiextv1.JSONSchemaPro
 
 // requiredFields returns spec field names that have deny rules with operator: exists.
 func (g *CRDGenerator) requiredFields() []string {
-	var required []string
-	if g.crd.Validation == nil {
+	v := g.crd.EffectiveValidation()
+	if v == nil {
 		return nil
 	}
+	var required []string
 	seen := map[string]bool{}
-	for _, rule := range g.crd.Validation.Rules {
+	for _, rule := range v.Rules {
 		path := trimSpecPrefix(rule.Field)
 		if path == "" || strings.Contains(path, ".") {
 			continue
@@ -287,7 +284,7 @@ func (g *CRDGenerator) buildPrinterColumns() []apiextv1.CustomResourceColumnDefi
 		},
 	}
 
-	if g.crd.OperatorBox.Status == nil {
+	if g.crd.Box().EffectiveStatus() == nil {
 		return cols
 	}
 
@@ -295,7 +292,7 @@ func (g *CRDGenerator) buildPrinterColumns() []apiextv1.CustomResourceColumnDefi
 	var statusCols []apiextv1.CustomResourceColumnDefinition
 
 	// phase first
-	for _, field := range g.crd.OperatorBox.Status.Fields {
+	for _, field := range g.crd.Box().EffectiveStatus().Fields {
 		if field.Path == "phase" && !seen["phase"] {
 			statusCols = append([]apiextv1.CustomResourceColumnDefinition{
 				{Name: "Phase", Type: "string", JSONPath: ".status.phase"},
@@ -306,7 +303,7 @@ func (g *CRDGenerator) buildPrinterColumns() []apiextv1.CustomResourceColumnDefi
 
 	// other simple fields (max 3 additional columns)
 	count := 0
-	for _, field := range g.crd.OperatorBox.Status.Fields {
+	for _, field := range g.crd.Box().EffectiveStatus().Fields {
 		if strings.Contains(field.Path, ".") || seen[field.Path] || count >= 3 {
 			continue
 		}
@@ -351,21 +348,12 @@ func (g *CRDGenerator) extractTemplateSpecFields() []string {
 		}
 	}
 
-	collectFromTemplates(op.OnCreate)
-	collectFromTemplates(op.OnReconcile)
-
-	// Also collect from provider block fields
-	for _, block := range op.ProviderBlocks {
-		for _, decl := range block.Declarations {
-			for _, v := range decl.Fields {
-				templates = append(templates, v)
-			}
-		}
-	}
+	collectFromTemplates(op.EffectiveOnCreate())
+	collectFromTemplates(op.EffectiveOnReconcile())
 
 	// Also collect from status fields
-	if op.Status != nil {
-		for _, f := range op.Status.Fields {
+	if s := op.EffectiveStatus(); s != nil {
+		for _, f := range s.Fields {
 			templates = append(templates, f.Value)
 		}
 	}
@@ -408,8 +396,8 @@ func (g *CRGenerator) buildSpec() map[string]interface{} {
 	spec := make(map[string]interface{})
 
 	// Required fields — from validation deny+exists rules
-	if g.crd.Validation != nil {
-		for _, rule := range g.crd.Validation.Rules {
+	if v := g.crd.EffectiveValidation(); v != nil {
+		for _, rule := range v.Rules {
 			if rule.Action != "deny" || string(rule.Operator) != "exists" {
 				continue
 			}
@@ -424,8 +412,8 @@ func (g *CRGenerator) buildSpec() map[string]interface{} {
 	}
 
 	// Optional fields — from mutation defaults
-	if g.crd.Mutation != nil {
-		for _, rule := range g.crd.Mutation.Rules {
+	if m := g.crd.EffectiveMutation(); m != nil {
+		for _, rule := range m.Rules {
 			path := trimSpecPrefix(rule.Field)
 			if path == "" || strings.Contains(path, ".") {
 				continue

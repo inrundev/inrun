@@ -18,7 +18,6 @@ Once oriented, pick the area you want to work in:
 |------|-------|
 | Add a resource type to the registry | [orkestra-registry](contributing-registry.md) |
 | Improve the control center UI | [control-center](contributing-controlcenter.md) |
-| Add or improve a provider (AWS / GCP / Azure / databases) | [providers](contributing-providers.md) |
 | Implement rollback | [rollback](contributing-rollback.md) |
 | Add or improve an example pack | [examples](contributing-examples.md) |
 | Add a note function to make operators more declarative (`pkg/note`) | Add to `pkg/note/<domain>.go`, register in `buildNotes()` in `pkg/note/note.go` |

@@ -50,6 +50,10 @@ type Kontroller struct {
 	reconcilers    map[string]domain.Reconciler
 	crds           []orktypes.CRDEntry
 
+	// runtimeMap holds per-CRD concurrency and autoscale state (semaphore,
+	// AutoMetrics, Autoscaler, resync interval). Populated by startCRDWorkers.
+	runtimeMap map[string]*perCRDRuntime
+
 	// Error rate
 	total  map[string]int
 	failed map[string]int
@@ -89,12 +93,13 @@ func NewKontroller(
 		wgs:              make(map[string]*sync.WaitGroup),
 		reconcilers:      make(map[string]domain.Reconciler),
 		failureThreshold: make(map[string]int),
+		runtimeMap:       make(map[string]*perCRDRuntime),
 	}
 
 	// Load registry entries
 	for gvk, entry := range katalog.Entries() {
 		k.crds = append(k.crds, entry.CRD)
-		k.failureThreshold[gvk] = entry.CRD.OperatorBox.Reconciler.Queue.FailureThreshold
+		k.failureThreshold[gvk] = entry.CRD.SetFailureThreshold(0)
 	}
 
 	return k
@@ -111,7 +116,7 @@ func (k *Kontroller) Start(ctx context.Context) error {
 			continue
 		}
 		logger.Warn().Str("gvk", gvk).Msg("CRD missing — marking as degraded")
-		k.crdHealthMap[gvk].RecordStartupFailure(errors.New("CRD not found"), crd.OperatorBox.Reconciler.Queue.FailureThreshold)
+		k.crdHealthMap[gvk].RecordStartupFailure(errors.New("CRD not found"), crd.SetFailureThreshold(0))
 	}
 
 	// All CRDs confirmed (filtered by informer) — now sync caches

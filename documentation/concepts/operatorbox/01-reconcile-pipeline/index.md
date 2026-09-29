@@ -10,7 +10,6 @@ informer cache → DeepCopy → normalize → mutation → validation
         → forEach expansion
         → onCreate resource groups
         → onReconcile resource groups
-        → provider dispatch
     → patchStatusWithChildren
 ```
 
@@ -31,8 +30,6 @@ Each step receives the output of the previous step. No step can see the output o
 **forEach expansion** expands list or map fields into repeated resource declarations. Each expansion adds `.item` and optional `.index` to the template context.
 
 **onCreate / onReconcile resource groups** are the heart of the declarative path. Each resource group evaluates `when:`/`or:` conditions, resolves template expressions, and dispatches creates or updates. See [Drift](01-drift.md) for the exact semantics of what gets corrected and what does not.
-
-**Provider dispatch** calls registered providers (AWS, MongoDB, etc.) after all built-in resource groups complete.
 
 **patchStatusWithChildren** always runs last, even when the pipeline returned an error. It writes the `Ready` condition, reads live child resource state, and resolves declared `status.fields`. See [Status Management](../../status-management/index.md).
 

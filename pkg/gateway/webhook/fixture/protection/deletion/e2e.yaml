@@ -91,6 +91,7 @@ spec:
                           version: v1alpha1
                           kind: App
                           plural: apps
+
         restart:
           - kind: Deployment
             name: orkestra-gateway

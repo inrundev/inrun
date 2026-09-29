@@ -27,7 +27,6 @@ spec:
         version: v1alpha1
         kind: Website
         plural: websites
-
       # ── Validation ────────────────────────────────────────────────────
       # Rules are evaluated at two points:
       #   1. Admission time — synchronous, during kubectl apply
@@ -35,26 +34,6 @@ spec:
       #
       # action: deny  → blocks the operation (admission) or halts reconcile
       # action: warn  → allows through but records a warning
-      validation:
-        rules:
-          # Hard rule — images must come from the internal registry
-          - field: spec.image
-            prefix: "myorg/"
-            message: "images must come from the internal registry (myorg/)"
-            action: deny
-
-          # Hard rule — replicas must be at least 1
-          - field: spec.replicas
-            greaterThan: 0
-            message: "replicas must be at least 1"
-            action: deny
-
-          # Advisory — encourage environment declaration
-          - field: spec.environment
-            operator: exists
-            message: "declare spec.environment for better observability"
-            action: warn
-
       # ── Mutation ──────────────────────────────────────────────────────
       # Mutation runs BEFORE validation at admission time —
       # so defaults are applied before deny rules check values.
@@ -62,37 +41,57 @@ spec:
       #
       # default:  apply only when the field is absent or empty
       # override: always apply, regardless of current value
-      mutation:
-        mutateFirst: true        # at reconcile time: mutate before validate
-        rules:
-          - field: spec.replicas
-            default: 2           # if replicas not declared, default to 2
-            valueType: int
-
-          - field: spec.port
-            default: "8080"        # if port not declared, default to 8080
-
       # ── Reconciler ────────────────────────────────────────────────────
+      admission:
+        validation:
+          rules:
+            # Hard rule — images must come from the internal registry
+            - field: spec.image
+              prefix: "myorg/"
+              message: "images must come from the internal registry (myorg/)"
+              action: deny
+
+            # Hard rule — replicas must be at least 1
+            - field: spec.replicas
+              greaterThan: 0
+              message: "replicas must be at least 1"
+              action: deny
+
+            # Advisory — encourage environment declaration
+            - field: spec.environment
+              operator: exists
+              message: "declare spec.environment for better observability"
+              action: warn
+        mutation:
+          mutateFirst: true        # at reconcile time: mutate before validate
+          rules:
+            - field: spec.replicas
+              default: 2           # if replicas not declared, default to 2
+              valueType: int
+
+            - field: spec.port
+              default: "8080"        # if port not declared, default to 8080
       operatorBox:
+        reconcile:
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
+            services:
+              - port: "80"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: environment
+                value: "{{ .spec.environment }}"
+              - path: observedReplicas
+                value: "{{ .spec.replicas }}"
+              - path: readyReplicas
+                value: '{{ get .children.deployment "status" "readyReplicas" }}'
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: environment
-              value: "{{ .spec.environment }}"
-            - path: observedReplicas
-              value: "{{ .spec.replicas }}"
-            - path: readyReplicas
-              value: '{{ get .children.deployment "status" "readyReplicas" }}'
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
-          services:
-            - port: "80"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true

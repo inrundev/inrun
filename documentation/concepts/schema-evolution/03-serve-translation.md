@@ -65,12 +65,13 @@ normalize / mutation / reconcile  ← see the CRD shape throughout
 `serve.fields.values` runs before the CR reaches the API server. Validation rules on `request.*` fields fire against the caller's raw input — before the fanout — so error messages speak the caller's vocabulary, not the CRD's.
 
 ```yaml
-validation:
-  rules:
-    - field: request.schedule
-      operator: exists
-      message: "schedule is required — use a cron expression (e.g. \"*/5 * * * *\")"
-      action: deny
+admission:
+  validation:
+    rules:
+      - field: request.schedule
+        operator: exists
+        message: "schedule is required — use a cron expression (e.g. \"*/5 * * * *\")"
+        action: deny
 ```
 
 ---

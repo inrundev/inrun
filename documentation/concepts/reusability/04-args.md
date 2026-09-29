@@ -51,23 +51,21 @@ Per-target declarations can carry their own `args:`, which are merged with the C
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     hooks:
       args:
         featureEnabled: "{{ .external.flags.body }}"   # CRD-level default
-
 serve:
   target:
     v2-enabled:
       operatorBox:
-        reconciler:
+        reconcile:
           hooks:
             args:
               featureEnabled: "true"   # always on for this surface
-
     v2-disabled:
       operatorBox:
-        reconciler:
+        reconcile:
           hooks:
             args:
               featureEnabled: "false"  # always off for this surface

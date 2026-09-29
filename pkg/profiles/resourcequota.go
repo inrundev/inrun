@@ -25,9 +25,11 @@ type ResourceQuotaLimits struct {
 // ApplyResourceQuotaProfile expands a named quota profile into a hard limits map.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyResourceQuotaProfile(name string, reg orktypes.ProfileRegistry) (*ResourceQuotaLimits, error) {
-	if def, found := reg.LookupResourceQuota(name); found {
-		return &ResourceQuotaLimits{Hard: def.Hard}, nil
+func ApplyResourceQuotaProfile(name string, reg *orktypes.ProfileRegistry) (*ResourceQuotaLimits, error) {
+	if reg != nil {
+		if def, found := reg.LookupResourceQuota(name); found {
+			return &ResourceQuotaLimits{Hard: def.Hard}, nil
+		}
 	}
 	switch ResourceQuotaProfile(strings.ToLower(name)) {
 	case QuotaSmall:

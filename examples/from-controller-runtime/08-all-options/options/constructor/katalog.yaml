@@ -1,0 +1,43 @@
+# Schema reference: https://orkestra.sh/docs/reference/schema/katalog/
+apiVersion: orkestra.orkspace.io/v1
+kind: Katalog
+metadata:
+  name: webapp-constructor
+  author: myorg
+  version: 1.0.0
+  description: >
+    The WebApp operator with a full constructor. Go owns the reconcile loop.
+    Same behaviour as the controller-runtime baseline — the difference is what
+    Orkestra handles so you don't have to.
+  tags:
+    - migration
+    - constructor
+    - typed
+
+spec:
+  crds:
+    constructorApp:
+      apiTypes:
+        group: allopt.demo.orkestra.io
+        version: v1alpha1
+        kind: ConstructorApp
+        plural: constructorapps
+        object: ConstructorApp
+        objectList: ConstructorAppList
+        location: github.com/orkspace/from-controller-runtime-all-options/options/constructor/api/v1alpha1
+        alias: constructorv1alpha1
+      operatorBox:
+        reconcile:
+          # default: false — the Generic Reconciler is not used.
+          # The constructor below owns the full reconcile loop.
+          default: false
+          constructor:
+            location: github.com/orkspace/from-controller-runtime-all-options/options/constructor/reconciler
+            function: NewWebAppReconciler
+            managedResources:
+              - kind: Deployment
+              - kind: Service
+        runtime:
+          allowedNamespaces:
+            - default
+

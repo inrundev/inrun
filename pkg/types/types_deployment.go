@@ -226,6 +226,12 @@ type DeploymentTemplateSource struct {
 	//	  maxUnavailable: "0"
 	RollingUpdate *RollingUpdateBehavior `yaml:"rollingUpdate,omitempty" json:"rollingUpdate,omitempty"`
 
+	// Command overrides the container entrypoint command. Each element is a command token.
+	// Supports template expressions.
+	//
+	//	command: ["sh", "-c", "echo {{ .spec.greeting }}"]
+	Command []string `yaml:"command,omitempty" json:"command,omitempty"`
+
 	// Volumes — pod volumes available for mounting into the container.
 	// Supports configMap, secret, emptyDir, persistentVolumeClaim, and hostPath sources.
 	// Volume names support template expressions.

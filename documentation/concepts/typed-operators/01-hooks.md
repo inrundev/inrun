@@ -14,17 +14,16 @@ A common example: declare the `ServiceAccount` in the Katalog so Orkestra create
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     hooks:
       location: github.com/myorg/database-operator/hooks
       function: DatabaseHooks
       resources:
         - kind: StatefulSet
         - kind: Service
-
-  onCreate:
-    serviceAccounts:
-      - name: "{{ .metadata.name }}-sa"   # Orkestra owns this
+    onCreate:
+      serviceAccounts:
+        - name: "{{ .metadata.name }}-sa"   # Orkestra owns this
 ```
 
 ```go
@@ -49,7 +48,7 @@ The hook manages all child resources in Go. No declared templates alongside it. 
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     hooks:
       location: github.com/myorg/database-operator/hooks
       function: DatabaseHooks
@@ -79,7 +78,7 @@ spec:
         location: github.com/myorg/database-operator/api/v1alpha1
 
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 30s
           hooks:
@@ -94,12 +93,12 @@ spec:
               readReplicaCount: 2
               backupEnabled: true
               replicationMode: async
-
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
         # declarative templates still apply after the hook
-        status:
-          fields:
-            - path: phase
-              value: "Running"
 ```
 
 `apiTypes.location` tells Orkestra to deliver `*apiv1.Database` to your hook function instead of `domain.Object`. Set `object` and `objectList` to the Go type names at that path.
@@ -118,7 +117,7 @@ For private modules with `fetch: true`, set `GOPRIVATE` and ensure credentials a
 - **RBAC generation** — Orkestra generates `get/list/watch/create/update/patch/delete` permissions for each declared type.
 - **Implicit watch informer** — Orkestra automatically starts a watch informer for each declared resource, giving cache-backed reads and automatic re-enqueue of the primary CR when an owned resource changes via ownerReference. Explicit `watch:` entries take priority if the same type is declared in both.
 
-`args` passes configuration from the Katalog into the hook at reconcile time. **String values support Go template expressions** — the GenericReconciler evaluates them against the current CR before the hook runs, so the hook sees fully-resolved values:
+`args` passes configuration from the Katalog into the hook at reconcile time. **String values support Go template expressions** — the Generic Reconciler evaluates them against the current CR before the hook runs, so the hook sees fully-resolved values:
 
 ```yaml
 args:

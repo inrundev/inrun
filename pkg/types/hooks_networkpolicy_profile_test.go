@@ -10,9 +10,11 @@ import (
 
 func crdWithNetworkPolicyOnCreate(nps ...orktypes.NetworkPolicyTemplateSource) orktypes.CRDEntry {
 	return orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnCreate: &orktypes.HookTemplates{
-				NetworkPolicies: nps,
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnCreate: &orktypes.HookTemplates{
+					NetworkPolicies: nps,
+				},
 			},
 		},
 	}
@@ -85,10 +87,12 @@ func TestCollectNetworkPolicyProfileEntries_TemplateExpr(t *testing.T) {
 
 func TestCollectNetworkPolicyProfileEntries_OnReconcile(t *testing.T) {
 	c := orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnReconcile: &orktypes.HookTemplates{
-				NetworkPolicies: []orktypes.NetworkPolicyTemplateSource{
-					{Name: "np", Profile: "allow-same-namespace"},
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnReconcile: &orktypes.HookTemplates{
+					NetworkPolicies: []orktypes.NetworkPolicyTemplateSource{
+						{Name: "np", Profile: "allow-same-namespace"},
+					},
 				},
 			},
 		},

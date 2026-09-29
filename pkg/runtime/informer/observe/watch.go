@@ -7,8 +7,8 @@
 //  1. operatorBox.observe.watch — explicit entries declared by the operator author. Full
 //     control: on:, enqueueGate:, keyFrom:, index:.
 //
-//  2. constructor.resources / hooks.resources — owned resource types. Treated as
-//     implicit watch entries: all events, owner-reference key resolution, no index.
+//  2. constructor.resources / hooks.resources / remote.resources — owned resource types.
+//     Treated as implicit watch entries: all events, owner-reference key resolution, no index.
 //     Mirrors what Owns() does in controller-runtime — cache-backed reads and
 //     re-enqueue when an owned resource changes. Explicit watch: entries take
 //     priority when the same type appears in both lists.
@@ -108,9 +108,15 @@ func (o *Observer) observeWatches(ctx context.Context, crd orktypes.CRDEntry) {
 
 		covered[gvr.String()] = true
 
+		kind := resource.Kind
+		if kind == "" {
+			if gvk, ok := o.resolveGVK(resource); ok {
+				kind = gvk.Kind
+			}
+		}
 		entry := orktypes.WatchEntry{
 			APIVersion: gvr.Group + "/" + gvr.Version,
-			Kind:       resource.Kind,
+			Kind:       kind,
 		}
 
 		if entry.APIVersion == "/" {

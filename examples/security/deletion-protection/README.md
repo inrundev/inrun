@@ -10,10 +10,12 @@ Orkestra registers a `ValidatingWebhookConfiguration` that intercepts every `DEL
 
 ```yaml
 security:
-  deletionProtection:
-    enabled: true
-    cleanupOnShutdown: true
-    failurePolicy: Fail
+  operatorBox:
+    runtime:
+      deletionProtection:
+        enabled: true
+        cleanupOnShutdown: true
+        failurePolicy: Fail
 ```
 
 At startup Orkestra:
@@ -338,8 +340,10 @@ kubectl rollout restart deploy orkestra-runtime -n orkestra-system
 Change `enabled: true` to `false` 
 ```yaml
 security:
-  deletionProtection:
-    enabled: false
+  operatorBox:
+    runtime:
+      deletionProtection:
+        enabled: false
 ```
 
 #### Watch Orkestra logs

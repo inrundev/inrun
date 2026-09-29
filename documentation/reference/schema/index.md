@@ -31,6 +31,5 @@ All fields that live inside a Katalog `spec.crds.<name>` entry:
 | [conversion](02-katalog/09-conversion.md) | `conversion` — multi-version CRD support |
 | [katalog-security](02-katalog/10-katalog-security.md) | `security` block |
 | [katalog-notification](02-katalog/11-katalog-notification.md) | `notification` block |
-| [katalog-providers](02-katalog/12-katalog-providers.md) | `providers` block |
 | [enrich](02-katalog/15-enrich.md) | `enrich` — post-reconcile enrichment |
 | [gateway-api](02-katalog/17-gateway-api.md) | `gateway.api` — Gateway API config and per-CRD `serve:` block |

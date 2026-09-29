@@ -13,31 +13,30 @@ spec:
       crFiles:
         - ./cr.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
-            - path: host
-              value: "{{ serviceHost }}"
-
-        onReconcile:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}:{{ .spec.tag | default \"latest\" }}"
-              port: "{{ .spec.port }}"
-              replicas: "1"
+          onReconcile:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}:{{ .spec.tag | default \"latest\" }}"
+                port: "{{ .spec.port }}"
+                replicas: "1"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
+              - path: host
+                value: "{{ serviceHost }}"
 
 notes:
   functions:

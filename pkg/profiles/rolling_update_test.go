@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
 )
 
 func TestRollingUpdateProfiles(t *testing.T) {
@@ -20,7 +19,7 @@ func TestRollingUpdateProfiles(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.profile, func(t *testing.T) {
-			result, err := profiles.ApplyRollingUpdateProfile(tc.profile, orktypes.ProfileRegistry{})
+			result, err := profiles.ApplyRollingUpdateProfile(tc.profile, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -35,14 +34,14 @@ func TestRollingUpdateProfiles(t *testing.T) {
 }
 
 func TestRollingUpdateSafeHasZeroUnavailable(t *testing.T) {
-	result, _ := profiles.ApplyRollingUpdateProfile("safe", orktypes.ProfileRegistry{})
+	result, _ := profiles.ApplyRollingUpdateProfile("safe", nil)
 	if result.MaxUnavailable != "0" {
 		t.Errorf("safe profile must have maxUnavailable=0 to guarantee zero capacity drop; got %q", result.MaxUnavailable)
 	}
 }
 
 func TestRollingUpdateBlueGreenHasFullSurge(t *testing.T) {
-	result, _ := profiles.ApplyRollingUpdateProfile("blue-green", orktypes.ProfileRegistry{})
+	result, _ := profiles.ApplyRollingUpdateProfile("blue-green", nil)
 	if result.MaxSurge != "100%" {
 		t.Errorf("blue-green profile must have maxSurge=100%%; got %q", result.MaxSurge)
 	}
@@ -53,7 +52,7 @@ func TestRollingUpdateBlueGreenHasFullSurge(t *testing.T) {
 
 func TestRollingUpdateProfileCaseInsensitive(t *testing.T) {
 	for _, name := range []string{"SAFE", "Safe", "FAST", "BLUE-GREEN", "Blue-Green"} {
-		_, err := profiles.ApplyRollingUpdateProfile(name, orktypes.ProfileRegistry{})
+		_, err := profiles.ApplyRollingUpdateProfile(name, nil)
 		if err != nil {
 			t.Errorf("profile %q: unexpected error: %v", name, err)
 		}
@@ -61,7 +60,7 @@ func TestRollingUpdateProfileCaseInsensitive(t *testing.T) {
 }
 
 func TestRollingUpdateProfileUnknown(t *testing.T) {
-	_, err := profiles.ApplyRollingUpdateProfile("canary", orktypes.ProfileRegistry{})
+	_, err := profiles.ApplyRollingUpdateProfile("canary", nil)
 	if err == nil {
 		t.Error("expected error for unknown profile, got nil")
 	}

@@ -88,11 +88,13 @@ All metrics are atomic and read without locking.
 When an operator declares:
 
 ```yaml
-cross:
-  - crd: database
-    selector:
-      name: "{{ .metadata.name }}-db"
-    as: db
+operatorBox:
+  observe:
+    cross:
+      - crd: database
+        selector:
+          name: "{{ .metadata.name }}-db"
+        as: db
 ```
 
 …the autoscaler automatically receives:

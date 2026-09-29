@@ -134,9 +134,11 @@ func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string
 		}
 		// Resolve motif file paths in imports to absolute so they work regardless
 		// of the working directory when expandMotifImports runs.
-		for i, imp := range crd.Imports {
-			if isFileMotif(imp.Motif) && !filepath.IsAbs(imp.Motif) {
-				crd.Imports[i].Motif = filepath.Join(katalogDir, imp.Motif)
+		if crd.Box().Reconcile != nil {
+			for i, imp := range crd.Box().Reconcile.Imports {
+				if isFileMotif(imp.Motif) && !filepath.IsAbs(imp.Motif) {
+					crd.Box().Reconcile.Imports[i].Motif = filepath.Join(katalogDir, imp.Motif)
+				}
 			}
 		}
 
@@ -162,11 +164,17 @@ func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string
 		// Merge spec-level restrictions into each CRD (additive).
 		protect := doc.Security.NamespaceProtection
 		if protect != nil {
-			if len(protect.RestrictedNamespaces) > 0 {
-				crd.RestrictedNamespaces = protect.RestrictedNamespaces.Merge(crd.RestrictedNamespaces)
-			}
-			if len(protect.AllowedNamespaces) > 0 {
-				crd.AllowedNamespaces = protect.AllowedNamespaces.Merge(crd.AllowedNamespaces)
+			if len(protect.RestrictedNamespaces) > 0 || len(protect.AllowedNamespaces) > 0 {
+				if crd.Box().Runtime == nil {
+					rt := orktypes.RuntimeConfig{}
+					crd.Box().Runtime = &rt
+				}
+				if len(protect.RestrictedNamespaces) > 0 {
+					crd.Box().Runtime.RestrictedNamespaces = protect.RestrictedNamespaces.Merge(crd.Box().Runtime.RestrictedNamespaces)
+				}
+				if len(protect.AllowedNamespaces) > 0 {
+					crd.Box().Runtime.AllowedNamespaces = protect.AllowedNamespaces.Merge(crd.Box().Runtime.AllowedNamespaces)
+				}
 			}
 		}
 
@@ -194,7 +202,6 @@ func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string
 	m.policy = doc.Policy
 	m.security = doc.Security
 	m.notification = doc.Notification
-	m.providers = doc.Providers
 	m.gateway = doc.Gateway
 	m.publish = doc.Publish
 	m.profiles = doc.Profiles
@@ -224,13 +231,12 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 	localSeen := map[string]string{}
 	allCRDs := make(map[string]orktypes.CRDEntry)
 
-	// accSecurity, accNotification, accProviders, accNotes, and accProfiles accumulate top-level
+	// accSecurity, accNotification, accNotes, and accProfiles accumulate top-level
 	// settings from all imported Katalogs. Each import that calls loadKatalog sets these
 	// as side-effects on m; we capture and merge here so they are not discarded
 	// when the Komposer's own (possibly Empty() block is applied at the end.
 	var accSecurity orktypes.KatalogSecurity
 	var accNotification *orktypes.KatalogNotification
-	var accProviders []orktypes.KatalogProviderRequirement
 	var accProfiles orktypes.ProfileRegistry
 	var accSpecImports []orktypes.MotifImport
 	var accNotes orktypes.NoteRegistry
@@ -256,10 +262,9 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 				allCRDs[name] = crd
 			}
 
-			// Accumulate security, notification, providers, and profiles from registry source Katalog.
+			// Accumulate security, notification, and profiles from registry source Katalog.
 			accSecurity = mergeKatalogSecurity(accSecurity, m.security)
 			accNotification = mergeKatalogNotification(accNotification, m.notification)
-			accProviders = append(accProviders, m.providers...)
 			merged, err := accProfiles.Merge(m.profiles, fmt.Sprintf("registry:%d", i))
 			if err != nil {
 				return nil, fmt.Errorf("%q imports.registry[%d]: profiles: %w", path, i, err)
@@ -273,7 +278,7 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 			accNotes = mergedNotes
 			logger.Debug().
 				Str("import", fmt.Sprintf("registry:%d", i)).
-				Msg("merger: accumulated security, notification, and providers from registry import")
+				Msg("merger: accumulated security and notification from registry import")
 		}
 	}
 
@@ -313,10 +318,9 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 				allCRDs[name] = crd
 			}
 
-			// Accumulate security, notification, providers, and profiles from this Katalog file import.
+			// Accumulate security, notification, and profiles from this Katalog file import.
 			accSecurity = mergeKatalogSecurity(accSecurity, m.security)
 			accNotification = mergeKatalogNotification(accNotification, m.notification)
-			accProviders = append(accProviders, m.providers...)
 			merged, err := accProfiles.Merge(m.profiles, "file:"+resolved)
 			if err != nil {
 				return nil, fmt.Errorf("%q imports.files[%q]: profiles: %w", path, resolved, err)
@@ -330,7 +334,7 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 			accNotes = mergedNotes
 			logger.Debug().
 				Str("import", "file:"+resolved).
-				Msg("merger: accumulated security, notification, and providers from file import")
+				Msg("merger: accumulated security and notification from file import")
 		}
 		// ── Step 3: helm imports ──────────────────────────────────────────────
 		for i, helmSrc := range doc.Imports.Helm {
@@ -348,10 +352,9 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 				allCRDs[name] = crd
 			}
 
-			// Accumulate security, notification, providers, and profiles from this Helm import.
+			// Accumulate security, notification, and profiles from this Helm import.
 			accSecurity = mergeKatalogSecurity(accSecurity, m.security)
 			accNotification = mergeKatalogNotification(accNotification, m.notification)
-			accProviders = append(accProviders, m.providers...)
 			merged, err := accProfiles.Merge(m.profiles, srcName)
 			if err != nil {
 				return nil, fmt.Errorf("%q imports.helm[%d]: profiles: %w", path, i, err)
@@ -365,7 +368,7 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 			accNotes = mergedNotes
 			logger.Debug().
 				Str("import", srcName).
-				Msg("merger: accumulated security, notification, and providers from helm import")
+				Msg("merger: accumulated security and notification from helm import")
 		}
 	}
 
@@ -425,8 +428,12 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 	if protect != nil {
 		if len(protect.RestrictedNamespaces) > 0 || len(protect.AllowedNamespaces) > 0 {
 			for name, crd := range allCRDs {
-				crd.RestrictedNamespaces = protect.RestrictedNamespaces.Merge(crd.RestrictedNamespaces)
-				crd.AllowedNamespaces = protect.AllowedNamespaces.Merge(crd.AllowedNamespaces)
+				if crd.Box().Runtime == nil {
+					rt := orktypes.RuntimeConfig{}
+					crd.Box().Runtime = &rt
+				}
+				crd.Box().Runtime.RestrictedNamespaces = protect.RestrictedNamespaces.Merge(crd.Box().Runtime.RestrictedNamespaces)
+				crd.Box().Runtime.AllowedNamespaces = protect.AllowedNamespaces.Merge(crd.Box().Runtime.AllowedNamespaces)
 				allCRDs[name] = crd
 			}
 		}
@@ -448,16 +455,11 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 
 	// Merge accumulated source fields with the Komposer's own top-level blocks.
 	// Komposer-declared fields win on conflict (non-nil / non-empty override semantics).
-	// This ensures all top-level Katalog fields — security, notification, providers —
+	// This ensures all top-level Katalog fields — security, notification —
 	// are visible when running `ork generate rbac` or `ork generate configmap`
 	// against a Komposer, identical to running against the source Katalogs directly.
 	m.security = mergeKatalogSecurity(accSecurity, doc.Security)
 	m.notification = mergeKatalogNotification(accNotification, doc.Notification)
-	if len(doc.Providers) > 0 {
-		m.providers = doc.Providers
-	} else {
-		m.providers = accProviders
-	}
 	if doc.Gateway != nil {
 		m.gateway = doc.Gateway
 	}
@@ -489,7 +491,7 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 
 	logger.Debug().
 		Str("path", path).
-		Msg("merger: Komposer security, notification, and providers merged from imports and inline")
+		Msg("merger: Komposer security and notification merged from imports and inline")
 
 	return allCRDs, nil
 }

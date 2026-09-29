@@ -28,7 +28,7 @@ MuxReconciler.Reconcile
     │
     ├── targets["v2-ctor"]           → per-target domain.Reconciler
     │
-    └── fallback                     → CRD-level GenericReconciler
+    └── fallback                     → CRD-level Generic Reconciler
 ```
 
-`MuxReconciler` is only wired when `CRDEntry.HasTargetConstructorFactories()` returns true — CRDs with only per-target hooks stay on `GenericReconciler`, which handles hook dispatch in `hooksFor()`.
+`MuxReconciler` is only wired when `CRDEntry.HasTargetConstructorFactories()` returns true — CRDs with only per-target hooks stay on `Generic Reconciler`, which handles hook dispatch in `hooksFor()`.

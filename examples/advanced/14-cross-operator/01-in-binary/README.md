@@ -12,16 +12,17 @@ Two CRDs in the same Orkestra runtime reading each other's live state — zero A
 
 Producer creates a Deployment and a Service. Once the Service is assigned a ClusterIP, Orkestra writes it into `status.endpoint`.
 
-Consumer declares a `cross:` block targeting `producer` by name. On every reconcile, Orkestra reads the Producer's informer cache — the same cache it already maintains — and makes the result available as `.cross.producer.*`. No HTTP call. No extra watch.
+Consumer declares an `observe.cross:` block targeting `producer` by name. On every reconcile, Orkestra reads the Producer's informer cache — the same cache it already maintains — and makes the result available as `.cross.producer.*`. No HTTP call. No extra watch.
 
 ```yaml
 operatorBox:
-  cross:
-    - crd: producer
-      selector:
-        name: "{{ .metadata.name }}"
-        namespace: "{{ .metadata.namespace }}"
-      as: producer
+  observe:
+    cross:
+      - crd: producer
+        selector:
+          name: "{{ .metadata.name }}"
+          namespace: "{{ .metadata.namespace }}"
+        as: producer
 ```
 
 The Consumer's Deployment then receives the endpoint as an environment variable:

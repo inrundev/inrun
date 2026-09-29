@@ -16,7 +16,7 @@ type NotificationState struct {
 }
 
 // NotificationStack combines Katalog context, throttle state, and the active
-// Notifier. One instance per GenericReconciler when notification is enabled.
+// Notifier. One instance per generic.Reconciler when notification is enabled.
 type NotificationStack struct {
 	Katalog  *katalog.Katalog
 	State    *NotificationState

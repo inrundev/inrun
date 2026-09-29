@@ -13,51 +13,49 @@ spec:
   crds:
     service:
       crdFile: ../crd.yaml
-
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployments.my-service-restricted }}"
-                  equals: "true"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-baseline"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                securityContext:
+                  profile: baseline
+                podSecurity:
+                  profile: baseline
+                reconcile: true
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-baseline"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              securityContext:
-                profile: baseline
-              podSecurity:
-                profile: baseline
-              reconcile: true
+              - name: "{{ .metadata.name }}-restricted"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                securityContext:
+                  profile: restricted
+                podSecurity:
+                  profile: restricted
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-restricted"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              securityContext:
-                profile: restricted
-              podSecurity:
-                profile: restricted
-              reconcile: true
+              - name: "{{ .metadata.name }}-hardened"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                securityContext:
+                  profile: hardened
+                podSecurity:
+                  profile: hardened
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployments.my-service-restricted }}"
+                    equals: "true"
 
-            - name: "{{ .metadata.name }}-hardened"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              securityContext:
-                profile: hardened
-              podSecurity:
-                profile: hardened
-              reconcile: true

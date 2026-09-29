@@ -47,15 +47,17 @@ var probeTimings = map[ProbeProfile]ProbeTimings{
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // The second return value is false when the name is not recognized — callers
 // should fall back to DefaultProbeTimings in that case.
-func ApplyProbeProfile(name string, reg orktypes.ProfileRegistry) (ProbeTimings, bool) {
-	if def, found := reg.LookupProbe(name); found {
-		return ProbeTimings{
-			InitialDelaySeconds: def.InitialDelaySeconds,
-			PeriodSeconds:       def.PeriodSeconds,
-			FailureThreshold:    def.FailureThreshold,
-			SuccessThreshold:    def.SuccessThreshold,
-			TimeoutSeconds:      def.TimeoutSeconds,
-		}, true
+func ApplyProbeProfile(name string, reg *orktypes.ProfileRegistry) (ProbeTimings, bool) {
+	if reg != nil {
+		if def, found := reg.LookupProbe(name); found {
+			return ProbeTimings{
+				InitialDelaySeconds: def.InitialDelaySeconds,
+				PeriodSeconds:       def.PeriodSeconds,
+				FailureThreshold:    def.FailureThreshold,
+				SuccessThreshold:    def.SuccessThreshold,
+				TimeoutSeconds:      def.TimeoutSeconds,
+			}, true
+		}
 	}
 	t, ok := probeTimings[ProbeProfile(name)]
 	return t, ok

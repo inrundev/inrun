@@ -15,88 +15,87 @@ spec:
   crds:
     service:
       crdFile: ../crd.yaml
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployments.my-service }}"
-                  equals: "true"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "2"
+                reconcile: true
+                resources:
+                  profile: team-api
+                probes:
+                  liveness:
+                    type: http
+                    path: /healthz
+                    profile: team-standard
+                  readiness:
+                    type: http
+                    path: /readyz
+                    profile: team-standard
+                securityContext:
+                  profile: team-baseline
+                podSecurity:
+                  profile: team-nonroot
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "2"
-              reconcile: true
-              resources:
-                profile: team-api
-              probes:
-                liveness:
-                  type: http
-                  path: /healthz
-                  profile: team-standard
-                readiness:
-                  type: http
-                  path: /readyz
-                  profile: team-standard
-              securityContext:
-                profile: team-baseline
-              podSecurity:
-                profile: team-nonroot
+            networkPolicies:
+              - name: "{{ .metadata.name }}-deny-all"
+                namespace: "{{ .metadata.namespace }}"
+                podSelector: {}
+                profile: team-deny-all
+                reconcile: true
 
-          networkPolicies:
-            - name: "{{ .metadata.name }}-deny-all"
-              namespace: "{{ .metadata.namespace }}"
-              podSelector: {}
-              profile: team-deny-all
-              reconcile: true
+              - name: "{{ .metadata.name }}-allow-internal"
+                namespace: "{{ .metadata.namespace }}"
+                podSelector: {}
+                profile: team-allow-internal
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-allow-internal"
-              namespace: "{{ .metadata.namespace }}"
-              podSelector: {}
-              profile: team-allow-internal
-              reconcile: true
+              - name: "{{ .metadata.name }}-allow-dns"
+                namespace: "{{ .metadata.namespace }}"
+                podSelector: {}
+                profile: team-allow-dns
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-allow-dns"
-              namespace: "{{ .metadata.namespace }}"
-              podSelector: {}
-              profile: team-allow-dns
-              reconcile: true
+            hpa:
+              - name: "{{ .metadata.name }}-hpa-conservative"
+                namespace: "{{ .metadata.namespace }}"
+                scaleTargetRef:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  name: "{{ .metadata.name }}"
+                minReplicas: "2"
+                maxReplicas: "6"
+                behavior:
+                  profile: team-conservative
+                reconcile: true
 
-          hpa:
-            - name: "{{ .metadata.name }}-hpa-conservative"
-              namespace: "{{ .metadata.namespace }}"
-              scaleTargetRef:
-                apiVersion: apps/v1
-                kind: Deployment
-                name: "{{ .metadata.name }}"
-              minReplicas: "2"
-              maxReplicas: "6"
-              behavior:
-                profile: team-conservative
-              reconcile: true
+              - name: "{{ .metadata.name }}-hpa-responsive"
+                namespace: "{{ .metadata.namespace }}"
+                scaleTargetRef:
+                  apiVersion: apps/v1
+                  kind: Deployment
+                  name: "{{ .metadata.name }}"
+                minReplicas: "2"
+                maxReplicas: "10"
+                behavior:
+                  profile: team-responsive
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployments.my-service }}"
+                    equals: "true"
 
-            - name: "{{ .metadata.name }}-hpa-responsive"
-              namespace: "{{ .metadata.namespace }}"
-              scaleTargetRef:
-                apiVersion: apps/v1
-                kind: Deployment
-                name: "{{ .metadata.name }}"
-              minReplicas: "2"
-              maxReplicas: "10"
-              behavior:
-                profile: team-responsive
-              reconcile: true

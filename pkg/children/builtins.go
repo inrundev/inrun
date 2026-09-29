@@ -20,6 +20,7 @@ package children
 
 import (
 	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // BuiltInKind holds the fully-qualified API metadata for a Kubernetes
@@ -98,9 +99,9 @@ var enrichmentMeta = map[string]enrichmentEntry{
 // resource selected by sel.
 func detectAny[T any](crd orktypes.CRDEntry, sel func(*orktypes.HookTemplates) []T) bool {
 	rc := crd.OperatorBox
-	return orktypes.UsesTemplates(rc.OnCreate, sel) ||
-		orktypes.UsesTemplates(rc.OnReconcile, sel) ||
-		orktypes.UsesTemplates(rc.OnDelete, sel)
+	return orktypes.UsesTemplates(rc.EffectiveOnCreate(), sel) ||
+		orktypes.UsesTemplates(rc.EffectiveOnReconcile(), sel) ||
+		orktypes.UsesTemplates(rc.EffectiveOnDelete(), sel)
 }
 
 // builtInRegistry is the single source of truth for all Kubernetes built-in
@@ -487,6 +488,11 @@ var builtInRegistry = map[string]BuiltInKind{
 		Namespaced: true, APIPath: "/apis",
 		SkipObservedGeneration: true, OrkestraInternal: true,
 	},
+}
+
+func (b BuiltInKind) APIVersion() schema.GroupVersion {
+	gvk, _ := GVKForBuiltIn(b.Kind)
+	return gvk.GroupVersion()
 }
 
 // shorthandIndex maps each shorthand alias to its canonical registry key.

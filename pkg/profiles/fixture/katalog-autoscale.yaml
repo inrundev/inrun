@@ -17,168 +17,173 @@ spec:
       crFiles:
         - crds/probes/cr-burst.yaml
       operatorBox:
-        autoscale:
-          profile: burst
-        reconciler:
+        reconcile:
           default: true
           workers: 2
           resync: 30s
           queue:
             maxDepth: 50
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-burst"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-burst"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
+        runtime:
+          autoscale:
+            profile: burst
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
     profile-probe-steady:
       crdFile: crds/probes/crd-steady.yaml
       crFiles:
         - crds/probes/cr-steady.yaml
       operatorBox:
-        autoscale:
-          profile: steady
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
           queue:
             maxDepth: 50
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-steady"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-steady"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
+        runtime:
+          autoscale:
+            profile: steady
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
     profile-probe-batch:
       crdFile: crds/probes/crd-batch.yaml
       crFiles:
         - crds/probes/cr-batch.yaml
-
       operatorBox:
-        autoscale:
-          profile: batch
-        reconciler:
+        reconcile:
           default: true
           workers: 2
           resync: 30s
           queue:
             maxDepth: 50
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-batch"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-batch"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
+        runtime:
+          autoscale:
+            profile: batch
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
     profile-probe-latency-sensitive:
       crdFile: crds/probes/crd-latency-sensitive.yaml
       crFiles:
         - crds/probes/cr-latency-sensitive.yaml
       operatorBox:
-        autoscale:
-          profile: latency-sensitive
-        reconciler:
+        reconcile:
           default: true
           workers: 4
           resync: 30s
           queue:
             maxDepth: 100
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-latency"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-latency"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
+        runtime:
+          autoscale:
+            profile: latency-sensitive
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
     profile-probe-cost-optimized:
       crdFile: crds/probes/crd-optimized.yaml
       crFiles:
         - crds/probes/cr-optimized.yaml
       operatorBox:
-        autoscale:
-          profile: cost-optimized
-        reconciler:
+        reconcile:
           default: true
           workers: 4
           resync: 30s
           queue:
             maxDepth: 100
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-cost"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              reconcile: true
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-cost"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
+        runtime:
+          autoscale:
+            profile: cost-optimized
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"

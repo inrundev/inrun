@@ -22,17 +22,19 @@ An operatorBox can observe another operatorBox's CR state through the `cross:` d
 
 ```yaml
 operatorBox:
-  cross:
-    - crd: managed-database
-      selector:
-        name: "{{ .metadata.name }}-db"
-      as: db
-  onReconcile:
-    deployments:
-      - name: "{{ .metadata.name }}"
-        when:
-          - field: "{{ phase .cross.db }}"
-            equals: "Ready"
+  reconcile:
+    onReconcile:
+      deployments:
+        - name: "{{ .metadata.name }}"
+          when:
+            - field: "{{ phase .cross.db }}"
+              equals: "Ready"
+  observe:
+    cross:
+      - crd: managed-database
+        selector:
+          name: "{{ .metadata.name }}-db"
+        as: db
 ```
 
 The `cross:` declaration resolves through the `KatalogRegistry`, which holds a reference to every operatorBox's informer. Reading another operatorBox's state is an in-memory map lookup — the API server is not involved.

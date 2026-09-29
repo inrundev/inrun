@@ -13,47 +13,48 @@ spec:
       crFiles:
         - ./cr.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           resync: 20s
 
-        onReconcile:
-          external:
-            - name: ping
-              protocol: redis
-              url: "{{ .spec.redisURL }}"
-              query: "PING"
-              continueOnError: true
-              timeout: 5s
+          onReconcile:
+            external:
+              - name: ping
+                protocol: redis
+                url: "{{ .spec.redisURL }}"
+                query: "PING"
+                continueOnError: true
+                timeout: 5s
 
-            - name: dbSize
-              protocol: redis
-              url: "{{ .spec.redisURL }}"
-              query: "DBSIZE"
-              continueOnError: true
-              timeout: 5s
-              cacheFor: 10s
+              - name: dbSize
+                protocol: redis
+                url: "{{ .spec.redisURL }}"
+                query: "DBSIZE"
+                continueOnError: true
+                timeout: 5s
+                cacheFor: 10s
 
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: 1
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: 1
+        emit:
+          status:
+            fields:
+              - path: pingResult
+                value: "{{ .external.ping.result }}"
 
-        status:
-          fields:
-            - path: pingResult
-              value: "{{ .external.ping.result }}"
+              - path: dbSize
+                value: "{{ .external.dbSize.result }}"
 
-            - path: dbSize
-              value: "{{ .external.dbSize.result }}"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: external.ping.result
+                    equals: "PONG"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: external.ping.result
-                  equals: "PONG"
+              - path: phase
+                value: "Degraded"
+                when:
+                  - field: external.ping.error
+                    operator: exists
 
-            - path: phase
-              value: "Degraded"
-              when:
-                - field: external.ping.error
-                  operator: exists

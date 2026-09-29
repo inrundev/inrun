@@ -1,6 +1,6 @@
 # reconciler.requeue
 
-`reconciler.requeue` schedules a re-enqueue of the CR after a successful reconcile. The CR is added back to the workqueue after `after:` elapses — no informer event is needed.
+`reconcile.requeue` schedules a re-enqueue of the CR after a successful reconcile. The CR is added back to the workqueue after `after:` elapses — no informer event is needed.
 
 Failed reconciles use `queue.retryBackoff`, not `requeue:`.
 
@@ -13,7 +13,7 @@ spec:
   crds:
     myapp:
       operatorBox:
-        reconciler:
+        reconcile:
           requeue:
             after: '{{ .spec.checkInterval | default "60s" }}'
             when:
@@ -57,8 +57,8 @@ If the expression renders to an empty string, `"0s"`, or fails to parse as a dur
 | Field | Error path | Success path | Scope |
 |-------|-----------|--------------|-------|
 | `queue.retryBackoff` | ✓ | — | Per CRD |
-| `reconciler.resync` | — | ✓ (uniform) | Per CRD, all CRs |
-| `reconciler.requeue` | — | ✓ (conditional) | Per CR, template-driven |
+| `reconcile.resync` | — | ✓ (uniform) | Per CRD, all CRs |
+| `reconcile.requeue` | — | ✓ (conditional) | Per CR, template-driven |
 
 `requeue:` and `resync:` are additive — whichever fires first re-enqueues the CR.
 

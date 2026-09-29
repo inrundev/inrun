@@ -68,7 +68,6 @@ Only `kind: Komposer` documents may declare `imports:`. A `kind: Katalog` with a
 ## What the merger does NOT validate
 
 - Whether CRD apiTypes point to real Kubernetes groups — that is a runtime concern.
-- Whether providers declared in the Katalog are actually available — validated at startup.
 - Webhook configuration correctness — validated by Kubernetes itself when applied.
 
 ## Adding a new apiVersion

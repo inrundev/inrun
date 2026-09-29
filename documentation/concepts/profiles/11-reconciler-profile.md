@@ -18,14 +18,14 @@ You write a name. Orkestra writes the numbers.
 
 ## Usage
 
-Set `reconciler.profile` on any CRD entry:
+Set `reconcile.profile` on any CRD entry:
 
 ```yaml
 spec:
   crds:
     orders:
       operatorBox:
-        reconciler:
+        reconcile:
           profile: conservative
 ```
 
@@ -35,11 +35,11 @@ The profile name is resolved at `ork validate` time. An unknown name is a hard e
 
 ## Inline fields override the profile
 
-Declare any inline field on `operatorBox.reconciler` to override the corresponding profile value. The rest of the profile still applies:
+Declare any inline field on `operatorBox.reconcile` to override the corresponding profile value. The rest of the profile still applies:
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     profile: conservative
     workers: 6    # override — profile's workers (2) ignored; resync and maxDepth come from conservative
 ```
@@ -54,7 +54,7 @@ Built-ins cover the common cases. Declare your own in `profiles.reconciler` when
 
 ```yaml
 profiles:
-  reconciler:
+  reconcile:
     - name: api-service
       description: Balanced for a standard web service operator
       workers: 4
@@ -68,16 +68,15 @@ profiles:
       resync: 5m
       queue:
         maxDepth: 500
-
 spec:
   crds:
     orders:
       operatorBox:
-        reconciler:
+        reconcile:
           profile: api-service
     archive:
       operatorBox:
-        reconciler:
+        reconcile:
           profile: batch-worker
 ```
 
@@ -100,7 +99,7 @@ User-defined profiles are checked before built-ins. Declaring a profile named `c
 
 All other profile classes control **what child resources are created** — they expand into Deployment resource limits, NetworkPolicy rules, HPA scaling behavior. Reconciler profiles control **how the operator itself runs** — how many goroutines process CRs, how often it re-enqueues them, and how deep the queue can grow before backpressure kicks in.
 
-This means reconciler profiles are set once per CRD entry at the `operatorBox.reconciler` level, not on individual child resource entries.
+This means reconciler profiles are set once per CRD entry at the `operatorBox.reconcile` level, not on individual child resource entries.
 
 ---
 

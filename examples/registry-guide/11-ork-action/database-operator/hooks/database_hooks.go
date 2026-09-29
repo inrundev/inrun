@@ -83,6 +83,7 @@ func onDatabaseReconcile(ctx context.Context, obj *rkguidev1alpha1.Database) err
 			},
 		},
 		obj.Name,
+		nil,
 	)
 	if err := orkstatefulset.Update(ctx, kube, obj, spec); err != nil {
 		return fmt.Errorf("database statefulset: %w", err)
@@ -117,6 +118,7 @@ func onDatabaseReconcile(ctx context.Context, obj *rkguidev1alpha1.Database) err
 				Args:      []string{obj.Name, obj.Namespace},
 			},
 			obj.Name,
+			nil,
 		)
 		if err := orkcron.Update(ctx, kube, obj, cronSpec); err != nil {
 			return fmt.Errorf("database backup cronjob: %w", err)

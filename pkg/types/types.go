@@ -45,7 +45,7 @@ var SchemeAdderFns []func(*runtime.Scheme) error
 
 // ── CRDMode ────────────────────────────────────────────────────────────
 
-// CRDMode controls how the GenericReconciler handles CR objects at runtime.
+// CRDMode controls how the generic.Reconciler handles CR objects at runtime.
 //
 // typed
 //

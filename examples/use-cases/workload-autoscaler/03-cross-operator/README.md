@@ -72,35 +72,38 @@ status:
     - path: queueDepth
       value: "{{ .spec.initialDepth | default 0 }}"
 
-# JobWorker reads it via cross: and scales on it
-cross:
-  - crd: jobqueue
-    selector:
-      name: "{{ .spec.queueName }}"
-      namespace: "{{ .metadata.namespace }}"
-    as: queue
-
-deployments:
-  - name: "{{ .metadata.name }}"
-    autoscale:
-      min: 2
-      max: 10
-      cooldown: 2m
-      scaleUp:
-        conditions:
-          when:
-            - field: cross.queue.status.queueDepth
-              greaterThan: "100"
-        increment: 2
-      scaleDown:
-        conditions:
-          when:
-            - field: cross.queue.status.queueDepth
-              lessThan: "20"
-        decrement: 1
+# JobWorker reads it via observe.cross: and scales on it
+operatorBox:
+  observe:
+    cross:
+      - crd: jobqueue
+        selector:
+          name: "{{ .spec.queueName }}"
+          namespace: "{{ .metadata.namespace }}"
+        as: queue
+  reconcile:
+    onReconcile:
+      deployments:
+        - name: "{{ .metadata.name }}"
+          autoscale:
+            min: 2
+            max: 10
+            cooldown: 2m
+            scaleUp:
+              conditions:
+                when:
+                  - field: cross.queue.status.queueDepth
+                    greaterThan: "100"
+              increment: 2
+            scaleDown:
+              conditions:
+                when:
+                  - field: cross.queue.status.queueDepth
+                    lessThan: "20"
+              decrement: 1
 ```
 
-`cross.queue.status.queueDepth` is the same field path syntax used in `when:` conditions elsewhere in the Katalog. In-binary cross lookups read from the informer cache; for cross-binary or cross-cluster, `cross:` with a `source:` block resolves via HTTP.
+`cross.queue.status.queueDepth` is the same field path syntax used in `when:` conditions elsewhere in the Katalog. In-binary cross lookups read from the informer cache; for cross-binary or cross-cluster, `observe.cross:` with a `source:` block resolves via HTTP.
 
 In a real system, `queueDepth` would come from the queue operator's own metrics read (Kafka consumer lag, SQS ApproximateNumberOfMessages, etc.) written to its status on each reconcile.
 

@@ -10,28 +10,29 @@ Every source, no matter how different its wire format, ends at the exact same pl
 
 ```yaml
 gateway:
-  webhooks:
-    github:
-      - name: payments-repo
-        enabled: true
-        path: /webhooks/github/payments
-        branch: main
-        watch:
-          - "services/*/intent.yaml"
-        secretRef: { name: ork-payments-github-secret, key: secret }
-        contentTokenRef: { name: ork-payments-github-app-token, key: token }
-    gitlab: [ ... same shape ... ]
-    slack:
-      - name: platform-workspace
-        enabled: true
-        path: /webhooks/slack
-        signingSecretRef: { name: ork-slack-signing-secret, key: secret }
-        commands: ["/deploy"]
-    generic:
-      - name: pagerduty
-        enabled: true
-        path: /webhooks/generic/pagerduty
-        secretRef: { name: ork-pagerduty-webhook-secret, key: secret }
+  admission:
+    webhooks:
+      github:
+        - name: payments-repo
+          enabled: true
+          path: /webhooks/github/payments
+          branch: main
+          watch:
+            - "services/*/intent.yaml"
+          secretRef: { name: ork-payments-github-secret, key: secret }
+          contentTokenRef: { name: ork-payments-github-app-token, key: token }
+      gitlab: [ ... same shape ... ]
+      slack:
+        - name: platform-workspace
+          enabled: true
+          path: /webhooks/slack
+          signingSecretRef: { name: ork-slack-signing-secret, key: secret }
+          commands: ["/deploy"]
+      generic:
+        - name: pagerduty
+          enabled: true
+          path: /webhooks/generic/pagerduty
+          secretRef: { name: ork-pagerduty-webhook-secret, key: secret }
 ```
 
 - **GitHub / GitLab** — a push to `branch` that touches a file matching `watch` fetches that file's content and applies it as a target-mode intent.

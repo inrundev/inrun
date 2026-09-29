@@ -7,7 +7,7 @@
 
 runtime:
   image:
-    tag: 0.7.17
+    tag: 0.7.18
   resources:
     requests:
       cpu: 50m
@@ -18,12 +18,12 @@ runtime:
 
 gateway:
   image:
-    tag: 0.7.17
+    tag: 0.7.18
 
 controlCenter:
   replicaCount: 2
   image:
-    tag: 0.7.17
+    tag: 0.7.18
   config:
     orkestraURLs:
       - http://orkestra-runtime.orkestra-system-01.svc.cluster.local:8080

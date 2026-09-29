@@ -53,8 +53,9 @@ This makes `kubectl get` immediately informative. External tools that watch for 
 
     ```yaml
     operatorBox:
-      status:
-        conditions: false
+      emit:
+        status:
+          conditions: false
     ```
 
 ---

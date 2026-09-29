@@ -68,7 +68,7 @@ spec:
   crds:
     postgres:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 8
 ```
 

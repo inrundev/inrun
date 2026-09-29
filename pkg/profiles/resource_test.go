@@ -30,7 +30,7 @@ func TestResourceProfiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r, err := profiles.ApplyResourceProfile(tt.profile, orktypes.ProfileRegistry{})
+			r, err := profiles.ApplyResourceProfile(tt.profile, nil)
 
 			if tt.expectErr {
 				if err == nil {
@@ -68,7 +68,7 @@ func TestResourceProfileUserDefined(t *testing.T) {
 		},
 	}
 
-	r, err := profiles.ApplyResourceProfile("gpu-worker", reg)
+	r, err := profiles.ApplyResourceProfile("gpu-worker", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestResourceProfileUserDefinedOverridesBuiltIn(t *testing.T) {
 			},
 		},
 	}
-	r, err := profiles.ApplyResourceProfile("small", reg)
+	r, err := profiles.ApplyResourceProfile("small", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

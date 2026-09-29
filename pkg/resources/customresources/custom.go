@@ -14,12 +14,11 @@ import (
 	"github.com/orkspace/orkestra/pkg/resources/shared"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/orkspace/orkestra/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 )
 
 // ResolvedCustomResourceSpec is the fully resolved Custom Resource specification.
@@ -91,27 +90,14 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 	}
 
 	// Build GVR from APIVersion/Kind
-	gvk, err := buildGVK(spec.APIVersion, spec.Kind)
+	gvk, err := utils.GVKFromFields(spec.APIVersion, spec.Kind)
 	if err != nil {
 		return fmt.Errorf("custom.Create: invalid GVK: %w", err)
 	}
 
-	// Resolve GVR via the registry's RESTMapper (kubeclient exposes Mapper())
-	mapper := kube.RESTMapper()
-	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	resourceIfc, err := kubeclient.ResourceForGVK(kube, gvk, namespace)
 	if err != nil {
 		return fmt.Errorf("custom.Create: resolving GVR for %s: %w", gvk.String(), err)
-	}
-	gvr := mapping.Resource
-
-	dyn := kube.DynamicClient()
-	namespaceable := dyn.Resource(gvr)
-
-	var resourceIfc dynamic.ResourceInterface
-	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-		resourceIfc = namespaceable.Namespace(namespace)
-	} else {
-		resourceIfc = namespaceable
 	}
 
 	// Check existence
@@ -161,26 +147,14 @@ func Update(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 		return err
 	}
 
-	gvk, err := buildGVK(spec.APIVersion, spec.Kind)
+	gvk, err := utils.GVKFromFields(spec.APIVersion, spec.Kind)
 	if err != nil {
 		return fmt.Errorf("custom.Update: invalid GVK: %w", err)
 	}
 
-	mapper := kube.RESTMapper()
-	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	resourceIfc, err := kubeclient.ResourceForGVK(kube, gvk, namespace)
 	if err != nil {
 		return fmt.Errorf("custom.Update: resolving GVR for %s: %w", gvk.String(), err)
-	}
-	gvr := mapping.Resource
-
-	dyn := kube.DynamicClient()
-	namespaceable := dyn.Resource(gvr)
-
-	var resourceIfc dynamic.ResourceInterface
-	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-		resourceIfc = namespaceable.Namespace(namespace)
-	} else {
-		resourceIfc = namespaceable
 	}
 
 	existing, err := resourceIfc.Get(ctx, name, metav1.GetOptions{})
@@ -279,27 +253,16 @@ func Update(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 // Skips deletion if the resource was created by orkdoctor or if Orkestra is not the owner.
 func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface, owner domain.Object, name, namespace, apiVersion, kind string) error {
 	// Build GVK and resolve GVR
-	gvk, err := buildGVK(apiVersion, kind)
+	gvk, err := utils.GVKFromFields(apiVersion, kind)
 	if err != nil {
 		return fmt.Errorf("custom.DeleteIfOwned: invalid GVK: %w", err)
 	}
 
-	mapper := kube.RESTMapper()
-	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	resourceIfc, err := kubeclient.ResourceForGVK(kube, gvk, namespace)
 	if err != nil {
 		return fmt.Errorf("custom.DeleteIfOwned: resolving GVR for %s: %w", gvk.String(), err)
 	}
-	gvr := mapping.Resource
 
-	dyn := kube.DynamicClient()
-	namespaceable := dyn.Resource(gvr)
-
-	var resourceIfc dynamic.ResourceInterface
-	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-		resourceIfc = namespaceable.Namespace(namespace)
-	} else {
-		resourceIfc = namespaceable
-	}
 	existing, err := resourceIfc.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -403,17 +366,6 @@ func buildUnstructured(spec ResolvedCustomResourceSpec, owner domain.Object, gvk
 	}
 
 	return u
-}
-
-func buildGVK(apiVersion, kind string) (schema.GroupVersionKind, error) {
-	if apiVersion == "" || kind == "" {
-		return schema.GroupVersionKind{}, fmt.Errorf("apiVersion and kind are required")
-	}
-	gv, err := schema.ParseGroupVersion(apiVersion)
-	if err != nil {
-		return schema.GroupVersionKind{}, err
-	}
-	return gv.WithKind(kind), nil
 }
 
 // Resolve builds a ResolvedCustomResourceSpec from a CustomResource.

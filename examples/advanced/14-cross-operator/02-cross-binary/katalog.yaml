@@ -31,34 +31,33 @@ spec:
         version: v1alpha1
         kind: Producer
         plural: producers
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: '{{ get .children.service "spec" "clusterIP" }}:8080'
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 8080
-              reconcile: true
-          services:
-            - port: "8080"
-              reconcile: true
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 8080
+                reconcile: true
+            services:
+              - port: "8080"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: '{{ get .children.service "spec" "clusterIP" }}:8080'
 
     # ── Consumer (consumer-system deployment) ─────────────────────────────────
     # source.endpoint is the HTTP fallback used when the Producer informer is
     # not available in-process (cross-binary scenario).
     #
     # Orkestra calls:
+
     #   GET http://orkestra.producer-system:8080/katalog/producer/cr/<ns>/<name>
     # and caches the result for 15 s between resyncs.
     consumer:
@@ -67,37 +66,36 @@ spec:
         version: v1alpha1
         kind: Consumer
         plural: consumers
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        cross:
-          - crd: producer
-            selector:
-              name: "{{ .metadata.name }}"
-              namespace: "{{ .metadata.namespace }}"
-            as: producer
-            source:
-              endpoint: "http://orkestra.producer-system:8080/katalog/producer/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
-              cacheFor: 15s
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 9090
+                env:
+                  - name: PRODUCER_HOST
+                    value: "{{ .cross.producer.status.endpoint }}"
+                reconcile: true
+            services:
+              - port: "9090"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: producerEndpoint
+                value: "{{ .cross.producer.status.endpoint }}"
+        observe:
+          cross:
+            - crd: producer
+              selector:
+                name: "{{ .metadata.name }}"
+                namespace: "{{ .metadata.namespace }}"
+              as: producer
+              source:
+                endpoint: "http://orkestra.producer-system:8080/katalog/producer/cr/{{ .metadata.namespace }}/{{ .metadata.name }}"
+                cacheFor: 15s
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: producerEndpoint
-              value: "{{ .cross.producer.status.endpoint }}"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 9090
-              env:
-                - name: PRODUCER_HOST
-                  value: "{{ .cross.producer.status.endpoint }}"
-              reconcile: true
-          services:
-            - port: "9090"

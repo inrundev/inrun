@@ -40,11 +40,11 @@ func (e *executor) validateServeTokenRestrictions() error {
 	// Keyed by the enabledCRDs map key.
 	for crdName, crd := range e.k.EnabledCRDs() {
 		allowedNamespaces[crdName] = make(map[string]bool)
-		for _, ns := range crd.AllowedNamespaces {
+		for _, ns := range crd.AllAllowedNamespaces() {
 			allowedNamespaces[crdName][ns] = true
 		}
 		restrictedNamespaces[crdName] = make(map[string]bool)
-		for _, ns := range crd.RestrictedNamespaces {
+		for _, ns := range crd.AllRestrictedNamespaces() {
 			restrictedNamespaces[crdName][ns] = true
 		}
 	}
@@ -198,7 +198,7 @@ func (e *executor) validateServeTokenRestrictions() error {
 			for _, ns := range perms.Namespaces {
 				if crd.HasAllowedNamespaces() {
 					if !allowedNamespaces[crdName][ns] {
-						allowedList := strings.Join(crd.AllowedNamespaces, ", ")
+						allowedList := strings.Join([]string(crd.AllAllowedNamespaces()), ", ")
 						return fmt.Errorf(
 							"%s crd %q: serve.tokens[%q].namespaces: %q is not in allowedNamespaces\n"+
 								"  Allowed namespaces: %s",
@@ -209,7 +209,7 @@ func (e *executor) validateServeTokenRestrictions() error {
 
 				if crd.HasRestrictedNamespaces() {
 					if restrictedNamespaces[crdName][ns] {
-						restrictedList := strings.Join(crd.RestrictedNamespaces, ", ")
+						restrictedList := strings.Join([]string(crd.AllRestrictedNamespaces()), ", ")
 						return fmt.Errorf(
 							"%s crd %q: serve.tokens[%q].namespaces: %q is in restrictedNamespaces\n"+
 								"  Restricted namespaces: %s",

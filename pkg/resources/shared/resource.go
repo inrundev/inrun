@@ -12,7 +12,7 @@ import (
 // ResolveResources resolves resource requirements: if resources.profile is set
 // it expands to explicit requests/limits; otherwise the block is returned as-is.
 // Returns nil when neither profile nor explicit values are declared.
-func ResolveResources(r *orktypes.ResourceRequirements, reg orktypes.ProfileRegistry) *orktypes.ResourceRequirements {
+func ResolveResources(r *orktypes.ResourceRequirements, reg *orktypes.ProfileRegistry) *orktypes.ResourceRequirements {
 	if r == nil {
 		return nil
 	}

@@ -44,7 +44,7 @@ import "text/template"
 // What does NOT get registered here:
 //
 //	Dynamic template CRDs (onCreate/onReconcile/onDelete blocks)
-//	  These are handled entirely at runtime by GenericReconciler.runTemplateReconcile().
+//	  These are handled entirely at runtime by generic.Reconciler.runTemplateReconcile().
 //	  No registration needed. No generated file needed. ork generate registry
 //	  is not required for pure dynamic operators.
 var registryTemplate = template.Must(template.New("registry").Parse(`// pkg/typeregistry/zz_generated_typeregistry.go
@@ -53,7 +53,7 @@ var registryTemplate = template.Must(template.New("registry").Parse(`// pkg/type
 //
 // This file registers compiled Go types and external functions.
 // Dynamic template CRDs do not appear here — they are handled at runtime
-// by GenericReconciler without any code generation.
+// by generic.Reconciler without any code generation.
 package typeregistry
 
 import (
@@ -99,7 +99,7 @@ func init() {
 //
 // Hook entries — factory functions for Go hook implementations.
 //   Called by addHooks() during Katalog validation to wire HookFactory
-//   onto the CRD entry. GenericReconciler calls HookFactory() once at
+//   onto the CRD entry. generic.Reconciler calls HookFactory() once at
 //   startCRDWorkers time to obtain the typed hooks.
 //
 // Reconciler entries — constructor functions for custom reconcilers.

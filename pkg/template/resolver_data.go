@@ -47,8 +47,6 @@ import (
 // The returned map is the live internal map — do not mutate it.
 // Used by:
 //   - resolveStatusFields — condition evaluation on status.fields when: blocks
-//   - runProviders        — condition evaluation on provider declaration when: blocks
-//   - filterProviderDeclarations — same
 //   - EvaluateConditions  — any code needing the full object context
 func (r *Resolver) Data() map[string]interface{} {
 	return r.data

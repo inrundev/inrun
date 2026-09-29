@@ -39,7 +39,7 @@ Wraps each call to your reconciler. If the reconciler returns an error, Orkestra
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     resync: 10m
     queue:
       retryBackoff:
@@ -70,19 +70,20 @@ Retries a specific external call before its error reaches the reconciler. Use th
 
 ```yaml
 operatorBox:
-  onReconcile:
-    external:
-      - name: health-check
-        url: "{{ .spec.serviceUrl }}/health"
-        retryBackoff:
-          initial: 1s
-          max: 10s
-          multiplier: 1.5
-          maxAttempts: 3
-      - name: db-query
-        url: "postgres://{{ .spec.dbHost }}/mydb"
-        query: "SELECT 1"
-        retryBackoff: 2s   # shorthand — 2s initial, defaults for the rest
+  reconcile:
+    onReconcile:
+      external:
+        - name: health-check
+          url: "{{ .spec.serviceUrl }}/health"
+          retryBackoff:
+            initial: 1s
+            max: 10s
+            multiplier: 1.5
+            maxAttempts: 3
+        - name: db-query
+          url: "postgres://{{ .spec.dbHost }}/mydb"
+          query: "SELECT 1"
+          retryBackoff: 2s   # shorthand — 2s initial, defaults for the rest
 ```
 
 The retry happens *inside* the external call executor before the result is placed in `.external.<name>`. If all attempts fail and `continueOnError: false` (the default), the error is returned to the reconciler.

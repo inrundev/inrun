@@ -28,37 +28,39 @@ spec:
     # Fixed concurrency — no autoscale on the producer itself.
     loader:
       crdFile: ./crd-loader.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 60s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 8080
-              reconcile: true
-          services:
-            - port: "8080"
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 8080
+                reconcile: true
+            services:
+              - port: "8080"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
 
     # ── Processor ────────────────────────────────────────────────────────────
     # Profile-based autoscale. Declare profile: burst and Orkestra computes the
     # full autoscale spec at katalog load time.
     #
     # burst profile expands using baseline:
+
     #   workers:    baseline × 4
     #   queueDepth: baseline × 10
     #
     # threshold is computed as:
+
     #   threshold = overrideQueueDepth × 0.60
     #
     # timing:
+
     #   interval: 5s
     #   cooldown: 30s
     #
@@ -66,31 +68,30 @@ spec:
     # the entire autoscale block.
     processor:
       crdFile: ./crd-processor.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        autoscale:
-          profile: burst
-
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: autoscaleActive
-              value: "{{ .metrics.autoscaleActive }}"
-            - path: workers
-              value: "{{ .metrics.workers }}"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 9090
-              reconcile: true
-          services:
-            - port: "9090"
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 9090
+                reconcile: true
+            services:
+              - port: "9090"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: autoscaleActive
+                value: "{{ .metrics.autoscaleActive }}"
+              - path: workers
+                value: "{{ .metrics.workers }}"
+        runtime:
+          autoscale:
+            profile: burst
 
     # ── Auditor ───────────────────────────────────────────────────────────────
     # Explicit autoscale. Watches Loader's queue depth directly via the
@@ -98,33 +99,33 @@ spec:
     # metrics without any network call (same binary, same runtime).
     auditor:
       crdFile: ./crd-auditor.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 60s
-        autoscale:
-          interval: 30s
-          cooldown: 5m
-          conditions:
-            when:
-              - field: cross.loader.metrics.queueDepth
-                greaterThan: "75"
-          do:
-            workers: 4
-            resync: 15s
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-audit-config"
+                data:
+                  AUDIT_MODE: "{{ .spec.auditMode }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: autoscaleActive
+                value: "{{ .metrics.autoscaleActive }}"
+              - path: workers
+                value: "{{ .metrics.workers }}"
+        runtime:
+          autoscale:
+            interval: 30s
+            cooldown: 5m
+            conditions:
+              when:
+                - field: cross.loader.metrics.queueDepth
+                  greaterThan: "75"
+            do:
+              workers: 4
+              resync: 15s
 
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: autoscaleActive
-              value: "{{ .metrics.autoscaleActive }}"
-            - path: workers
-              value: "{{ .metrics.workers }}"
-
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-audit-config"
-              data:
-                AUDIT_MODE: "{{ .spec.auditMode }}"

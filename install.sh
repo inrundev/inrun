@@ -219,7 +219,7 @@ setup_path() {
     echo "${export_line}" >> "${profile_file}"
 
     info "Added ${INSTALL_DIR} to PATH in ${profile_file}"
-    warn "Restart your shell or run: export PATH=\"${INSTALL_DIR}:\$PATH\""
+    warn "Run 'exec \$SHELL' to reload your shell, or open a new terminal"
 }
 
 # Shell completion
@@ -239,20 +239,40 @@ install_completion() {
             mkdir -p "${dir}"
             info "Installing bash completion → ${dir}/ork"
             "${INSTALL_DIR}/ork" completion bash > "${dir}/ork" 2>/dev/null || true
-            echo "  Source with: source ${dir}/ork  (or restart your shell)"
+
+            local rc="${HOME}/.bashrc"
+            local source_line="source ${dir}/ork"
+            if [[ -f "${rc}" ]] && grep -qF "${source_line}" "${rc}"; then
+                :
+            else
+                echo "" >> "${rc}"
+                echo "# Orkestra CLI completion" >> "${rc}"
+                echo "${source_line}" >> "${rc}"
+            fi
             ;;
         zsh)
             local dir="${HOME}/.zsh/completions"
             mkdir -p "${dir}"
             info "Installing zsh completion → ${dir}/_ork"
             "${INSTALL_DIR}/ork" completion zsh > "${dir}/_ork" 2>/dev/null || true
-            echo "  Add to ~/.zshrc if not present: fpath=(${dir} \$fpath)"
+
+            local rc="${ZDOTDIR:-${HOME}}/.zshrc"
+            local fpath_line="fpath=(${dir} \$fpath)"
+            if [[ -f "${rc}" ]] && grep -qF "${dir}" "${rc}"; then
+                :
+            else
+                echo "" >> "${rc}"
+                echo "# Orkestra CLI completion" >> "${rc}"
+                echo "${fpath_line}" >> "${rc}"
+                echo "autoload -U compinit && compinit" >> "${rc}"
+            fi
             ;;
         fish)
             local dir="${HOME}/.config/fish/completions"
             mkdir -p "${dir}"
             info "Installing fish completion → ${dir}/ork.fish"
             "${INSTALL_DIR}/ork" completion fish > "${dir}/ork.fish" 2>/dev/null || true
+            # fish auto-loads from this directory — no rc change needed
             ;;
         *)
             warn "Shell '${shell_name}' not recognised — skipping completion."

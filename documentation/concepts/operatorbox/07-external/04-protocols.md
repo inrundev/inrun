@@ -207,16 +207,17 @@ autoscale:
   timeout: 5s
 ```
 ```yaml
-validation:
-  rules:
-    - name: topic exists
-      value: "{{ .external.topicCheck.error }}"
-      equals: ""
-      message: "topic {{ .spec.topic }} does not exist or the broker is unreachable"
-    - name: topic has enough partitions
-      value: "{{ .external.topicCheck.partitionCount }}"
-      greaterThan: "0"
-      message: "topic {{ .spec.topic }} must have at least one partition"
+admission:
+  validation:
+    rules:
+      - name: topic exists
+        value: "{{ .external.topicCheck.error }}"
+        equals: ""
+        message: "topic {{ .spec.topic }} does not exist or the broker is unreachable"
+      - name: topic has enough partitions
+        value: "{{ .external.topicCheck.partitionCount }}"
+        greaterThan: "0"
+        message: "topic {{ .spec.topic }} must have at least one partition"
 ```
 
 ---
@@ -237,16 +238,17 @@ onReconcile:
       timeout: 5s
 ```
 ```yaml
-validation:
-  rules:
-    - name: postgres is reachable
-      value: "{{ .external.pgHealth.error }}"
-      equals: ""
-      message: "cannot reach database: {{ .external.pgHealth.error }}"
-    - name: connection count is sane
-      value: "{{ .external.pgHealth.active }}"
-      lessThan: "50"
-      message: "database is overloaded ({{ .external.pgHealth.active }} active connections)"
+admission:
+  validation:
+    rules:
+      - name: postgres is reachable
+        value: "{{ .external.pgHealth.error }}"
+        equals: ""
+        message: "cannot reach database: {{ .external.pgHealth.error }}"
+      - name: connection count is sane
+        value: "{{ .external.pgHealth.active }}"
+        lessThan: "50"
+        message: "database is overloaded ({{ .external.pgHealth.active }} active connections)"
 ```
 
 **Redis — queue depth gate:**
@@ -260,12 +262,13 @@ onReconcile:
       continueOnError: true
 ```
 ```yaml
-validation:
-  rules:
-    - name: queue is not backed up
-      value: "{{ .external.queueDepth.result }}"
-      lessThan: "1000"
-      message: "job queue is too large ({{ .external.queueDepth.result }} items) — retry later"
+admission:
+  validation:
+    rules:
+      - name: queue is not backed up
+        value: "{{ .external.queueDepth.result }}"
+        lessThan: "1000"
+        message: "job queue is too large ({{ .external.queueDepth.result }} items) — retry later"
 ```
 
 **Prometheus — error rate SLO gate:**
@@ -279,32 +282,15 @@ onCreate:
       continueOnError: true
 ```
 ```yaml
-validation:
-  rules:
-    - name: error rate is acceptable
-      value: "{{ .external.errorRate.error }}"
-      equals: ""
-      message: "prometheus unreachable: {{ .external.errorRate.error }}"
-    - name: SLO is healthy
-      value: "{{ promValue .external.errorRate }}"
-      lessThan: "0.01"
-      message: "error rate {{ promValue .external.errorRate | printf \"%.4f\" }} exceeds 1% SLO"
+admission:
+  validation:
+    rules:
+      - name: error rate is acceptable
+        value: "{{ .external.errorRate.error }}"
+        equals: ""
+        message: "prometheus unreachable: {{ .external.errorRate.error }}"
+      - name: SLO is healthy
+        value: "{{ promValue .external.errorRate }}"
+        lessThan: "0.01"
+        message: "error rate {{ promValue .external.errorRate | printf \"%.4f\" }} exceeds 1% SLO"
 ```
-
----
-
-## In development
-
-These protocols are declared in the type system and pass `ork validate`, but their clients are not yet implemented. The runner falls through to HTTP for unknown protocols — using them before implementation will not produce useful results.
-
-### `grpc`
-
-Unary gRPC call. `query:` will be the fully-qualified method name (`package.Service/Method`). The request body will come from `body:`. Planned for a future release.
-
-### `nats`
-
-NATS KV read or JetStream stream info. `query:` syntax: `"bucket.key"` for KV, stream name for stream metadata. Planned for a future release.
-
-### `mqtt`
-
-Reads a retained MQTT topic. `query:` is the topic path. Planned for a future release.

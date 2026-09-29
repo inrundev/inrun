@@ -23,55 +23,56 @@ spec:
         version: v1alpha1
         kind: SecurityConfig
         plural: securityconfigs
-      allowedNamespaces:
-        - default
+      admission:
+        validation:
+          rules:
+            # Hard rule — domain is required; no domain means no cert
+            - field: spec.domain
+              operator: exists
+              message: "spec.domain is required — the hostname the TLS certificate will cover"
+              action: deny
 
-      validation:
-        rules:
-          # Hard rule — domain is required; no domain means no cert
-          - field: spec.domain
-            operator: exists
-            message: "spec.domain is required — the hostname the TLS certificate will cover"
-            action: deny
-
-          # Advisory — short renewBefore windows risk expiry during incidents
-          - field: spec.renewBefore
-            operator: exists
-            message: "declare spec.renewBefore explicitly; default is 720h (30 days) — adjust for your SLA"
-            action: warn
-
+            # Advisory — short renewBefore windows risk expiry during incidents
+            - field: spec.renewBefore
+              operator: exists
+              message: "declare spec.renewBefore explicitly; default is 720h (30 days) — adjust for your SLA"
+              action: warn
       operatorBox:
-
-        status:
-          fields:
-            - path: secretName
-              value: "{{ .metadata.name }}-tls"
-            - path: ready
-              value: '{{ (index .children.customs (printf "%s-cert" .metadata.name)).status.conditions | default "" }}'
-
-        onCreate:
-          custom:
-            - apiVersion: cert-manager.io/v1
-              kind: Issuer
-              metadata:
-                name: "{{ .metadata.name }}-issuer"
-                namespace: "{{ .metadata.namespace }}"
-              spec:
-                selfSigned: {}
-
-            - apiVersion: cert-manager.io/v1
-              kind: Certificate
-              metadata:
-                name: "{{ .metadata.name }}-cert"
-                namespace: "{{ .metadata.namespace }}"
-              spec:
-                secretName: "{{ .metadata.name }}-tls"
-                issuerRef:
+        reconcile:
+          onCreate:
+            custom:
+              - apiVersion: cert-manager.io/v1
+                kind: Issuer
+                metadata:
                   name: "{{ .metadata.name }}-issuer"
-                  kind: Issuer
-                commonName: "{{ .spec.domain }}"
-                dnsNames:
-                  - "{{ .spec.domain }}"
-                  - '{{ concat "*." .spec.domain }}'
-                renewBefore: "{{ .spec.renewBefore | default \"720h\" }}"
-              hasStatus: true
+                  namespace: "{{ .metadata.namespace }}"
+                spec:
+                  selfSigned: {}
+
+              - apiVersion: cert-manager.io/v1
+                kind: Certificate
+                metadata:
+                  name: "{{ .metadata.name }}-cert"
+                  namespace: "{{ .metadata.namespace }}"
+                spec:
+                  secretName: "{{ .metadata.name }}-tls"
+                  issuerRef:
+                    name: "{{ .metadata.name }}-issuer"
+                    kind: Issuer
+                  commonName: "{{ .spec.domain }}"
+                  dnsNames:
+                    - "{{ .spec.domain }}"
+                    - '{{ concat "*." .spec.domain }}'
+                  renewBefore: "{{ .spec.renewBefore | default \"720h\" }}"
+                hasStatus: true
+        emit:
+          status:
+            fields:
+              - path: secretName
+                value: "{{ .metadata.name }}-tls"
+              - path: ready
+                value: '{{ (index .children.customs (printf "%s-cert" .metadata.name)).status.conditions | default "" }}'
+        runtime:
+          allowedNamespaces:
+            - default
+

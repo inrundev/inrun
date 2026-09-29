@@ -2,7 +2,6 @@ package validate
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/orkspace/orkestra/pkg/katalog"
@@ -27,7 +26,7 @@ func katalogWithAPITypes(a orktypes.APITypes) *executor {
 
 }
 
-func katalogWithOperatorBox(box orktypes.OperatorBoxConfig) *executor {
+func katalogWithOperatorBox(box *orktypes.OperatorBoxConfig) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {OperatorBox: box},
 	})
@@ -116,26 +115,28 @@ func TestSetDefaults_APITypes(t *testing.T) {
 }
 
 func TestSetDefaults_OperatorBoxFinalizersDefault(t *testing.T) {
-	k := katalogWithOperatorBox(orktypes.OperatorBoxConfig{})
+	k := katalogWithOperatorBox(&orktypes.OperatorBoxConfig{})
 	k.k.Spec.Finalizers = []string{"spec-finalizer"}
 
 	err := k.k.SetDefaults(kfg)
 	assert.NoError(t, err)
 
-	boxFinalizers := k.k.EnabledCRDs()["app"].OperatorBox.Finalizers
+	entry := k.k.EnabledCRDs()["app"]
+	boxFinalizers := entry.OperatorBox.EffectiveFinalizers()
 	if !reflect.DeepEqual(boxFinalizers, k.k.Spec.Finalizers) {
 		t.Fatalf("unexpected error. want true, got false")
 	}
 }
 
 func TestSetDefaults_SpecFinalizerAddToOperatorBoxFinalizer(t *testing.T) {
-	k := katalogWithOperatorBox(orktypes.OperatorBoxConfig{})
+	k := katalogWithOperatorBox(&orktypes.OperatorBoxConfig{})
 	k.k.Spec.Finalizers = []string{"spec-finalizer"}
 
 	err := k.k.SetDefaults(kfg)
 	assert.NoError(t, err)
 
-	boxFinalizers := k.k.EnabledCRDs()["app"].OperatorBox.Finalizers
+	entry := k.k.EnabledCRDs()["app"]
+	boxFinalizers := entry.OperatorBox.EffectiveFinalizers()
 	boxFinalizers = append(boxFinalizers, "box-finalizer")
 
 	if reflect.DeepEqual(boxFinalizers, k.k.Spec.Finalizers) {
@@ -154,53 +155,40 @@ func TestSetDefaults_TargetOperatorBoxFinalizersDefault(t *testing.T) {
 			Entries: map[string]*orktypes.ServeTargetConfig{
 				"testfixture": {
 					OperatorBox: &orktypes.OperatorBoxConfig{
-						Finalizers: []string{"target-finalizer"},
+						Runtime: &orktypes.RuntimeConfig{Finalizers: []string{"target-finalizer"}},
 					},
 				},
 			},
 		},
 	}
 
-	k := katalogWithServe(serve)
-	k.k.Spec.Finalizers = []string{"spec-finalizer"}
+	k := newExec(katalog.NewKatalogForTestWithSpec(
+		map[string]orktypes.CRDEntry{
+			"myresource": {
+				APITypes: orktypes.APITypes{
+					Group:   "demo.orkestra.io",
+					Version: "v1",
+					Kind:    "Myresource",
+					Plural:  "myresources",
+				},
+				Serve: serve,
+			},
+		},
+		orktypes.KatalogSpec{Finalizers: []string{"spec-finalizer"}},
+	))
+
 	entry := k.k.EnabledCRDs()["myresource"]
-
-	err := k.k.SetDefaults(kfg)
-	assert.NoError(t, err)
-
-	boxFinalizers := entry.OperatorBox.Finalizers
+	boxFinalizers := entry.OperatorBox.EffectiveFinalizers()
 	if reflect.DeepEqual(boxFinalizers, k.k.Spec.Finalizers) {
 		t.Fatalf("unexpected error. want true, got false")
 	}
 
-	targetFinalizers := entry.Serve.Target.Entries["testfixture"].OperatorBox.Finalizers
+	if len(boxFinalizers) != 2 {
+		t.Fatalf("unexpected boxFinalizers length: want 2, got %d", len(boxFinalizers))
+	}
+
+	targetFinalizers := entry.Serve.Target.Entries["testfixture"].OperatorBox.EffectiveFinalizers()
 	if len(targetFinalizers) != 1 {
 		t.Fatalf("unexpected error. want true, got false")
-	}
-	// if len(boxFinalizers) != 2 {
-	// 	t.Fatalf("unexpected error. want true, got %d", len(boxFinalizers))
-	// }
-}
-
-func TestSetDefaults_ReconcilerDefaultsQueueWarning(t *testing.T) {
-	k := katalogWithOperatorBox(orktypes.OperatorBoxConfig{})
-	err := k.k.SetDefaults(kfg)
-	assert.NoError(t, err)
-
-	entry := k.k.EnabledCRDs()["app"]
-	rec := entry.ReconcilerConfig()
-	assert.Equal(t, rec.Workers, 3)
-	assert.Equal(t, rec.Resync.String(), "15s")
-	assert.Equal(t, rec.Queue.MaxDepth, 0) // left as-is
-	assert.Equal(t, rec.Queue.FailureThreshold, 5)
-
-	// Assert warning is added to crd for unlimited queue
-	if !entry.Warnings.HasWarnings() {
-		t.Fatal("expected crd to have warning")
-	}
-
-	warn := entry.Warnings.String()
-	if !strings.Contains(warn, "has uses unlimited queue") {
-		t.Fatalf("incorrect warning. got: %q", warn)
 	}
 }

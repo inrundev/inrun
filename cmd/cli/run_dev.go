@@ -90,5 +90,5 @@ func init() {
 	runCmd.Flags().Int("dev-server-port", devserver.Port, "Port for the mock dev server")
 	runCmd.Flags().Bool("use-komposer", false, "Use komposer.yaml from the pulled pattern instead of katalog.yaml")
 	runCmd.Flags().Bool("refresh", false, "Re-pull the pattern from the registry even if already cached")
-	runCmd.Flags().Bool("apply-cr", false, "Apply crd.yaml and cr.yaml from the pattern directory before starting the runtime")
+	runCmd.Flags().Bool("apply-cr", false, "Apply crd.yaml and cr.yaml from the remote pattern directory before starting the runtime")
 }

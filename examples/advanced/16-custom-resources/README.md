@@ -55,17 +55,18 @@ Declares child CRs to create when a parent CR is reconciled. Each entry is a ful
 
 ```yaml
 operatorBox:
-  onCreate:
-    custom:
-      - apiVersion: platform.example.io/v1alpha1
-        kind: SecretVault
-        metadata:
-          name: "{{ .metadata.name }}-vault"
-          namespace: "{{ .metadata.namespace }}"
-          namespaced: true
-        spec:
-          workspaceName: "{{ .metadata.name }}"
-        hasStatus: false
+  reconcile:
+    onCreate:
+      custom:
+        - apiVersion: platform.example.io/v1alpha1
+          kind: SecretVault
+          metadata:
+            name: "{{ .metadata.name }}-vault"
+            namespace: "{{ .metadata.namespace }}"
+            namespaced: true
+          spec:
+            workspaceName: "{{ .metadata.name }}"
+          hasStatus: false
 ```
 
 ### `hasStatus`

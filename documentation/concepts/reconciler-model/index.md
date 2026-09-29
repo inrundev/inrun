@@ -2,9 +2,12 @@
 
 When a CR is applied to your cluster, Orkestra reconciles it — reads your Katalog, acts on it, and keeps the declared state correct over time. How it does that depends on which reconciler model you are using.
 
+!!! tip "What is a reconciler"
+    A reconciler in Orkestra is anything that can receive a PreparedRequest and return a result. That includes Go constructors, declarative YAML, and any HTTP server — in any language, running anywhere.
+
 ---
 
-## Two reconciler models
+## Reconciler models
 
 ### Generic Reconciler
 
@@ -14,17 +17,18 @@ This is the right model for most operators. It handles drift correction, templat
 
 ```yaml
 operatorBox:
-  onReconcile:
-    deployments:
-      - name: "{{ .Name }}-server"
-        image: "{{ .Spec.Image }}"
+  reconcile:
+    onReconcile:
+      deployments:
+        - name: "{{ .Name }}-server"
+          image: "{{ .Spec.Image }}"
 ```
 
 Or with minimal Go hooks for logic that belongs in code:
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     hooks:
       location: github.com/myorg/operator/hooks
       function: AppHooks
@@ -42,7 +46,7 @@ func NewAppReconciler(kube kubeclient.Interface) domain.Reconciler {
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     default: false
     constructor:
       location: github.com/myorg/operator/controller
@@ -51,15 +55,33 @@ operatorBox:
 
 Orkestra provides the informer, workqueue, worker pool, leader election, and metrics. Your `Reconcile` method handles the business logic. If you are migrating from controller-runtime, `ork migrate` automates the initial scaffolding — see [from-controller-runtime](../typed-operators/05-migration.md).
 
+### Remote Reconciler
+
+When the reconcile logic lives in a separate service — or when Go is not the language you want to use — declare a remote endpoint. Orkestra POSTs the CR to the endpoint after every watch event; the service returns resources and status. The service needs no kubeconfig, no Kubernetes SDK, and no cluster access.
+
+```yaml
+operatorBox:
+  reconcile:
+    default: false
+    remote:
+      endpoint: "http://my-service/reconcile"
+      timeout: 15s
+      managedResources:
+        - group: apps
+          plural: deployments
+```
+
+Any language. Any runtime. Any host that speaks HTTP. A bash script, a Python service, a payments API with one extra endpoint — all are valid reconcilers. See [Remote Reconciler](09-remote-reconciler.md).
+
 ---
 
-## What the runtime provides to both models
+## What the runtime provides to all models
 
 Regardless of which model you use, Orkestra manages:
 
 - One informer per CRD — a watch stream from the API server, kept in a local store
 - One workqueue per CRD — items are deduplicated, rate-limited on error, and re-enqueued on a timer when `requeue:` is declared
-- A configurable worker pool — concurrency is set via `reconciler.workers:` and can be adjusted at runtime with `autoscale:`
+- A configurable worker pool — concurrency is set via `reconcile.workers:` and can be adjusted at runtime with `autoscale:`
 - Health tracking — each CRD moves through `pending → started → healthy → degraded` as it processes items
 - Operational state on the CR — after every reconcile the runtime stamps `.health` and `.metrics` onto each CR, making live operator state readable from the CR itself without an HTTP call
 - Startup sequencing — CRDs with `dependsOn:` declarations start in dependency order, not all at once

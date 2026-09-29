@@ -36,7 +36,7 @@ ork run
 | Example | What it teaches |
 |---|---|
 | `09-hooks` | When the declarative layer is not enough. Typed Go hooks called at `OnReconcile` and `OnDelete`. You write the function; Orkestra calls it at the right point. The runtime still manages informers, workqueue, health, metrics, and events. |
-| `10-constructor` | Full ownership of the reconcile loop. Replace the GenericReconciler entirely. For migrating existing Go controllers or building custom state machines. Orkestra still manages informers, workqueue, and workers. |
+| `10-constructor` | Full ownership of the reconcile loop. Replace the Generic Reconciler entirely. For migrating existing Go controllers or building custom state machines. Orkestra still manages informers, workqueue, and workers. |
 | `11-mixed-operator-pattern` | All three patterns in one Komposer: pure declarative, hooks, and constructor operators running side-by-side in the same runtime. |
 
 ---

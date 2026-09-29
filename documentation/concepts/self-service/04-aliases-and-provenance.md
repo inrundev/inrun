@@ -124,36 +124,36 @@ Then reference the notes by name instead of repeating the expressions.
 **At admission time** (validation and mutation rules) — the gateway stamps the annotations on the CR before the SSA patch reaches the API server. The webhook sees them on every create and update. Use this to gate defaults and enforce policies per surface:
 
 ```yaml
-validation:
-  rules:
-    - field: spec.replicas
-      lessThanOrEqualTo: 10
-      message: "preview environments are capped at 10 replicas"
-      action: deny
-      when:
-        - field: '{{ isPreview }}'
-          equals: "true"
-    # direct kubectl applies must use the internal registry — no gateway classification to rely on
-    - field: spec.image
-      prefix: "myorg/"
-      message: "direct applies must use the internal registry"
-      action: deny
-      when:
-        - field: '{{ isDirectApply . }}'
-          equals: "true"
-
-mutation:
-  rules:
-    - field: metadata.labels.ttl
-      default: "24h"
-      when:
-        - field: '{{ isPreview }}'
-          equals: "true"
-    - field: spec.environment
-      default: production
-      when:
-        - field: '{{ isPrimary }}'
-          equals: "true"
+admission:
+  validation:
+    rules:
+      - field: spec.replicas
+        lessThanOrEqualTo: 10
+        message: "preview environments are capped at 10 replicas"
+        action: deny
+        when:
+          - field: '{{ isPreview }}'
+            equals: "true"
+      # direct kubectl applies must use the internal registry — no gateway classification to rely on
+      - field: spec.image
+        prefix: "myorg/"
+        message: "direct applies must use the internal registry"
+        action: deny
+        when:
+          - field: '{{ isDirectApply . }}'
+            equals: "true"
+  mutation:
+    rules:
+      - field: metadata.labels.ttl
+        default: "24h"
+        when:
+          - field: '{{ isPreview }}'
+            equals: "true"
+      - field: spec.environment
+        default: production
+        when:
+          - field: '{{ isPrimary }}'
+            equals: "true"
 ```
 
 **At reconcile time** (operatorBox resource templates) — the annotations survive the SSA patch and every subsequent resync. The operator reads them on every reconcile and routes child resource creation accordingly:

@@ -13,6 +13,7 @@ import (
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	orkdeploy "github.com/orkspace/orkestra/pkg/resources/deployments"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // BlockchainNodeReconciler implements domain.Reconciler for the BlockchainNode CRD.
@@ -26,20 +27,14 @@ func NewBlockchainNodeReconciler(kube kubeclient.Interface) domain.Reconciler {
 }
 
 func (r *BlockchainNodeReconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
-	key := req.Key
-	raw, exists, err := r.kube.GetInformer().GetIndexer().GetByKey(key)
-	if err != nil {
-		return domain.Result{}, fmt.Errorf("cache lookup %q: %w", key, err)
-	}
-	if !exists {
+	if req.Prepared == nil {
 		return domain.Result{}, nil
 	}
 
-	node, ok := raw.(*apiv1.BlockchainNode)
-	if !ok {
-		return domain.Result{}, fmt.Errorf("unexpected type %T for key %q", raw, key)
+	node, err := domain.ToTyped[apiv1.BlockchainNode](req.Prepared)
+	if err != nil {
+		return domain.Result{}, fmt.Errorf("toTyped: %w", err)
 	}
-	node = node.DeepCopyObject().(*apiv1.BlockchainNode)
 
 	if node.DeletionTimestamp != nil {
 		return domain.Result{}, nil
@@ -89,7 +84,7 @@ func (r *BlockchainNodeReconciler) Reconcile(ctx context.Context, req domain.Req
 		"network":         node.Spec.Network,
 		"featureEnabled":  annotation,
 		"inBusinessHours": bizHours,
-	})
+	}, metav1.PatchOptions{})
 }
 
 // inBusinessHours returns true when the current UTC time is a weekday within

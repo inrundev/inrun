@@ -62,25 +62,26 @@ Implement the mapping once in a Katalog:
 
 ```yaml
 operatorBox:
-  onCreate:
-    custom:
-      - apiVersion: argoproj.io/v1alpha1
-        kind: Application
-        name: "{{ .metadata.name }}"
-        namespace: argocd
-        spec:
-          project: default
-          source:
-            repoURL: "https://{{ .spec.repo }}"
-            targetRevision: "{{ .spec.branch }}"
-            path: "{{ .spec.path }}"
-          destination:
-            server: https://kubernetes.default.svc
-            namespace: "{{ .spec.targetNamespace }}"
-          syncPolicy:
-            automated:
-              prune: true
-              selfHeal: true
+  reconcile:
+    onCreate:
+      custom:
+        - apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          name: "{{ .metadata.name }}"
+          namespace: argocd
+          spec:
+            project: default
+            source:
+              repoURL: "https://{{ .spec.repo }}"
+              targetRevision: "{{ .spec.branch }}"
+              path: "{{ .spec.path }}"
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: "{{ .spec.targetNamespace }}"
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
 ```
 
 Now the mapping — the `https://` prefix, the `argocd` namespace, the `project: default`, the `syncPolicy` defaults — is in one place, owned by the platform team, enforced for everyone. Your developer writes `App`. Orkestra writes `Application`.
@@ -96,12 +97,13 @@ Mapping is the minimum. A Katalog can also:
 Enforce constraints on the internal CRD before it is stored:
 
 ```yaml
-validation:
-  rules:
-    - field: metadata.labels.team
-      operator: exists
-      message: "declare metadata.labels.team — all apps must declare ownership before they are deployed"
-      action: deny
+admission:
+  validation:
+    rules:
+      - field: metadata.labels.team
+        operator: exists
+        message: "declare metadata.labels.team — all apps must declare ownership before they are deployed"
+        action: deny
 ```
 
 The ArgoCD Application is never created if the `App` CR does not satisfy this rule. With `security.webhooks.admission.enabled=true` .The check happens at apply time — before the reconciler runs. Without it, the check happens at reconcile time.
@@ -128,8 +130,10 @@ Prevent accidental deletion:
 
 ```yaml
 security:
-  deletionProtection:
-    enabled: true
+  operatorBox:
+    runtime:
+      deletionProtection:
+        enabled: true
 ```
 
 The `App` CR cannot be deleted until deletion protection is explicitly disabled. This means no `kubectl delete -f` accident removes a production ArgoCD Application.

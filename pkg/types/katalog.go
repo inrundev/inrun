@@ -4,6 +4,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -362,6 +363,15 @@ func (r *APISecretRef) SecretNamespace() string {
 	return r.Namespace
 }
 
+// IsValid reports whether the ref is structurally complete: name and key are required.
+// Namespace is optional — an empty namespace means "use the operator's own namespace".
+func (r *APISecretRef) IsValid() bool {
+	if r == nil {
+		return false
+	}
+	return strings.TrimSpace(r.Name) != "" && strings.TrimSpace(r.Key) != ""
+}
+
 // ── APIConfig methods ─────────────────────────────────────────
 
 // HasAuth reports whether the Gateway API has authentication configured.
@@ -447,23 +457,6 @@ type KatalogFile struct {
 	// and reconcile time. Template expressions in profile field values are
 	// resolved at reconcile time; validation skips fields that contain {{ }}.
 	Profiles ProfileRegistry `yaml:"profiles,omitempty"`
-
-	// Providers declares which external provider libraries this Katalog requires.
-	// Top-level alongside spec: and security: — providers represent a distinct
-	// operational concern (infrastructure dependencies) separate from CRD definitions.
-	//
-	//   providers:
-	//     - name: aws
-	//       required: true
-	//       auth:
-	//         accessKeyId: "$AWS_ACCESS_KEY_ID"
-	//         secretAccessKey: "$AWS_SECRET_ACCESS_KEY"
-	//         region: "$AWS_REGION"
-	//     - name: mongodb
-	//       required: true
-	//       auth:
-	//         mongoUri: "$MONGODB_URL"
-	Providers []KatalogProviderRequirement `yaml:"providers,omitempty"`
 }
 
 // LooksLikeKomposer reports if this document looks like a Komposer
@@ -810,12 +803,11 @@ type KatalogSpec struct {
 // It contains only the fields needed for display in the Control Center,
 // excluding internal runtime fields.
 type KatalogForUI struct {
-	APIVersion string                       `json:"apiVersion"`          // Orkestra API version
-	Kind       string                       `json:"kind"`                // Always "Katalog" at runtime
-	Metadata   KatalogMeta                  `json:"metadata"`            // Katalog metadata (name, description, etc.)
-	Spec       KatalogSpecForUI             `json:"spec"`                // CRD definitions
-	Security   KatalogSecurity              `json:"security"`            // Security settings
-	Providers  []KatalogProviderRequirement `json:"providers,omitempty"` // Provider requirements
+	APIVersion string           `json:"apiVersion"` // Orkestra API version
+	Kind       string           `json:"kind"`       // Always "Katalog" at runtime
+	Metadata   KatalogMeta      `json:"metadata"`   // Katalog metadata (name, description, etc.)
+	Spec       KatalogSpecForUI `json:"spec"`       // CRD definitions
+	Security   KatalogSecurity  `json:"security"`   // Security settings
 }
 
 // KatalogSpecForUI contains the CRD definitions for UI display.

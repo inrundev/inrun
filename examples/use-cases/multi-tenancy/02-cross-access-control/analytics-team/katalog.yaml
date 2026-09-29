@@ -15,34 +15,33 @@ spec:
         version: v1alpha1
         kind: Report
         plural: reports
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
-        cross:
-          - crd: ledger
-            as: ledgerState
-            selector:
-              name: "{{ .spec.ledgerName }}"
-              namespace: "{{ .metadata.namespace }}"
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-report"
+                when:
+                  - field: cross.ledgerState.found
+                    operator: eq
+                    value: "true"
+                data:
+                  ledgerPhase: "{{ .cross.ledgerState.status.phase }}"
+                  entryCount: "{{ .cross.ledgerState.status.entryCount }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: '{{ eqTernary .cross.ledgerState.found "true" "Ready" "Waiting" }}'
+              - path: ledgerPhase
+                value: "{{ .cross.ledgerState.status.phase }}"
+        observe:
+          cross:
+            - crd: ledger
+              as: ledgerState
+              selector:
+                name: "{{ .spec.ledgerName }}"
+                namespace: "{{ .metadata.namespace }}"
 
-        status:
-          fields:
-            - path: phase
-              value: '{{ eqTernary .cross.ledgerState.found "true" "Ready" "Waiting" }}'
-            - path: ledgerPhase
-              value: "{{ .cross.ledgerState.status.phase }}"
-
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-report"
-              when:
-                - field: cross.ledgerState.found
-                  operator: eq
-                  value: "true"
-              data:
-                ledgerPhase: "{{ .cross.ledgerState.status.phase }}"
-                entryCount: "{{ .cross.ledgerState.status.entryCount }}"
-              reconcile: true

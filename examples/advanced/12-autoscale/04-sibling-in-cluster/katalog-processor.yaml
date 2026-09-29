@@ -27,88 +27,87 @@ spec:
         version: v1alpha1
         kind: Processor
         plural: processors
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        cross:
-          # Monitors a particular Loader CR called 'my-loader'
-          - crd: loader
-            selector:
-              name: my-loader
-              namespace: default
-            source:
-              host: "http://localhost:8080"
-              protocol: cr
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 9090
+                reconcile: true
+            services:
+              - port: "9090"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: autoscaleActive
+                value: "{{ .metrics.autoscaleActive }}"
+              - path: workers
+                value: "{{ .metrics.workers }}"
+              - path: lastError
+                value: "{{ .health.lastError }}"
+              - path: state
+                value: "{{ .health.state }}"
+              - path: loaderQueueDepth
+                value: "{{ .cross.loaderCRDInfo.metrics.queueDepth }}"
+              - path: queueDepth
+                value: "{{ .metrics.queueDepth }}"
+              - path: loaderState
+                value: "{{ .cross.loaderCRInfo.status.phase }}"
+              - path: loaderHealthy
+                value: "{{ .cross.loaderHealth.healthy }}"
+              - path: loaderLastError
+                value: "{{ .cross.loaderHealth.lastError }}"
+              - path: loaderPhase
+                value: "{{ .cross.loaderHealth.state }}"
+              - path: loaderDeploymentReady
+                value: "{{ .cross.loaderCRInfo.children.deployment.ready }}"
+        runtime:
+          autoscale:
+            interval: 20s
+            cooldown: 3m
+            conditions:
+              when:
+                - field: cross.loader.metrics.queueDepth
+                  greaterThan: "60"
+            do:
+              workers: 8
+              queueDepth: 800
+              resync: 10s
+        observe:
+          cross:
+            # Monitors a particular Loader CR called 'my-loader'
+            - crd: loader
+              selector:
+                name: my-loader
+                namespace: default
+              source:
+                host: "http://localhost:8080"
+                protocol: cr
 
-              # Or replace host and type with endpoint
-              # endpoint: "http://localhost:8080/katalog/loader/cr/default/my-loader"
-            as: loaderCRInfo
+                # Or replace host and type with endpoint
+                # endpoint: "http://localhost:8080/katalog/loader/cr/default/my-loader"
+              as: loaderCRInfo
 
-          # Monitor the operator health and itself
-          - crd: loader
-            source:
-              host: "http://localhost:8080"
-              protocol: health
-              cacheFor: 30s
+            # Monitor the operator health and itself
+            - crd: loader
+              source:
+                host: "http://localhost:8080"
+                protocol: health
+                cacheFor: 30s
 
-              # Or replace host and type with endpoint
-              # endpoint: "http://localhost:8080/katalog/loader/health"
-            as: loaderHealth
+                # Or replace host and type with endpoint
+                # endpoint: "http://localhost:8080/katalog/loader/health"
+              as: loaderHealth
 
-          - crd: loader
-            source:
-              host: "http://localhost:8080"
-              protocol: metrics
-              cacheFor: 30s
-            as: loaderCRDInfo
+            - crd: loader
+              source:
+                host: "http://localhost:8080"
+                protocol: metrics
+                cacheFor: 30s
+              as: loaderCRDInfo
 
-        autoscale:
-          interval: 20s
-          cooldown: 3m
-          conditions:
-            when:
-              - field: cross.loader.metrics.queueDepth
-                greaterThan: "60"
-          do:
-            workers: 8
-            queueDepth: 800
-            resync: 10s
-
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: autoscaleActive
-              value: "{{ .metrics.autoscaleActive }}"
-            - path: workers
-              value: "{{ .metrics.workers }}"
-            - path: lastError
-              value: "{{ .health.lastError }}"
-            - path: state
-              value: "{{ .health.state }}"
-            - path: loaderQueueDepth
-              value: "{{ .cross.loaderCRDInfo.metrics.queueDepth }}"
-            - path: queueDepth
-              value: "{{ .metrics.queueDepth }}"
-            - path: loaderState
-              value: "{{ .cross.loaderCRInfo.status.phase }}"
-            - path: loaderHealthy
-              value: "{{ .cross.loaderHealth.healthy }}"
-            - path: loaderLastError
-              value: "{{ .cross.loaderHealth.lastError }}"
-            - path: loaderPhase
-              value: "{{ .cross.loaderHealth.state }}"
-            - path: loaderDeploymentReady
-              value: "{{ .cross.loaderCRInfo.children.deployment.ready }}"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 9090
-              reconcile: true
-          services:
-            - port: "9090"

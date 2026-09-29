@@ -17,9 +17,10 @@ spec:
         version: v1alpha1
         kind: HealthProbe
         plural: healthprobes
-
       operatorBox:
-        status:
-          fields:
-            - path: phase
-              value: Running
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: Running
+

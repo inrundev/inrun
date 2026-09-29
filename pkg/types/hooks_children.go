@@ -71,8 +71,8 @@ func (b *OperatorBoxConfig) DeclaredChildKinds() map[string]bool {
 		})
 	}
 
-	visit(b.OnCreate)
-	visit(b.OnReconcile)
+	visit(b.EffectiveOnCreate())
+	visit(b.EffectiveOnReconcile())
 
 	if len(kinds) == 0 {
 		return nil

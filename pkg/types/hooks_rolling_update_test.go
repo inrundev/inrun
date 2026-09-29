@@ -10,9 +10,11 @@ import (
 
 func crdWithDeploymentOnCreate(deps ...orktypes.DeploymentTemplateSource) orktypes.CRDEntry {
 	return orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnCreate: &orktypes.HookTemplates{
-				Deployments: deps,
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnCreate: &orktypes.HookTemplates{
+					Deployments: deps,
+				},
 			},
 		},
 	}
@@ -86,10 +88,12 @@ func TestCollectRollingUpdateProfileEntries_TemplateExpr(t *testing.T) {
 
 func TestCollectRollingUpdateProfileEntries_StatefulSet(t *testing.T) {
 	c := orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnCreate: &orktypes.HookTemplates{
-				StatefulSets: []orktypes.StatefulSetTemplateSource{
-					{Name: "db", RollingUpdate: &orktypes.RollingUpdateBehavior{Profile: "safe"}},
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnCreate: &orktypes.HookTemplates{
+					StatefulSets: []orktypes.StatefulSetTemplateSource{
+						{Name: "db", RollingUpdate: &orktypes.RollingUpdateBehavior{Profile: "safe"}},
+					},
 				},
 			},
 		},
@@ -102,10 +106,12 @@ func TestCollectRollingUpdateProfileEntries_StatefulSet(t *testing.T) {
 
 func TestCollectRollingUpdateProfileEntries_OnReconcile(t *testing.T) {
 	c := orktypes.CRDEntry{
-		OperatorBox: orktypes.OperatorBoxConfig{
-			OnReconcile: &orktypes.HookTemplates{
-				Deployments: []orktypes.DeploymentTemplateSource{
-					{Name: "app", RollingUpdate: &orktypes.RollingUpdateBehavior{Profile: "fast"}},
+		OperatorBox: &orktypes.OperatorBoxConfig{
+			Reconcile: &orktypes.ReconcileConfig{
+				OnReconcile: &orktypes.HookTemplates{
+					Deployments: []orktypes.DeploymentTemplateSource{
+						{Name: "app", RollingUpdate: &orktypes.RollingUpdateBehavior{Profile: "fast"}},
+					},
 				},
 			},
 		},

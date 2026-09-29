@@ -19,52 +19,51 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 1m
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: 2
+                port: "{{ .spec.port | default 8080 }}"
+                reconcile: true
+                autoscale:
+                  min: 2
+                  max: 10
+                  cooldown: 2m
+                  scaleUp:
+                    target: 10
+                    conditions:
+                      when:
+                        - dayOfWeek:
+                            weekday: true
+                        - time:
+                            after: "09:00"
+                            before: "18:00"
+                  scaleDown:
+                    target: 2
+                    conditions:
+                      when:
+                        - dayOfWeek:
+                            weekday: true
+                          negate: true
+                        - time:
+                            after: "09:00"
+                            before: "18:00"
+                          negate: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Steady"
+              - path: phase
+                value: "Peak"
+                when:
+                  - field: "{{ inBusinessHours }}"
+                    equals: "true"
+              - path: replicas
+                value: "{{ readyReplicas .children.deployment }}"
 
-        status:
-          fields:
-            - path: phase
-              value: "Steady"
-            - path: phase
-              value: "Peak"
-              when:
-                - field: "{{ inBusinessHours }}"
-                  equals: "true"
-            - path: replicas
-              value: "{{ readyReplicas .children.deployment }}"
-
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: 2
-              port: "{{ .spec.port | default 8080 }}"
-              reconcile: true
-              autoscale:
-                min: 2
-                max: 10
-                cooldown: 2m
-                scaleUp:
-                  target: 10
-                  conditions:
-                    when:
-                      - dayOfWeek:
-                          weekday: true
-                      - time:
-                          after: "09:00"
-                          before: "18:00"
-                scaleDown:
-                  target: 2
-                  conditions:
-                    when:
-                      - dayOfWeek:
-                          weekday: true
-                        negate: true
-                      - time:
-                          after: "09:00"
-                          before: "18:00"
-                        negate: true

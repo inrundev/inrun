@@ -57,16 +57,14 @@ spec:
   crds:
     postgres:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 8
           resync: 30s
-
     website:
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 6
           resync: 15s
-
     database:
       enabled: false
 
@@ -75,15 +73,13 @@ security:
   ...
 notification:
   ...
-providers:
-  - ...
 ```
 
 ---
 
 ## Relationship to Katalog
 
-A Komposer shares the same top-level schema as a Katalog — `security`, `notification`, `providers` — and adds one field: `imports`. The `spec.crds` block is identical in structure to a Katalog's but is used exclusively for overrides, not for defining new operators from scratch.
+A Komposer shares the same top-level schema as a Katalog — `security`, `notification` — and adds one field: `imports`. The `spec.crds` block is identical in structure to a Katalog's but is used exclusively for overrides, not for defining new operators from scratch.
 
 | | Katalog | Komposer |
 |--|---------|----------|
@@ -113,7 +109,6 @@ CRD names must be unique across all imports. A duplicate name in two different i
 |-------|----------------|
 | `security` | Komposer's setting wins on conflict. |
 | `notification.teams` | Union of all imports; Komposer wins on duplicate team name. |
-| `providers` | Union; deduplicated by name. |
 
 ---
 
@@ -142,4 +137,4 @@ This starts a Komposer that pulls a versioned Katalog from the Orkestra OCI regi
 
 - [Katalog schema](../02-katalog/01-top-level.md) — the unit a Komposer imports
 - [Motif schema](../01-motif/index.md) — reusable resource blocks imported by Katalogs
-- [security](../02-katalog/10-katalog-security.md), [notification](../02-katalog/11-katalog-notification.md), [providers](../02-katalog/12-katalog-providers.md) — inherited from Katalog schema
+- [security](../02-katalog/10-katalog-security.md), [notification](../02-katalog/11-katalog-notification.md) — inherited from Katalog schema

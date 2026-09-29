@@ -1,0 +1,96 @@
+# Schema reference: https://orkestra.sh/docs/reference/schema/katalog/
+apiVersion: orkestra.orkspace.io/v1
+kind: Katalog
+metadata:
+  name: webapp-declarative
+  author: myorg
+  version: 1.0.0
+  description: >
+    The WebApp operator expressed fully declaratively. Zero Go.
+    Same behaviour as the controller-runtime baseline — Deployment, Service, status.
+  tags:
+    - beginner
+    - migration
+    - declarative
+
+spec:
+  crds:
+    declarativeApp:
+      crdFile: ./crd.yaml
+      crFiles:
+        - ./cr.yaml
+      operatorBox:
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: "{{ .spec.port }}"
+                reconcile: true
+
+            services:
+              - name: "{{ .metadata.name }}-svc"
+                port: "80"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+              - path: replicas
+                value: "{{ .spec.replicas }}"
+        runtime:
+          allowedNamespaces:
+            - default
+
+    # worker:
+
+    #   crdFile: ./crd-with-secret.yaml
+    #   crFiles:
+
+    #     - ./cr-with-secret.yaml
+    #   allowedNamespaces:
+
+    #     - default
+
+    #   operatorBox:
+
+    #     default: true
+
+    #     status:
+
+    #       fields:
+
+    #         - path: phase
+    #           value: "Running"
+
+    #     onCreate:
+
+    #       secrets:
+
+    #         - name: "{{ .metadata.name }}-token"
+    #           once: true
+    #           rotateAfter: 30d
+    #           data:
+
+    #             token: "{{ randomAlphanumeric 32 }}"
+
+    #       deployments:
+
+    #         - name: "{{ .metadata.name }}"
+    #           image: "{{ .spec.image }}"
+    #           replicas: "{{ .spec.replicas }}"
+    #           reconcile: true
+    #           env:
+
+    #             - name: WORKER_TOKEN
+    #               valueFrom:
+
+    #                 secretKeyRef:
+
+    #                   name: "{{ .metadata.name }}-token"
+    #                   key: token

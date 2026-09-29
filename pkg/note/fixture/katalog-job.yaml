@@ -16,69 +16,68 @@ spec:
       crdFile: ./crd.yaml
       crFiles:
         - ./cr.yaml
-
       enrich:
         - pods
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 30s
 
-        onCreate:
-          jobs:
-            - name: "{{ .metadata.name }}-probe"
-              image: alpine:3.19
-              command: ["/bin/sh", "-c", "echo 'job probe complete'; exit 0"]
+          onCreate:
+            jobs:
+              - name: "{{ .metadata.name }}-probe"
+                image: alpine:3.19
+                command: ["/bin/sh", "-c", "echo 'job probe complete'; exit 0"]
+        emit:
+          status:
+            fields:
+              # ── Phase state machine ─────────────────────────────────────────
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-        status:
-          fields:
-            # ── Phase state machine ─────────────────────────────────────────
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+              - path: phase
+                value: "Running"
+                when:
+                  - field: "{{ jobActive .children.job }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Running"
-              when:
-                - field: "{{ jobActive .children.job }}"
-                  equals: "true"
+              - path: phase
+                value: "Succeeded"
+                when:
+                  - field: "{{ jobSucceeded .children.job }}"
+                    equals: "true"
 
-            - path: phase
-              value: "Succeeded"
-              when:
-                - field: "{{ jobSucceeded .children.job }}"
-                  equals: "true"
+              - path: phase
+                value: "Failed"
+                when:
+                  - field: "{{ jobFailed .children.job }}"
+                    equals: "true"
+                  - field: "{{ jobSucceeded .children.job }}"
+                    equals: "false"
 
-            - path: phase
-              value: "Failed"
-              when:
-                - field: "{{ jobFailed .children.job }}"
-                  equals: "true"
-                - field: "{{ jobSucceeded .children.job }}"
-                  equals: "false"
+              # ── job notes ───────────────────────────────────────────────────
+              - path: jobSucceeded
+                value: "{{ jobSucceeded .children.job }}"
 
-            # ── job notes ───────────────────────────────────────────────────
-            - path: jobSucceeded
-              value: "{{ jobSucceeded .children.job }}"
+              - path: jobFailed
+                value: "{{ jobFailed .children.job }}"
 
-            - path: jobFailed
-              value: "{{ jobFailed .children.job }}"
+              - path: jobActive
+                value: "{{ jobActive .children.job }}"
 
-            - path: jobActive
-              value: "{{ jobActive .children.job }}"
+              # ── enriched job pod notes (require enrich: [pods]) ─────────────
+              - path: exitCode
+                value: "{{ jobFirstExitCode .children.job }}"
 
-            # ── enriched job pod notes (require enrich: [pods]) ─────────────
-            - path: exitCode
-              value: "{{ jobFirstExitCode .children.job }}"
+              - path: activePodNames
+                value: "{{ jobActivePodNames .children.job }}"
 
-            - path: activePodNames
-              value: "{{ jobActivePodNames .children.job }}"
+              - path: succeededPodNames
+                value: "{{ jobSucceededPodNames .children.job }}"
 
-            - path: succeededPodNames
-              value: "{{ jobSucceededPodNames .children.job }}"
+              - path: failedPodNames
+                value: "{{ jobFailedPodNames .children.job }}"
 
-            - path: failedPodNames
-              value: "{{ jobFailedPodNames .children.job }}"

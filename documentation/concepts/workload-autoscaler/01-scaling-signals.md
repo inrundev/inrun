@@ -17,9 +17,11 @@ apiTypes:
     kind: Deployment
     labelSelector:
       app.kubernetes.io/managed-by: my-platform
-    allowedNamespaces:
-      - default
-      - my-platform
+    operatorBox:
+      runtime:
+        allowedNamespaces:
+          - default
+          - my-platform
 ```
 
 **Blacklist — watch everything except these namespaces:**
@@ -29,9 +31,11 @@ apiTypes:
     kind: Deployment
     labelSelector:
       app.kubernetes.io/managed-by: my-platform
-    restrictedNamespaces:
-      - kube-system
-      - kube-public
+    operatorBox:
+      runtime:
+        restrictedNamespaces:
+          - kube-system
+          - kube-public
 ```
 
 ```yaml
@@ -196,25 +200,28 @@ autoscale:
 ## Cross-operator metrics
 
 ```yaml
-cross:
-  - crd: jobqueue
-    selector:
-      name: "{{ .spec.queueName }}"
-      namespace: "{{ .metadata.namespace }}"
-    as: queue
-
-deployments:
-  - name: "{{ .metadata.name }}"
-    autoscale:
-      scaleUp:
-        conditions:
-          when:
-            - field: cross.queue.status.queueDepth
-              greaterThan: "100"
-        increment: 2
+operatorBox:
+  observe:
+    cross:
+      - crd: jobqueue
+        selector:
+          name: "{{ .spec.queueName }}"
+          namespace: "{{ .metadata.namespace }}"
+        as: queue
+  reconcile:
+    onReconcile:
+      deployments:
+        - name: "{{ .metadata.name }}"
+          autoscale:
+            scaleUp:
+              conditions:
+                when:
+                  - field: cross.queue.status.queueDepth
+                    greaterThan: "100"
+              increment: 2
 ```
 
-`cross:` reads a sibling CRD's resolved state. In-binary lookups go through the informer cache. For cross-binary or cross-cluster, `cross:` with a `source:` block fetches via HTTP with caching. Any field the sibling publishes to status is reachable at `cross.<name>.status.*`.
+`observe.cross:` reads a sibling CRD's resolved state. In-binary lookups go through the informer cache. For cross-binary or cross-cluster, add a `source:` block to fetch via HTTP with caching. Any field the sibling publishes to status is reachable at `cross.<name>.status.*`.
 
 ---
 

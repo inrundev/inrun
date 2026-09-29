@@ -1,6 +1,6 @@
 ---
 title: "Trust and Failure Model"
-date: 2026-05-29
+date: 2026-09-19
 weight: 2
 ---
 
@@ -32,7 +32,7 @@ The result is that a compromise of either process has a bounded blast radius. Th
 
 ## The production binary is not the development binary
 
-`ork` in development includes every command: `init`, `generate`, `validate`, `template`, `diff`, `upgrade`, `controlcenter`, and `run`. The production runtime is compiled with a build tag that removes everything except `run` and `version`. This is a compile-time exclusion — no configuration can re-enable it.
+`ork` in development includes every command: `init`, `generate`, `validate`, `template`, `diff`, `upgrade`, `controlcenter`, `gate`, and `run`. The production runtime is compiled with a build tag that removes everything except `run`. This is a compile-time exclusion — no configuration can re-enable it.
 
 An attacker who reaches the container cannot use `ork generate` to modify cluster state, cannot use `ork init` to write arbitrary files, and cannot trigger any code path that exists only for local development. The runtime binary is a smaller, narrower artifact than the full CLI: fewer dependencies, fewer entry points, fewer things that can go wrong.
 

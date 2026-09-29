@@ -4,25 +4,26 @@ Declare status fields in the Katalog. Values support the same Go template expres
 
 ```yaml
 operatorBox:
-  status:
-    fields:
-      - path: phase
-        value: "Running"
+  emit:
+    status:
+      fields:
+        - path: phase
+          value: "Running"
 
-      - path: observedReplicas
-        value: "{{ .spec.replicas }}"
+        - path: observedReplicas
+          value: "{{ .spec.replicas }}"
 
-      - path: endpoint
-        value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
+        - path: endpoint
+          value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
 
-      - path: version
-        value: "{{ .spec.version }}"
+        - path: version
+          value: "{{ .spec.version }}"
 
-      - path: database.host        # nested — becomes status.database.host
-        value: "{{ .spec.host }}"
+        - path: database.host        # nested — becomes status.database.host
+          value: "{{ .spec.host }}"
 
-      - path: database.port
-        value: "{{ .spec.port }}"
+        - path: database.port
+          value: "{{ .spec.port }}"
 ```
 
 After a successful reconcile:
@@ -87,11 +88,12 @@ When the field list grows long it can be split into a separate file:
 
 ```yaml
 operatorBox:
-  status:
-    include: ./status/fields.yaml
-    fields:
-      - path: version           # appended after included fields
-        value: "{{ .spec.version }}"
+  emit:
+    status:
+      include: ./status/fields.yaml
+      fields:
+        - path: version           # appended after included fields
+          value: "{{ .spec.version }}"
 ```
 
 `./status/fields.yaml`:

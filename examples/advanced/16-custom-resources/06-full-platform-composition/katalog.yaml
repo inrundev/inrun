@@ -25,107 +25,112 @@ spec:
       # For a flexible Platform that reads size from spec, you would use
       # conditional imports or a hook. Here we show two separate imports
       # via different Platform CRs (cr-small.yaml, cr-large.yaml).
-      imports:
-        - motif: ./platform-motif.yaml
-          with:
-            mqReplicas: 1
-            mqStorage: "20Gi"
-            storeCapacity: "200Gi"
-            storeReplicas: 1
-            searchNodes: 1
-            searchHeapSize: "1g"
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 60s
+          imports:
+            - motif: ./platform-motif.yaml
+              with:
+                mqReplicas: 1
+                mqStorage: "20Gi"
+                storeCapacity: "200Gi"
+                storeReplicas: 1
+                searchNodes: 1
+                searchHeapSize: "1g"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Ready"
+              - path: mqPhase
+                value: '{{ (index .children.customs (printf "%s-mq" .metadata.name)).status.phase }}'
+              - path: storePhase
+                value: '{{ (index .children.customs (printf "%s-store" .metadata.name)).status.phase }}'
+              - path: searchPhase
+                value: '{{ (index .children.customs (printf "%s-search" .metadata.name)).status.phase }}'
         # Status propagation from all three children using the (index ...) pattern.
         # The child names are: <platform-name>-mq, <platform-name>-store, <platform-name>-search.
-        status:
-          fields:
-            - path: phase
-              value: "Ready"
-            - path: mqPhase
-              value: '{{ (index .children.customs (printf "%s-mq" .metadata.name)).status.phase }}'
-            - path: storePhase
-              value: '{{ (index .children.customs (printf "%s-store" .metadata.name)).status.phase }}'
-            - path: searchPhase
-              value: '{{ (index .children.customs (printf "%s-search" .metadata.name)).status.phase }}'
 
     # ── MessageQueue ───────────────────────────────────────────────────────────
     messagequeue:
       crdFile: ./crd-messagequeue.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 3
           resync: 60s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:5672"
-        onCreate:
-          deployments:
-            - image: "rabbitmq:3.12-management-alpine"
-              replicas: "{{ .spec.replicas }}"
-              port: 5672
-              reconcile: true
-          services:
-            - port: "5672"
-              reconcile: true
+          onCreate:
+            deployments:
+              - image: "rabbitmq:3.12-management-alpine"
+                replicas: "{{ .spec.replicas }}"
+                port: 5672
+                reconcile: true
+            services:
+              - port: "5672"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:5672"
 
     # ── ObjectStore ────────────────────────────────────────────────────────────
     objectstore:
       crdFile: ./crd-objectstore.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 60s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:9000"
-        onCreate:
-          deployments:
-            - image: "minio/minio:RELEASE.2024-01-01T00-00-00Z"
-              replicas: "{{ .spec.replicas }}"
-              port: 9000
-              reconcile: true
-              env:
-                - name: MINIO_ROOT_USER
-                  value: admin
-                - name: MINIO_ROOT_PASSWORD
-                  value: minioadmin
-          services:
-            - port: "9000"
-              reconcile: true
+          onCreate:
+            deployments:
+              - image: "minio/minio:RELEASE.2024-01-01T00-00-00Z"
+                replicas: "{{ .spec.replicas }}"
+                port: 9000
+                reconcile: true
+                env:
+                  - name: MINIO_ROOT_USER
+                    value: admin
+                  - name: MINIO_ROOT_PASSWORD
+                    value: minioadmin
+            services:
+              - port: "9000"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:9000"
 
     # ── SearchCluster ──────────────────────────────────────────────────────────
     searchcluster:
       crdFile: ./crd-searchcluster.yaml
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 60s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:9200"
-        onCreate:
-          deployments:
-            - image: "opensearchproject/opensearch:2.11.0"
-              replicas: "{{ .spec.nodes }}"
-              port: 9200
-              reconcile: true
-              env:
-                - name: OPENSEARCH_JAVA_OPTS
-                  value: "-Xms{{ .spec.heapSize }} -Xmx{{ .spec.heapSize }}"
-                - name: discovery.type
-                  value: single-node
-          services:
-            - port: "9200"
-              reconcile: true
+          onCreate:
+            deployments:
+              - image: "opensearchproject/opensearch:2.11.0"
+                replicas: "{{ .spec.nodes }}"
+                port: 9200
+                reconcile: true
+                env:
+                  - name: OPENSEARCH_JAVA_OPTS
+                    value: "-Xms{{ .spec.heapSize }} -Xmx{{ .spec.heapSize }}"
+                  - name: discovery.type
+                    value: single-node
+            services:
+              - port: "9200"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local:9200"
+

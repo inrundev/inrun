@@ -6,11 +6,11 @@ Both primitives schedule reconciles on a timer, but they operate at different sc
 
 ## resync — uniform, whole-CRD
 
-`reconciler.resync:` is the informer resync period. On the interval, Orkestra re-lists every CR of the CRD from the API server and re-queues all of them, regardless of their individual state. Every object gets the same cadence.
+`reconcile.resync:` is the informer resync period. On the interval, Orkestra re-lists every CR of the CRD from the API server and re-queues all of them, regardless of their individual state. Every object gets the same cadence.
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     resync: 10m   # re-enqueue every CR of this CRD every 10 minutes
 ```
 
@@ -20,11 +20,11 @@ Think of it as a safety net: even if a watch event is missed, the informer catch
 
 ## requeue — targeted, per-object
 
-`reconciler.requeue:` schedules a re-enqueue for the specific CR that just reconciled. Each object can carry its own timing, derived from its own fields. Other CRs are not affected.
+`reconcile.requeue:` schedules a re-enqueue for the specific CR that just reconciled. Each object can carry its own timing, derived from its own fields. Other CRs are not affected.
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     requeue:
       after: '{{ .spec.checkInterval | default "60s" }}'
 ```
@@ -39,7 +39,7 @@ Both can be declared at the same time. The CR is re-enqueued by whichever fires 
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     resync: 10m
     requeue:
       after: '{{ .spec.checkInterval | default "60s" }}'

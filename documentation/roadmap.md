@@ -12,7 +12,7 @@ Orkestra is the Kubernetes operator runtime. The core is shipped and running in 
 
 - Dynamic mode — zero-code operators, no generated types, no compilation step
 - Typed mode — Go types, Go hooks, custom constructors when you need them
-- GenericReconciler with three-path dispatch: templates, hooks, constructor
+- Generic Reconciler with three-path dispatch: templates, hooks, constructor
 - Per-CRD isolation — dedicated informer, workqueue, and worker pool per CRD
 - Dependency graph — topological startup order (`dependsOn`), cycle detection
 - safeReconcile — panic recovery per CRD, other CRDs unaffected

@@ -23,11 +23,10 @@ crds:
       objectList: PostgresClusterList
       location: github.com/myorg/db-hooks/api/v1
     operatorBox:
-      reconciler:
+      reconcile:
         hooks:
           location: github.com/myorg/db-hooks/hooks
           function: DatabaseHooks
-
 # team-b/katalog.yaml — same cluster, different CRD and Kind, same binary
 crds:
   managed-database:
@@ -40,7 +39,7 @@ crds:
       objectList: ManagedDatabaseList
       location: github.com/myorg/db-hooks/api/v1alpha1
     operatorBox:
-      reconciler:
+      reconcile:
         hooks:
           location: github.com/myorg/db-hooks/hooks
           function: DatabaseHooks   # same binary
@@ -62,7 +61,7 @@ A platform constructor that serves three tiers from one binary:
 crds:
   app-starter:
     operatorBox:
-      reconciler:
+      reconcile:
         constructor:
           location: github.com/myorg/platform/constructor
           function: PlatformConstructor
@@ -77,10 +76,9 @@ crds:
             features:
               hpa: false
               pdb: false
-
   app-standard:
     operatorBox:
-      reconciler:
+      reconcile:
         constructor:
           location: github.com/myorg/platform/constructor
           function: PlatformConstructor   # same binary
@@ -97,10 +95,9 @@ crds:
               hpaMin: 2
               hpaMax: 10
               pdb: true
-
   app-enterprise:
     operatorBox:
-      reconciler:
+      reconcile:
         constructor:
           location: github.com/myorg/platform/constructor
           function: PlatformConstructor   # same binary
@@ -176,13 +173,12 @@ crds:
       kind: Database
       location: github.com/myorg/db-operator/api/v1
     operatorBox:
-      reconciler:
+      reconcile:
         hooks:
           function: DatabaseHooks
           args:
             region: eu-west-1
             backup: { enabled: true, scheduleHour: 2 }
-
 # us-production/katalog.yaml — different region and schedule
 crds:
   database:
@@ -190,7 +186,7 @@ crds:
       kind: Database
       location: github.com/myorg/db-operator/api/v1
     operatorBox:
-      reconciler:
+      reconcile:
         hooks:
           function: DatabaseHooks   # same binary
           args:
@@ -210,7 +206,7 @@ spec:
   crds:
     app-enterprise:
       operatorBox:
-        reconciler:
+        reconcile:
           constructor:
             args:
               compliance:

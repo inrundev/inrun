@@ -1,70 +1,31 @@
 # 02 — CRDHealth
 
-`CRDHealth` tracks the runtime health of a single CRD's reconciler. Every field that is read or written from multiple goroutines uses `atomic` operations or `sync.Map` — there are no locks in the hot path.
-
-## Fields
-
-```go
-type CRDHealth struct {
-    name             string
-    started          atomic.Bool
-    pending          atomic.Bool
-    healthy          atomic.Bool
-    degraded         atomic.Bool
-    totalReconciles  atomic.Int64
-    failedReconciles atomic.Int64
-    consecutiveFails atomic.Int64
-    lastError        atomic.Value  // string
-    lastReconcile    atomic.Value  // time.Time
-    startTime        atomic.Value  // time.Time
-    queueReg         *queue.QueueRegistry
-
-    // CRD presence at runtime
-    crdExists  atomic.Bool
-    crdCheckMu sync.RWMutex
-
-    // Worker state
-    totalWorkers      atomic.Int32
-    idleWorkers       atomic.Int32
-    processingWorkers atomic.Int32
-    workerStates      sync.Map  // workerID → "idle" | "processing" | "stopped"
-    gvk               string
-
-    // Dependency health
-    dependencies     map[string]DependencyStatus
-    dependenciesMu   sync.RWMutex
-    hasUnhealthyDeps atomic.Bool
-    healthySignaled  atomic.Bool
-
-    // Autoscaler worker snapshot — populated by kordinator after reconciler construction
-    workerInfoFn func() *ork_autoscaler.WorkerInfo
-
-    // Rollback tracking — updated by callbacks injected from the reconciler
-    rollbackTotal   atomic.Int64
-    rollbackActive  atomic.Bool
-    rollbackLastAt  atomic.Value  // time.Time
-    rollbackMu      sync.RWMutex
-    rollbackLastReason string
-}
-```
+`CRDHealth` tracks the runtime health of a single CRD. Every hot-path read and write uses `atomic` operations — no locks on the reconcile path.
 
 ## Health states
 
-A CRD moves through the following states during its lifetime:
+| State | Meaning |
+|---|---|
+| `pending` | CRD is registered but workers have not started |
+| `started` | Worker goroutines are running |
+| `healthy` | At least one reconcile completed without error |
+| `degraded` | Consecutive failures exceeded `DegradeThreshold`, or CRD missing from cluster |
 
-| State | How it is set | Meaning |
-|---|---|---|
-| `pending` | Informer created, `SetPending()` called | CRD exists in the Katalog but workers have not started yet |
-| `started` | `startCRDWorkers` calls `SetStarted()` | Worker goroutines are running |
-| `healthy` | First `RecordSuccess()` call | At least one reconcile has completed without error |
-| `degraded` | `consecutiveFails >= DegradeThreshold` | A sustained streak of failures; or CRD missing from cluster |
+Recovery from `degraded` to `healthy` happens on the next successful reconcile — no hysteresis.
 
-Recovery from `degraded` to `healthy` happens on the next `RecordSuccess()` — there is no hysteresis. A transient error spike that clears should not leave the CRD permanently degraded.
+## What it tracks
 
-## Worker tracking
+- **Reconcile counts** — total, failed, consecutive failures, last error, last reconcile time
+- **Worker states** — per-worker idle/processing/stopped, plus aggregate counters; updated atomically on each reconcile item, reflected in Prometheus gauges immediately
+- **Dependency status** — kept fresh by `dependencyHealthChecker`; flows into `/katalog/{crd}` and the Control Center
+- **Autoscaler snapshot** — `workerInfoFn` and `autoMetricsFn` closures set by `wireCRDHealthCallbacks` during startup; called on every `/katalog/{crd}` request for a live snapshot; omitted when no autoscaler is configured
+- **Rollback tracking** — callbacks injected via `SetRollbackNotifiers`; increments on trigger, clears on new spec generation *(rollback in development)*
 
-Workers call two methods around every reconcile item:
+## RuntimeHealth
 
+<<<<<<< HEAD
+`RuntimeHealth` is the operator-level aggregate. `/health` reflects it. `/ready` reflects it plus whether `Kordinate()` has started. It transitions to degraded when any CRD is missing or degraded, and recovers when all CRDs are started.
+=======
 ```go
 health.MarkWorkerProcessing(workerID)  // item dequeued, reconcile starting
 // ... reconcile runs ...
@@ -152,7 +113,8 @@ SetOrkDegraded()     — called on leadership loss before shutdown
 ```
 
 `/health` reflects `RuntimeHealth`. `/ready` reflects both `RuntimeHealth` and whether `Kordinate()` has started.
+>>>>>>> origin/main
 
 ---
 
-**Next →** [03 — Startup and dependency channels](03-startup.md)
+**Next →** [03 — Startup](03-startup.md)

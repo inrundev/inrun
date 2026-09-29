@@ -16,26 +16,27 @@ spec:
     workspace:
       crdFile: crd-workspace.yaml
       operatorBox:
-        onCreate:
-          custom:
-            - apiVersion: platform.example.io/v1alpha1
-              kind: SecretVault
-              metadata:
-                name: "{{ .metadata.name }}-vault"
-                namespace: "{{ .metadata.namespace }}"
-                namespaced: true
-              spec:
-                workspaceName: "{{ .metadata.name }}"
-                encryption: "{{ .spec.encryption }}"
-              hasStatus: false
-
+        reconcile:
+          onCreate:
+            custom:
+              - apiVersion: platform.example.io/v1alpha1
+                kind: SecretVault
+                metadata:
+                  name: "{{ .metadata.name }}-vault"
+                  namespace: "{{ .metadata.namespace }}"
+                  namespaced: true
+                spec:
+                  workspaceName: "{{ .metadata.name }}"
+                  encryption: "{{ .spec.encryption }}"
+                hasStatus: false
     secretvault:
       crdFile: crd-secretvault.yaml
       operatorBox:
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-api"
-              image: secrets-api:latest
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-api"
+                image: secrets-api:latest
 ```
 
 Apply a `Workspace` CR → Orkestra creates the `SecretVault` → the SecretVault operator creates the Deployment. Delete the `Workspace` → everything cascades away via owner references.

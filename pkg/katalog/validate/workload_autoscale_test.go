@@ -191,10 +191,12 @@ func TestValidateWorkloadAutoscale_OnReconcileOnly(t *testing.T) {
 
 	k := newKatalogExec(map[string]orktypes.CRDEntry{
 		"workerpool": {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				OnReconcile: &orktypes.HookTemplates{
-					Deployments: []orktypes.DeploymentTemplateSource{
-						{Name: "my-pool", Autoscale: autoscale},
+			OperatorBox: &orktypes.OperatorBoxConfig{
+				Reconcile: &orktypes.ReconcileConfig{
+					OnReconcile: &orktypes.HookTemplates{
+						Deployments: []orktypes.DeploymentTemplateSource{
+							{Name: "my-pool", Autoscale: autoscale},
+						},
 					},
 				},
 			},

@@ -13,7 +13,9 @@ import (
 	orkexternal "github.com/orkspace/orkestra/pkg/external"
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator"
-	"github.com/orkspace/orkestra/pkg/runtime/reconciler"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/contract"
+	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/generic"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -99,6 +101,9 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	if !ok {
 		return nil, fmt.Errorf("CRD %q not found in Katalog", crdName)
 	}
+	if crdEntry.WithRemoteDecl() {
+		return nil, ErrRemoteReconciler
+	}
 
 	// Strip cross-namespace copy resources (fromNamespace / toNamespaces) from
 	// all hook phases before the fake reconciler runs. These require a live API
@@ -111,21 +116,25 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	box := effectiveOperatorBox(crdEntry, cr, opts.Target)
 	// Copy the effective box so we don't mutate the original CRD entry.
 	boxCopy := *box
-	for _, phase := range []*orktypes.HookTemplates{
-		boxCopy.OnCreate,
-		boxCopy.OnReconcile,
-		boxCopy.OnDelete,
-	} {
-		if phase == nil {
-			continue
+	if boxCopy.Reconcile != nil {
+		reconcileCopy := *boxCopy.Reconcile
+		for _, phase := range []*orktypes.HookTemplates{
+			reconcileCopy.OnCreate,
+			reconcileCopy.OnReconcile,
+			reconcileCopy.OnDelete,
+		} {
+			if phase == nil {
+				continue
+			}
+			filtered, skipped := orktypes.FilterSimulatable(*phase)
+			*phase = filtered
+			result.Notes = append(result.Notes, skipped...)
 		}
-		filtered, skipped := orktypes.FilterSimulatable(*phase)
-		*phase = filtered
-		result.Notes = append(result.Notes, skipped...)
+		boxCopy.Reconcile = &reconcileCopy
 	}
 	// Build effective CRD entry — reconciler uses target's operatorBox, not the CRD-level one.
 	effectiveCRDEntry := crdEntry
-	effectiveCRDEntry.OperatorBox = boxCopy
+	effectiveCRDEntry.OperatorBox = &boxCopy
 
 	scheme, err := kat.Scheme()
 	if err != nil {
@@ -224,20 +233,19 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 
 	// Build the reconciler. Constructor path: use it directly with the fake
 	// kubeclient and a discarding event recorder.
-	// Fallback: GenericReconciler with the typed newObj factory and peer registry
+	// Fallback: generic.Reconciler with the typed newObj factory and peer registry
 	// so hook BindToObjectHooks type-assertions and cross: lookups both work.
 	var r domain.Reconciler
 	if factoryFn, ok := orktypes.ReconcilerRegistry[gvk]; ok {
 		r = factoryFn(fakeKube.WithInformer(informer).WithEventRecorder(event.Discard()))
 	} else {
-		r = reconciler.NewGenericReconciler(
+		r = generic.New(
 			effectiveCRDEntry,
 			informer,
 			nil,
 			fakeKube,
 			hookBinder,
 			newObjFn,
-			peerRegistry, nil, nil, nil,
 			kat,
 		)
 	}
@@ -249,7 +257,18 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 
 	r = wrapWithGate(r, boxCopy.PreReconcile, kat.Notes, getFromIndexerOrFallback(indexer, key, cr))
 
-	loopResult := runLoop(ctx, r, fakeKube, key, maxCycles)
+	prepInput := prepare.Input{
+		Entry: contract.RegistryEntry{
+			CRD:      effectiveCRDEntry,
+			Informer: informer,
+		},
+		Key:      key,
+		Kat:      kat,
+		Kube:     fakeKube,
+		Registry: peerRegistry,
+	}
+
+	loopResult := runLoop(ctx, r, fakeKube, key, maxCycles, prepInput)
 	loopResult.Notes = result.Notes
 	return loopResult, nil
 }

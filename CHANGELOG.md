@@ -1,3 +1,223 @@
+##  v0.7.18 — Remote Reconciler, OPPRE Execution Model, Declarative Events
+
+### New
+
+### `reconcile.remote` — HTTP reconciler
+
+Any HTTP server can now be the reconcile logic for an operator.
+`reconcile.default: false` + `reconcile.remote` routes every reconcile
+cycle to the declared endpoint. The runtime owns queue, backoff, SSA,
+owner references, RBAC, health, and events. The server owns the logic.
+
+```yaml
+operatorBox:
+  reconcile:
+    default: false
+    remote:
+      endpoint: "http://my-service/reconcile"
+      timeout: 15s
+      args:
+        environment: '{{ .metadata.labels.environment | default "development" }}'
+        appName: '{{ .metadata.name }}'
+      payload:
+        object:
+          exclude:
+            - metadata.managedFields
+            - metadata.annotations
+        children:
+          exclude:
+            - metadata.managedFields
+          resources:
+            deployment:
+              exclude:
+                - spec.template.metadata.annotations
+            service: {}   # {} or null = use root exclude
+      managedResources:
+        - kind: Deployment
+        - kind: Service
+        - group: ci.example.io
+          version: v1alpha1
+          kind: Pipeline
+          plural: pipelines
+```
+
+**Request body** (`POST`):
+
+```json
+{
+  "key": "default/my-app",
+  "gvk": { "Group": "...", "Version": "v1", "Kind": "App" },
+  "object": { ...CR... },
+  "args": { "environment": "production", "appName": "my-app" },
+  "prepared": {
+    "children": {
+      "deployment": { "my-app": { ...deployment... } }
+    }
+  }
+}
+```
+
+**Response body**:
+
+```json
+{
+  "result": "ok",
+  "requeueAfter": "",
+  "error": "",
+  "status": { "phase": "Running" },
+  "resources": [
+    { "type": "deployment", "fields": { "name": "my-app", "image": "nginx:latest", "replicas": 1, "port": 80 } },
+    { "type": "service",    "fields": { "name": "my-app-svc", "port": 80, "targetPort": 80 } }
+  ]
+}
+```
+
+`result` values: `ok`, `requeue`, `error`.
+`requeueAfter` required when `result: requeue`. Duration string e.g. `"30s"`.
+
+**Intent resource types** (`type` field):
+`deployment`, `service`, `configmap`, `secret`, `serviceaccount`,
+`job`, `cronjob`, `statefulset`, `ingress`, `custom`.
+Use full Kubernetes object shape (with `apiVersion`/`kind`) for any
+other type.
+
+**`args`** — template expressions evaluated against the full resolver
+at reconcile time. Injected as resolved key/value pairs. Supports
+the same expression surface as all other template fields.
+
+**`payload.object.exclude`** — dot-notation paths removed from the
+CR object before dispatch.
+
+**`payload.children`** — previous-cycle managed resources injected
+into `prepared.children`, keyed by lowercase kind then resource name.
+- Omit: inject all `managedResources` types in full
+- `enabled: false`: disable children injection
+- `resources.<kind>.exclude`: per-type field exclusion
+- Top-level `exclude`: applied to all injected children
+
+**`managedResources`** — Same behaviour as with hooks/constructors. Required when managing Kubernetes resources. 
+Declares resource types the server may create. 
+Drives RBAC generation and children injection. Resources
+not declared here are rejected before any apply call.
+- Built-in types: `kind` alone, or `group` + `plural`
+- Custom CRDs: `kind` required; `group`, `version`, `plural` recommended
+
+**`forceConflict`** — per-resource field on any returned resource (intent or full form). Same pattern as with the declarative (generic) reconciler.
+Controls SSA field ownership. Per-resource value wins over the CRD-level setting.
+Defaults to `true` when neither is set.
+
+### `operatorBox.runtime.cleanup` — declarative CR deletion
+
+Declares when to delete a CR after it reaches a terminal state.
+Evaluated before the reconciler is called on every cycle. Works for
+remote, generic, and typed reconcilers.
+
+```yaml
+operatorBox:
+  runtime:
+    cleanup:
+      when:
+        - field: .status.environment
+          equals: production
+      or:
+        - field: .status.phase
+          equals: Completed
+        - field: .status.phase
+          equals: Failed
+      deleteAfter: 60s
+```
+
+`when` and `or` follow the same semantics as gate conditions — `when`
+is AND, `or` is OR, both must pass when both are declared. The most
+common pattern is `or`-only: delete when phase is `Completed` or
+`Failed`.
+
+When conditions pass, Orkestra stamps
+`orkestra.orkspace.io/cleanup-pending-since` on the CR and
+re-evaluates on the next cycle. After `deleteAfter` has elapsed,
+deletion-protection labels are removed and a foreground delete is
+issued. Child resources are garbage-collected through owner references.
+Zero `deleteAfter` means delete immediately on the next cycle after
+conditions first pass.
+
+### `operatorBox.emit.events` — declarative event emission
+
+Kubernetes Events declared here fire automatically after every reconcile.
+No reconciler code required.
+
+```yaml
+operatorBox:
+  emit:
+    events:
+      synced:
+        reason: Synced
+        message: "{{ .name }} reconciled successfully"
+        type: Normal
+        on: [success]
+      failed:
+        reason: Failed
+        message: "reconcile error: {{ .lastError }}"
+        type: Warning
+        on: [failure]
+      degraded:
+        reason: Degraded
+        message: "{{ .name }} has failed {{ .consecutiveFails }} times"
+        type: Warning
+        on: [failure]
+        when:
+          - field: "{{ .health.consecutiveFails }}"
+            greaterThan: "3"
+```
+
+`on` values: `success`, `failure`, `always` (default when omitted).
+When `when:` is also declared, both must pass.
+
+---
+
+## Changed
+
+### `operatorBox` schema — OPPRE groupings
+
+Fields reorganised into five sections matching the execution order.
+No behaviour change. Flat layout continues to load with a deprecation
+warning.
+
+| Section | Fields |
+|---|---|
+| `observe` | `cross`, `watch`, `events` |
+| `preReconcile` | `sentinels`, `enqueueGate`, `reconcileGate` |
+| `runtime` | `allowedNamespaces`, `finalizers`, `autoscale`, `deletionProtection`, `rollback` |
+| `reconcile` | `default`, `remote`, `hooks`, `constructor`, `workers`, `resync`, `queue`, `imports`, `normalize` |
+| `emit` | `status`, `events` |
+
+CRD-level admission fields move to a peer `admission:` block:
+
+| Before | After |
+|---|---|
+| `spec.crds.<name>.validation` | `spec.crds.<name>.admission.validation` |
+| `spec.crds.<name>.mutation` | `spec.crds.<name>.admission.mutation` |
+| `spec.crds.<name>.conversion` | `spec.crds.<name>.admission.conversion` |
+| `spec.crds.<name>.webhooks` | `spec.crds.<name>.admission.webhooks` |
+
+### Reconciliation preparation moved to kordinator
+
+`prepare.Prepare()` now runs inside the kordinator worker loop before
+any reconciler is called. `Generic Reconciler` is a pure dispatcher.
+
+All reconciler types receive a fully-prepared `domain.Request`
+automatically. This enables the remote reconciler to receive enriched
+context without a Kubernetes client. Existing reconcilers are unaffected.
+
+---
+
+## Breaking
+
+- **`operatorBox` flat layout deprecated**
+- **`admission:` block** — `validation`, `mutation`, `conversion`,
+  `webhooks` moved from CRD-level to `admission:`.
+
+---
+
 ## v0.7.17 — Queue behaviour, pre-reconcile gating, admission runtime query
 
 ### Breaking: default queue is unlimited

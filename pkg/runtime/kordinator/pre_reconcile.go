@@ -18,7 +18,7 @@ func (k *Kontroller) objectFromCache(entry contract.RegistryEntry, key string) *
 	if err != nil || !exists || raw == nil {
 		return nil
 	}
-	obj, ok := raw.(*unstructured.Unstructured)
+	obj, ok := domain.ToUnstructured(raw)
 	if !ok {
 		return nil
 	}

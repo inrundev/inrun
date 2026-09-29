@@ -12,71 +12,68 @@ spec:
   crds:
     webapp:
       crdFile: ./crd-webapp.yaml
-
-
       # ── Motif imports ──────────────────────────────────────────────────────
       # Each motif is parameterized via with:. The motif owns the external call
       # sequence, the idempotency gate, and its status fields. The katalog owns
       # the Deployment and the final phase.
-      imports:
-        - motif: ./motifs/admission.yaml
-
-        - motif: ./motifs/supply-chain.yaml
-          with:
-            serviceUrl: "{{ .spec.serviceUrl }}"
-            image: "{{ .spec.image }}"
-
-        - motif: ./motifs/vault-gate.yaml
-          with:
-            serviceUrl: "{{ .spec.serviceUrl }}"
-
-        - motif: ./motifs/opa-policy.yaml
-          with:
-            serviceUrl: "{{ .spec.serviceUrl }}"
-            policy: "deploy"
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        default: true
+          onReconcile:
+            # Deployment only created when all three motifs pass.
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                when:
+                  - field: status.verifiedImage
+                    equals: "{{ .spec.image }}"
+                  - field: external.vaultSecret.status
+                    equals: "200"
+                  - field: external.policy.body
+                    contains: '"allow":true'
+          default: true
+          imports:
+            - motif: ./motifs/admission.yaml
 
-        onReconcile:
-          # Deployment only created when all three motifs pass.
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              when:
-                - field: status.verifiedImage
-                  equals: "{{ .spec.image }}"
-                - field: external.vaultSecret.status
-                  equals: "200"
-                - field: external.policy.body
-                  contains: '"allow":true'
+            - motif: ./motifs/supply-chain.yaml
+              with:
+                serviceUrl: "{{ .spec.serviceUrl }}"
+                image: "{{ .spec.image }}"
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
+            - motif: ./motifs/vault-gate.yaml
+              with:
+                serviceUrl: "{{ .spec.serviceUrl }}"
 
-            - path: phase
-              value: "Ready"
-              when:
-                - field: status.verifiedImage
-                  equals: "{{ .spec.image }}"
-                - field: external.vaultSecret.status
-                  equals: "200"
-                - field: external.policy.body
-                  contains: '"allow":true'
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+            - motif: ./motifs/opa-policy.yaml
+              with:
+                serviceUrl: "{{ .spec.serviceUrl }}"
+                policy: "deploy"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
 
-            - path: phase
-              value: "Blocked"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "false"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: status.verifiedImage
+                    equals: "{{ .spec.image }}"
+                  - field: external.vaultSecret.status
+                    equals: "200"
+                  - field: external.policy.body
+                    contains: '"allow":true'
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
+
+              - path: phase
+                value: "Blocked"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "false"
+

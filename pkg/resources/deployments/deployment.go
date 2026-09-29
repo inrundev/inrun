@@ -157,10 +157,10 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 
 // Resolve builds a ResolvedDeploymentSpec from a DeploymentTemplateSource.
 // Fields with template expressions must already be evaluated before calling Resolve.
-// Use pkg/orkestra-registry/template.Resolver to evaluate expressions first.
+// Use pkg/template.Resolver to evaluate expressions first.
 //
 // The resolver already evaluated template expressions — here we just merge.
-func Resolve(src orktypes.DeploymentTemplateSource, ownerName string, reg orktypes.ProfileRegistry) ResolvedDeploymentSpec {
+func Resolve(src orktypes.DeploymentTemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedDeploymentSpec {
 	spec := ResolvedDeploymentSpec{
 		Name:            src.Name,
 		Image:           src.Image,
@@ -173,6 +173,7 @@ func Resolve(src orktypes.DeploymentTemplateSource, ownerName string, reg orktyp
 		Profiles:        reg,
 		SecurityContext: shared.ResolveContainerSecurityContext(src.SecurityContext, reg),
 		PodSecurity:     shared.ResolvePodSecurityContext(src.PodSecurity, reg),
+		Command:         src.Command,
 		Volumes:         src.Volumes,
 		VolumeMounts:    src.VolumeMounts,
 		Sleep:           src.Sleep,
@@ -268,6 +269,11 @@ func buildDeployment(owner domain.Object, spec ResolvedDeploymentSpec, namespace
 				},
 			},
 		},
+	}
+
+	// Command
+	if len(spec.Command) > 0 {
+		d.Spec.Template.Spec.Containers[0].Command = spec.Command
 	}
 
 	// Port — Protocol is resolved in Resolve() and defaults to TCP when not declared.

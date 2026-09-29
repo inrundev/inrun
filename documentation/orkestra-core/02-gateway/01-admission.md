@@ -24,15 +24,16 @@ Each rule carries an `action: deny` or `action: warn`. Deny rules block the appl
 Rules can be conditional:
 
 ```yaml
-validation:
-  rules:
-    - field: spec.productionApproval
-      operator: exists
-      message: "production deployments require an approval ticket"
-      action: deny
-      when:
-        field: spec.environment
-        value: production
+admission:
+  validation:
+    rules:
+      - field: spec.productionApproval
+        operator: exists
+        message: "production deployments require an approval ticket"
+        action: deny
+        when:
+          field: spec.environment
+          value: production
 ```
 
 The `when:` guard is evaluated first. If it does not match, the rule is skipped entirely.
@@ -44,15 +45,16 @@ The `when:` guard is evaluated first. If it does not match, the rule is skipped 
 A `MutatingWebhookConfiguration` is registered when at least one `mutation.rules` entry is declared. Mutation runs before validation — a field defaulted by a mutation rule is visible to validation rules in the same request.
 
 ```yaml
-mutation:
-  mutateFirst: true
-  rules:
-    - field: spec.replicas
-      default: 2
-      valueType: int
+admission:
+  mutation:
+    mutateFirst: true
+    rules:
+      - field: spec.replicas
+        default: 2
+        valueType: int
 
-    - field: spec.environment
-      default: "development"
+      - field: spec.environment
+        default: "development"
 ```
 
 Rule types:
@@ -70,9 +72,10 @@ Deletion protection prevents a CR from being deleted while the operator is runni
 
 ```yaml
 security:
-  webhooks:
-    deletion:
-      enabled: true
+  admission:
+    webhooks:
+      deletion:
+        enabled: true
 ```
 
 The Gateway registers a `ValidatingWebhookConfiguration` that intercepts DELETE requests and denies them when the CR has Orkestra-managed finalizers. This is separate from the admission validation webhook.
@@ -85,10 +88,11 @@ Each webhook endpoint can be configured independently:
 
 ```yaml
 security:
-  webhooks:
-    admission:
-      enabled: true
-    failurePolicy: Ignore
+  admission:
+    webhooks:
+      admission:
+        enabled: true
+      failurePolicy: Ignore
 ```
 
 `Ignore` — if the Gateway is unreachable, the request is allowed through. Admission degrades gracefully; the Runtime re-validates at reconcile time.

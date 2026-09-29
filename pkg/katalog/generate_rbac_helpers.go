@@ -18,11 +18,11 @@ func (k *Katalog) HasConversionPaths() bool {
 		return false
 	}
 	for _, crd := range k.Enabled() {
-		if crd.Conversion == nil {
+		if crd.EffectiveConversion() == nil {
 			logger.Debug().Str("crd", crd.Name).Msg("conversion is nil")
 			continue
 		}
-		if len(crd.Conversion.Paths) > 0 {
+		if len(crd.EffectiveConversion().Paths) > 0 {
 			logger.Debug().Str("crd", crd.Name).Msg("conversion has paths")
 			return true
 		}
@@ -41,10 +41,10 @@ func (k *Katalog) HasValidationRules() bool {
 		return false
 	}
 	for _, crd := range k.Enabled() {
-		if crd.Validation == nil {
+		if crd.EffectiveValidation() == nil {
 			continue
 		}
-		if len(crd.Validation.Rules) > 0 {
+		if len(crd.EffectiveValidation().Rules) > 0 {
 			logger.Debug().Str("crd", crd.Name).Msg("validation has rules")
 			return true
 		}
@@ -63,10 +63,10 @@ func (k *Katalog) HasMutationRules() bool {
 		return false
 	}
 	for _, crd := range k.Enabled() {
-		if crd.Mutation == nil {
+		if crd.EffectiveMutation() == nil {
 			continue
 		}
-		if len(crd.Mutation.Rules) > 0 {
+		if len(crd.EffectiveMutation().Rules) > 0 {
 			logger.Debug().Str("crd", crd.Name).Msg("mutation has rules")
 			return true
 		}

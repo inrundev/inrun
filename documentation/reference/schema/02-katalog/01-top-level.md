@@ -14,7 +14,7 @@ metadata:
   description: string                  # optional
 
 profiles:                              # optional → see profiles schema
-  reconciler: [...]
+  reconcile: [...]
   networkPolicies: [...]
   resourceQuotas: [...]
   limitRanges: [...]
@@ -45,8 +45,6 @@ security:                              # optional → see katalog-security.md
 notification:                          # optional → see katalog-notification.md
   ...
 
-providers:                             # optional → see katalog-providers.md
-  - ...
 ```
 
 ## `metadata`
@@ -133,7 +131,6 @@ Named profile definitions shared across all CRD entries in this Katalog. Profile
 - [crd-entry.md](02-crd-entry.md)
 - [katalog-security.md](10-katalog-security.md)
 - [katalog-notification.md](11-katalog-notification.md)
-- [katalog-providers.md](12-katalog-providers.md)
 - [komposer.md](../03-komposer/index.md) — compose multiple Katalogs
 - [User-Defined Profiles](../../../concepts/profiles/10-user-defined-profiles.md) — declaring and referencing profiles
 - [Notes concept](../../../concepts/notes/index.md) — user-defined notes, built-in reference, composition

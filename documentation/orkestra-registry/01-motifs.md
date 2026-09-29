@@ -45,16 +45,18 @@ spec:
   crds:
     application:
       operatorBox:
-        onCreate:
-          deployments:
-            - resources:
-                profile: org-standard    # profile from spec.imports motif
+        reconcile:
+          onCreate:
+            deployments:
+              - resources:
+                  profile: org-standard    # profile from spec.imports motif
     database:
       operatorBox:
-        onCreate:
-          deployments:
-            - resources:
-                profile: org-standard    # same profile, available to all CRDs
+        reconcile:
+          onCreate:
+            deployments:
+              - resources:
+                  profile: org-standard    # same profile, available to all CRDs
 ```
 
 ### `spec.crds[name].imports` — CRD-scoped resources

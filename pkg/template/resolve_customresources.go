@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/orkspace/orkestra/pkg/utils"
 )
 
 // ResolveCustomResourceTemplate resolves all template expressions in a
@@ -123,7 +124,7 @@ func (r *Resolver) resolveValueTemplates(v any) (any, error) {
 		// When a template expression was resolved, try to coerce the result to a
 		// native type so integer/boolean/JSON CRD fields pass API server validation.
 		if orktypes.IsTemplate(vv) {
-			return orktypes.TryCoerceString(res), nil
+			return utils.TryCoerceString(res), nil
 		}
 		return res, nil
 

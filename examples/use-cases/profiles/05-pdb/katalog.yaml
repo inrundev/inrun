@@ -12,64 +12,62 @@ spec:
   crds:
     service:
       crdFile: ../crd.yaml
-
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ allReplicasReady .children.deployment }}"
-                  equals: "true"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-zero"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "3"
+                reconcile: true
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-zero"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "3"
-              reconcile: true
+              - name: "{{ .metadata.name }}-rolling"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "3"
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-rolling"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "3"
-              reconcile: true
+              - name: "{{ .metadata.name }}-relaxed"
+                image: "{{ .spec.image }}"
+                port: "{{ .spec.port }}"
+                replicas: "4"
+                reconcile: true
 
-            - name: "{{ .metadata.name }}-relaxed"
-              image: "{{ .spec.image }}"
-              port: "{{ .spec.port }}"
-              replicas: "4"
-              reconcile: true
+            pdb:
+              # zero-downtime — always at least one pod available
+              - name: "{{ .metadata.name }}-zero-pdb"
+                selector:
+                  orkestra-owner: "{{ .metadata.name }}"
+                behavior:
+                  profile: zero-downtime
 
-          pdb:
-            # zero-downtime — always at least one pod available
-            - name: "{{ .metadata.name }}-zero-pdb"
-              selector:
-                orkestra-owner: "{{ .metadata.name }}"
-              behavior:
-                profile: zero-downtime
+              # rolling — one pod may be unavailable at a time
+              - name: "{{ .metadata.name }}-rolling-pdb"
+                selector:
+                  orkestra-owner: "{{ .metadata.name }}"
+                behavior:
+                  profile: rolling
 
-            # rolling — one pod may be unavailable at a time
-            - name: "{{ .metadata.name }}-rolling-pdb"
-              selector:
-                orkestra-owner: "{{ .metadata.name }}"
-              behavior:
-                profile: rolling
+              # relaxed — up to 50% may be unavailable
+              - name: "{{ .metadata.name }}-relaxed-pdb"
+                selector:
+                  orkestra-owner: "{{ .metadata.name }}"
+                behavior:
+                  profile: relaxed
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ allReplicasReady .children.deployment }}"
+                    equals: "true"
 
-            # relaxed — up to 50% may be unavailable
-            - name: "{{ .metadata.name }}-relaxed-pdb"
-              selector:
-                orkestra-owner: "{{ .metadata.name }}"
-              behavior:
-                profile: relaxed

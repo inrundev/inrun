@@ -32,7 +32,7 @@ The return value tells the caller whether a patch is needed. If all three `Ensur
 
 ## Caller pattern (reconciler)
 
-The `GenericReconciler` uses the Manager in a snapshot → mutate → patch loop:
+The `Generic Reconciler` uses the Manager in a snapshot → mutate → patch loop:
 
 ```go
 // 1. Snapshot server-side labels before any in-memory mutation.

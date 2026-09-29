@@ -3,18 +3,19 @@ package external
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/orkspace/orkestra/pkg/secrets"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
-// resolveAuth resolves the credential value from an ExternalAuth declaration.
+// ResolveAuth resolves the credential value from an ExternalAuth declaration.
 // Returns the credential string and the header name to inject it into (HTTP only).
 // header defaults to "Authorization"; produces "Bearer <credential>".
 // cs may be nil when secretRef is not used.
 // secretRef.namespace is required — validated at ork validate time, never defaulted here.
-func resolveAuth(ctx context.Context, auth *orktypes.ExternalAuth, cs kubernetes.Interface) (credential, header string, err error) {
+func ResolveAuth(ctx context.Context, auth *orktypes.ExternalAuth, cs kubernetes.Interface) (credential, header string, err error) {
 	if auth == nil {
 		return "", "", nil
 	}
@@ -32,7 +33,7 @@ func resolveAuth(ctx context.Context, auth *orktypes.ExternalAuth, cs kubernetes
 		}
 
 	case auth.Env != "":
-		credential = ExpandEnv(auth.Env)
+		credential = os.Getenv(auth.Env)
 		if credential == "" {
 			return "", "", fmt.Errorf("auth.env: %q is not set or empty", auth.Env)
 		}

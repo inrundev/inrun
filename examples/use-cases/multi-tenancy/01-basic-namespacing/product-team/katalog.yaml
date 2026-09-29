@@ -16,29 +16,28 @@ spec:
         version: v1alpha1
         kind: Website
         plural: websites
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 15s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: url
-              value: "http://{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: '{{ default "1" .spec.replicas }}'
+                port: "8080"
+                reconcile: true
 
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: '{{ default "1" .spec.replicas }}'
-              port: "8080"
-              reconcile: true
+            services:
+              - name: "{{ .metadata.name }}-svc"
+                port: "80"
+                targetPort: "8080"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: url
+                value: "http://{{ .metadata.name }}-svc.{{ .metadata.namespace }}.svc.cluster.local"
 
-          services:
-            - name: "{{ .metadata.name }}-svc"
-              port: "80"
-              targetPort: "8080"
-              reconcile: true

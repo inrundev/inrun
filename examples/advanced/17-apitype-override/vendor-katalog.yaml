@@ -15,32 +15,31 @@ spec:
         version: v1alpha1
         kind: DatabaseCluster
         plural: databaseclusters
-
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 45s
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: engine
-              value: "{{ .spec.engine }}"
-            - path: nodes
-              value: "{{ .spec.nodes }}"
+          onCreate:
+            statefulSets:
+              - replicas: "{{ .spec.nodes }}"
+                image: "{{ .spec.image }}"
+                port: 5432
+                reconcile: true
+            services:
+              - port: "5432"
+                targetPort: "5432"
+            configMaps:
+              - name: "{{ .metadata.name }}-config"
+                data:
+                  ENGINE: "{{ .spec.engine }}"
+                  NODES: "{{ .spec.nodes }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: engine
+                value: "{{ .spec.engine }}"
+              - path: nodes
+                value: "{{ .spec.nodes }}"
 
-        onCreate:
-          statefulSets:
-            - replicas: "{{ .spec.nodes }}"
-              image: "{{ .spec.image }}"
-              port: 5432
-              reconcile: true
-          services:
-            - port: "5432"
-              targetPort: "5432"
-          configMaps:
-            - name: "{{ .metadata.name }}-config"
-              data:
-                ENGINE: "{{ .spec.engine }}"
-                NODES: "{{ .spec.nodes }}"

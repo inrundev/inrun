@@ -80,7 +80,7 @@ The `CRDSummary` slice is what drives the Katalog panel and the index. It does n
 ```
 CRDDetail
   ← CRDHealth:        state, workers, queue depth, error counts, dependencies
-  ← CRDInfo:          GVK, GVR, scope, mode, workers config, RBAC, providers
+  ← CRDInfo:          GVK, GVR, scope, mode, workers config, RBAC
   ← GatewayCRDStats:  Admission, Conversion, DeletionProtection, NamespaceProtection
                       (only when GatewayEndpoint is set; runtime fields take lower precedence)
 ```
@@ -101,7 +101,7 @@ Each handler builds a typed view-model struct and passes it to `renderTemplate`.
 | `handleDocsLanding` | `DocsLandingData` | `docs.html` |
 | `handleCRDDocs` | `CRDDocsData` | `crd_docs.html` |
 
-`CRDDocsData` adds `Has*` boolean flags (`HasAdmission`, `HasConversion`, `HasProtection`, `HasRBAC`, `HasAutoscaler`, `HasRollback`, `HasProviders`) computed from the fetched `*CRDDetail`. Templates use these to conditionally render sections so missing features produce no empty headers.
+`CRDDocsData` adds `Has*` boolean flags (`HasAdmission`, `HasConversion`, `HasProtection`, `HasRBAC`, `HasAutoscaler`, `HasRollback`) computed from the fetched `*CRDDetail`. Templates use these to conditionally render sections so missing features produce no empty headers.
 
 ## Snapshot API
 

@@ -34,67 +34,66 @@ spec:
           dev:
             permissions:
               global: ["*"]
+      admission:
+        validation:
+          rules:
+            - field: "{{ cronValid .request.schedule }}"
+              equals: true
+              link: schedule
+              fires:
+                reconcile: false
+              message: 'schedule must be a valid cron expression (e.g. "*/5 * * * *")'
+              action: deny
 
-      validation:
-        rules:
-          - field: "{{ cronValid .request.schedule }}"
-            equals: true
-            link: schedule
-            fires:
-              reconcile: false
-            message: 'schedule must be a valid cron expression (e.g. "*/5 * * * *")'
-            action: deny
+            - field: spec.schedule
+              operator: exists
+              message: "schedule is required"
+              action: deny
 
-          - field: spec.schedule
-            operator: exists
-            message: "schedule is required"
-            action: deny
-
-          - field: spec.image
-            operator: exists
-            message: "image is required"
-            action: deny
-
-      mutation:
-        mutateFirst: true
-        rules:
-          - field: spec.concurrencyPolicy
-            default: "Allow"
-          - field: spec.successfulJobsHistoryLimit
-            default: 3
-            valueType: int
-          - field: spec.failedJobsHistoryLimit
-            default: 1
-            valueType: int
-          - field: spec.suspend
-            default: false
-
+            - field: spec.image
+              operator: exists
+              message: "image is required"
+              action: deny
+        mutation:
+          mutateFirst: true
+          rules:
+            - field: spec.concurrencyPolicy
+              default: "Allow"
+            - field: spec.successfulJobsHistoryLimit
+              default: 3
+              valueType: int
+            - field: spec.failedJobsHistoryLimit
+              default: 1
+              valueType: int
+            - field: spec.suspend
+              default: false
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 5
           resync: 45s
-        status:
-          fields:
-            - path: phase
-              value: '{{ boolTernary .spec.suspend "Suspended" "Active" }}'
-            - path: scheduleExpression
-              value: "{{ cronFromAny .spec.schedule }}"
-            - path: scheduleDescription
-              value: "{{ cronDescribe .spec.schedule }}"
-            - path: image
-              value: "{{ .spec.image }}"
-            - path: lastScheduleTime
-              value: '{{ cronJobLastScheduleTime .children.cronjob }}'
-            - path: nextScheduleTime
-              value: '{{ cronJobNextScheduleTime .children.cronjob }}'
+          onCreate:
+            cronJobs:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                schedule: "{{ cronFromAny .spec.schedule }}"
+                suspend: "{{ .spec.suspend }}"
+                successfulJobsHistoryLimit: "{{ .spec.successfulJobsHistoryLimit }}"
+                failedJobsHistoryLimit: "{{ .spec.failedJobsHistoryLimit }}"
+                concurrencyPolicy: "{{ .spec.concurrencyPolicy }}"
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: '{{ boolTernary .spec.suspend "Suspended" "Active" }}'
+              - path: scheduleExpression
+                value: "{{ cronFromAny .spec.schedule }}"
+              - path: scheduleDescription
+                value: "{{ cronDescribe .spec.schedule }}"
+              - path: image
+                value: "{{ .spec.image }}"
+              - path: lastScheduleTime
+                value: '{{ cronJobLastScheduleTime .children.cronjob }}'
+              - path: nextScheduleTime
+                value: '{{ cronJobNextScheduleTime .children.cronjob }}'
 
-        onCreate:
-          cronJobs:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              schedule: "{{ cronFromAny .spec.schedule }}"
-              suspend: "{{ .spec.suspend }}"
-              successfulJobsHistoryLimit: "{{ .spec.successfulJobsHistoryLimit }}"
-              failedJobsHistoryLimit: "{{ .spec.failedJobsHistoryLimit }}"
-              concurrencyPolicy: "{{ .spec.concurrencyPolicy }}"
-              reconcile: true

@@ -39,10 +39,9 @@ func (r *Resolver) ResolveStatusFields(fields []orktypes.StatusFieldSpec) (map[s
 			continue
 		}
 
-		// ── Evaluate when: conditions ──────────────────────────────────────
-		// evaluateConditions lives in this package (resolver_conditions.go).
+		// ── Evaluate when:/or: conditions ─────────────────────────────────
 		// r.data already includes .children.* if WithChildren was called.
-		if len(f.When) > 0 && !evaluateConditions(r, f.When) {
+		if (len(f.When) > 0 || len(f.Or) > 0) && !orktypes.EvaluateConditions(r.data, f.When, f.Or, r.TemplateEvaluator()) {
 			if f.ClearOnFalse {
 				if err := setNestedStatusField(result, f.Path, ""); err != nil {
 					errs = append(errs, fmt.Sprintf("status.%s: clearOnFalse: %v", f.Path, err))

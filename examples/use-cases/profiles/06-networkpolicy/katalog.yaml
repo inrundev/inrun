@@ -12,59 +12,57 @@ spec:
   crds:
     service:
       crdFile: ../crd.yaml
-
-
       operatorBox:
-
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ resourceExists .children.networkPolicies }}"
-                  equals: "true"
+          onCreate:
+            networkPolicies:
+              # deny-all — blocks all ingress and egress for the pods in this namespace
+              - name: "{{ .metadata.name }}-deny-all"
+                namespace: "{{ .metadata.namespace }}"
+                podSelector: {}
+                profile: deny-all
+                reconcile: true
 
-        onCreate:
-          networkPolicies:
-            # deny-all — blocks all ingress and egress for the pods in this namespace
-            - name: "{{ .metadata.name }}-deny-all"
-              namespace: "{{ .metadata.namespace }}"
-              podSelector: {}
-              profile: deny-all
-              reconcile: true
+              # deny-all-ingress — blocks inbound traffic only; egress is unrestricted
+              - name: "{{ .metadata.name }}-deny-ingress"
+                namespace: "{{ .metadata.namespace }}"
+                podSelector: {}
+                profile: deny-all-ingress
+                reconcile: true
 
-            # deny-all-ingress — blocks inbound traffic only; egress is unrestricted
-            - name: "{{ .metadata.name }}-deny-ingress"
-              namespace: "{{ .metadata.namespace }}"
-              podSelector: {}
-              profile: deny-all-ingress
-              reconcile: true
+              # deny-all-egress — blocks outbound traffic only; ingress is unrestricted
+              - name: "{{ .metadata.name }}-deny-egress"
+                namespace: "{{ .metadata.namespace }}"
+                podSelector: {}
+                profile: deny-all-egress
+                reconcile: true
 
-            # deny-all-egress — blocks outbound traffic only; ingress is unrestricted
-            - name: "{{ .metadata.name }}-deny-egress"
-              namespace: "{{ .metadata.namespace }}"
-              podSelector: {}
-              profile: deny-all-egress
-              reconcile: true
+              # allow-same-namespace — allows ingress from any pod in the same namespace
+              - name: "{{ .metadata.name }}-allow-same-ns"
+                namespace: "{{ .metadata.namespace }}"
+                podSelector: {}
+                profile: allow-same-namespace
+                reconcile: true
 
-            # allow-same-namespace — allows ingress from any pod in the same namespace
-            - name: "{{ .metadata.name }}-allow-same-ns"
-              namespace: "{{ .metadata.namespace }}"
-              podSelector: {}
-              profile: allow-same-namespace
-              reconcile: true
+              # allow-dns-egress — opens UDP/TCP 53 so pods can resolve DNS
+              - name: "{{ .metadata.name }}-allow-dns"
+                namespace: "{{ .metadata.namespace }}"
+                podSelector: {}
+                profile: allow-dns-egress
+                reconcile: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ resourceExists .children.networkPolicies }}"
+                    equals: "true"
 
-            # allow-dns-egress — opens UDP/TCP 53 so pods can resolve DNS
-            - name: "{{ .metadata.name }}-allow-dns"
-              namespace: "{{ .metadata.namespace }}"
-              podSelector: {}
-              profile: allow-dns-egress
-              reconcile: true

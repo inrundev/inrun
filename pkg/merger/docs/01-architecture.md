@@ -18,8 +18,8 @@ merger.New(paths...)
 │    │                                    │
 │    ├── kind: Katalog → loadKatalog      │
 │    │     reads spec.crds, sets          │
-│    │     m.security / m.notification /  │
-│    │     m.providers as side-effects    │
+│    │     m.security / m.notification    │
+│    │     as side-effects                │
 │    │                                    │
 │    └── kind: Komposer → loadKomposer    │
 │          resolves imports in order:     │
@@ -34,7 +34,7 @@ merger.New(paths...)
     │  duplicate check across entry-point files
     ▼
 m.result  (map[string]CRDEntry, all imports merged)
-m.security / m.notification / m.providers (accumulated)
+m.security / m.notification (accumulated)
 
     │
     │  callers consume via:
@@ -42,7 +42,6 @@ m.security / m.notification / m.providers (accumulated)
 m.ToSpec()         → orktypes.KatalogSpec
 m.ToSecurity()     → orktypes.KatalogSecurity
 m.ToNotification() → *orktypes.KatalogNotification
-m.ToProviders()    → []orktypes.KatalogProviderRequirement
 m.Enabled()        → map[string]CRDEntry  (enabled only)
 ```
 

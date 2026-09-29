@@ -47,7 +47,7 @@ func TestContainerSecurityProfiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sc, err := profiles.ApplyContainerSecurityProfile(tt.profile, orktypes.ProfileRegistry{})
+			sc, err := profiles.ApplyContainerSecurityProfile(tt.profile, nil)
 
 			if tt.expectErr {
 				if err == nil {
@@ -117,7 +117,7 @@ func TestPodSecurityProfiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ps, err := profiles.ApplyPodSecurityProfile(tt.profile, orktypes.ProfileRegistry{})
+			ps, err := profiles.ApplyPodSecurityProfile(tt.profile, nil)
 
 			if tt.expectErr {
 				if err == nil {
@@ -157,7 +157,7 @@ func TestContainerSecurityProfileUserDefined(t *testing.T) {
 		},
 	}
 
-	sc, err := profiles.ApplyContainerSecurityProfile("strict-readonly", reg)
+	sc, err := profiles.ApplyContainerSecurityProfile("strict-readonly", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -177,7 +177,7 @@ func TestPodSecurityProfileUserDefined(t *testing.T) {
 		},
 	}
 
-	ps, err := profiles.ApplyPodSecurityProfile("ci-runner", reg)
+	ps, err := profiles.ApplyPodSecurityProfile("ci-runner", &reg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

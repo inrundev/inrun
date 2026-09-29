@@ -20,7 +20,7 @@ Every operatorBox owns exclusively:
 
 **Worker pool** — A fixed number of goroutines pulling from the queue. Configured via `workers:` in the Katalog.
 
-**Reconciler** — A `GenericReconciler[T]` holding the full CRD entry configuration: normalize rules, mutation rules, validation rules, template declarations, provider registry access, and cross-CRD informer references.
+**Reconciler** — A `Generic Reconciler[T]` holding the full CRD entry configuration: normalize rules, mutation rules, validation rules, template declarations, and cross-CRD informer references.
 
 **Health state** — A `CRDHealth` instance tracking success rate, consecutive failures, and degraded threshold. Visible in the Control Center per operatorBox.
 
@@ -47,23 +47,24 @@ spec:
           schedule: "{{ ... }}"
 
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 10
           resync: 30s
-        # reconciler: is optional — omit for declarative-only CRDs (GenericReconciler is the default)
-        # reconciler:
+          onCreate: [...]        # resource creation on first reconcile
+          onReconcile: [...]     # drift correction on every reconcile
+          onDelete: [...]        # cleanup before finalizer removal
+        emit:
+          status: [...]          # status field declarations
+        # reconcile: is optional — omit for declarative-only CRDs (Generic Reconciler is the default)
+        # reconcile:
         #   default: false     # set to use a custom constructor instead
         #   constructor:
         #     location: ...
-        cross: [...]           # IPC declarations
-        onCreate: [...]        # resource creation on first reconcile
-        onReconcile: [...]     # drift correction on every reconcile
-        onDelete: [...]        # cleanup before finalizer removal
-        status: [...]          # status field declarations
-        providers: [...]       # external infra (AWS, MongoDB, etc.)
+        observe:
+          cross: [...]         # cross-CRD observations
 ```
 
-Omitting `reconciler:` uses the declarative GenericReconciler — no Go code required. Add `reconciler.constructor:` with `default: false` when you need a typed Go reconciler.
+Omitting `reconcile:` uses the declarative Generic Reconciler — no Go code required. Add `reconcile.constructor:` with `default: false` when you need a typed Go reconciler. Add `reconcile.remote:` with `default: false` when the reconcile logic lives in a separate HTTP service — any language, no Kubernetes SDK required.
 
 ---
 

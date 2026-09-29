@@ -8,6 +8,7 @@ import (
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	orkdeploy "github.com/orkspace/orkestra/pkg/resources/deployments"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // BlockchainAppHooks returns the hook implementation registered in the Katalog.
@@ -55,5 +56,5 @@ func onBlockchainAppReconcile(ctx context.Context, obj *apiv1.BlockchainApp) err
 	return kube.PatchStatus(ctx, obj, map[string]any{
 		"featureEnabled":  annotation,
 		"inBusinessHours": inBusinessHours,
-	})
+	}, metav1.PatchOptions{})
 }

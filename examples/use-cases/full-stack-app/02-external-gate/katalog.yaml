@@ -15,78 +15,77 @@ spec:
     # Template access: {{ .external.healthCheck.status }}
     gated-app:
       crdFile: ./crd.yaml
-
-
-      validation:
-        rules:
-          - field: spec.image
-            operator: exists
-            action: deny
-          - field: spec.serviceUrl
-            operator: exists
-            message: "spec.serviceUrl required — base URL for health check and feature flags"
-            action: deny
-
+      admission:
+        validation:
+          rules:
+            - field: spec.image
+              operator: exists
+              action: deny
+            - field: spec.serviceUrl
+              operator: exists
+              message: "spec.serviceUrl required — base URL for health check and feature flags"
+              action: deny
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        onReconcile:
-          external:
-            - name: healthCheck
-              url: "{{ .spec.serviceUrl }}/health"
-              method: GET
-              expectedStatus: 200
-              continueOnError: false
-              timeout: 5s
+          onReconcile:
+            external:
+              - name: healthCheck
+                url: "{{ .spec.serviceUrl }}/health"
+                method: GET
+                expectedStatus: 200
+                continueOnError: false
+                timeout: 5s
 
-            - name: featureFlags
-              url: "{{ .spec.serviceUrl }}/flags/{{ .metadata.name }}"
-              method: GET
-              continueOnError: true
-              timeout: 3s
+              - name: featureFlags
+                url: "{{ .spec.serviceUrl }}/flags/{{ .metadata.name }}"
+                method: GET
+                continueOnError: true
+                timeout: 3s
 
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              when:
-                - field: external.healthCheck.status
-                  equals: "200"
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                when:
+                  - field: external.healthCheck.status
+                    equals: "200"
 
-          configMaps:
-            - name: "{{ .metadata.name }}-flags"
-              data:
-                flags: "{{ .external.featureFlags.body }}"
-              when:
-                - field: external.featureFlags.called
-                  equals: "true"
-                - field: external.featureFlags.error
-                  operator: notExists
+            configMaps:
+              - name: "{{ .metadata.name }}-flags"
+                data:
+                  flags: "{{ .external.featureFlags.body }}"
+                when:
+                  - field: external.featureFlags.called
+                    equals: "true"
+                  - field: external.featureFlags.error
+                    operator: notExists
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Pending"
+                when:
+                  - field: status.phase
+                    operator: notExists
+              - path: phase
+                value: "Waiting"
+                when:
+                  - field: external.healthCheck.status
+                    operator: notExists
+              - path: phase
+                value: "Degraded"
+                when:
+                  - field: external.healthCheck.status
+                    operator: exists
+                  - field: external.healthCheck.status
+                    notEquals: "200"
+              - path: phase
+                value: "Ready"
+                when:
+                  - field: "{{ readyReplicas .children.deployment }}"
+                    operator: gt
+                    value: "0"
+              - path: lastHealthCheck
+                value: "{{ .external.healthCheck.status }}"
 
-        status:
-          fields:
-            - path: phase
-              value: "Pending"
-              when:
-                - field: status.phase
-                  operator: notExists
-            - path: phase
-              value: "Waiting"
-              when:
-                - field: external.healthCheck.status
-                  operator: notExists
-            - path: phase
-              value: "Degraded"
-              when:
-                - field: external.healthCheck.status
-                  operator: exists
-                - field: external.healthCheck.status
-                  notEquals: "200"
-            - path: phase
-              value: "Ready"
-              when:
-                - field: "{{ readyReplicas .children.deployment }}"
-                  operator: gt
-                  value: "0"
-            - path: lastHealthCheck
-              value: "{{ .external.healthCheck.status }}"

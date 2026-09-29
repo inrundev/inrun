@@ -148,12 +148,12 @@ func patchConversionCRDs(
 
 	var errs []error
 	for _, crd := range kat.EnabledCRDs() {
-		if crd.Conversion == nil || !crd.UpdateCRDCaBundle() {
+		if !crd.UpdateCRDCaBundle() {
 			continue
 		}
 
 		crdName := crd.APITypes.Plural + "." + crd.APITypes.Group
-		storageVersion := crd.Conversion.StorageVersion
+		storageVersion := crd.EffectiveConversion().StorageVersion
 
 		logger.Info().Str("crd", crdName).Str("storageVersion", storageVersion).
 			Msg("security: patching CRD conversion caBundle")

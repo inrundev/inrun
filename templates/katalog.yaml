@@ -14,35 +14,37 @@ spec:
     <crd-name>:
       crdFile: ./crd.yaml          # Orkestra applies the CRD at startup
 
-      # allowedNamespaces:         # omit to watch all namespaces
-      #   - default
-
       operatorBox:
-        reconciler:
+        runtime:
+          # allowedNamespaces:     # omit to watch all namespaces
+          #   - default
+
+        reconcile:
           # default: true         # Omit to use defaults
           # workers: 4
           # resync: 30s
           # queue:
           #   maxDepth: 100
 
-        # ── On Create ────────────────────────────────────────────────────
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true      # re-apply on every reconcile (drift correction)
+          # ── On Create ────────────────────────────────────────────────────
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true      # re-apply on every reconcile (drift correction)
 
-          services:
-            - name: "{{ .metadata.name }}-svc"
-              port: "80"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true
+            services:
+              - name: "{{ .metadata.name }}-svc"
+                port: "80"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
 
         # ── Status ───────────────────────────────────────────────────────
-        # status:
-        #   fields:
-        #     - path: phase
-        #       value: "Running"
-        #     - path: observedReplicas
-        #       value: "{{ .spec.replicas }}"
+        # emit:
+        #   status:
+        #     fields:
+        #       - path: phase
+        #         value: "Running"
+        #       - path: observedReplicas
+        #         value: "{{ .spec.replicas }}"

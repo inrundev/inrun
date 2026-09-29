@@ -235,28 +235,29 @@ serve:
     web:
       primary: true
       operatorBox:
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-web"
         preReconcile:
           enqueueGate:
             when:
               - field: "{{ .spec.image }}"
                 notEquals: ""
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-web"
-
     regional:
       operatorBox:
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}-{{ .item }}"
+                forEach:
+                  field: spec.regions
+                  as: item
         preReconcile:
           reconcileGate:
             when:
               - field: "{{ len .spec.regions }}"
                 notEquals: "0"
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}-{{ .item }}"
-              forEach:
-                field: spec.regions
-                as: item
 ```
 
 When a CR switches from one target to another (re-submitted via a different surface), the reconciler detects the change and cleans up resources from the previous target before applying the new box.

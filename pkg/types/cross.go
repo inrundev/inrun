@@ -11,12 +11,14 @@
 //	spec:
 //	  crds:
 //	    application:
-//	      cross:
-//	        - crd: database             # target CRD name (lowercase, matches spec.crds key)
-//	          selector:
-//	            name: "{{ .metadata.name }}"       # find by name
-//	            namespace: "{{ .metadata.namespace }}"
-//	          as: database              # available as .cross.database.*
+//	      operatorBox:
+//	        observe:
+//	          cross:
+//	            - crd: database             # target CRD name (lowercase, matches spec.crds key)
+//	              selector:
+//	                name: "{{ .metadata.name }}"       # find by name
+//	                namespace: "{{ .metadata.namespace }}"
+//	              as: database              # available as .cross.database.*
 //
 //	    database:
 //	      operatorBox: ...               # database CRD — already has an informer
@@ -45,17 +47,19 @@ package types
 //
 // YAML:
 //
-//   cross:
-//     - crd: managed-database          # name-based
-//       selector:
-//         name: "{{ .metadata.name }}-db"
-//       as: db
+//   operatorBox:
+//     observe:
+//       cross:
+//         - crd: managed-database          # name-based
+//           selector:
+//             name: "{{ .metadata.name }}-db"
+//           as: db
 //
-//     - labelSelector:                  # label-based — keys the registry by CRD-entry labelSelector
-//         tier: platform
-//       selector:
-//         name: "{{ .metadata.name }}-platform"
-//       as: platform
+//         - labelSelector:                  # label-based — keys the registry by CRD-entry labelSelector
+//             tier: platform
+//           selector:
+//             name: "{{ .metadata.name }}-platform"
+//           as: platform
 //
 // Step 1 finds the informer: IsCRDBased uses crd name, IsLabelBased uses labelSelector to key
 // the registry. Step 2 finds the CR: matchLabels filters instances, then labelSelector fallback,
@@ -289,7 +293,7 @@ func (c *CRDEntry) HasCrossSecretRef() bool {
 	if c.OperatorBox.Empty() {
 		return false
 	}
-	for _, cr := range c.OperatorBox.Cross {
+	for _, cr := range c.OperatorBox.EffectiveCross() {
 		if cr.HasAnySecretRef() {
 			return true
 		}

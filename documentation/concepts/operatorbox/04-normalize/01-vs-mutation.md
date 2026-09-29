@@ -20,12 +20,13 @@ normalize:
   spec:
     schedule: "{{ cronFromAny .spec.schedule }}"   # string or map → canonical string
 
-mutation:
-  rules:
-    - field: spec.concurrencyPolicy
-      default: "Allow"
-    - field: spec.successfulJobsHistoryLimit
-      default: 3
+admission:
+  mutation:
+    rules:
+      - field: spec.concurrencyPolicy
+        default: "Allow"
+      - field: spec.successfulJobsHistoryLimit
+        default: 3
 ```
 
 ---

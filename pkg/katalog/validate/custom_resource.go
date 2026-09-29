@@ -40,8 +40,8 @@ func (e *executor) validateCustomResources() error {
 		}
 
 		// Validate OnCreate custom resources
-		if crd.HasOnCreate() && crd.OperatorBox.OnCreate.CustomResource != nil {
-			for i, cr := range crd.OperatorBox.OnCreate.CustomResource {
+		if crd.HasOnCreate() && crd.Box().EffectiveOnCreate().CustomResource != nil {
+			for i, cr := range crd.Box().EffectiveOnCreate().CustomResource {
 				path := fmt.Sprintf("%s.onCreate.custom[%d]", name, i)
 				// Delegate structural validation to the types package.
 				if err := ValidateCustomResource(&crd, &cr, path); err != nil {
@@ -63,8 +63,8 @@ func (e *executor) validateCustomResources() error {
 		}
 
 		// Validate OnReconcile custom resources
-		if crd.HasOnReconcile() && crd.OperatorBox.OnReconcile.CustomResource != nil {
-			for i, cr := range crd.OperatorBox.OnReconcile.CustomResource {
+		if crd.HasOnReconcile() && crd.Box().EffectiveOnReconcile().CustomResource != nil {
+			for i, cr := range crd.Box().EffectiveOnReconcile().CustomResource {
 				path := fmt.Sprintf("%s.onReconcile.custom[%d]", name, i)
 				if err := ValidateCustomResource(&crd, &cr, path); err != nil {
 					return err

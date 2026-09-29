@@ -11,9 +11,11 @@ import (
 func katalogWithHPA(crdName string, hpas ...orktypes.HPATemplateSource) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		crdName: {
-			OperatorBox: orktypes.OperatorBoxConfig{
-				OnCreate: &orktypes.HookTemplates{
-					HorizontalPodAutoscalers: hpas,
+			OperatorBox: &orktypes.OperatorBoxConfig{
+				Reconcile: &orktypes.ReconcileConfig{
+					OnCreate: &orktypes.HookTemplates{
+						HorizontalPodAutoscalers: hpas,
+					},
 				},
 			},
 		},

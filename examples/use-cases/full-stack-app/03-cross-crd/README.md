@@ -8,6 +8,19 @@ Two CRDs. `ManagedDatabase` creates a Postgres Deployment and writes its endpoin
 
 ## Step 1 — Validate
 
+[`katalog.yaml`](katalog.yaml) has the `managed-database` CRD block commented out by default. This lets the root `full-stack-app/` composite import it without a duplicate-CRD conflict. When running this example in isolation, uncomment the `managed-database:` block first:
+
+```yaml
+# katalog.yaml — uncomment this before running ork validate from 03-cross-crd/
+spec:
+  crds:
+    managed-database:
+      crdFile: ./crd-managed-database.yaml
+      ...
+```
+
+Then validate:
+
 ```bash
 ork validate
 ```

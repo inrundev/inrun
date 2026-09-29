@@ -27,44 +27,44 @@ spec:
         version: v1alpha1
         kind: Processor
         plural: processors
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 10s
-        cross:
-          - crd: payment-system
-            source:
-              endpoint: "http://localhost:9999/autoscale-metrics"
-              cacheFor: 20s
-            as: paymentSystem
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                port: 9090
+                reconcile: true
+            services:
+              - port: "9090"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: autoscaleActive
+                value: "{{ .metrics.autoscaleActive }}"
+              - path: workers
+                value: "{{ .metrics.workers }}"
+        runtime:
+          autoscale:
+            interval: 10s
+            cooldown: 3m
+            conditions:
+              when:
+                - field: cross.paymentSystem.metrics.queueDepth
+                  greaterThan: "60"
+            do:
+              workers: 8
+              queueDepth: 800
+              resync: 10s
+        observe:
+          cross:
+            - crd: payment-system
+              source:
+                endpoint: "http://localhost:9999/autoscale-metrics"
+                cacheFor: 20s
+              as: paymentSystem
 
-        autoscale:
-          interval: 10s
-          cooldown: 3m
-          conditions:
-            when:
-              - field: cross.paymentSystem.metrics.queueDepth
-                greaterThan: "60"
-          do:
-            workers: 8
-            queueDepth: 800
-            resync: 10s
-
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: autoscaleActive
-              value: "{{ .metrics.autoscaleActive }}"
-            - path: workers
-              value: "{{ .metrics.workers }}"
-
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              port: 9090
-              reconcile: true
-          services:
-            - port: "9090"

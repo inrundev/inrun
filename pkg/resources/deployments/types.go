@@ -74,11 +74,14 @@ type ResolvedDeploymentSpec struct {
 	PodSecurity *orktypes.PodSecurityContext
 
 	// Profiles — user-defined profile registry for runtime profile resolution.
-	Profiles orktypes.ProfileRegistry
+	Profiles *orktypes.ProfileRegistry
 
 	// RollingUpdate — resolved rolling update strategy.
 	// nil means use Kubernetes defaults (25%/25%).
 	RollingUpdate *orktypes.RollingUpdateBehavior
+
+	// Command overrides the container entrypoint command.
+	Command []string
 
 	// Volumes / VolumeMounts — pod volumes and container mounts.
 	Volumes      []orktypes.VolumeSource

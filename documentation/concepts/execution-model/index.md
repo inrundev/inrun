@@ -442,13 +442,13 @@ This allows one CRD to have multiple reconcile strategies — one per
 serve target — without the Kordinator knowing anything about which
 strategy is in use. The routing is internal to the MuxReconciler.
 
-Across all paths, reconciliation can take three forms:
+Across all paths, reconciliation can take four forms:
 
 ```text
-             ┌────────────────┼────────────────┐
-             │                │                │
-        declarative     hybrid (hooks)       Constructor
-      (100% YAML)    (90% YAML + 10% hooks)  (100% — Reconcile())
+             ┌──────────────┬──────────────┬──────────────┐
+             │              │              │              │
+        declarative   hybrid (hooks)  Constructor     Remote
+      (100% YAML)  (YAML + hooks)  (Reconcile())  (HTTP, any lang)
 ```
 
 The Kordinator coordinates the work but does not need to know the
@@ -584,11 +584,12 @@ running.
                               MuxReconciler
                               (route by serve-target)
                                      │
-                    ┌────────────────┼────────────────┐
-                    │                │                │
-               declarative     hybrid (hooks)    Constructor — Reconcile()
-                    │                │                │
-                    └────────────────┼────────────────┘
+                    ┌──────────────┬──────────────┬──────────────┐
+                    │              │              │              │
+               declarative  hybrid (hooks)  Constructor     Remote
+                                                Reconcile()  (HTTP)
+                    │              │              │              │
+                    └──────────────┴──────────────┴──────────────┘
                                      │
                                      ▼
                                reconciliation
@@ -639,6 +640,14 @@ and event awareness all resolve through the effective box without
 needing separate target-aware implementations in each feature.
 
 ---
+
+!!! tip "The OPPRE execution model"
+    Orkestra implements the OPPRE model: **O**bserve, **P**re-reconcile, **P**repare, **R**econcile, **E**mit.
+    Each phase is owned by a distinct layer — informer, kordinator, reconciler, post.
+    One mental model applies everywhere conditions, gates, and outputs are declared.
+
+---
+
 
 ## Where to go next
 

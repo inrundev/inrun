@@ -29,21 +29,21 @@ spec:
         version: v2
         kind: CronJob
         plural: cronjobs
+      admission:
+        conversion:
+          storageVersion: v1    # all objects stored as v1
+          updateCRD: true       # Orkestra patches caBundle on startup
 
-      conversion:
-        storageVersion: v1    # all objects stored as v1
-        updateCRD: true       # Orkestra patches caBundle on startup
+          paths:
+            - from: v1
+              to: v2
+              spec:
+                schedule: "{{ cronToMap .spec.schedule }}"
 
-        paths:
-          - from: v1
-            to: v2
-            spec:
-              schedule: "{{ cronToMap .spec.schedule }}"
-
-          - from: v2
-            to: v1
-            spec:
-              schedule: "{{ cronFromMap .spec.schedule }}"
+            - from: v2
+              to: v1
+              spec:
+                schedule: "{{ cronFromMap .spec.schedule }}"
 ```
 
 `updateCRD: true` tells Orkestra to patch the CRD's `spec.conversion.webhook.clientConfig.caBundle` at startup with the CA certificate it generated for Gateway. You do not base64-encode anything or touch the CRD spec manually.
@@ -89,9 +89,9 @@ cronjob-v1:
     version: v1
     kind: CronJob
     plural: cronjobs
-
-  conversion:
-    participant: true   # paths live on cronjob-v2; this entry joins the pair
+  admission:
+    conversion:
+      participant: true   # paths live on cronjob-v2; this entry joins the pair
 ```
 
 `participant: true` tells the Control Center to show conversion stats for v1 without requiring you to duplicate path declarations. The v2 entry owns the paths; v1 participates.

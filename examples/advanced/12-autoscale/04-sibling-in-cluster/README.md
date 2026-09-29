@@ -185,25 +185,27 @@ This is **cross‑runtime dependency scaling**:
 A katalog can declare multiple `cross:` entries for the same CRD — one for CR data, one for health, one for metrics. Only the entry with `protocol: metrics` (or a raw `endpoint`) is used to resolve autoscale conditions. The other types are for status templates and are ignored by the autoscaler.
 
 ```yaml
-cross:
-  - crd: loader
-    source:
-      host: "http://localhost:8080"
-      protocol: cr    # CR fields and children — used in status templates
-    as: loaderCRInfo
+operatorBox:
+  observe:
+    cross:
+      - crd: loader
+        source:
+          host: "http://localhost:8080"
+          protocol: cr    # CR fields and children — used in status templates
+        as: loaderCRInfo
 
-  - crd: loader
-    source:
-      host: "http://localhost:8080"
-      protocol: health # operator health — used in status templates
-    as: loaderHealth
+      - crd: loader
+        source:
+          host: "http://localhost:8080"
+          protocol: health # operator health — used in status templates
+        as: loaderHealth
 
-  - crd: loader
-    source:
-      host: "http://localhost:8080"
-      protocol: metrics # queue depth and worker metrics — used by autoscaler
-      cacheFor: 30s
-    as: loaderCRDInfo
+      - crd: loader
+        source:
+          host: "http://localhost:8080"
+          protocol: metrics # queue depth and worker metrics — used by autoscaler
+          cacheFor: 30s
+        as: loaderCRDInfo
 ```
 
 The autoscale condition `field: cross.loader.metrics.queueDepth` resolves from the `protocol: metrics` entry. Without it, the autoscaler has no source and the condition is silently skipped.
@@ -215,15 +217,17 @@ The autoscale condition `field: cross.loader.metrics.queueDepth` resolves from t
 This is the same pattern when the sibling runs in a different cluster entirely. Deploy Orkestra there and expose its API via an ingress — then point `host` at that URL instead of localhost.
 
 ```yaml
-cross:
-  - crd: loader
-    selector:
-      name: production-loader
-      namespace: loader-system
-    source:
-      host: "https://orkestra-prod.my-company-internal.com"
-      cacheFor: 10s
-    as: prodLoader
+operatorBox:
+  observe:
+    cross:
+      - crd: loader
+        selector:
+          name: production-loader
+          namespace: loader-system
+        source:
+          host: "https://orkestra-prod.my-company-internal.com"
+          cacheFor: 10s
+        as: prodLoader
 ```
 
 No code change. No special configuration. The host is just a URL.

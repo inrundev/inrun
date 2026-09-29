@@ -14,71 +14,67 @@ spec:
       crdFile: ./crds/keyrotation.yaml
       crFiles:
         - ./crs/keyrotation.yaml
-
       crossAccess: false
       endpoints:
         enabled: false
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 1
           resync: 300s
-
+          onCreate:
+            secrets:
+              - name: "{{ .metadata.name }}-key"
+                data:
+                  key: "{{ .spec.key }}"
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "rotated"
+              - path: auditRef
+                value: '{{ default "pending" .cross.auditlog.status.auditRef }}'
         # keyrotation reads auditlog — crossAccess: false only blocks inbound reads.
         # auditlog is open, so this resolves successfully.
-        cross:
-          - crd: auditlog
-            selector:
-              name: "{{ .metadata.name }}"
-              namespace: "{{ .metadata.namespace }}"
-            as: auditlog
-
-        status:
-          fields:
-            - path: phase
-              value: "rotated"
-            - path: auditRef
-              value: '{{ default "pending" .cross.auditlog.status.auditRef }}'
-
-        onCreate:
-          secrets:
-            - name: "{{ .metadata.name }}-key"
-              data:
-                key: "{{ .spec.key }}"
+        observe:
+          cross:
+            - crd: auditlog
+              selector:
+                name: "{{ .metadata.name }}"
+                namespace: "{{ .metadata.namespace }}"
+              as: auditlog
 
     auditlog:
       crdFile: ./crds/auditlog.yaml
       crFiles:
         - ./crs/auditlog.yaml
-
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-
+          onCreate:
+            configMaps:
+              - name: "{{ .metadata.name }}-log"
+                data:
+                  entry: "{{ .spec.message }}"
+                  keyRef: '{{ default "access-denied" .cross.keyrotation.status.phase }}'
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "active"
+              - path: auditRef
+                value: "audit/{{ .metadata.name }} active"
+              - path: keyRef
+                value: '{{ default "access-denied" .cross.keyrotation.status.phase }}'
         # Attempt to read the keyrotation CR with the same name.
         # keyrotation has crossAccess: false — the read resolves to empty.
         # cross.keyrotation.found will be "false"; status.keyRef will be "".
         # No error is raised — the reconciler continues normally.
-        cross:
-          - crd: keyrotation
-            selector:
-              name: "{{ .metadata.name }}"
-              namespace: "{{ .metadata.namespace }}"
-            as: keyrotation
+        observe:
+          cross:
+            - crd: keyrotation
+              selector:
+                name: "{{ .metadata.name }}"
+                namespace: "{{ .metadata.namespace }}"
+              as: keyrotation
 
-        status:
-          fields:
-            - path: phase
-              value: "active"
-            - path: auditRef
-              value: "audit/{{ .metadata.name }} active"
-            - path: keyRef
-              value: '{{ default "access-denied" .cross.keyrotation.status.phase }}'
-
-        onCreate:
-          configMaps:
-            - name: "{{ .metadata.name }}-log"
-              data:
-                entry: "{{ .spec.message }}"
-                keyRef: '{{ default "access-denied" .cross.keyrotation.status.phase }}'

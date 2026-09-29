@@ -15,13 +15,12 @@ metadata:
   name: platform-operator
 
 profiles:
-  reconciler:
+  reconcile:
     - name: api-service
       workers: 4
       resync: 30s
       queue:
         maxDepth: 200
-
   networkPolicies:
     - name: allow-monitoring
       description: Allow ingress from the platform monitoring namespace
@@ -46,15 +45,15 @@ spec:
     namespace:
       ...
       operatorBox:
-        reconciler:
+        reconcile:
           profile: api-service
-        onCreate:
-          networkPolicies:
-            - name: "{{ .metadata.name }}-monitoring"
-              profile: allow-monitoring
-          resourceQuotas:
-            - name: "{{ .metadata.name }}-quota"
-              profile: team-medium
+          onCreate:
+            networkPolicies:
+              - name: "{{ .metadata.name }}-monitoring"
+                profile: allow-monitoring
+            resourceQuotas:
+              - name: "{{ .metadata.name }}-quota"
+                profile: team-medium
 ```
 
 ---
@@ -69,7 +68,7 @@ spec:
 | HPA | `profiles.hpa` | minReplicas, maxReplicas, CPU target, behavior | `onCreate.hpa[].behavior.profile` |
 | PDB | `profiles.pdb` | minAvailable or maxUnavailable | `onCreate.pdb[].behavior.profile` |
 | Rolling Update | `profiles.rollingUpdate` | maxSurge, maxUnavailable | `onCreate.deployments[].rollingUpdate.profile` |
-| Reconciler | `profiles.reconciler` | workers, resync, queue.maxDepth | `operatorBox.reconciler.profile` |
+| Reconciler | `profiles.reconciler` | workers, resync, queue.maxDepth | `operatorBox.reconcile.profile` |
 | Resources | `profiles.resources` | requests and limits per container | `containers[].resources.profile` |
 | Probes | `profiles.probes` | initialDelaySeconds, periodSeconds, failureThreshold, successThreshold, timeoutSeconds | `containers[].probes[].profile` |
 | Container Security | `profiles.containerSecurity` | allowPrivilegeEscalation, readOnlyRootFilesystem, runAsNonRoot, capabilities | `containers[].securityContext.profile` |
@@ -77,15 +76,15 @@ spec:
 
 > **Not yet supported:** `operatorBox.autoscaler` — the operator autoscaler does not support user-defined profiles. Configure it inline.
 
-The reconciler class is different from the others: it tunes how the CRD's own reconciler runs, not what child resources are created. It is set once per CRD entry at the `operatorBox.reconciler` level rather than on individual child resource entries.
+The reconciler class is different from the others: it tunes how the CRD's own reconciler runs, not what child resources are created. It is set once per CRD entry at the `operatorBox.reconcile` level rather than on individual child resource entries.
 
 ### Reconciler profiles
 
-A reconciler profile sets the tuning for a CRD's reconcile loop — workers, resync interval, and queue depth. Declare profiles in `profiles.reconciler` and reference one with `operatorBox.reconciler.profile`:
+A reconciler profile sets the tuning for a CRD's reconcile loop — workers, resync interval, and queue depth. Declare profiles in `profiles.reconciler` and reference one with `operatorBox.reconcile.profile`:
 
 ```yaml
 profiles:
-  reconciler:
+  reconcile:
     - name: api-service
       description: Balanced for a standard web service operator
       workers: 4
@@ -99,17 +98,16 @@ profiles:
       resync: 5m
       queue:
         maxDepth: 500
-
 spec:
   crds:
     orders:
       operatorBox:
-        reconciler:
+        reconcile:
           profile: api-service
           # inline fields override the profile — add here to tune per-CRD
     archive:
       operatorBox:
-        reconciler:
+        reconcile:
           profile: batch-worker
 ```
 
@@ -117,7 +115,7 @@ Inline fields always win over the profile. To use a profile as the baseline and 
 
 ```yaml
 operatorBox:
-  reconciler:
+  reconcile:
     profile: api-service
     workers: 8    # override — profile's workers (4) is ignored; resync and maxDepth come from the profile
 ```
@@ -300,16 +298,18 @@ spec:
   crds:
     namespace:
       operatorBox:
-        onCreate:
-          networkPolicies:
-            - name: "{{ .metadata.name }}-monitoring"
-              profile: allow-monitoring   # ✓ available to all CRDs
+        reconcile:
+          onCreate:
+            networkPolicies:
+              - name: "{{ .metadata.name }}-monitoring"
+                profile: allow-monitoring   # ✓ available to all CRDs
     service:
       operatorBox:
-        onCreate:
-          networkPolicies:
-            - name: "{{ .metadata.name }}-monitoring"
-              profile: allow-monitoring   # ✓ same profile, no re-import needed
+        reconcile:
+          onCreate:
+            networkPolicies:
+              - name: "{{ .metadata.name }}-monitoring"
+                profile: allow-monitoring   # ✓ same profile, no re-import needed
 ```
 
 ### Conflict detection

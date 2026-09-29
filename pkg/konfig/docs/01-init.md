@@ -27,7 +27,7 @@ The cluster namespace follows a specific resolution order:
 
 1. `ORK_NAMESPACE` ENV var (if set and non-Empty()
 2. `orkestra-system` — default when running inside a Pod
-3. `default` — fallback when running outside a Pod (detected by `utils.IsRunningInCluster()`, which checks for the service account token file)
+3. `default` — fallback when running outside a Pod (detected by `utils.IsRunningInPod()`, which checks for the service account token file)
 
 This means the same binary works in local development without any ENV configuration — it just targets the `default` namespace rather than `orkestra-system`.
 

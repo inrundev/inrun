@@ -217,7 +217,7 @@ func CopyToNamespaces(
 
 // Resolve builds a ResolvedLimitRangeSpec from a LimitRangeTemplateSource.
 // Template expressions must already be evaluated by template.Resolver before calling.
-func Resolve(src orktypes.LimitRangeTemplateSource, ownerName string, reg orktypes.ProfileRegistry) ResolvedLimitRangeSpec {
+func Resolve(src orktypes.LimitRangeTemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedLimitRangeSpec {
 	limits := src.Limits
 	if src.Profile != "" && len(limits) == 0 {
 		if expanded, err := profiles.ApplyLimitRangeProfile(src.Profile, reg); err == nil {

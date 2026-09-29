@@ -15,22 +15,24 @@ spec:
         kind: Website
         plural: websites
       operatorBox:
-        reconciler:
+        reconcile:
           workers: 2
           resync: 30s
-        default: true
-        status:
-          fields:
-            - path: phase
-              value: "Running"
-            - path: endpoint
-              value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
-        onCreate:
-          deployments:
-            - image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
-          services:
-            - port: "80"
-              targetPort: "{{ .spec.port }}"
-              reconcile: true
+          onCreate:
+            deployments:
+              - image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+            services:
+              - port: "80"
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
+          default: true
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: endpoint
+                value: "{{ .metadata.name }}.{{ .metadata.namespace }}.svc.cluster.local"
+

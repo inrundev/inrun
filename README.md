@@ -3,11 +3,7 @@
 
   <h1>Orkestra</h1>
   <p><strong>Kubernetes operators without the infrastructure.</strong></p>
-  <p>
-    Reconciliation as a runtime service.<br/>
-    Security as a runtime service.<br/>
-    Intent Delivery as a runtime service.
-  </p>
+  <p>Write the behavior. Orkestra runs the operator.</p>
 
   <p>
     <a href="https://github.com/orkspace/orkestra/releases"><img src="https://img.shields.io/github/v/release/orkspace/orkestra" alt="Release" /></a>
@@ -35,13 +31,11 @@ Every Kubernetes operator carries three kinds of infrastructure no one wanted to
 
 None of this is the reason the operator exists. All of it is the cost of entry.
 
-Orkestra absorbs all three. You declare behavior — or keep your existing `Reconcile` function — and the runtime handles the rest.
+Orkestra absorbs all three.
 
 ---
 
 ## If you already have a controller-runtime operator
-
-Two lines. Your `Reconcile` method is completely untouched.
 
 ```go
 func NewWebAppReconciler(kube kubeclient.Interface) domain.Reconciler {
@@ -63,8 +57,6 @@ ork migrate ./controller/webapp_controller.go -o ./my-operator
 
 ## If you are starting from scratch
 
-No Go required. Declare what the operator should do:
-
 ```yaml
 apiVersion: orkestra.orkspace.io/v1
 kind: Katalog
@@ -76,17 +68,18 @@ spec:
       crdFile: ./crd.yaml
       crFiles: [./cr.yaml]
       operatorBox:
-        onCreate:
-          deployments:
-            - name: "{{ .metadata.name }}"
-              image: "{{ .spec.image }}"
-              replicas: "{{ .spec.replicas }}"
-              reconcile: true
-          services:
-            - name: "{{ .metadata.name }}-svc"
-              port: 80
-              targetPort: "{{ .spec.port }}"
-              reconcile: true
+        reconcile:
+          onCreate:
+            deployments:
+              - name: "{{ .metadata.name }}"
+                image: "{{ .spec.image }}"
+                replicas: "{{ .spec.replicas }}"
+                reconcile: true
+            services:
+              - name: "{{ .metadata.name }}-svc"
+                port: 80
+                targetPort: "{{ .spec.port }}"
+                reconcile: true
 ```
 
 ```bash
@@ -98,6 +91,29 @@ Orkestra reads the Katalog, installs the CRD, starts the operator, creates the D
 Not a single line of Go.
 
 ---
+
+## If your reconciler already exists
+
+```yaml
+operatorBox:
+  reconcile:
+    default: false
+    remote:
+      endpoint: "http://my-service/reconcile"
+      timeout: 15s
+      managedResources:
+        - group: apps
+          plural: deployments
+```
+
+The service receives the CR as JSON and returns resources and status. Orkestra owns the queue, backoff, SSA apply, owner references, RBAC, health, and events. The service answers when called — no kubeconfig, no SDK, no cluster access required.
+
+Any language. Any runtime. Any host that speaks HTTP.
+
+→ [Remote Reconciler](https://orkestra.sh/docs/reference/schema/katalog/reconcile-remote/)
+
+---
+
 
 ## For the security and delivery problem
 
@@ -129,6 +145,39 @@ The gateway owns the delivery boundary — validation, mutation, token scoping, 
 → [Self-Service and Intent Delivery](https://orkestra.sh/docs/concepts/self-service/gateway-as-delivery-layer/)
 
 ---
+
+## How it fits together
+
+```text
+                              ORKESTRA
+                  ┌───────────────────────────┐
+                  │                           │
+  any client ───► │  GATEWAY                  │
+                  │  intent → CR + provenance │
+                  │             │             │
+                  │             ▼             │
+                  │       Kubernetes API      │
+                  │             │             │
+                  │             ▼             │
+                  │         RUNTIME           │
+                  │  queue · health · RBAC    │
+                  │  backoff · SSA · events   │
+                  │             │             │
+                  └─────────────┼─────────────┘
+                                │
+                                ▼
+                         YOUR BEHAVIOUR
+                                ▲
+                  ┌─────────────┼─────────────┐
+                  │             │             │
+                 YAML      Reconcile()   HTTP server
+                                          any language
+```
+
+You write the behavior. Orkestra runs it.
+
+---
+
 
 ## What every CRD gets
 
@@ -223,7 +272,7 @@ Six Runtimes. 75 CRDs. One Control Center.
 
 **Not an operator framework — an operator runtime.** A framework gives you libraries and conventions. Orkestra gives you a runtime: the reconciliation loop, security layer, and delivery surface are the runtime's job. You write the behavior.
 
-**Not a replacement for Go.** Hooks and constructors exist for exactly this reason. ~90% of operators are declarative; ~10% need code. Orkestra handles the 90% and gives the 10% a clean seam — the same informer, queue, health, and metrics infrastructure, with a single function to implement.
+**Not a requirement for Go.** Most operators are fully declarative. When you need code, hooks and constructors give the logic a clean seam — the same infrastructure, a single function to implement. When Go is not the language you want, `reconcile.remote` is the path: any HTTP server, any language, no cluster access required.
 
 **Not GitOps.** Katalogs define long-lived API contracts resolved at startup. Treat Katalog changes like any other runtime change — deploy through a pipeline.
 
