@@ -22,16 +22,16 @@ var (
 // Structs
 // -----------------------------------------------------------------------------
 type Katalog struct {
-	APIVersion   string                                `yaml:"apiVersion"`
-	Kind         string                                `yaml:"kind"`
-	Spec         orktypes.KatalogSpec                  `yaml:"spec"`
-	Security     orktypes.KatalogSecurity              `yaml:"security"`
-	Notes        orktypes.NoteRegistry                 `yaml:"notes,omitempty"`
-	Profiles     orktypes.ProfileRegistry              `yaml:"profiles,omitempty"`
-	Gateway      *orktypes.GatewayConfig               `yaml:"gateway,omitempty"`
-	Publish      *orktypes.PublishConfig               `yaml:"publish,omitempty"`
-	Notification *orktypes.KatalogNotification         `yaml:"notification,omitempty"`
-	projectInfo  interface{}                           `yaml:"projectInfo,omitempty"`
+	APIVersion   string                        `yaml:"apiVersion"`
+	Kind         string                        `yaml:"kind"`
+	Spec         orktypes.KatalogSpec          `yaml:"spec"`
+	Security     orktypes.KatalogSecurity      `yaml:"security"`
+	Notes        orktypes.NoteRegistry         `yaml:"notes,omitempty"`
+	Profiles     orktypes.ProfileRegistry      `yaml:"profiles,omitempty"`
+	Gateway      *orktypes.GatewayConfig       `yaml:"gateway,omitempty"`
+	Publish      *orktypes.PublishConfig       `yaml:"publish,omitempty"`
+	Notification *orktypes.KatalogNotification `yaml:"notification,omitempty"`
+	projectInfo  interface{}                   `yaml:"projectInfo,omitempty"`
 
 	KomposerMetadata orktypes.KatalogMeta `yaml:"metadata"`
 

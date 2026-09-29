@@ -71,4 +71,3 @@ func TestNamespaceProtectionStats_Mixed(t *testing.T) {
 		t.Errorf("unexpected mixed snapshot: %+v", snap)
 	}
 }
-

@@ -72,5 +72,10 @@ Complete documentation is in [docs/](docs/README.md).
 | `perCRDRuntime` | `crd_runtime.go` | Per-CRD autoscale state: semaphore, `AutoMetrics`, `Autoscaler`, resync interval, `spawnWorker` |
 | `kordinatorTarget` | `crd_runtime.go` | `AutoscaleTarget` implementation backed by `perCRDRuntime` |
 | `ResourceKatalog` | `kordinator_registry.go` | Per-GVK registry: informer, reconciler factory, CRD config |
+<<<<<<< HEAD
 | `CRDHealth` | `vitals/crd_health.go` | Per-CRD health counters, worker states, dependency status |
 | `RuntimeHealth` | `vitals/runtime_health.go` | Aggregate operator health (ready / degraded) |
+=======
+| `CRDHealth` | `crd_health.go` | Per-CRD health counters, worker states, dependency status |
+| `RuntimeHealth` | `crd_worker_health.go` | Aggregate operator health (ready / degraded) |
+>>>>>>> origin/main

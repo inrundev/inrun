@@ -185,7 +185,6 @@ type ConstructorInfo struct {
 	Function   string `json:"function,omitempty"`
 }
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // CRD Info Handler
 // Returns static + dynamic metadata about a CRD:

@@ -34,9 +34,9 @@ import (
 // The dynamic registry path uses domain.Object, which is also supported
 // because the informer cache stores the underlying concrete object.
 type Reconciler[PTR domain.Object] struct {
-	informer         cache.SharedIndexInformer
-	event            event.Recorder
-	kube             kubeclient.Interface
+	informer cache.SharedIndexInformer
+	event    event.Recorder
+	kube     kubeclient.Interface
 	// hooks holds type-erased, domain.Object-parameterized callbacks built at
 	// construction time from the user's ReconcileHooks[PTR]. Stored as
 	// ObjectHooks rather than ReconcileHooks[PTR] so the reconciler remains
@@ -139,16 +139,16 @@ func New[PTR domain.Object](
 	}
 
 	r := &Reconciler[PTR]{
-		crd:              crd,
-		operatorBox:      box,
-		informer:         informer,
-		event:            ev,
-		kube:             kube,
-		hooks:            hooks,
-		targetHooks:      targetHooks,
-		newObj:           newObj,
-		rollbackHistory:  make(map[string]*rollbackFailureHistory),
-		kat:              kat,
+		crd:             crd,
+		operatorBox:     box,
+		informer:        informer,
+		event:           ev,
+		kube:            kube,
+		hooks:           hooks,
+		targetHooks:     targetHooks,
+		newObj:          newObj,
+		rollbackHistory: make(map[string]*rollbackFailureHistory),
+		kat:             kat,
 	}
 
 	// Wire notification: GatewayNotifier when a gateway endpoint is configured;

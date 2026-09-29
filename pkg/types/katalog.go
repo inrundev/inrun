@@ -457,7 +457,6 @@ type KatalogFile struct {
 	// and reconcile time. Template expressions in profile field values are
 	// resolved at reconcile time; validation skips fields that contain {{ }}.
 	Profiles ProfileRegistry `yaml:"profiles,omitempty"`
-
 }
 
 // LooksLikeKomposer reports if this document looks like a Komposer
@@ -804,11 +803,11 @@ type KatalogSpec struct {
 // It contains only the fields needed for display in the Control Center,
 // excluding internal runtime fields.
 type KatalogForUI struct {
-	APIVersion string                       `json:"apiVersion"`          // Orkestra API version
-	Kind       string                       `json:"kind"`                // Always "Katalog" at runtime
-	Metadata   KatalogMeta                  `json:"metadata"`            // Katalog metadata (name, description, etc.)
-	Spec       KatalogSpecForUI             `json:"spec"`                // CRD definitions
-	Security   KatalogSecurity `json:"security"` // Security settings
+	APIVersion string           `json:"apiVersion"` // Orkestra API version
+	Kind       string           `json:"kind"`       // Always "Katalog" at runtime
+	Metadata   KatalogMeta      `json:"metadata"`   // Katalog metadata (name, description, etc.)
+	Spec       KatalogSpecForUI `json:"spec"`       // CRD definitions
+	Security   KatalogSecurity  `json:"security"`   // Security settings
 }
 
 // KatalogSpecForUI contains the CRD definitions for UI display.

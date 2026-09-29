@@ -16,11 +16,9 @@ import (
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"github.com/orkspace/orkestra/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 )
 
 // ResolvedCustomResourceSpec is the fully resolved Custom Resource specification.
@@ -97,22 +95,9 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 		return fmt.Errorf("custom.Create: invalid GVK: %w", err)
 	}
 
-	// Resolve GVR via the registry's RESTMapper (kubeclient exposes Mapper())
-	mapper := kube.RESTMapper()
-	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	resourceIfc, err := kubeclient.ResourceForGVK(kube, gvk, namespace)
 	if err != nil {
 		return fmt.Errorf("custom.Create: resolving GVR for %s: %w", gvk.String(), err)
-	}
-	gvr := mapping.Resource
-
-	dyn := kube.DynamicClient()
-	namespaceable := dyn.Resource(gvr)
-
-	var resourceIfc dynamic.ResourceInterface
-	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-		resourceIfc = namespaceable.Namespace(namespace)
-	} else {
-		resourceIfc = namespaceable
 	}
 
 	// Check existence
@@ -167,21 +152,9 @@ func Update(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 		return fmt.Errorf("custom.Update: invalid GVK: %w", err)
 	}
 
-	mapper := kube.RESTMapper()
-	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	resourceIfc, err := kubeclient.ResourceForGVK(kube, gvk, namespace)
 	if err != nil {
 		return fmt.Errorf("custom.Update: resolving GVR for %s: %w", gvk.String(), err)
-	}
-	gvr := mapping.Resource
-
-	dyn := kube.DynamicClient()
-	namespaceable := dyn.Resource(gvr)
-
-	var resourceIfc dynamic.ResourceInterface
-	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-		resourceIfc = namespaceable.Namespace(namespace)
-	} else {
-		resourceIfc = namespaceable
 	}
 
 	existing, err := resourceIfc.Get(ctx, name, metav1.GetOptions{})
@@ -285,22 +258,11 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface, owner domain.
 		return fmt.Errorf("custom.DeleteIfOwned: invalid GVK: %w", err)
 	}
 
-	mapper := kube.RESTMapper()
-	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	resourceIfc, err := kubeclient.ResourceForGVK(kube, gvk, namespace)
 	if err != nil {
 		return fmt.Errorf("custom.DeleteIfOwned: resolving GVR for %s: %w", gvk.String(), err)
 	}
-	gvr := mapping.Resource
 
-	dyn := kube.DynamicClient()
-	namespaceable := dyn.Resource(gvr)
-
-	var resourceIfc dynamic.ResourceInterface
-	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-		resourceIfc = namespaceable.Namespace(namespace)
-	} else {
-		resourceIfc = namespaceable
-	}
 	existing, err := resourceIfc.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {

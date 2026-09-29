@@ -241,12 +241,12 @@ func (e *executor) validateRemote(name string, crd *orktypes.CRDEntry) error {
 		}
 	}
 
-	// Type must be valid when set
-	if remote.Type != "" && !orktypes.IsValidRemoteReconcileType(remote.Type.String()) {
+	// Protocol must be valid when set
+	if remote.Protocol != "" && !orktypes.IsValidRemoteReconcileProtocol(remote.Protocol.String()) {
 		return fmt.Errorf(
-			"%s CRD %q: reconcile.remote.type %q is not valid — valid values: %s",
-			failureMark(), name, remote.Type,
-			strings.Join(orktypes.ValidRemoteReconcileTypes(), ", "),
+			"%s CRD %q: reconcile.remote.protocol %q is not valid — valid values: %s",
+			failureMark(), name, remote.Protocol,
+			strings.Join(orktypes.ValidRemoteReconcileProtocols(), ", "),
 		)
 	}
 

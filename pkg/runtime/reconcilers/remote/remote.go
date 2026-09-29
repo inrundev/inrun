@@ -21,12 +21,12 @@ func New(
 	managedResources []domain.ManagedResource,
 	ownNamespace string,
 ) (domain.Reconciler, error) {
-	t := decl.Type
+	t := decl.Protocol
 	if t == "" {
-		t = orktypes.RemoteReconcileTypeHTTP
+		t = orktypes.RemoteReconcileProtocolHTTP
 	}
 	switch t {
-	case orktypes.RemoteReconcileTypeHTTP:
+	case orktypes.RemoteReconcileProtocolHTTP:
 		return orkhttp.New(decl, gvk, kube, ev, managedResources, ownNamespace), nil
 	default:
 		return nil, fmt.Errorf("remote reconciler: unsupported transport %q", t)

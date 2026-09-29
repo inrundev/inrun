@@ -218,6 +218,12 @@ type CRDEntry struct {
 	// When enabled, the Control Center renders a [+ Create] button for this CRD
 	// and serves its schema via GET /api/v1/schema/{kind}.
 	Serve *ServeConfig `yaml:"serve,omitempty" json:"serve,omitempty"`
+
+	// ForceConflict, when true, sets Force: true on every server-side apply
+	// for the resources created on onCreate/onReconcile CRD, taking
+	// ownership of conflicting fields instead of returning a conflict error.
+	// Default: true.
+	ForceConflict *bool `yaml:"forceConflict,omitempty" json:"forceConflict,omitempty"`
 }
 
 // Box returns the operatorBox configuration for this CRD.

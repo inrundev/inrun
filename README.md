@@ -114,6 +114,7 @@ Any language. Any runtime. Any host that speaks HTTP.
 
 ---
 
+
 ## For the security and delivery problem
 
 The same Katalog that declares an operator also declares who can reach it and how. `serve.enabled: true` on a CRD entry surfaces it through the Gateway API — token-scoped, admission-enforced, with field translation and provenance built in. Callers post flat fields in their own vocabulary; the gateway validates, annotates, and applies. The caller never sees a CRD schema or a Kubernetes object.
@@ -176,6 +177,7 @@ The gateway owns the delivery boundary — validation, mutation, token scoping, 
 You write the behavior. Orkestra runs it.
 
 ---
+
 
 ## What every CRD gets
 

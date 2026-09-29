@@ -641,12 +641,13 @@ needing separate target-aware implementations in each feature.
 
 ---
 
-!!! tip "The OPRE execution model"
-    Orkestra implements the OPRE model: **O**bserve, **P**re-reconcile, **R**econcile, **E**mit.
+!!! tip "The OPPRE execution model"
+    Orkestra implements the OPPRE model: **O**bserve, **P**re-reconcile, **P**repare, **R**econcile, **E**mit.
     Each phase is owned by a distinct layer — informer, kordinator, reconciler, post.
     One mental model applies everywhere conditions, gates, and outputs are declared.
 
 ---
+
 
 ## Where to go next
 

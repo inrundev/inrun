@@ -133,12 +133,12 @@ func remoteResources() []domain.ManagedResource {
 	return []domain.ManagedResource{{Group: "apps", Version: "v1", Plural: "deployments"}}
 }
 
-func katalogWithRemote(endpoint string, typ orktypes.RemoteReconcileType, resources []domain.ManagedResource) *executor {
+func katalogWithRemote(endpoint string, protocol orktypes.RemoteReconcileProtocol, resources []domain.ManagedResource) *executor {
 	return newKatalogExec(map[string]orktypes.CRDEntry{
 		"app": {OperatorBox: &orktypes.OperatorBoxConfig{
 			Reconcile: &orktypes.ReconcileConfig{
 				Remote: &orktypes.RemoteReconcilerDeclaration{
-					Type:             typ,
+					Protocol:         protocol,
 					Endpoint:         endpoint,
 					ManagedResources: resources,
 				},
@@ -148,12 +148,12 @@ func katalogWithRemote(endpoint string, typ orktypes.RemoteReconcileType, resour
 }
 
 func TestValidateRemote_Valid(t *testing.T) {
-	k := katalogWithRemote("https://svc.internal/reconcile", orktypes.RemoteReconcileTypeHTTP, remoteResources())
+	k := katalogWithRemote("https://svc.internal/reconcile", orktypes.RemoteReconcileProtocolHTTP, remoteResources())
 	require.NoError(t, k.validateRemote("app", crdPtr(k, "app")))
 }
 
 func TestValidateRemote_NoEndpoint(t *testing.T) {
-	k := katalogWithRemote("", orktypes.RemoteReconcileTypeHTTP, remoteResources())
+	k := katalogWithRemote("", orktypes.RemoteReconcileProtocolHTTP, remoteResources())
 	err := k.validateRemote("app", crdPtr(k, "app"))
 	assert.ErrorContains(t, err, "endpoint is required")
 }
@@ -165,7 +165,7 @@ func TestValidateRemote_InvalidType(t *testing.T) {
 }
 
 func TestValidateRemote_NoManagedResources_Info(t *testing.T) {
-	k := katalogWithRemote("https://svc.internal/reconcile", orktypes.RemoteReconcileTypeHTTP, nil)
+	k := katalogWithRemote("https://svc.internal/reconcile", orktypes.RemoteReconcileProtocolHTTP, nil)
 	crd := crdPtr(k, "app")
 	require.NoError(t, k.validateManagedResources("app", crd))
 	assert.True(t, crd.Info.HasInfo())
@@ -208,12 +208,12 @@ func TestValidateRemote_TypeOmitted_Valid(t *testing.T) {
 }
 
 func TestValidateRemote_TemplateEndpoint_Valid(t *testing.T) {
-	k := katalogWithRemote("http://{{ .metadata.namespace }}-svc.svc.cluster.local/reconcile", orktypes.RemoteReconcileTypeHTTP, remoteResources())
+	k := katalogWithRemote("http://{{ .metadata.namespace }}-svc.svc.cluster.local/reconcile", orktypes.RemoteReconcileProtocolHTTP, remoteResources())
 	require.NoError(t, k.validateRemote("app", crdPtr(k, "app")))
 }
 
 func TestValidateRemote_TemplateEndpoint_InvalidTemplate(t *testing.T) {
-	k := katalogWithRemote("http://{{ .metadata.namespace }-svc/reconcile", orktypes.RemoteReconcileTypeHTTP, remoteResources())
+	k := katalogWithRemote("http://{{ .metadata.namespace }-svc/reconcile", orktypes.RemoteReconcileProtocolHTTP, remoteResources())
 	err := k.validateRemote("app", crdPtr(k, "app"))
 	assert.ErrorContains(t, err, "invalid template")
 }

@@ -3,6 +3,7 @@ package post
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -144,7 +145,7 @@ func statusPatchNeeded(obj domain.Object, patch map[string]interface{}) bool {
 			continue
 		}
 		existing, ok, _ := unstructured.NestedFieldNoCopy(u.Object, "status", k)
-		if !ok || existing != v {
+		if !ok || !reflect.DeepEqual(existing, v) {
 			return true
 		}
 	}

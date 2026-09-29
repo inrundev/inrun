@@ -3,26 +3,26 @@ package types
 
 import "github.com/orkspace/orkestra/domain"
 
-// RemoteReconcileType is the wire protocol used for a remote reconciler call.
-type RemoteReconcileType string
+// RemoteReconcileProtocol is the wire protocol used for a remote reconciler call.
+type RemoteReconcileProtocol string
 
 const (
-	RemoteReconcileTypeHTTP RemoteReconcileType = "http"
-	RemoteReconcileTypeGRPC RemoteReconcileType = "grpc" // reserved
+	RemoteReconcileProtocolHTTP RemoteReconcileProtocol = "http"
+	RemoteReconcileProtocolGRPC RemoteReconcileProtocol = "grpc" // reserved
 )
 
-// String returns the string representation of a RemoteReconcileType.
-func (r RemoteReconcileType) String() string { return string(r) }
+// String returns the string representation of a RemoteReconcileProtocol.
+func (r RemoteReconcileProtocol) String() string { return string(r) }
 
-// ValidRemoteReconcileTypes returns all known RemoteReconcileType values.
-func ValidRemoteReconcileTypes() []string {
-	return []string{string(RemoteReconcileTypeHTTP), string(RemoteReconcileTypeGRPC)}
+// ValidRemoteReconcileProtocols returns all known RemoteReconcileProtocol values.
+func ValidRemoteReconcileProtocols() []string {
+	return []string{string(RemoteReconcileProtocolHTTP), string(RemoteReconcileProtocolGRPC)}
 }
 
-// IsValidRemoteReconcileType reports whether s is a known RemoteReconcileType.
-func IsValidRemoteReconcileType(s string) bool {
-	switch RemoteReconcileType(s) {
-	case RemoteReconcileTypeHTTP, RemoteReconcileTypeGRPC:
+// IsValidRemoteReconcileProtocol reports whether s is a known RemoteReconcileProtocol.
+func IsValidRemoteReconcileProtocol(s string) bool {
+	switch RemoteReconcileProtocol(s) {
+	case RemoteReconcileProtocolHTTP, RemoteReconcileProtocolGRPC:
 		return true
 	}
 	return false
@@ -32,8 +32,8 @@ func IsValidRemoteReconcileType(s string) bool {
 // The kordinator POSTs a PreparedRequest to Endpoint; the response is a RemoteReconcileResult.
 // Orkestra owns the queue, backoff, informer, health, and metrics. The remote service owns logic.
 type RemoteReconcilerDeclaration struct {
-	// Type is the wire protocol. Default http; grpc reserved.
-	Type RemoteReconcileType `yaml:"type,omitempty" json:"type,omitempty"`
+	// Protocol is the wire protocol. Default http; grpc reserved.
+	Protocol RemoteReconcileProtocol `yaml:"protocol,omitempty" json:"protocol,omitempty"`
 
 	// Endpoint is the URL the PreparedRequest is POSTed to. Required.
 	// Template expressions are supported and evaluated per-reconcile against the CR's resolver context:
