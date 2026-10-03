@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generates documentation/reference/schema/04-e2e/08-complete-example.md
+# Generates docs/reference/schema/04-e2e/08-complete-example.md
 # from pkg/registry/e2e/fixture/e2e.yaml.
 #
 # Run via: make generate-e2e-example
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 FIXTURE="pkg/registry/e2e/fixture/e2e.yaml"
-OUT="documentation/reference/schema/04-e2e/08-complete-example.md"
+OUT="docs/reference/schema/04-e2e/08-complete-example.md"
 
 if [ ! -f "$FIXTURE" ]; then
   echo "generate-e2e-example: $FIXTURE not found" >&2

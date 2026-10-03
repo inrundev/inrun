@@ -28,12 +28,12 @@ generate-notes:
 generate-e2e-example:
 	@echo "Generating e2e complete example doc..."
 	@bash scripts/generate-e2e-example.sh
-	@echo "✅ documentation/reference/schema/04-e2e/08-complete-example.md updated"
+	@echo "✅ docs/reference/schema/04-e2e/08-complete-example.md updated"
 
 generate-resource-docs:
 	@echo "Generating resource schema docs..."
 	go run ./hack/generate-resource-docs
-	@echo "✅ documentation/reference/schema/06-resources/*.md updated"
+	@echo "✅ docs/reference/schema/06-resources/*.md updated"
 
 ork: generate-notes generate-e2e-example generate-resource-docs
 	@echo "Building Orkestra..."
@@ -41,7 +41,7 @@ ork: generate-notes generate-e2e-example generate-resource-docs
 	cd $(ORKESTRA_DIR) && gofmt -w .
 	cd $(ORKESTRA_DIR) && go build -ldflags "$(ORK_LDFLAGS)" -o $(OUTPUT_DIR)/ork ./cmd/orkestra
 	@echo "✅ Orkestra built successfully"
-	@python3 scripts/fix-bare-fences.py documentation/
+	@python3 scripts/fix-bare-fences.py docs/
 
 orkcc:
 	@echo "Building Orkestra Control Center..."
@@ -431,7 +431,7 @@ hugo-install:
 	echo "✅ Hugo installed: $$(hugo version)"
 
 docs-sync:
-	@echo "Syncing documentation/ → website/content/docs/ ..."
+	@echo "Syncing docs/ → website/content/docs/ ..."
 	@bash website/scripts/sync-docs.sh
 	@echo "✅ Docs synced"
 

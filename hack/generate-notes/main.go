@@ -3,7 +3,7 @@
 // Generates two outputs from the markdown doc files in pkg/note/docs/:
 //
 //  1. pkg/note/catalog_generated.go — note registry for the Orkestra runtime and CLI
-//  2. documentation/reference/orkestra-notes/<domain>.md — user-facing reference pages
+//  2. docs/reference/orkestra-notes/<domain>.md — user-facing reference pages
 //
 // pkg/note/docs/ is the single source of truth. Run `make generate-notes` after
 // adding or updating a doc file — both outputs are refreshed automatically.
@@ -63,7 +63,7 @@ var (
 func main() {
 	docsDir := "pkg/note/docs"
 	outFile := "pkg/note/catalog_generated.go"
-	userDocsDir := "documentation/reference/orkestra-notes"
+	userDocsDir := "docs/reference/orkestra-notes"
 
 	files, err := filepath.Glob(filepath.Join(docsDir, "*.md"))
 	if err != nil || len(files) == 0 {

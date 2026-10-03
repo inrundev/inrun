@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./documentation/assets/logo.png" alt="Orkestra" height="96" />
+  <img src="./docs/assets/logo.png" alt="Orkestra" height="96" />
 
   <h1>Orkestra</h1>
   <p><strong>Kubernetes operators without the infrastructure.</strong></p>
@@ -241,11 +241,11 @@ ork control
 ```
 > → localhost:8081 · username:password → orkestra
 
-![Control Center — multi-Runtime view](./documentation/assets/controlcenter/public/control-center.png)
+![Control Center — multi-Runtime view](./docs/assets/controlcenter/public/control-center.png)
 
-![Control Center — per-Runtime panel](./documentation/assets/controlcenter/public/control-panel.png)
+![Control Center — per-Runtime panel](./docs/assets/controlcenter/public/control-panel.png)
 
-![Control Center — auto-generated operator docs](./documentation/assets/controlcenter/public/operator-docs.png)
+![Control Center — auto-generated operator docs](./docs/assets/controlcenter/public/operator-docs.png)
 
 Six Runtimes. 75 CRDs. One Control Center.
 
@@ -264,7 +264,7 @@ Six Runtimes. 75 CRDs. One Control Center.
 | **Lines of Go** | 400+ per operator | 0 |
 | **Adding a new CRD** | Days to weeks | Minutes |
 
-79 MB is a live measurement from a 10-CRD runtime (`process_resident_memory_bytes` from the `/metrics` endpoint — [raw scrape](./documentation/assets/controlcenter/public/metrics.txt)). The reduction works because Orkestra pays the cost of client-go, leader election, and health servers once per runtime. Per-CRD cost is a goroutine pool and an in-memory cache — the same isolation model as `kube-controller-manager`. A panic in one CRD is caught by `safeReconcile`; the others keep running.
+79 MB is a live measurement from a 10-CRD runtime (`process_resident_memory_bytes` from the `/metrics` endpoint — [raw scrape](./docs/assets/controlcenter/public/metrics.txt)). The reduction works because Orkestra pays the cost of client-go, leader election, and health servers once per runtime. Per-CRD cost is a goroutine pool and an in-memory cache — the same isolation model as `kube-controller-manager`. A panic in one CRD is caught by `safeReconcile`; the others keep running.
 
 ---
 

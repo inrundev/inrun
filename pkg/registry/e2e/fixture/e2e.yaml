@@ -1,5 +1,5 @@
 # https://orkestra.sh/docs/reference/schema/e2e/
-# This file is the source of truth for documentation/reference/schema/04-e2e/08-complete-example.md
+# This file is the source of truth for docs/reference/schema/04-e2e/08-complete-example.md
 # Run `make ork` to regenerate that page after any change here.
 apiVersion: orkestra.orkspace.io/v1
 kind: E2E
