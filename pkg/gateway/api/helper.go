@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
+	"github.com/orkspace/orkestra/pkg/intent"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	"github.com/orkspace/orkestra/pkg/logger"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
@@ -42,7 +42,7 @@ var (
 	nestedSlice      = utils.NestedSlice
 	nestedMap        = utils.NestedMap
 	deleteNestedPath = utils.DeleteNestedPath
-	isTargetRequest  = orktarget.IsTargetRequest
+	isTargetRequest  = intent.IsRequest
 )
 
 // resolvePollURL builds the poll URL for the Gateway API response.

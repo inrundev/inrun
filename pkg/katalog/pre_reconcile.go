@@ -6,7 +6,7 @@ import (
 
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/external"
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
+	"github.com/orkspace/orkestra/pkg/intent"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"github.com/orkspace/orkestra/pkg/utils/common"
@@ -194,8 +194,8 @@ func (k *Katalog) effectiveResolver(ctx context.Context, obj domain.Object, pr *
 		resolver = resolver.WithUserNotes(k.UserNotes())
 	}
 	// .request context
-	if intent := orktarget.ResolveIntentFromObject(resolver.Data()); intent != nil {
-		resolver = resolver.WithRequest(intent)
+	if req := intent.FromObject(resolver.Data()); req != nil {
+		resolver = resolver.WithRequest(req)
 	}
 	// .metrics context
 	if metrics := common.ResolveResourceMetricFromObject(resolver.Data()); metrics != nil {
@@ -224,7 +224,7 @@ func (k *Katalog) effectiveBox(obj domain.Object, gvk string) *orktypes.Operator
 	if entry == nil {
 		return nil
 	}
-	target := orktarget.ResolveTargetFromAnnotations(obj.GetAnnotations())
+	target := intent.Target(obj.GetAnnotations())
 	return entry.EffectiveOperatorBox(target)
 }
 

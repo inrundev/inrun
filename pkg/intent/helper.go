@@ -1,4 +1,4 @@
-package target
+package intent
 
 import "github.com/orkspace/orkestra/pkg/utils"
 

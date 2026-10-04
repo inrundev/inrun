@@ -204,7 +204,7 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 		// ── Per-target constructors ───────────────────────────────────────────
 		// A target that declares reconciler.default: false with its own constructor
 		// gets a TargetReconcilerRegistry entry so startCRDWorkers can build a
-		// MuxReconciler with the right sub-reconciler per target.
+		// mux reconciler with the right sub-reconciler per target.
 		if crd.Serve != nil && crd.Serve.Target.Entries != nil {
 			for targetName, targetCfg := range crd.Serve.Target.Entries {
 				if targetCfg.OperatorBox == nil || targetCfg.Box().Reconcile == nil {

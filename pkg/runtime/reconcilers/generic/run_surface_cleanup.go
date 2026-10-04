@@ -3,7 +3,7 @@ package generic
 import (
 	"context"
 
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
+	"github.com/orkspace/orkestra/pkg/intent"
 	"github.com/orkspace/orkestra/pkg/labels"
 	"github.com/orkspace/orkestra/pkg/logger"
 	"github.com/orkspace/orkestra/pkg/runtime/runners"
@@ -26,7 +26,7 @@ func (r *Reconciler[PTR]) cleanupPreviousSurface(
 	ctx context.Context,
 	rawObj PTR,
 ) error {
-	target := orktarget.ResolveTargetFromAnnotations(rawObj.GetAnnotations())
+	target := intent.Target(rawObj.GetAnnotations())
 	if target == "" || r.crd.KeepPreviousSurface(target) {
 		return nil
 	}

@@ -1,4 +1,4 @@
-package orkestra
+package process
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 
 const eventHandler = "event handler"
 
-type Orkestra struct {
+type Manager struct {
 	komponents      []domain.Komponent
 	postStart       []postStart
 	shutdownHooks   []func(context.Context) // called after all komponents stop
@@ -31,8 +31,8 @@ type postStart struct {
 	comp domain.Komponent
 }
 
-func NewOrkestra(instance string, timeout time.Duration, logLevel string) *Orkestra {
-	return &Orkestra{
+func New(instance string, timeout time.Duration, logLevel string) *Manager {
+	return &Manager{
 		runningInstance: instance,
 		timeout:         timeout,
 		logLevel:        logLevel,
@@ -52,11 +52,11 @@ func NewOrkestra(instance string, timeout time.Duration, logLevel string) *Orkes
 // Hooks are called in registration order, sequentially.
 // If the shutdown timeout is exceeded before all hooks run, remaining hooks
 // are skipped — the process is exiting regardless.
-func (o *Orkestra) OnShutdown(fn func(context.Context)) {
+func (o *Manager) OnShutdown(fn func(context.Context)) {
 	o.shutdownHooks = append(o.shutdownHooks, fn)
 }
 
-func (o *Orkestra) Start(ctx context.Context) error {
+func (o *Manager) Start(ctx context.Context) error {
 	mCtx, mCancel := context.WithCancel(ctx)
 	defer mCancel()
 
@@ -106,9 +106,9 @@ func (o *Orkestra) Start(ctx context.Context) error {
 	return nil
 }
 
-func (o *Orkestra) Shutdown(ctx context.Context) {}
+func (o *Manager) Shutdown(ctx context.Context) {}
 
-func (o *Orkestra) gracefulShutdown(ctx context.Context, cancel context.CancelFunc) {
+func (o *Manager) gracefulShutdown(ctx context.Context, cancel context.CancelFunc) {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
@@ -173,7 +173,7 @@ func (o *Orkestra) gracefulShutdown(ctx context.Context, cancel context.CancelFu
 }
 
 // Register all komponents
-func (o *Orkestra) Register(c []domain.Komponent) {
+func (o *Manager) Register(c []domain.Komponent) {
 	logger.Info().Msgf("Registering orkestra %s komponents...", o.runningInstance)
 	for _, comp := range c {
 		o.komponents = append(o.komponents, comp)
@@ -194,7 +194,7 @@ func (o *Orkestra) Register(c []domain.Komponent) {
 }
 
 // GetKomponent returns a komponent if present
-func (o *Orkestra) GetKomponent(name string) domain.Komponent {
+func (o *Manager) GetKomponent(name string) domain.Komponent {
 	for _, comp := range o.komponents {
 		if comp.Name() == name {
 			return comp
@@ -203,8 +203,8 @@ func (o *Orkestra) GetKomponent(name string) domain.Komponent {
 	return nil
 }
 
-// AddPostStartHook: for services that need to start after Orkestra has started
-func (o *Orkestra) AddPostStartHook(comp domain.Komponent, hook func(context.Context)) {
+// AddPostStartHook: for services that need to start after the manager has started
+func (o *Manager) AddPostStartHook(comp domain.Komponent, hook func(context.Context)) {
 	o.postStart = append(o.postStart, postStart{
 		hook: hook,
 		comp: comp,
@@ -212,6 +212,6 @@ func (o *Orkestra) AddPostStartHook(comp domain.Komponent, hook func(context.Con
 }
 
 // Listening to done channel
-func (o *Orkestra) Wait() {
+func (o *Manager) Wait() {
 	<-o.done
 }

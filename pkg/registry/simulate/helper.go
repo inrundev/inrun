@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
+	"github.com/orkspace/orkestra/pkg/intent"
 	orklabels "github.com/orkspace/orkestra/pkg/labels"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -26,7 +26,7 @@ func effectiveOperatorBox(entry orktypes.CRDEntry, cr *unstructured.Unstructured
 		return entry.EffectiveOperatorBox(target)
 	}
 
-	effectiveTarget := orktarget.ResolveTargetFromAnnotations(cr.GetAnnotations())
+	effectiveTarget := intent.Target(cr.GetAnnotations())
 	return entry.EffectiveOperatorBox(effectiveTarget)
 }
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	orkexternal "github.com/orkspace/orkestra/pkg/external"
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
+	"github.com/orkspace/orkestra/pkg/intent"
 	"github.com/orkspace/orkestra/pkg/logger"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
@@ -43,8 +43,8 @@ func (ws *WebhookServer) evaluateValidationRules(
 	// Inject the raw intent payload as .request so validation rules can gate on
 	// intent-vocabulary fields (e.g. request.schedule) before field translation.
 	// Only present when the CR was submitted through the Gateway API in target mode.
-	if intent := orktarget.ResolveIntentFromObject(obj); intent != nil {
-		resolver = resolver.WithRequest(intent)
+	if req := intent.FromObject(obj); req != nil {
+		resolver = resolver.WithRequest(req)
 	}
 	if calls := cfg.AdmissionExternal(); len(calls) > 0 {
 		var err error
@@ -131,8 +131,8 @@ func (ws *WebhookServer) applyMutationRules(
 	// Inject the raw intent payload as .request so mutation rules can default/override on
 	// intent-vocabulary fields (e.g. request.schedule) before field translation.
 	// Only present when the CR was submitted through the Gateway API in target mode.
-	if intent := orktarget.ResolveIntentFromObject(obj); intent != nil {
-		resolver = resolver.WithRequest(intent)
+	if req := intent.FromObject(obj); req != nil {
+		resolver = resolver.WithRequest(req)
 	}
 	if calls := cfg.AdmissionExternal(); len(calls) > 0 {
 		var err error

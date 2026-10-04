@@ -37,7 +37,7 @@ import (
 	demov1alpha1 "github.com/orkspace/from-controller-runtime-demo/api/v1alpha1"
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orkadapter "github.com/orkspace/orkestra/pkg/kubeclient/adapter"
+	"github.com/orkspace/orkestra/pkg/kubeclient/orkadapter"
 )
 
 // WebAppReconciler reconciles a WebApp object.

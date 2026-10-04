@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
+	"github.com/orkspace/orkestra/pkg/intent"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -26,7 +26,7 @@ func (k *Katalog) EvaluateRequeue(ctx context.Context, crdName string, obj *unst
 	if !ok {
 		return 0
 	}
-	target := orktarget.ResolveTargetFromAnnotations(obj.GetAnnotations())
+	target := intent.Target(obj.GetAnnotations())
 	box := entry.EffectiveOperatorBox(target)
 	rc := box.Reconcile
 	if rc.IsRequeueEmpty() {

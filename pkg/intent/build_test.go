@@ -1,4 +1,4 @@
-package target
+package intent
 
 import (
 	"testing"
@@ -365,7 +365,7 @@ func TestResolveServeIdentity_EmptyName(t *testing.T) {
 	assert.Contains(t, err.Error(), "could not be resolved")
 }
 
-func TestNewBuildCRFromTarget(t *testing.T) {
+func TestNewBuild(t *testing.T) {
 	// Use built-in notes (repoSlug is built-in)
 	notes := orktypes.NoteRegistry{}
 
@@ -408,7 +408,7 @@ func TestNewBuildCRFromTarget(t *testing.T) {
 		"jira-ticket": "PLAT-1234",
 	}
 
-	obj, err := BuildCRFromTarget(raw, crd, notes)
+	obj, err := Build(raw, crd, notes)
 	require.NoError(t, err)
 
 	expectedAPIVersion := crd.APITypes.Group + "/" + crd.APITypes.Version
@@ -436,23 +436,23 @@ func TestNewBuildCRFromTarget(t *testing.T) {
 	assert.Equal(t, "team-payments-staging", obj.GetNamespace())
 }
 
-func TestIsTargetRequest(t *testing.T) {
-	assert.True(t, IsTargetRequest(map[string]interface{}{
+func TestIsRequest(t *testing.T) {
+	assert.True(t, IsRequest(map[string]interface{}{
 		"target": "app",
 	}))
 	// target wins even when apiVersion is also present (gradual migration path)
-	assert.True(t, IsTargetRequest(map[string]interface{}{
+	assert.True(t, IsRequest(map[string]interface{}{
 		"target":     "app",
 		"apiVersion": "v1",
 	}))
-	assert.False(t, IsTargetRequest(map[string]interface{}{
+	assert.False(t, IsRequest(map[string]interface{}{
 		"apiVersion": "platform.myorg.io/v1",
 		"kind":       "App",
 	}))
-	assert.False(t, IsTargetRequest(map[string]interface{}{}))
+	assert.False(t, IsRequest(map[string]interface{}{}))
 }
 
-func TestBuildCRFromTarget(t *testing.T) {
+func TestBuild(t *testing.T) {
 	appCRD := &orktypes.CRDEntry{
 		APITypes: orktypes.APITypes{
 			Group:   "platform.myorg.io",
@@ -495,7 +495,7 @@ func TestBuildCRFromTarget(t *testing.T) {
 			"jira-ticket": "PLAT-1234",
 		}
 
-		obj, err := BuildCRFromTarget(raw, appCRD, orktypes.NoteRegistry{})
+		obj, err := Build(raw, appCRD, orktypes.NoteRegistry{})
 		require.NoError(t, err)
 
 		spec := obj.Object["spec"].(map[string]interface{})
@@ -523,7 +523,7 @@ func TestBuildCRFromTarget(t *testing.T) {
 			"environment":   "staging",
 			"unknown-field": "should be ignored",
 		}
-		obj, err := BuildCRFromTarget(raw, appCRD, orktypes.NoteRegistry{})
+		obj, err := Build(raw, appCRD, orktypes.NoteRegistry{})
 		require.NoError(t, err)
 
 		spec := obj.Object["spec"].(map[string]interface{})
@@ -538,7 +538,7 @@ func TestBuildCRFromTarget(t *testing.T) {
 			"team":        "payments",
 			"environment": "staging",
 		}
-		obj, err := BuildCRFromTarget(raw, appCRD, orktypes.NoteRegistry{})
+		obj, err := Build(raw, appCRD, orktypes.NoteRegistry{})
 		require.NoError(t, err)
 		assert.Equal(t, "platform.myorg.io/v1", obj.GetAPIVersion())
 		assert.Equal(t, "App", obj.GetKind())

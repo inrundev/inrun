@@ -1,4 +1,4 @@
-package target
+package intent
 
 import (
 	"fmt"
@@ -10,17 +10,17 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// IsTargetRequest reports whether raw is a target-mode request.
+// IsRequest reports whether raw is a target-mode request.
 //
 // Detection rule: presence of "target" key, regardless of whether
 // "apiVersion" is also present. This lets callers migrate incrementally
 // by adding "target" without immediately removing Kubernetes fields.
-func IsTargetRequest(raw map[string]interface{}) bool {
+func IsRequest(raw map[string]interface{}) bool {
 	_, ok := raw["target"]
 	return ok
 }
 
-// BuildCRFromTarget constructs a full Kubernetes CR from a flat field map
+// Build constructs a full Kubernetes CR from a flat field map
 // submitted in target mode.
 //
 // Field routing — determined by where each field name is declared in the
@@ -43,7 +43,7 @@ func IsTargetRequest(raw map[string]interface{}) bool {
 // Returns an error only when serve.name or serve.namespace are declared but
 // cannot be resolved to a non-empty string — SSA would reject the CR anyway,
 // so we surface the error here with a clearer message.
-func BuildCRFromTarget(
+func Build(
 	raw map[string]interface{},
 	crd *orktypes.CRDEntry,
 	notes orktypes.NoteRegistry,

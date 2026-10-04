@@ -1,8 +1,9 @@
-package target
+package mux
 
 import (
 	"context"
 	"fmt"
+	"github.com/orkspace/orkestra/pkg/intent"
 	"sync"
 
 	"github.com/orkspace/orkestra/domain"
@@ -12,7 +13,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// MuxReconciler dispatches Reconcile calls to per-target domain.Reconciler
+// Reconciler dispatches Reconcile calls to per-target domain.Reconciler
 // instances based on the serve-target annotation on the incoming CR.
 //
 // CRs with no target annotation (or an unknown target) are handled by the
@@ -25,30 +26,30 @@ import (
 // The target cache is the only mutable state: it stores "ns/name" → target
 // so that deletion reconcile cycles (where the object is gone and no annotation
 // can be read) still route to the same reconciler that handled the last create.
-type MuxReconciler struct {
+type Reconciler struct {
 	informer    cache.SharedIndexInformer
 	targets     map[string]domain.Reconciler // target name → reconciler
 	fallback    domain.Reconciler            // handles no-target / unknown-target CRs
 	targetCache sync.Map                     // "ns/name" → string; evicted on reconcile-not-found
 }
 
-func NewMuxReconciler(
+func New(
 	informer cache.SharedIndexInformer,
 	targets map[string]domain.Reconciler,
 	fallback domain.Reconciler,
-) *MuxReconciler {
-	return &MuxReconciler{
+) *Reconciler {
+	return &Reconciler{
 		informer: informer,
 		targets:  targets,
 		fallback: fallback,
 	}
 }
 
-var _ domain.Reconciler = (*MuxReconciler)(nil)
+var _ domain.Reconciler = (*Reconciler)(nil)
 
 // Reconcile looks up the CR by key, resolves its target, and delegates to the
 // matching per-target reconciler (or the fallback when no match is found).
-func (m *MuxReconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
+func (m *Reconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
 	key := req.Key
 	raw, exists, err := m.informer.GetIndexer().GetByKey(key)
 	if err != nil {
@@ -63,13 +64,13 @@ func (m *MuxReconciler) Reconcile(ctx context.Context, req domain.Request) (doma
 		return domain.Result{}, fmt.Errorf("mux: type assertion failed for %q (got %T)", key, raw)
 	}
 
-	target := ResolveTargetFromAnnotations(obj.GetAnnotations())
+	target := intent.Target(obj.GetAnnotations())
 	m.targetCache.Store(key, target)
 	return m.reconcilerFor(target).Reconcile(ctx, req)
 }
 
 // reconcilerFor returns the reconciler registered for target, or the fallback.
-func (m *MuxReconciler) reconcilerFor(target string) domain.Reconciler {
+func (m *Reconciler) reconcilerFor(target string) domain.Reconciler {
 	if target != "" {
 		if rec, ok := m.targets[target]; ok {
 			return rec
@@ -81,7 +82,7 @@ func (m *MuxReconciler) reconcilerFor(target string) domain.Reconciler {
 // reconcileNotFound routes deletion cycles to the reconciler that last handled
 // this key. The cache entry is removed after routing so stale entries don't
 // accumulate for long-lived operators.
-func (m *MuxReconciler) reconcileNotFound(ctx context.Context, key string) (domain.Result, error) {
+func (m *Reconciler) reconcileNotFound(ctx context.Context, key string) (domain.Result, error) {
 	target := ""
 	if v, ok := m.targetCache.Load(key); ok {
 		target, _ = v.(string)
@@ -96,7 +97,7 @@ func (m *MuxReconciler) reconcileNotFound(ctx context.Context, key string) (doma
 
 // ── CRD-level infrastructure forwarding ──────────────────────────────────────
 // startCRDWorkers performs type assertions on the reconciler it receives from
-// ReconcilerFactory(). MuxReconciler forwards each interface to the fallback so
+// ReconcilerFactory(). Reconciler forwards each interface to the fallback so
 // queue injection, autoscale, resync, and metrics all work as if the fallback
 // were the direct reconciler.
 //
@@ -104,19 +105,19 @@ func (m *MuxReconciler) reconcileNotFound(ctx context.Context, key string) (doma
 // worker pool, not individual targets. Per-target reconcilers do not participate
 // in these infrastructure calls today. Might become per-target tomorrow.
 
-func (m *MuxReconciler) SetQueue(wq *orkqueue.Workqueue) {
+func (m *Reconciler) SetQueue(wq *orkqueue.Workqueue) {
 	if qi, ok := m.fallback.(interface{ SetQueue(*orkqueue.Workqueue) }); ok {
 		qi.SetQueue(wq)
 	}
 }
 
-func (m *MuxReconciler) SetSpawnWorker(fn func()) {
+func (m *Reconciler) SetSpawnWorker(fn func()) {
 	if ws, ok := m.fallback.(interface{ SetSpawnWorker(func()) }); ok {
 		ws.SetSpawnWorker(fn)
 	}
 }
 
-func (m *MuxReconciler) GetAutoMetrics() *autoscaler.AutoMetrics {
+func (m *Reconciler) GetAutoMetrics() *autoscaler.AutoMetrics {
 	if exporter, ok := m.fallback.(interface {
 		GetAutoMetrics() *autoscaler.AutoMetrics
 	}); ok {
@@ -125,7 +126,7 @@ func (m *MuxReconciler) GetAutoMetrics() *autoscaler.AutoMetrics {
 	return nil
 }
 
-func (m *MuxReconciler) WorkerInfo(configuredResync string, configuredWorkers, configuredQueueDepth int) *autoscaler.WorkerInfo {
+func (m *Reconciler) WorkerInfo(configuredResync string, configuredWorkers, configuredQueueDepth int) *autoscaler.WorkerInfo {
 	if wip, ok := m.fallback.(interface {
 		WorkerInfo(string, int, int) *autoscaler.WorkerInfo
 	}); ok {
@@ -134,13 +135,13 @@ func (m *MuxReconciler) WorkerInfo(configuredResync string, configuredWorkers, c
 	return nil
 }
 
-func (m *MuxReconciler) RunAutoscaler(ctx context.Context) {
+func (m *Reconciler) RunAutoscaler(ctx context.Context) {
 	if runner, ok := m.fallback.(interface{ RunAutoscaler(context.Context) }); ok {
 		runner.RunAutoscaler(ctx)
 	}
 }
 
-func (m *MuxReconciler) StartResyncLoop(ctx context.Context) {
+func (m *Reconciler) StartResyncLoop(ctx context.Context) {
 	if rl, ok := m.fallback.(interface{ StartResyncLoop(context.Context) }); ok {
 		rl.StartResyncLoop(ctx)
 	}

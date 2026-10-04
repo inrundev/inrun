@@ -22,7 +22,7 @@ import (
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	"github.com/orkspace/orkestra/pkg/logger"
 	"github.com/orkspace/orkestra/pkg/merger"
-	ork "github.com/orkspace/orkestra/pkg/orkestra"
+	"github.com/orkspace/orkestra/pkg/process"
 	"github.com/orkspace/orkestra/pkg/utils"
 )
 
@@ -76,7 +76,7 @@ func KonductGatewayDev(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context
 	// ── 5. Start ──────────────────────────────────────────────────────────────
 	komponents := []domain.Komponent{hs, kube}
 
-	o := ork.NewOrkestra(
+	o := process.New(
 		kfg.RunningInstance(),
 		kfg.Katalog().ShutdownGracePeriod(),
 		kfg.Ork().LogLevel(),

@@ -15,20 +15,20 @@ import (
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/event"
 	"github.com/orkspace/orkestra/pkg/health"
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
 	"github.com/orkspace/orkestra/pkg/konfig"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	"github.com/orkspace/orkestra/pkg/logger"
 	"github.com/orkspace/orkestra/pkg/merger"
-	ork "github.com/orkspace/orkestra/pkg/orkestra"
+	"github.com/orkspace/orkestra/pkg/process"
 	"github.com/orkspace/orkestra/pkg/runtime/informer"
 	"github.com/orkspace/orkestra/pkg/runtime/informer/observe"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/vitals"
 	"github.com/orkspace/orkestra/pkg/runtime/queue"
 	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/generic"
+	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/mux"
 	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/remote"
 	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
@@ -45,7 +45,7 @@ type runtimeKfg struct {
 	event    *event.Event
 	kube     *kubeclient.Kubeclient
 	kord     *kordinator.DependencyKordinator
-	orkestra *ork.Orkestra
+	orkestra *process.Manager
 }
 
 // konstructRuntime wires the entire Orkestra runtime.
@@ -344,8 +344,8 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 			}
 		}
 
-		// Wrap with MuxReconciler when per-target constructors or remote reconcilers
-		// are declared. MuxReconciler dispatches each reconcile cycle to the matching
+		// Wrap with the mux reconciler when per-target constructors or remote reconcilers
+		// are declared. The mux reconciler dispatches each reconcile cycle to the matching
 		// target's domain.Reconciler, falling back to the base factory for CRs with
 		// no annotation or an unrecognised target name.
 		if crd.HasTargetConstructorFactories() || crd.HasTargetRemoteDeclarations() {
@@ -374,13 +374,13 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 					}
 					targets[targetName] = r
 				}
-				return orktarget.NewMuxReconciler(infCopy, targets, baseFactory())
+				return mux.New(infCopy, targets, baseFactory())
 			}
 			logger.Debug().
 				Str("gvk", gvk).
 				Int("constructorTargets", len(crd.TargetReconcilerFactories)).
 				Int("remoteTargets", len(crd.TargetRemoteDeclarations())).
-				Msg("wiring MuxReconciler factory")
+				Msg("wiring mux reconciler factory")
 		}
 
 		// Register informs the DependencyKordinator which informer and factory
@@ -525,7 +525,7 @@ func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context)
 	// The supervisor. Calls Start() on each komponent in order.
 	// On OS signal (SIGTERM/SIGINT) or fatal error, calls Stop() in reverse.
 	// Graceful shutdown: drains queues before stopping workers.
-	o := ork.NewOrkestra(
+	o := process.New(
 		kfg.RunningInstance(),
 		kfg.Katalog().ShutdownGracePeriod(),
 		kfg.Ork().LogLevel(),

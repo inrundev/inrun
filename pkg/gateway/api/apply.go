@@ -26,7 +26,7 @@ import (
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
+	"github.com/orkspace/orkestra/pkg/intent"
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/konfig"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
@@ -225,7 +225,7 @@ func applyHandler(
 				return
 			}
 
-			built, err := orktarget.BuildCRFromTarget(raw, crd, notes)
+			built, err := intent.Build(raw, crd, notes)
 			if err != nil {
 				writeJSON(w, http.StatusBadRequest, ApplyResponse{
 					Message: err.Error(),

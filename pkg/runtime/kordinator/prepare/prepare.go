@@ -8,7 +8,7 @@ import (
 
 	"github.com/orkspace/orkestra/domain"
 	orkexternal "github.com/orkspace/orkestra/pkg/external"
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
+	"github.com/orkspace/orkestra/pkg/intent"
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	"github.com/orkspace/orkestra/pkg/runtime/kordinator/contract"
@@ -94,8 +94,8 @@ func Prepare(ctx context.Context, in Input) (*domain.PreparedRequest, *Validatio
 			resolver = resolver.WithUserNotes(in.Kat.UserNotes())
 		}
 	}
-	if intent := orktarget.ResolveIntentFromObject(resolver.Data()); intent != nil {
-		resolver = resolver.WithRequest(intent)
+	if req := intent.FromObject(resolver.Data()); req != nil {
+		resolver = resolver.WithRequest(req)
 	}
 	if in.Kube != nil {
 		resolver = resolver.WithUniquenessChecker(
