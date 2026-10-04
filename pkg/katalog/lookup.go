@@ -28,23 +28,6 @@ func (k *Katalog) BuildLookupIndexes() {
 	k.gvkIndex = make(map[string]string)
 	k.gvrIndex = make(map[string]string)
 	k.targetIndex = make(map[string]string)
-	k.webhookNameIndex = make(map[string]string)
-
-	if k.Gateway != nil && k.Gateway.Webhooks != nil {
-		w := k.Gateway.Webhooks
-		for _, e := range w.GitHub {
-			k.webhookNameIndex[strings.ToLower(e.Name)] = "github"
-		}
-		for _, e := range w.GitLab {
-			k.webhookNameIndex[strings.ToLower(e.Name)] = "gitlab"
-		}
-		for _, e := range w.Slack {
-			k.webhookNameIndex[strings.ToLower(e.Name)] = "slack"
-		}
-		for _, e := range w.Generic {
-			k.webhookNameIndex[strings.ToLower(e.Name)] = "generic"
-		}
-	}
 
 	for name, crd := range k.enabledCRDs {
 		// Store all keys in lowercase for case-insensitive lookups.
@@ -246,18 +229,6 @@ func (k *Katalog) LookupByTarget(target string) *CRDLookupResult {
 		}
 	}
 	return nil
-}
-
-// LookupWebhookSource finds which gateway.webhooks source ("github",
-// "gitlab", "slack", "generic") declares an entry with the given name.
-// O(1) lookup using the webhook name index. Case-insensitive.
-func (k *Katalog) LookupWebhookSource(name string) (string, bool) {
-	if k == nil {
-		return "", false
-	}
-	key := strings.ToLower(strings.TrimSpace(name))
-	source, ok := k.webhookNameIndex[key]
-	return source, ok
 }
 
 // LookupByTargetOrKind attempts to find a CRD by target first, then by kind.

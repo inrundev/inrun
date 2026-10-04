@@ -15,7 +15,7 @@ The reconciliation engine. Watches Kubernetes resources, runs operatorBox logic,
 | Package | What it does |
 |---------|-------------|
 | `pkg/katalog` | Loads, merges, and validates the Katalog. The link between YAML config and every runtime decision. |
-| `pkg/runtime/reconciler` | `Generic Reconciler` — the reconcile loop, notification dispatch. |
+| `pkg/runtime/reconciler` | `Generic Reconciler` — the reconcile loop. |
 | `pkg/runtime/kordinator` | Orchestrates reconcilers per CRD; manages CRD health, degradation, and dependency ordering. |
 | `pkg/children` | Fetches and enriches child resources (`_pods`, `_replicaSets`, `_owner`, etc.) and builds the `.children` map available in status templates. |
 | `pkg/runtime/informer` | Shared index informers and factory lifecycle. |
@@ -31,7 +31,7 @@ The reconciliation engine. Watches Kubernetes resources, runs operatorBox logic,
 
 ### Gateway (`cmd/gateway`)
 
-An HTTPS sidecar that owns all webhook endpoints (admission, conversion, deletion-protection) and receives notification dispatch from the runtime. Runs as a separate pod.
+An HTTPS sidecar that owns all webhook endpoints (admission, conversion, deletion-protection). Runs as a separate pod.
 
 **Key packages:**
 
@@ -39,7 +39,6 @@ An HTTPS sidecar that owns all webhook endpoints (admission, conversion, deletio
 |---------|-------------|
 | `pkg/runtime/kordinator` | `BuildNotifyHandler`, `BuildGatewayKatalogHandler` — HTTP handlers served by the gateway. |
 | `pkg/webhook` | Shared webhook parsing and dispatch logic. |
-| `pkg/notification` | `DirectNotifier` — SMTP and Slack dispatch, used by the gateway's `/notify` handler. |
 
 ### Control Center (`cmd/controlcenter`)
 
@@ -62,11 +61,9 @@ These are imported by more than one binary.
 | `pkg/runtime/queue` | Per-CRD work queue with backoff and rate limiting. |
 | `pkg/event` | Kubernetes event recorder. |
 | `pkg/metrics` | Prometheus metrics stubs. |
-| `pkg/tools/plan` | Plan/diff logic for operatorBox reconciliation. *(in development)* |
 | `pkg/registry` | Runtime-level type and hook registries. |
 | `pkg/registry/simulate` | Test harness for reconciler unit tests. |
 | `pkg/note` | Template note functions — Go helpers exposed as template variables so operators can surface replica counts, pod health, scaling state, and more in status fields without writing code. Every new note makes Orkestra more declarative. |
-| `pkg/notification` | Notification stack, throttle state, `DirectNotifier`, `GatewayNotifier`. |
 
 ---
 

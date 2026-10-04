@@ -58,9 +58,6 @@ func (e *executor) validateGateway() error {
 	if e.k.IsNamespaceProtectionEnabled() {
 		reasons = append(reasons, "  • security.namespaceProtection")
 	}
-	if e.k.HasNotification() && !e.k.IsNotificationStandalone() {
-		reasons = append(reasons, "  • notification")
-	}
 
 	return fmt.Errorf(
 		"%s orkestra: gateway endpoint required but not configured\n\n"+

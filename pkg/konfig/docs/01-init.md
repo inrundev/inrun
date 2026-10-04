@@ -52,7 +52,6 @@ All `Konfig` fields are unexported. Callers use typed accessor methods:
 kfg.Cluster().Namespace     // string
 kfg.Katalog().DefaultResync // time.Duration
 kfg.Security()              // *SecurityConfig
-kfg.Notification()          // *NotificationConfig
 kfg.Health().Port           // string
 kfg.Konductor().LeaseDuration // time.Duration
 ```

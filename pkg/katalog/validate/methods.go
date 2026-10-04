@@ -340,21 +340,3 @@ func validateOneHPARef(crdName, hpaName string, ref orktypes.ScaleTargetRef) err
 	}
 	return nil
 }
-
-// validateTeams ensures that a team referenced in a notify: block was declared
-// in notification.teams within this Katalog.
-func (e *executor) validateTeams() error {
-	if !e.k.HasNotification() {
-		return nil
-	}
-	if !e.k.HasTeams() {
-		return nil
-	}
-
-	for name := range e.k.EnabledCRDs() {
-		if _, ok := e.k.Notification.Teams[name]; !ok {
-			return fmt.Errorf("%s  %s team not found", failureMark(), name)
-		}
-	}
-	return nil
-}

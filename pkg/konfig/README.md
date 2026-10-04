@@ -39,10 +39,6 @@ hard-coded defaults
 | `ENABLE_CONVERSION` | `kfg.Security().Conversion.Enabled` | `false` | Enable CRD version conversion webhook |
 | `ENABLE_NAMESPACE_PROTECTION` | `kfg.Security().NamespaceProtection.Enabled` | `false` | Enable namespace restriction webhook |
 | `TLS_CERT` / `TLS_KEY` | `kfg.Security().Webhooks.TLSCert/TLSKey` | `""` | Override TLS paths (omit to let Orkestra generate its own) |
-| `SMTP_HOST` / `SMTP_PORT` | `kfg.Notification().Email.*` | `""` / `0` | SMTP server for email notifications |
-| `SLACK_WEBHOOK_URL` | `kfg.Notification().Slack.Webhook` | `""` | Slack incoming webhook URL |
-| `ENABLE_EMAIL_NOTIFIER` | `kfg.Notification().Email.Enabled` | auto | Defaults to true when SMTP vars are present |
-| `ENABLE_SLACK_NOTIFIER` | `kfg.Notification().Slack.Enabled` | auto | Defaults to true when `SLACK_WEBHOOK_URL` is present |
 
 Duration ENV vars are in whole seconds (`DEFAULT_RESYNC=15` means 15s).
 
@@ -52,4 +48,3 @@ Duration ENV vars are in whole seconds (`DEFAULT_RESYNC=15` means 15s).
 |-----------|-------|
 | Understand Init(), .env loading, and namespace resolution | [docs/01-init.md](docs/01-init.md) |
 | Understand SecurityConfig and its ENV mappings | [docs/02-security.md](docs/02-security.md) |
-| Understand NotificationConfig (capability vs intent) | [docs/03-notification.md](docs/03-notification.md) |

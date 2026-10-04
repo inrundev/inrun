@@ -20,7 +20,6 @@ The package is large by design — centralising types avoids import cycles. Call
 | `conditions.go` | Condition helpers used by reconcilers |
 | `enrichment.go` | `EnrichmentSpec` — the `enrich:` list on a CRD entry |
 | `security.go` | Security policy types (`SecuritySpec`, deletion protection, namespace restriction) |
-| `notification.go` | Notification policy types |
 | `autoscale.go` | Worker autoscale policy |
 | `secret_rotation.go` | Secret rotation policy |
 | `when.go` | `WhenSpec` — conditional field expressions |

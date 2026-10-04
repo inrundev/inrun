@@ -12,7 +12,6 @@
 // Optional sections may be combined with any mode:
 //
 //	--add-security          — namespace + deletion protection block
-//	--add-notification      — notification / alerting block
 
 //go:build !runtime && !gateway
 
@@ -42,29 +41,25 @@ Reconcile mode (choose at most one):
 
 Optional sections (may be combined with any mode):
   --add-security        Namespace and deletion-protection block.
-  --add-notification    Notification / alerting block with example teams.
 
 Examples:
   ork generate katalog
   ork generate katalog --add-hook -o database-katalog.yaml
   ork generate katalog --add-constructor
-  ork generate katalog --typed --add-security
-  ork generate katalog --add-notification -o ops-katalog.yaml`,
+  ork generate katalog --typed --add-security`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		addHook, _ := cmd.Flags().GetBool("add-hook")
 		addConstructor, _ := cmd.Flags().GetBool("add-constructor")
 		typed, _ := cmd.Flags().GetBool("typed")
 		addSecurity, _ := cmd.Flags().GetBool("add-security")
-		addNotification, _ := cmd.Flags().GetBool("add-notification")
 		outputFile, _ := cmd.Flags().GetString("output")
 
 		opts := generate.KatalogScaffoldOptions{
-			AddHook:         addHook,
-			AddConstructor:  addConstructor,
-			Typed:           typed,
-			AddSecurity:     addSecurity,
-			AddNotification: addNotification,
-			OutputFile:      outputFile,
+			AddHook:        addHook,
+			AddConstructor: addConstructor,
+			Typed:          typed,
+			AddSecurity:    addSecurity,
+			OutputFile:     outputFile,
 		}
 
 		// Validate before calling the generator so errors surface before any I/O.
@@ -97,8 +92,6 @@ func init() {
 		"Typed mode: include both hooks and constructor sections commented; prints a warning")
 	generateKatalogCmd.Flags().Bool("add-security", false,
 		"Include a security block (namespace protection + deletion protection)")
-	generateKatalogCmd.Flags().Bool("add-notification", false,
-		"Include a notification block with example team entries")
 	generateKatalogCmd.Flags().StringP("output", "o", "",
 		`Output file path (default "katalog.yaml")`)
 }

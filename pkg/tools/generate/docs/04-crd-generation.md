@@ -54,10 +54,10 @@ ork generate katalog [--hook | --constructor | --typed] [--security] [--notifica
 
 ### Optional sections
 
-`--security`, `--notification`, and `--providers` inject additional blocks into the generated file. These are independent of the reconcile mode and may be combined freely:
+`--security` and `--providers` inject additional blocks into the generated file. These are independent of the reconcile mode and may be combined freely:
 
 ```sh
-ork generate katalog --hook --security --notification
+ork generate katalog --hook --security
 ```
 
 Each optional block is a YAML comment scaffold — the author uncomments and fills in the values relevant to their operator.

@@ -46,32 +46,6 @@ func mergeKatalogSecurity(base, override orktypes.KatalogSecurity) orktypes.Kata
 	return result
 }
 
-// mergeKatalogNotification merges two KatalogNotification values.
-// Source teams are inherited as the base; override teams win on name conflict.
-// If override declares Defaults, those replace the base Defaults entirely.
-// A nil override returns base unchanged; a nil base returns override.
-func mergeKatalogNotification(base, override *orktypes.KatalogNotification) *orktypes.KatalogNotification {
-	if override == nil {
-		return base
-	}
-	if base == nil {
-		return override
-	}
-	result := *base
-	if len(override.Teams) > 0 {
-		if result.Teams == nil {
-			result.Teams = make(map[string]*orktypes.NotificationTeam, len(override.Teams))
-		}
-		for name, team := range override.Teams {
-			result.Teams[name] = team
-		}
-	}
-	if override.Defaults != nil {
-		result.Defaults = override.Defaults
-	}
-	return &result
-}
-
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 func (m *Merger) mustBeMerged() {

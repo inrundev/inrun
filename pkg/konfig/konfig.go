@@ -74,44 +74,6 @@ func Init(filenames ...string) (*Konfig, error) {
 			return s
 		}(),
 
-		// ── Unified notification configuration ───────────────────────────────
-		// ENV vars populate NotificationConfig as defaults.
-		// Katalog YAML values are merged on top in KomposeRuntimeKatalog.
-		//
-		// ENV → NotificationConfig mapping:
-		//   SMTP_HOST              → notification.Email.SMTPHost
-		//   SMTP_PORT              → notification.Email.SMTPPort
-		//   SMTP_USER              → notification.Email.SMTPUser
-		//   SMTP_PASS              → notification.Email.SMTPPass
-		//   SMTP_FROM              → notification.Email.From
-		//   ENABLE_EMAIL_NOTIFIER  → notification.Email.Enabled
-		//
-		//   SLACK_WEBHOOK_URL      → notification.Slack.Webhook
-		//   ENABLE_SLACK_NOTIFIER  → notification.Slack.Enabled
-		//
-		//   NOTIFY_DEFAULT_INTERVAL → notification.DefaultInterval
-		notification: func() NotificationConfig {
-			var n NotificationConfig
-
-			// Email capability
-			n.Email.SMTPHost = GetStrEnv("SMTP_HOST", "")
-			n.Email.SMTPPort = GetIntEnv("SMTP_PORT", 0)
-			n.Email.SMTPUser = GetStrEnv("SMTP_USER", "")
-			n.Email.SMTPPass = GetStrEnv("SMTP_PASS", "")
-			n.Email.From = GetStrEnv("SMTP_FROM", "")
-			n.Email.Enabled = GetBoolEnv("ENABLE_EMAIL_NOTIFIER",
-				n.Email.SMTPHost != "" && n.Email.SMTPUser != "" && n.Email.SMTPPass != "")
-
-			// Slack capability
-			n.Slack.Webhook = GetStrEnv("SLACK_WEBHOOK_URL", "")
-			n.Slack.Enabled = GetBoolEnv("ENABLE_SLACK_NOTIFIER", n.Slack.Webhook != "")
-
-			// Default interval (seconds → Duration)
-			n.DefaultInterval = GetDurEnvSeconds("NOTIFY_DEFAULT_INTERVAL", 900) // 15m
-
-			return n
-		}(),
-
 		registry: registryConfig{
 			RegistryURL: GetStrEnv("ORK_REGISTRY", ""),
 		},

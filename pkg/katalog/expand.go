@@ -21,9 +21,6 @@ func (k *Katalog) expandIncludes() error {
 	if err := orktypes.ExpandGatewayAPIAuthInclude(k.Gateway, k.katalogDir); err != nil {
 		return fmt.Errorf("gateway API auth: %w", err)
 	}
-	if err := orktypes.ExpandGatewayWebhookIncludes(k.Gateway, k.katalogDir); err != nil {
-		return fmt.Errorf("gateway.webhooks: %w", err)
-	}
 	if err := orktypes.ExpandGatewayClustersInclude(k.Gateway, k.katalogDir); err != nil {
 		return fmt.Errorf("gateway.clusters: %w", err)
 	}

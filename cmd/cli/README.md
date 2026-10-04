@@ -10,7 +10,6 @@ CLI command definitions for the `ork` binary. Each file registers one command or
 | `ork gate` | `gate.go` | Start the gateway (TLS + webhooks, cluster-only) |
 | `ork generate` | `generate.go` | Generate RBAC, bundles, ConfigMaps, CRDs, docs |
 | `ork validate` | `validate.go` | Validate an Orkestra Pattern |
-| `ork plan` | `plan.go` | Dry-run a Katalog against a live cluster |
 
 For the full command reference see [documentation/reference/cli](../../documentation/reference/cli/index.md).
 

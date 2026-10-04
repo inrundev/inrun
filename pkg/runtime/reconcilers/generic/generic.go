@@ -8,7 +8,6 @@ import (
 
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/event"
-	"github.com/orkspace/orkestra/pkg/gateway/notification"
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	"github.com/orkspace/orkestra/pkg/labels"
@@ -52,9 +51,6 @@ type Reconciler[PTR domain.Object] struct {
 	newObj      func() PTR
 	crd         orktypes.CRDEntry
 	kat         *katalog.Katalog
-
-	// Notification
-	notifStack *notification.NotificationStack
 }
 
 // discardRecorder is the package-private noop used when nil is passed for ev.
@@ -137,18 +133,6 @@ func New[PTR domain.Object](
 		targetHooks: targetHooks,
 		newObj:      newObj,
 		kat:         kat,
-	}
-
-	// Wire notification: GatewayNotifier when a gateway endpoint is configured;
-	// DirectNotifier otherwise (standalone SMTP/Slack dispatch on the runtime).
-	if kat != nil && crd.IsNotificationEnabled() {
-		var notifier notification.Notifier
-		if ep := kat.GatewayEndpoint(); ep != "" {
-			notifier = notification.NewGatewayNotifier(ep)
-		} else {
-			notifier = notification.NewDirectNotifier(kat)
-		}
-		r.notifStack = notification.NewNotificationStack(kat, notifier)
 	}
 
 	return r

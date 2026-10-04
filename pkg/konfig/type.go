@@ -13,7 +13,6 @@ type Konfig struct {
 	healthServer healthServer
 	katalog      katalogKonfig
 	security     SecurityConfig
-	notification NotificationConfig
 	registry     registryConfig
 }
 
@@ -118,34 +117,6 @@ type SecurityConfig struct {
 		// Parsed from TLS_ROTATE_AFTER env (e.g. "30d"). Default: "1y".
 		ValidFor string
 	}
-}
-
-// NotificationConfig is the unified notification configuration populated from
-// ENV vars at Init() time. Katalog YAML values are merged on top via the Katalog
-// loader, so this represents the ENV-level defaults.
-//
-// Precedence: Katalog YAML > NotificationConfig (ENV) > hard default.
-//
-// This struct defines *capability* — whether Orkestra is able to send email or
-// Slack notifications at all. Teams and conditions define *intent*.
-type NotificationConfig struct {
-	Email struct {
-		Enabled  bool // true when SMTP_* env vars are present
-		SMTPHost string
-		SMTPPort int
-		SMTPUser string
-		SMTPPass string
-		From     string // optional override for From: header
-	}
-
-	Slack struct {
-		Enabled bool   // true when SLACK_WEBHOOK_URL is present
-		Webhook string // default webhook URL
-	}
-
-	// DefaultInterval is the fallback notification interval when neither the
-	// team nor the Katalog YAML defines one.
-	DefaultInterval time.Duration
 }
 
 type katalogKonfig struct {
@@ -275,12 +246,6 @@ func (k *Konfig) Finalizers() []string {
 // This is the primary accessor for all security-related settings.
 func (k *Konfig) Security() *SecurityConfig {
 	return &k.security
-}
-
-// Notification returns the unified notification configuration.
-// This is the primary accessor for all notification-related settings.
-func (k *Konfig) Notification() *NotificationConfig {
-	return &k.notification
 }
 
 // RegistryConfig returns registry configuration.

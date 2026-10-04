@@ -804,15 +804,6 @@ func (c *CRDEntry) HasSetup() bool {
 	return len(c.Setup.Apply) > 0 || len(c.Setup.Helm) > 0 || len(c.Setup.Wait) > 0
 }
 
-// NotificationEnabled reports whether this CRD declares the notification block
-// Enabled by default
-func (c *CRDEntry) IsNotificationEnabled() bool {
-	if c.NotificationEnabled == nil {
-		return true
-	}
-	return *c.NotificationEnabled
-}
-
 // ValidateMetricField returns an error if the field is not a known autoscale metric.
 func (c *CRDEntry) ValidateMetricField(field string) error {
 	known := map[string]struct{}{

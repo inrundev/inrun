@@ -127,11 +127,6 @@ func (e *executor) run() error {
 		return err
 	}
 
-	// 20. Teams
-	if err := e.validateTeams(); err != nil {
-		return err
-	}
-
 	// 22. Services
 	if err := e.validateService(); err != nil {
 		return err
@@ -254,11 +249,6 @@ func (e *executor) run() error {
 
 	// 46. Gateway tokens
 	if err := e.validateGatewayTokens(); err != nil {
-		return err
-	}
-
-	// 47. Gateway webhooks
-	if err := e.validateGatewayWebhooks(); err != nil {
 		return err
 	}
 

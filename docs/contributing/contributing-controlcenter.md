@@ -40,7 +40,6 @@ This is one of the highest-value additions — operators running in production n
 The CR detail page shows spec and status but does not yet show:
 - Error state (how many consecutive failures?)
 - Condition history (not just current conditions)
-- Notification state (last sent, throttle window remaining)
 
 All of this data is available from the runtime API — it needs to be threaded through `handleCRDetail` and rendered in `cr_detail.html`.
 

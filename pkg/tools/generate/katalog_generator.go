@@ -13,7 +13,7 @@
 //	typed + constructor — mode: typed, operatorBox.default: false, commented constructor.
 //	    The user owns the entire reconcile loop; Orkestra calls their constructor.
 //
-// Optional sections (security, notification) are injected after the metadata
+// The optional security section is injected after the metadata
 // block when the corresponding flag is set. They are independent of the
 // reconcile mode and may be combined freely.
 //
@@ -53,9 +53,6 @@ type KatalogScaffoldOptions struct {
 
 	// AddSecurity appends a security block (namespace + deletion protection).
 	AddSecurity bool
-
-	// AddNotification appends a notification block with example team entries.
-	AddNotification bool
 
 	// OutputFile is the destination path. Defaults to "katalog.yaml".
 	OutputFile string
@@ -101,9 +98,8 @@ type katalogTemplateData struct {
 	// DefaultFalse sets operatorBox.default: false (constructor mode only).
 	DefaultFalse bool
 
-	// AddSecurity, AddNotification control optional top-level blocks.
-	AddSecurity     bool
-	AddNotification bool
+	// AddSecurity controls the optional security block.
+	AddSecurity bool
 
 	// Timestamp is written into the generated-by comment.
 	Timestamp string
@@ -121,9 +117,8 @@ func KatalogScaffold(opts KatalogScaffoldOptions) (string, error) {
 	}
 
 	data := katalogTemplateData{
-		AddSecurity:     opts.AddSecurity,
-		AddNotification: opts.AddNotification,
-		Timestamp:       time.Now().UTC().Format("2006-01-02T15:04:05Z"),
+		AddSecurity: opts.AddSecurity,
+		Timestamp:   time.Now().UTC().Format("2006-01-02T15:04:05Z"),
 	}
 
 	switch {
@@ -144,9 +139,6 @@ func KatalogScaffold(opts KatalogScaffoldOptions) (string, error) {
 	}
 	if opts.AddSecurity {
 		data.FlagSuffix += " --add-security"
-	}
-	if opts.AddNotification {
-		data.FlagSuffix += " --add-notification"
 	}
 
 	var buf bytes.Buffer
@@ -197,26 +189,6 @@ security:
     #   - production
   deletionProtection:
     enabled: false
-
-{{ end -}}
-{{ if .AddNotification -}}
-notification:
-  enabled: true
-  defaults:
-    interval: 15m
-    slackWebhookUrl: ${SLACK_ORG_WEBHOOK}
-  teams:
-    platform:
-      email:
-        - platform@myorg.com
-      slack:
-        - "#platform-alerts"
-      slackWebhookUrl: ${SLACK_PLATFORM_WEBHOOK}
-      interval: 5m
-    oncall:
-      slack:
-        - "#oncall"
-      interval: 1m
 
 {{ end -}}
 spec:

@@ -33,9 +33,6 @@ var (
 	pushE2EUseCurrent bool
 	pushE2EWorkers    int
 	pushAddIntent     string
-	pushSign          bool
-	pushSignLocal     bool
-	pushSignLocalTTL  string
 )
 
 var pushCmd = &cobra.Command{
@@ -115,20 +112,8 @@ var pushCmd = &cobra.Command{
 			return fmt.Errorf("invalid reference: %w", err)
 		}
 
-		if pushSignLocal {
-			var ttlErr error
-			ref, ttlErr = buildTTLRef(meta.Name, pushSignLocalTTL)
-			if ttlErr != nil {
-				return fmt.Errorf("constructing ttl.sh ref: %w", ttlErr)
-			}
-		}
-
 		printBanner()
-		target := ref.Registry
-		if pushSignLocal {
-			target = fmt.Sprintf("ttl.sh (expires in %s)", pushSignLocalTTL)
-		}
-		fmt.Printf("Pushing %s (%s) to %s...\n", refArg, patternKind, target)
+		fmt.Printf("Pushing %s (%s) to %s...\n", refArg, patternKind, ref.Registry)
 
 		if patternKind == registry.KatalogKind {
 			localImports, err := registry.ExtractLocalMotifImports(filepath.Join(dir, registry.FileKatalog))
@@ -327,20 +312,6 @@ var pushCmd = &cobra.Command{
 		fmt.Printf("\n%s Pushed: %s\n", successMark(), ref.String())
 		fmt.Printf("  Digest: %s\n", digest)
 
-		if pushSignLocal {
-			return signLocal(cmd.Context(), ref, pushSignLocalTTL)
-		}
-
-		if pushSign {
-			spinSign := StartSpinner("Signing artifact...")
-			if err := signPatternRef(cmd.Context(), ref.String(), false); err != nil {
-				spinSign.Failure()
-				return fmt.Errorf("signing failed: %w", err)
-			}
-			spinSign.Stop()
-			fmt.Printf("%s Signed:  %s\n", successMark(), ref.String())
-		}
-
 		if patternKind == registry.KatalogKind {
 			motifYAML := filepath.Join(dir, registry.FileMotif)
 			if _, err := os.Stat(motifYAML); err == nil {
@@ -385,9 +356,6 @@ func init() {
 	pushCmd.Flags().BoolVar(&pushE2EUseCurrent, "use-current", false, "Use the current kubeconfig context for the e2e gate (skips cluster creation)")
 	pushCmd.Flags().IntVar(&pushE2EWorkers, "workers", 0, "Number of kind worker nodes for the e2e gate cluster (0 = control-plane only)")
 	pushCmd.Flags().StringVar(&pushAddIntent, "add-intent", "", "Run ork serve play against this intent file (YAML or JSON) and bake the result into the artifact")
-	pushCmd.Flags().BoolVar(&pushSign, "sign", false, "Sign the artifact with Cosign keyless after push (same as ork pattern sign)")
-	pushCmd.Flags().BoolVar(&pushSignLocal, "sign-local", false, "Push to ttl.sh and sign for local testing (skips normal registry)")
-	pushCmd.Flags().StringVar(&pushSignLocalTTL, "ttl", "1h", "TTL for the ttl.sh artifact when using --sign-local (e.g. 1h, 24h)")
 	rootCmd.AddCommand(pushCmd)
 
 	// Shadow global flags so they don't appear under `ork push`

@@ -53,12 +53,6 @@ spec:
 
 Security — admission rules, namespace protection, deletion protection — is enforced exactly as it is for `kubectl apply`, through the gateway webhook path, for both target mode and full CR mode. `serve.tokens` adds one thing specific to this API: per-token, per-CRD operation and namespace scoping — see [05-auth.md](docs/05-auth.md#scoping--servetokens).
 
-## Inbound delivery — `gateway.webhooks`
-
-Every path above is pull-based — a caller with a token decides when to send an intent. `pkg/gateway/api/intake` is the push-based counterpart: GitHub push, GitLab push, Slack slash commands, and generic JSON webhooks all resolve through this same package's `ApplyTargetFields` — the target-mode half of the pipeline `POST /api/v1/apply` runs, extracted so a non-HTTP caller can use it too. `intake` imports this package (not the other way around — see its own overview doc for why), so it's a sibling, not a subset.
-
-→ [pkg/gateway/api/intake/README.md](intake/README.md)
-
 ## Developer documentation
 
 | I want to… | Go to |

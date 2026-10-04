@@ -6,7 +6,7 @@
 // operator's live configuration.
 //
 // Entry point: New(paths...).Merge() — call once; query with Enabled, All,
-// ToSpec, ToSecurity, and ToNotification.
+// ToSpec and ToSecurity.
 //
 // See README.md for merge rules, source-loading order, and top-level field
 // accumulation semantics.
@@ -43,9 +43,6 @@ type Merger struct {
 
 	// security holds the security configuration of the final katalog
 	security orktypes.KatalogSecurity
-
-	// notification holds the merged notification configuration of the final katalog
-	notification *orktypes.KatalogNotification
 
 	// gateway holds the gateway deployment config of the final katalog
 	gateway *orktypes.GatewayConfig
@@ -397,15 +394,6 @@ func (m *Merger) ToSpec() orktypes.KatalogSpec {
 func (m *Merger) ToSecurity() orktypes.KatalogSecurity {
 	m.mustBeMerged()
 	return m.security
-}
-
-// ToNotification returns the merged notification configuration of the merged result.
-// When a Komposer references multiple imported Katalogs, teams from all imports are
-// merged — source teams are inherited and the Komposer's own teams win on conflict.
-// Used by KomposeRuntimeKatalog to populate Katalog.Notification.
-func (m *Merger) ToNotification() *orktypes.KatalogNotification {
-	m.mustBeMerged()
-	return m.notification
 }
 
 // ToGateway returns the gateway deployment config of the merged result.

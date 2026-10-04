@@ -8,34 +8,18 @@ import (
 )
 
 // validatePublish checks the publish: block for structural correctness.
-// Semantic enforcement (does intent.yaml exist, is cosign installed) happens
-// at push time — the katalog may be authored without cosign or an intent file.
+// Semantic enforcement (does intent.yaml exist) happens
+// at push time — the katalog may be authored without an intent file.
 func (e *executor) validatePublish() error {
 	pub := e.k.Publish
 	if pub == nil {
 		return nil
 	}
 
-	if err := validateSigningConfig(pub); err != nil {
-		return err
-	}
-
 	if err := validatePublishTests(e.k, pub); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func validateSigningConfig(pub *orktypes.PublishConfig) error {
-	if !pub.HasExpectedIdentities() {
-		return nil
-	}
-	for i, id := range pub.ExpectedIdentities() {
-		if id == "" {
-			return fmt.Errorf("%s publish.signing.expectedIdentities[%d]: identity must not be empty", failureMark(), i)
-		}
-	}
 	return nil
 }
 

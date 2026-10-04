@@ -60,7 +60,6 @@ See [Publishing a new pack](publishing-a-new-pack.md) for the exact checklist.
 The following Orkestra features have no dedicated example yet:
 
 - **Motifs** — reusable resource building blocks assembled via `imports`
-- **Notification** — `operatorBox.conditions` with `notify.teams` firing a Slack or email alert
 - **Komposer** — multi-source Katalog merge from Git, HTTP, and ConfigMap
 - **Typed operators** — full typed-mode example with `ork generate registry` and a custom Go type
 - **Custom constructors** — `reconciler.default: false` with a user-written reconciler

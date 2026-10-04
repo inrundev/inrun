@@ -157,11 +157,6 @@ func (k *Katalog) SetDefaults(kfg *konfig.Konfig) error {
 		}
 		crd.Box().Reconcile = rec
 
-		if k.IsEmailNotificationEnabled() || k.IsSlackNotificationEnabled() {
-			enabled := true
-			crd.NotificationEnabled = &enabled
-		}
-
 		k.enabledCRDs[name] = crd
 	}
 	return nil

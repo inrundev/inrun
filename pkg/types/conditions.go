@@ -23,7 +23,6 @@ package types
 // The same type is used in:
 //   - when: / or: on template sources (resource conditions)
 //   - operatorBox.autoscale.conditions.or and when: (autoscale conditions)
-//   - notification condition blocks
 type Condition struct {
 	// Field — dot-notation path to a field in the CR object or a runtime metric.
 	// e.g. "spec.environment", "metrics.queueDepth", "cross.managed-database.metrics.queueDepth"
@@ -128,11 +127,6 @@ type Condition struct {
 	// Duration — how long a cron-opened window remains active.
 	Duration Duration `yaml:"duration,omitempty" json:"duration,omitempty"`
 
-	// ── Notification ─────────────────────────────────────────────────────────
-
-	// Notify declares teams to alert when this condition is true.
-	Notify *NotifyBlock `yaml:"notify,omitempty" json:"notify,omitempty"`
-
 	// ── Cross-binary metric fallback ─────────────────────────────────────────
 
 	// Negate — when true, the result of this condition is inverted.
@@ -161,17 +155,6 @@ type Condition struct {
 	//       source:
 	//         endpoint: "http://non-orkestra-database-operator:8080/api/managed-database/metrics"
 	Source *CrossSource `yaml:"source,omitempty" json:"source,omitempty"`
-}
-
-// NotifyBlock declares notification targets and an optional message override
-// for a specific condition.
-type NotifyBlock struct {
-	// Teams is the list of team names (from notification.teams) to alert.
-	Teams []string `yaml:"teams" json:"teams"`
-	// Message is a Go template expression for the notification body.
-	// Overrides the team's own message template.
-	// When empty, uses the team's configured message or the system default.
-	Message string `yaml:"message,omitempty" json:"message,omitempty"`
 }
 
 // ConditionOperator defines how a condition's field is compared to its value.

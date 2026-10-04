@@ -487,7 +487,7 @@ func (k *Katalog) ClusterName() string {
 //
 // Used by Validate to fail fast when gatewayEndpoint is not set.
 func (k *Katalog) NeedsGateway() bool {
-	return k.NeedsCertificates() || (k.HasNotification() && !k.IsNotificationStandalone())
+	return k.NeedsCertificates()
 }
 
 // ── Certificates ──────────────────────────────────────────────────────────────

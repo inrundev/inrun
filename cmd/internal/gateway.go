@@ -17,7 +17,6 @@ import (
 
 	"github.com/orkspace/orkestra/domain"
 	apigateway "github.com/orkspace/orkestra/pkg/gateway/api"
-	"github.com/orkspace/orkestra/pkg/gateway/api/intake"
 	"github.com/orkspace/orkestra/pkg/gateway/certmanager"
 	gwhandlers "github.com/orkspace/orkestra/pkg/gateway/handlers"
 	"github.com/orkspace/orkestra/pkg/gateway/webhook"
@@ -110,10 +109,6 @@ func KonductGateway(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) {
 	// in the runtime /katalog response and merges per-CRD stats by GVR key.
 	hs.Register("/katalog", gwhandlers.BuildGatewayKatalogHandler(kat, ws))
 
-	// ── /notify — receives pre-throttled notification events from the runtime ─
-	// The runtime builds and throttle-checks events; the gateway owns dispatch
-	// (SMTP, Slack). Registering here keeps all external I/O off the runtime path.
-	hs.Register("/notify", gwhandlers.BuildNotifyHandler(kat))
 	for _, crd := range kat.Enabled() {
 		crdName := strings.ToLower(crd.Name)
 		gvr := crd.GVR()
@@ -141,28 +136,9 @@ func KonductGateway(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) {
 		logger.Fatal().Err(apiErr).Msg("gateway API setup failed")
 	}
 
-	// gateway.webhooks — inbound intent delivery (GitHub/GitLab push,
-	// Slack, generic HTTP). Only meaningful alongside the Gateway API
-	// (ork validate enforces this), but resolved and registered separately
-	intakeSrv, intakeErr := intake.NewIntakeServer(ctx, kat, kube, clusters, kfg.Cluster().Namespace())
-	if intakeErr != nil {
-		logger.Fatal().Err(intakeErr).Msg("gateway webhooks setup failed")
-	}
-
 	if api != nil {
 		api.Register(hs)
-		if intakeSrv != nil {
-			intakeSrv.Register(hs, kat.Notes)
-		}
-		ws.SetTokenReloader(func(ctx context.Context) error {
-			if err := api.ReloadTokens(ctx); err != nil {
-				return err
-			}
-			if intakeSrv != nil {
-				return intakeSrv.Reload(ctx)
-			}
-			return nil
-		})
+		ws.SetTokenReloader(api.ReloadTokens)
 	}
 
 	// ── 8. Komponent list ─────────────────────────────────────────────────────

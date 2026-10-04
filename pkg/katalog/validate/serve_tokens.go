@@ -20,17 +20,11 @@ import (
 //  8. Every serve permitted namespace must be allowed at crd level.
 //  9. (Warning) A token entry with an empty permissions list grants no access.
 func (e *executor) validateServeTokenRestrictions() error {
-	// A serve.tokens key can be authorized two ways: a gateway.api.auth.tokens
-	// entry (a Bearer/OIDC caller), or a gateway.webhooks entry's own Name (a
-	// push/command/JSON delivery) — TokenAllowedFor treats both identically at
-	// runtime, so both count as "known" here.
+	// A serve.tokens key must name a gateway.api.auth.tokens entry
+	// (a Bearer or OIDC caller).
 	gatewayTokens := e.k.GatewayTokenNames()
-	webhookNames := e.GatewayWebhookEntryNames()
-	knownTokens := make(map[string]struct{}, len(gatewayTokens)+len(webhookNames))
+	knownTokens := make(map[string]struct{}, len(gatewayTokens))
 	for _, name := range gatewayTokens {
-		knownTokens[name] = struct{}{}
-	}
-	for _, name := range webhookNames {
 		knownTokens[name] = struct{}{}
 	}
 
@@ -60,10 +54,10 @@ func (e *executor) validateServeTokenRestrictions() error {
 		}
 
 		for tokenName, perms := range crd.Serve.TokensMap() {
-			knownTokensStr := strings.Join(append(append([]string{}, gatewayTokens...), webhookNames...), ", ")
+			knownTokensStr := strings.Join(gatewayTokens, ", ")
 
-			// 1. Token must exist at the gateway level, either as a
-			// gateway.api.auth.tokens entry or a gateway.webhooks entry's Name.
+			// 1. Token must exist at the gateway level, as a
+			// gateway.api.auth.tokens entry.
 			if _, ok := knownTokens[tokenName]; !ok {
 				return fmt.Errorf(
 					"%s crd %q: serve.tokens[%q] — token %q is not declared in gateway.api.auth.tokens "+

@@ -1,7 +1,7 @@
 # 03 — Gateway
 
 The gateway is a minimal Orkestra process that handles TLS certificate management,
-admission and conversion webhooks, and the Serve layer (Gateway API + intake webhooks).
+admission and conversion webhooks, and the Serve layer (Gateway API).
 It does not run reconcilers, hold informer caches, or compete for the konductor lease.
 
 Two build variants ship the gateway surface:
@@ -51,7 +51,7 @@ the Serve layer locally without a cluster deployment:
 - No TLS setup — runs on plain HTTP (health port, default `:8080`)
 - No `WebhookServer` — `/validate`, `/mutate`, `/convert` are not served
 - No `/katalog` webhook-stats routes — those depend on the webhook server
-- Gateway API (`POST /api/v1/apply`, `GET /api/v1/resources/`, intake webhooks) fully functional
+- Gateway API (`POST /api/v1/apply`, `GET /api/v1/resources/`) fully functional
 
 Use `ork gate run -f katalog.yaml` to test serve routing and apply flows before
 pushing a helm deployment. Admission and conversion webhook behaviour must still

@@ -47,7 +47,6 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -56,7 +55,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/orkspace/orkestra/pkg/gateway/certmanager"
-	"github.com/orkspace/orkestra/pkg/gateway/notification"
 	orklabels "github.com/orkspace/orkestra/pkg/labels"
 	"github.com/orkspace/orkestra/pkg/logger"
 	"github.com/orkspace/orkestra/pkg/metrics"
@@ -329,55 +327,6 @@ func (ws *WebhookServer) maybeRotateCert(ctx context.Context, existing *corev1.S
 		Msg("housekeeper: TLS cert rotated — new cert takes effect on next gateway restart")
 	metrics.RecordWebhookReconciled("tls-secret-rotation")
 
-	go ws.notifyCertRotated(daysLeft)
-}
-
-// notifyCertRotated fires a best-effort notification to an operator team when
-// the TLS certificate has been pre-emptively rotated. No-op when notification
-// is not configured or no teams are declared. Prefers Slack over email.
-func (ws *WebhookServer) notifyCertRotated(daysLeft float64) {
-	if ws.katalog == nil || !ws.katalog.HasTeams() {
-		return
-	}
-	teamName := pickCertNotifyTeam(ws)
-	if teamName == "" {
-		return
-	}
-
-	msg := fmt.Sprintf(
-		"The Orkestra gateway TLS certificate has been rotated (%.0f days remaining on the previous cert). "+
-			"Restart the gateway at your convenience to load the new certificate.",
-		daysLeft,
-	)
-
-	n := notification.NewDirectNotifier(ws.katalog)
-	ev := notification.Event{
-		KatalogName: ws.katalog.Meta().Name,
-		TeamName:    teamName,
-		Subject:     "Gateway TLS certificate rotated",
-		Message:     msg,
-		Timestamp:   time.Now(),
-	}
-	_ = n.Dispatch(context.Background(), ev)
-}
-
-// pickCertNotifyTeam returns a team name to notify about certificate events.
-// Prefers a team with Slack channels; falls back to a team with email.
-func pickCertNotifyTeam(ws *WebhookServer) string {
-	kat := ws.katalog
-	slackOK := kat.IsSlackNotificationEnabled()
-	emailOK := kat.IsEmailNotificationEnabled()
-
-	var emailFallback string
-	for name, team := range kat.Notification.Teams {
-		if slackOK && len(team.Slack) > 0 {
-			return name
-		}
-		if emailOK && len(team.Email) > 0 && emailFallback == "" {
-			emailFallback = name
-		}
-	}
-	return emailFallback
 }
 
 // watchCertSecret watches the TLS Secret for DELETED events and triggers

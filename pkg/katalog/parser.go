@@ -74,7 +74,6 @@ func (k *Katalog) KomposeRuntimeKatalog(
 	k.Security = m.ToSecurity()
 	k.Gateway = m.ToGateway()
 	k.Publish = m.ToPublish()
-	k.Notification = m.ToNotification()
 	k.Profiles = m.ToProfiles()
 	k.Notes = m.ToNotes()
 	k.projectInfo = m.ToProjectInfo()

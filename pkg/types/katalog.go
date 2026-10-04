@@ -49,11 +49,6 @@ type GatewayConfig struct {
 	// API enables the CRUD REST surface for CRs on this gateway.
 	API *GatewayAPIConfig `yaml:"api,omitempty" json:"api,omitempty"`
 
-	// Webhooks declares inbound intent-delivery sources (GitHub, GitLab,
-	// Slack, generic HTTP) that resolve through the same target-mode path
-	// as a direct POST /api/v1/apply call. Requires API to be enabled.
-	Webhooks *GatewayWebhookConfig `yaml:"webhooks,omitempty" json:"webhooks,omitempty"`
-
 	// Clusters registers named remote clusters the gateway may route intents to.
 	// When absent, all intents apply to the local cluster (default behaviour).
 	// Keys are cluster names referenced by serve.cluster and target.cluster.
@@ -260,17 +255,6 @@ func (g *GatewayConfig) HasAPI() bool {
 	return g.API.Enabled
 }
 
-// HasWebhooks reports whether any intake webhook source is declared.
-func (g *GatewayConfig) HasWebhooks() bool {
-	if g == nil {
-		return false
-	}
-	if g.Webhooks == nil {
-		return false
-	}
-	return !g.Webhooks.Empty()
-}
-
 // HasClusters reports whether any remote clusters are registered.
 func (g *GatewayConfig) HasClusters() bool {
 	return g != nil && g.Clusters != nil && len(g.Clusters.Entries) > 0
@@ -439,13 +423,6 @@ type KatalogFile struct {
 	// Controls signing requirements and which quality gates run at push time.
 	// Distinct from security: — publish: is about supply chain, not runtime admission.
 	Publish *PublishConfig `yaml:"publish,omitempty" json:"publish,omitempty"`
-
-	// Notification holds the top-level alerting configuration for this Katalog.
-	// Defines channels (email, Slack) and per-team routing rules that fire when
-	// a managed CRD's conditions transition. When a Komposer references multiple
-	// source Katalogs, notification blocks are merged — source teams are inherited
-	// and the Komposer's own teams win on name conflict.
-	Notification *KatalogNotification `yaml:"notification,omitempty"`
 
 	// Notes declares user-defined note functions available to all CRDs in this Katalog.
 	// Notes are named template expressions that compose built-in notes and Go template

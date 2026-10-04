@@ -186,61 +186,18 @@ func TestKatalogScaffold_NoSecurity_WhenNotRequested(t *testing.T) {
 	assertAbsent(t, out, "security:", "no security block in default mode")
 }
 
-// ── Optional block: notification ──────────────────────────────────────────────
-
-func TestKatalogScaffold_AddNotification(t *testing.T) {
-	out := scaffold(t, generate.KatalogScaffoldOptions{AddNotification: true})
-
-	assertContains(t, out, "--add-notification", "flag in header")
-	assertContains(t, out, "notification:", "notification block")
-	assertContains(t, out, "enabled: true", "enabled field")
-	assertContains(t, out, "defaults:", "defaults sub-block")
-	assertContains(t, out, "slackWebhookUrl:", "slackWebhookUrl field (camelCase)")
-	assertContains(t, out, "teams:", "teams map")
-	// Teams must be a map (key: value), not a list (- name: ...).
-	assertContains(t, out, "    platform:", "platform team key")
-	assertContains(t, out, "    oncall:", "oncall team key")
-	assertAbsent(t, out, "    - name: platform", "no list syntax in teams")
-	// Email and slack must be lists.
-	assertContains(t, out, "      email:", "email list field")
-	assertContains(t, out, "        - platform@myorg.com", "email list entry")
-	assertContains(t, out, "      slack:", "slack list field")
-}
-
-func TestKatalogScaffold_NoNotification_WhenNotRequested(t *testing.T) {
-	out := scaffold(t, generate.KatalogScaffoldOptions{})
-	assertAbsent(t, out, "notification:", "no notification block in default mode")
-}
-
 // ── Combination tests ─────────────────────────────────────────────────────────
 
 func TestKatalogScaffold_HookWithAllOptionals(t *testing.T) {
 	out := scaffold(t, generate.KatalogScaffoldOptions{
-		AddHook:         true,
-		AddSecurity:     true,
-		AddNotification: true,
+		AddHook:     true,
+		AddSecurity: true,
 	})
 
 	assertContains(t, out, "mode: typed", "typed")
 	assertContains(t, out, "# hooks:", "hooks")
 	assertContains(t, out, "security:", "security")
-	assertContains(t, out, "notification:", "notification")
 	assertAbsent(t, out, "# constructor:", "no constructor")
-}
-
-func TestKatalogScaffold_DynamicWithSecurityAndNotification(t *testing.T) {
-	out := scaffold(t, generate.KatalogScaffoldOptions{
-		AddSecurity:     true,
-		AddNotification: true,
-	})
-
-	// Dynamic mode fields present.
-	assertContains(t, out, "default: true", "default true")
-	assertAbsent(t, out, "mode: typed", "no typed mode")
-
-	// Optional blocks present.
-	assertContains(t, out, "security:", "security block")
-	assertContains(t, out, "notification:", "notification block")
 }
 
 // ── Output structure ──────────────────────────────────────────────────────────

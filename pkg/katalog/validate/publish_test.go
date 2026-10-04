@@ -28,54 +28,6 @@ func TestValidatePublish_EmptyConfig(t *testing.T) {
 	assert.NoError(t, k.validatePublish())
 }
 
-// ── signing ──────────────────────────────────────────────────────────────────
-
-func TestValidatePublish_Signing_NoIdentities(t *testing.T) {
-	k := katalogWithPublish(&orktypes.PublishConfig{
-		Signing: &orktypes.SigningConfig{Verify: true},
-	})
-	assert.NoError(t, k.validatePublish())
-}
-
-func TestValidatePublish_Signing_ValidIdentities(t *testing.T) {
-	k := katalogWithPublish(&orktypes.PublishConfig{
-		Signing: &orktypes.SigningConfig{
-			ExpectedIdentities: []string{
-				"github.com/myorg/myrepo/.github/workflows/release.yaml@refs/heads/main",
-				"gitlab.com/mygroup/myproject//release@refs/heads/main",
-			},
-		},
-	})
-	assert.NoError(t, k.validatePublish())
-}
-
-func TestValidatePublish_Signing_EmptyIdentityFirst(t *testing.T) {
-	k := katalogWithPublish(&orktypes.PublishConfig{
-		Signing: &orktypes.SigningConfig{
-			ExpectedIdentities: []string{""},
-		},
-	})
-	err := k.validatePublish()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "expectedIdentities[0]")
-	assert.Contains(t, err.Error(), "must not be empty")
-}
-
-func TestValidatePublish_Signing_EmptyIdentityMiddle(t *testing.T) {
-	k := katalogWithPublish(&orktypes.PublishConfig{
-		Signing: &orktypes.SigningConfig{
-			ExpectedIdentities: []string{
-				"github.com/myorg/myrepo/.github/workflows/release.yaml@refs/heads/main",
-				"",
-			},
-		},
-	})
-	err := k.validatePublish()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "expectedIdentities[1]")
-	assert.Contains(t, err.Error(), "must not be empty")
-}
-
 // ── publish.tests.intent ─────────────────────────────────────────────────────
 
 func TestValidatePublish_Tests_IntentNil(t *testing.T) {

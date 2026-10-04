@@ -15,7 +15,6 @@ import (
 
 	"github.com/orkspace/orkestra/domain"
 	apigateway "github.com/orkspace/orkestra/pkg/gateway/api"
-	"github.com/orkspace/orkestra/pkg/gateway/api/intake"
 	"github.com/orkspace/orkestra/pkg/health"
 	"github.com/orkspace/orkestra/pkg/katalog"
 	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
@@ -70,16 +69,8 @@ func KonductGatewayDev(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context
 		logger.Fatal().Err(apiErr).Msg("gateway API setup failed")
 	}
 
-	intakeSrv, intakeErr := intake.NewIntakeServer(ctx, kat, kube, clusters, kfg.Cluster().Namespace())
-	if intakeErr != nil {
-		logger.Fatal().Err(intakeErr).Msg("gateway webhooks setup failed")
-	}
-
 	if api != nil {
 		api.Register(hs)
-		if intakeSrv != nil {
-			intakeSrv.Register(hs, kat.Notes)
-		}
 	}
 
 	// ── 5. Start ──────────────────────────────────────────────────────────────

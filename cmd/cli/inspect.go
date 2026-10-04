@@ -3,7 +3,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -320,40 +319,6 @@ var inspectCmd = &cobra.Command{
 		if m.RuntimeVersion != "" {
 			fmt.Printf("  Runtime:     %s\n", m.RuntimeVersion)
 		}
-		verboseFlag, _ := cmd.Flags().GetBool("verbose")
-		{
-			var verifyOut strings.Builder
-			spinV := StartSpinner("Verifying signature...")
-			verifyErr := verifyPatternRef(cmd.Context(), ref.String(), nil, false, &verifyOut)
-			spinV.Stop()
-			if verifyErr != nil {
-				fmt.Printf("  Signed:      %s\n", red("✗ not signed"))
-				if verboseFlag {
-					for _, line := range strings.Split(strings.TrimSpace(verifyErr.Error()), "\n") {
-						fmt.Printf("               %s\n", line)
-					}
-				}
-			} else {
-				subject := extractSubjectFromCosignOutput(verifyOut.String())
-				suffix := ""
-				if subject != "" {
-					suffix = " · " + subject
-				}
-				fmt.Printf("  Signed:      %s\n", green("✓ verified (keyless)"+suffix))
-				if verboseFlag {
-					issuer := extractIssuerFromCosignOutput(verifyOut.String())
-					if issuer != "" {
-						fmt.Printf("               issuer:   %s\n", issuer)
-					}
-					if verifyOut.Len() > 0 {
-						for _, line := range strings.Split(strings.TrimSpace(verifyOut.String()), "\n") {
-							fmt.Printf("               %s\n", line)
-						}
-					}
-				}
-			}
-		}
-
 		if len(info.Files) > 0 {
 			fmt.Printf("\n  Files:\n")
 			for _, f := range info.Files {
@@ -384,52 +349,8 @@ func init() {
 	inspectCmd.Flags().BoolVarP(&inspectMotif, "motif", "m", false, "Resolve as a motif (uses ORK_MOTIFS_REGISTRY)")
 	inspectCmd.Flags().String("view", "", "Comma-separated list of files to print before pulling (e.g. katalog.yaml,cr.yaml)")
 	inspectCmd.Flags().Bool("versions", false, "List up to 10 tracked versions with simulate and E2E status")
-	inspectCmd.Flags().Bool("verbose", false, "Expand signature subject and issuer detail")
 	rootCmd.AddCommand(inspectCmd)
 
 	// Shadow global flags
 	shadowGlobalCommandFlags(inspectCmd, "file")
-}
-
-// extractIssuerFromCosignOutput parses cosign's JSON verify output and
-// returns the OIDC issuer from the first verified signature.
-func extractIssuerFromCosignOutput(output string) string {
-	return extractCosignOptionalField(output, "Issuer")
-}
-
-// extractSubjectFromCosignOutput parses cosign's JSON verify output and
-// returns the OIDC subject claim from the first verified signature.
-func extractSubjectFromCosignOutput(output string) string {
-	return extractCosignOptionalField(output, "Subject")
-}
-
-func extractCosignOptionalField(output, field string) string {
-	// cosign outputs a JSON array at the end of its verify output.
-	start := strings.LastIndex(output, "[{")
-	if start == -1 {
-		return ""
-	}
-	raw := output[start:]
-	// Find matching closing bracket.
-	end := strings.LastIndex(raw, "}]")
-	if end == -1 {
-		return ""
-	}
-	raw = raw[:end+2]
-
-	var entries []struct {
-		Optional map[string]json.RawMessage `json:"optional"`
-	}
-	if err := json.Unmarshal([]byte(raw), &entries); err != nil || len(entries) == 0 {
-		return ""
-	}
-	raw2, ok := entries[0].Optional[field]
-	if !ok {
-		return ""
-	}
-	var val string
-	if err := json.Unmarshal(raw2, &val); err != nil {
-		return ""
-	}
-	return val
 }

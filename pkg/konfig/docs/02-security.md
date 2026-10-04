@@ -62,4 +62,3 @@ When no `TLS_CERT` / `TLS_KEY` are provided:
 
 This means the process that generates certificates is always the process that writes back into `Konfig` — there is no shared file system dependency.
 
-→ Next: [03-notification.md](03-notification.md)

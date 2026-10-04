@@ -191,22 +191,6 @@ Live rotation (swapping the TLS cert while the server is running) requires the h
 - New cert takes effect naturally on the next scheduled gateway restart (deploy, rollout, scale event).
 - No caBundle update is needed mid-run — the new caBundle is injected on the next startup.
 
-### Rotation notification
-
-When a certificate is rotated, Orkestra fires a best-effort notification if teams are configured. This is the prompt to schedule a gateway restart — the old cert is still valid, but the window is now open.
-
-```
-rotation completes
-  → kat.HasTeams()?
-      NO  → no-op
-      YES → pick team (Slack preferred over email)
-          → dispatch: "Gateway TLS certificate rotated.
-                       Restart the gateway at your convenience
-                       to load the new certificate."
-```
-
-The notification is fire-and-forget — a dispatch failure does not affect the rotation itself and is not retried. If notification is not configured, nothing happens.
-
 ### Opt-out
 
 If you manage cert rotation externally (cert-manager, Vault PKI, manual scripts), set:

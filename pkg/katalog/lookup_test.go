@@ -547,54 +547,6 @@ func TestIsTargetRegistered(t *testing.T) {
 	}
 }
 
-func TestLookupWebhookSource(t *testing.T) {
-	k := &Katalog{
-		enabledCRDs: map[string]orktypes.CRDEntry{
-			"app": testCRDEntry("App", "smartapp", true),
-		},
-		Gateway: &orktypes.GatewayConfig{
-			Webhooks: &orktypes.GatewayWebhookConfig{
-				GitHub:  []orktypes.GitWebhookConfig{{Name: "payments-repo"}},
-				GitLab:  []orktypes.GitWebhookConfig{{Name: "payments-repo-gitlab"}},
-				Slack:   []orktypes.SlackWebhookConfig{{Name: "platform-workspace"}},
-				Generic: []orktypes.GenericWebhookConfig{{Name: "pagerduty"}},
-			},
-		},
-	}
-	k.SetGroupVersionKind()
-
-	tests := []struct {
-		name   string
-		lookup string
-		want   string
-		found  bool
-	}{
-		{"github", "payments-repo", "github", true},
-		{"gitlab", "payments-repo-gitlab", "gitlab", true},
-		{"slack", "platform-workspace", "slack", true},
-		{"generic", "pagerduty", "generic", true},
-		{"case-insensitive", "PAGERDUTY", "generic", true},
-		{"unknown", "does-not-exist", "", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, ok := k.LookupWebhookSource(tt.lookup)
-			if ok != tt.found || got != tt.want {
-				t.Errorf("LookupWebhookSource(%q) = (%q, %v), want (%q, %v)", tt.lookup, got, ok, tt.want, tt.found)
-			}
-		})
-	}
-}
-
-func TestLookupWebhookSource_NoWebhooksConfigured(t *testing.T) {
-	k := &Katalog{enabledCRDs: map[string]orktypes.CRDEntry{"app": testCRDEntry("App", "smartapp", true)}}
-	k.SetGroupVersionKind()
-
-	if _, ok := k.LookupWebhookSource("anything"); ok {
-		t.Error("expected no match when no webhooks are configured")
-	}
-}
-
 func TestListTargets(t *testing.T) {
 	k := &Katalog{
 		enabledCRDs: map[string]orktypes.CRDEntry{

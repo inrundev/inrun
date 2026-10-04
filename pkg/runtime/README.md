@@ -15,9 +15,8 @@ The runtime process is the reconciliation engine. It watches custom resources an
 ## Cross-domain imports
 
 `runners/` imports `pkg/gateway/certmanager` for TLS certificate generation.
-`reconciler/` imports `pkg/gateway/notification` for outbound webhook dispatch.
 
-These are intentional — the runtime delegates TLS and notification to gateway infrastructure.
+These are intentional — the runtime delegates TLS to gateway infrastructure.
 
 ## Shared packages
 

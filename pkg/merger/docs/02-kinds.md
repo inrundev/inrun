@@ -12,10 +12,6 @@ metadata:
 security:
   deletionProtection:
     enabled: true
-notification:
-  teams:
-    platform:
-      slack: { webhook: "$SLACK_WEBHOOK" }
 spec:
   crds:
     myresource:
@@ -26,7 +22,7 @@ spec:
 **Rules:**
 - Declares CRDs directly in `spec.crds`.
 - Must NOT declare `imports:` — imports are a Komposer concern. The merger returns an error if an `imports:` block is present.
-- All top-level fields (`security`, `notification`) apply to the CRDs declared in that file.
+- Top-level fields such as `security` apply to the CRDs declared in that file.
 
 ## Komposer
 
@@ -55,7 +51,7 @@ spec:
 **Rules:**
 - Composes Katalogs from multiple imports (file, Helm, registry).
 - May declare inline `spec.crds` as local overrides — merged last, win on name conflict.
-- Top-level fields (`security`, `notification`) from all imported Katalogs are accumulated. The Komposer's own block wins on conflict.
+- Top-level fields such as `security` from all imported Katalogs are accumulated. The Komposer's own block wins on conflict.
 - A Komposer cannot reference another Komposer as an import — only `kind: Katalog` files are valid import targets.
 
 ## Dispatch

@@ -269,17 +269,6 @@ func TestHasTemplates_OnReconcile(t *testing.T) {
 
 // ── IsNotificationEnabled ────────────────────────────────────────────────────
 
-func TestIsNotificationEnabled_NilDefaultsTrue(t *testing.T) {
-	c := emptyCRD()
-	assert.True(t, c.IsNotificationEnabled())
-}
-
-func TestIsNotificationEnabled_ExplicitFalse(t *testing.T) {
-	c := emptyCRD()
-	c.NotificationEnabled = boolp(false)
-	assert.False(t, c.IsNotificationEnabled())
-}
-
 // ── ValidateMetricField ───────────────────────────────────────────────────────
 
 func TestValidateMetricField_KnownFields(t *testing.T) {

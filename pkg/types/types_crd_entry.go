@@ -194,9 +194,6 @@ type CRDEntry struct {
 	// Admission groups validation, mutation, conversion, and webhook configuration.
 	Admission *AdmissionConfig `yaml:"admission,omitempty" json:"admission,omitempty"`
 
-	// NotificationEnabled returns whether this CRD belongs to katalog with notification access
-	NotificationEnabled *bool `yaml:"-" json:"-"`
-
 	// TargetHookFactories — per-target hook factories, keyed by target name.
 	// Populated by addTargetHooks() from TargetHookRegistry.
 	// Only set for targets that declare a distinct hook binary from the CRD-level.

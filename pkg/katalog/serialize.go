@@ -26,15 +26,14 @@ func (k *Katalog) SerializeExpanded() ([]byte, error) {
 	// Always kind: Katalog — the bundle has no imports; Komposer sources become
 	// plain Katalogs after expansion so the runtime always takes the loadKatalog path.
 	kf := orktypes.KatalogFile{
-		APIVersion:   k.APIVersion,
-		Kind:         konfig.KatalogKind(),
-		Metadata:     k.metadata,
-		Spec:         orktypes.KatalogSpec{CRDs: k.enabledCRDs},
-		Security:     k.Security,
-		Gateway:      k.Gateway,
-		Notification: k.Notification,
-		Profiles:     k.Profiles,
-		Notes:        k.Notes,
+		APIVersion: k.APIVersion,
+		Kind:       konfig.KatalogKind(),
+		Metadata:   k.metadata,
+		Spec:       orktypes.KatalogSpec{CRDs: k.enabledCRDs},
+		Security:   k.Security,
+		Gateway:    k.Gateway,
+		Profiles:   k.Profiles,
+		Notes:      k.Notes,
 	}
 
 	out, err := yaml.Marshal(kf)
