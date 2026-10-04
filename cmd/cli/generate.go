@@ -124,13 +124,6 @@ func rejectCRDFile(names []string, resolved map[string]orktypes.CRDEntry) error 
 	return nil
 }
 
-func orDefault(s, fallback string) string {
-	if s != "" {
-		return s
-	}
-	return fallback
-}
-
 type mergerOut struct {
 	m       *merger.Merger
 	crds    []orktypes.CRDEntry

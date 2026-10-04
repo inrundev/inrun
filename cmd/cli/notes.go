@@ -198,11 +198,3 @@ func printUserNoteTable(reg orktypes.NoteRegistry, noPager bool) error {
 	w.Flush()
 	return page(sb.String(), noPager)
 }
-
-func isTerminal() bool {
-	fi, err := os.Stdout.Stat()
-	if err != nil {
-		return false
-	}
-	return (fi.Mode() & os.ModeCharDevice) != 0
-}

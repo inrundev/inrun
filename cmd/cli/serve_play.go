@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/orkspace/orkestra/pkg/katalog"
@@ -59,7 +58,16 @@ Example intent.yaml:
   productionApproval: JIRA-1234
 
 Example intent.json:
-  {"target":"apifixture","name":"my-payment-service","workloadType":"app","team":"platform","environment":"staging","repoURL":"https://github.com/myorg/payments","productionApproval":"JIRA-1234"}`,
+  {
+	"target":"apifixture",
+	"name":"my-payment-service",
+	"workloadType":"app",
+	"team":"platform",
+	"environment":"staging",
+	"repoURL":"https://github.com/myorg/payments",
+	"productionApproval":"JIRA-1234"
+}
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		intentFile, _ := cmd.Flags().GetString("intent")
 		tokenName, _ := cmd.Flags().GetString("token")
@@ -199,7 +207,7 @@ func playRead(k *katalog.Katalog, target, tokenName string, op orktypes.ServeOpe
 				printStageDetail(gray("default: true — full CR included in response"))
 			}
 			if cfg.HasPayload() {
-				printStageDetail(gray(fmt.Sprintf("payload fields: %s", strings.Join(payloadKeys(cfg.Payload), ", "))))
+				printStageDetail(gray(fmt.Sprintf("payload fields: %s", strings.Join(sortedKeys(cfg.Payload), ", "))))
 			}
 			if len(cfg.Exclude) > 0 {
 				printStageDetail(gray(fmt.Sprintf("excluded paths: %s", strings.Join(cfg.Exclude, ", "))))
@@ -252,15 +260,6 @@ func namespaceOrAny(ns string) string {
 		return "(all namespaces)"
 	}
 	return ns
-}
-
-func payloadKeys(payload map[string]string) []string {
-	keys := make([]string, 0, len(payload))
-	for k := range payload {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 // ── print helpers ─────────────────────────────────────────────────────────────

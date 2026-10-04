@@ -89,7 +89,7 @@ Examples:
 		}
 
 		// Default path: Katalog / Komposer validation
-		spin := StartSpinner("Resolving imports...")
+		spin := startSpinner("Resolving imports...")
 		m, err := generateKatalog(cmd)
 		if err != nil {
 			spin.Failure()

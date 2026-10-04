@@ -20,7 +20,7 @@ type Spinner struct {
 
 // StartSpinner begins the spinner; on non-TTY it prints once and finalizes.
 func StartSpinner(msg string) *Spinner {
-	if !isTerminal() {
+	if !IsTerminal() {
 		fmt.Println(msg)
 		return &Spinner{finalized: true}
 	}
@@ -105,7 +105,7 @@ func (s *Spinner) Update(msg string) {
 	s.message = msg
 }
 
-func isTerminal() bool {
+func IsTerminal() bool {
 	info, err := os.Stdout.Stat()
 	if err != nil {
 		return false

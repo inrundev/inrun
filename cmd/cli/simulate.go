@@ -193,7 +193,7 @@ func simulateOne(ctx context.Context, kat *katalog.Katalog, crdName string, cr *
 	printSimulateAutoscaleSummary(crdEntry)
 	fmt.Println()
 
-	spin := StartSpinner(fmt.Sprintf("Running %d cycles...", maxCycles))
+	spin := startSpinner(fmt.Sprintf("Running %d cycles...", maxCycles))
 	start := time.Now()
 	var result *simulate.Result
 	var err error

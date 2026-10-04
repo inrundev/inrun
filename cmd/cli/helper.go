@@ -4,7 +4,6 @@ package cli
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -53,6 +52,18 @@ var (
 	splitCommaSeparated = utils.SplitCommaSeparated
 	readLocal           = utils.ReadLocal
 	strictUnmarshal     = utils.StrictUnmarshal
+	pruneEmptyYAML      = utils.PruneEmptyYAML
+	copyFile            = utils.CopyFile
+	copyDir             = utils.CopyDir
+	joinPath            = utils.JoinRelative
+	formatSize          = utils.FormatSize
+	wordWrap            = utils.WordWrap
+	visibleLen          = utils.VisibleLen
+	padRight            = utils.PadRight
+	orDefault           = utils.OrDefault
+	containsTag         = utils.ContainsFold
+	isTerminal          = utils.IsTerminal
+	humanDuration       = utils.FormatDuration
 )
 
 // sortedKeys returns a sorted slice of all keys from the given map.
@@ -60,23 +71,10 @@ func sortedKeys[V any](m map[string]V) []string {
 	return utils.SortedKeys(m)
 }
 
-// toAbsPath converts p to an absolute path.
-// If p is already absolute, it is returned unchanged.
-// If p is relative, it is resolved relative to the current working directory.
-func toAbsPath(p string) (string, error) {
-	return filepath.Abs(p)
-}
-
-// isAbsPath reports whether p is an absolute filesystem path.
-func isAbsPath(p string) bool { return filepath.IsAbs(p) }
-
-// joinPath resolves p relative to the directory that contains base.
-// If p is already absolute, it is returned unchanged.
-func joinPath(base, p string) string {
-	if isAbsPath(p) {
-		return p
-	}
-	return filepath.Join(filepath.Dir(base), p)
+// startSpinner starts a terminal progress spinner with the given message.
+// Call Success, Failure, or Stop on the returned value when done.
+func startSpinner(msg string) *utils.Spinner {
+	return utils.StartSpinner(msg)
 }
 
 // Shadow global command flags

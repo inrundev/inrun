@@ -28,6 +28,7 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -187,7 +188,7 @@ func runGenerateCR(cmd *cobra.Command, _ []string) error {
 		out = append(out, append([]byte(header), data...))
 	}
 
-	combined := joinBytes(out, []byte("\n"))
+	combined := bytes.Join(out, []byte("\n"))
 
 	if output == "" {
 		cmd.OutOrStdout().Write(combined)
@@ -223,22 +224,6 @@ func filterByName(crds map[string]orktypes.CRDEntry, name string, all bool) []or
 	}
 	if !all && len(result) > 0 {
 		return result[:1]
-	}
-	return result
-}
-
-func isDir(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
-}
-
-func joinBytes(slices [][]byte, sep []byte) []byte {
-	var result []byte
-	for i, s := range slices {
-		if i > 0 {
-			result = append(result, sep...)
-		}
-		result = append(result, s...)
 	}
 	return result
 }

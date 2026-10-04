@@ -290,7 +290,7 @@ var pushCmd = &cobra.Command{
 			return fmt.Errorf("initializing client: %w", err)
 		}
 
-		spin := StartSpinner(fmt.Sprintf("Pushing %s...", refArg))
+		spin := startSpinner(fmt.Sprintf("Pushing %s...", refArg))
 		progress := func(file string, size int64) {
 			spin.Update(fmt.Sprintf("Uploading %s (%s)", file, formatSize(size)))
 		}
@@ -318,7 +318,7 @@ var pushCmd = &cobra.Command{
 				motifRef, err := registry.ResolveForKind(fmt.Sprintf("%s:%s", meta.Name, meta.Version), registry.MotifKind)
 				if err == nil {
 					fmt.Printf("\nAlso pushing %s to %s...\n", registry.FileMotif, motifRef.Registry)
-					spinMotif := StartSpinner(fmt.Sprintf("Pushing %s...", registry.FileMotif))
+					spinMotif := startSpinner(fmt.Sprintf("Pushing %s...", registry.FileMotif))
 					if mDigest, err := client.Push(cmd.Context(), motifRef, dir, registry.PushOptions{RuntimeVersion: version.Short()}, nil); err != nil {
 						spinMotif.Failure()
 						fmt.Fprintf(os.Stderr, "warning: motif push failed: %v\n", err)

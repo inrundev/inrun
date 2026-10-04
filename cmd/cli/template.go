@@ -55,7 +55,7 @@ Examples:
 		noValidate, _ := cmd.Flags().GetBool("no-validate")
 
 		// ── Load & expand ───────────────────────────────────────────────────────
-		spin := StartSpinner("Resolving imports...")
+		spin := startSpinner("Resolving imports...")
 		merged, err := generateKatalog(cmd)
 		if err != nil {
 			spin.Failure()

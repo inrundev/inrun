@@ -40,7 +40,7 @@ var inspectCmd = &cobra.Command{
 		}
 
 		if versionsFlag, _ := cmd.Flags().GetBool("versions"); versionsFlag {
-			spin := StartSpinner("Fetching version history...")
+			spin := startSpinner("Fetching version history...")
 			versions, err := client.ListVersions(cmd.Context(), ref, 10)
 			if err != nil {
 				spin.Failure()

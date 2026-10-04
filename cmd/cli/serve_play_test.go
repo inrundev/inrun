@@ -101,7 +101,7 @@ func TestNamespaceOrAny(t *testing.T) {
 }
 
 func TestPayloadKeys_SortsAlphabetically(t *testing.T) {
-	got := payloadKeys(map[string]string{"zeta": "1", "alpha": "2", "mid": "3"})
+	got := sortedKeys(map[string]string{"zeta": "1", "alpha": "2", "mid": "3"})
 	want := []string{"alpha", "mid", "zeta"}
 	if len(got) != len(want) {
 		t.Fatalf("got %v, want %v", got, want)

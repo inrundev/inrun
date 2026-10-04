@@ -1,6 +1,6 @@
 //go:build !runtime && !gateway
 
-package cli
+package utils
 
 import (
 	"strings"
@@ -11,7 +11,7 @@ func TestPruneEmptyYAML_RemovesEmptyString(t *testing.T) {
 	input := `name: hello
 empty: ""
 `
-	out, err := pruneEmptyYAML([]byte(input))
+	out, err := PruneEmptyYAML([]byte(input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func TestPruneEmptyYAML_RemovesZero(t *testing.T) {
 	input := `replicas: 3
 timeout: "0"
 `
-	out, err := pruneEmptyYAML([]byte(input))
+	out, err := PruneEmptyYAML([]byte(input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestPruneEmptyYAML_RemovesZeroDuration(t *testing.T) {
 	input := `name: foo
 interval: 0s
 `
-	out, err := pruneEmptyYAML([]byte(input))
+	out, err := PruneEmptyYAML([]byte(input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestPruneEmptyYAML_RemovesNull(t *testing.T) {
 	input := `name: foo
 missing: null
 `
-	out, err := pruneEmptyYAML([]byte(input))
+	out, err := PruneEmptyYAML([]byte(input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestPruneEmptyYAML_RemovesEmptySequence(t *testing.T) {
 	input := `name: foo
 tags: []
 `
-	out, err := pruneEmptyYAML([]byte(input))
+	out, err := PruneEmptyYAML([]byte(input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestPruneEmptyYAML_RemovesEmptyMapping(t *testing.T) {
 	input := `name: foo
 config: {}
 `
-	out, err := pruneEmptyYAML([]byte(input))
+	out, err := PruneEmptyYAML([]byte(input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestPruneEmptyYAML_KeepsNonEmptySequence(t *testing.T) {
   - a
   - b
 `
-	out, err := pruneEmptyYAML([]byte(input))
+	out, err := PruneEmptyYAML([]byte(input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestPruneEmptyYAML_KeepsNonEmptySequence(t *testing.T) {
 func TestPruneEmptyYAML_KeepsNonZeroScalar(t *testing.T) {
 	input := `replicas: 3
 `
-	out, err := pruneEmptyYAML([]byte(input))
+	out, err := PruneEmptyYAML([]byte(input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestPruneEmptyYAML_RecursesIntoNestedMapping(t *testing.T) {
   empty: ""
   count: 0
 `
-	out, err := pruneEmptyYAML([]byte(input))
+	out, err := PruneEmptyYAML([]byte(input))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,14 +136,14 @@ func TestPruneEmptyYAML_RecursesIntoNestedMapping(t *testing.T) {
 }
 
 func TestPruneEmptyYAML_InvalidYAML(t *testing.T) {
-	_, err := pruneEmptyYAML([]byte("{{{not yaml"))
+	_, err := PruneEmptyYAML([]byte("{{{not yaml"))
 	if err == nil {
 		t.Error("expected error for invalid YAML, got nil")
 	}
 }
 
 func TestPruneEmptyYAML_EmptyInput(t *testing.T) {
-	out, err := pruneEmptyYAML([]byte(""))
+	out, err := PruneEmptyYAML([]byte(""))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

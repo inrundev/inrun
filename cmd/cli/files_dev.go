@@ -2,7 +2,7 @@
 
 package cli
 
-// Add any function that requires dev-only tools or symbols (StartSpinner, successMark,
+// Add any function that requires dev-only tools or symbols (startSpinner, successMark,
 // pkg/registry, etc.) here. This file is excluded from runtime and gateway builds.
 
 import (
@@ -27,7 +27,7 @@ func resolveOCIRunPath(ctx context.Context, ref string, useKomposer, refresh boo
 			return "", fmt.Errorf("initializing registry client: %w", err)
 		}
 		fmt.Printf("Pulling %s\n  → %s\n", r.ShortName(), r.String())
-		spin := StartSpinner("Downloading...")
+		spin := startSpinner("Downloading...")
 		if _, err := client.Pull(ctx, r, refresh); err != nil {
 			spin.Failure()
 			return "", fmt.Errorf("pull failed: %w", err)

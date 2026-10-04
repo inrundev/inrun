@@ -62,7 +62,7 @@ var pullCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Pulling %s\n  → %s\n", ref.ShortName(), ref.String())
-		spin := StartSpinner("Downloading...")
+		spin := startSpinner("Downloading...")
 		cacheDir, err := client.Pull(cmd.Context(), ref, refresh)
 		if err != nil {
 			spin.Failure()
@@ -141,7 +141,7 @@ func pullMotifDeps(katalogCacheDir string) {
 
 	fmt.Printf("\nPulling motif dependencies...\n")
 	for _, imp := range imports.MotifImports {
-		spin := StartSpinner(imp.Motif)
+		spin := startSpinner(imp.Motif)
 		if motif.PullImport(&imp) == nil {
 			spin.Stop()
 			fmt.Printf("  %s %s\n", successMark(), imp.Motif)
@@ -198,7 +198,7 @@ func pullFromFile(cmd *cobra.Command, filePath string, refresh bool) error {
 			continue
 		}
 		fmt.Printf("Pulling %s\n  → %s\n", ref.ShortName(), ref.String())
-		spinRef := StartSpinner("Downloading...")
+		spinRef := startSpinner("Downloading...")
 		cacheDir, err := client.Pull(cmd.Context(), ref, refresh)
 		if err != nil {
 			spinRef.Failure()
@@ -215,7 +215,7 @@ func pullFromFile(cmd *cobra.Command, filePath string, refresh bool) error {
 	if err == nil && !helmImports.Empty() {
 		for _, src := range helmImports.HelmSources {
 			label := src.Repo + "/" + src.Chart + "@" + src.Version
-			spin := StartSpinner(label)
+			spin := startSpinner(label)
 			if cacheErr := merger.WarmHelmSource(src, refresh); cacheErr != nil {
 				spin.Failure()
 				errs = append(errs, fmt.Sprintf("helm %s: %v", label, cacheErr))
@@ -227,7 +227,7 @@ func pullFromFile(cmd *cobra.Command, filePath string, refresh bool) error {
 
 		// ── Remote file sources ───────────────────────────────────────────────
 		for _, url := range helmImports.RemoteFiles {
-			spin := StartSpinner(url)
+			spin := startSpinner(url)
 			if refresh {
 				utils.InvalidateFileCache(url)
 			}
