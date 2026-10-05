@@ -19,16 +19,19 @@ func ToTyped[T any](p *PreparedRequest) (*T, error) {
 	return out, nil
 }
 
-// ToTypedWith converts a domain.Object to PTR using newObj to instantiate the target.
-// PTR must already be a pointer type (e.g. *Database). Used when the type parameter
-// is itself a pointer — the generic.Reconciler pattern.
+// ToTypedWith converts a domain.Object to the type newObj returns. PTR may be
+// the interface domain.Object (the generic.Reconciler case), so the target is
+// decided by what newObj builds, not by PTR: an unstructured object is
+// converted whenever newObj builds a typed one.
 //
 //	obj, err := domain.ToTypedWith[PTR](prepared.Object, r.newObj)
 func ToTypedWith[PTR Object](obj Object, newObj func() PTR) (PTR, error) {
-	if typed, ok := obj.(PTR); ok {
+	out := newObj()
+	_, isU := obj.(*unstructured.Unstructured)
+	_, wantU := any(out).(*unstructured.Unstructured)
+	if typed, ok := obj.(PTR); ok && (!isU || wantU) {
 		return typed, nil
 	}
-	out := newObj()
 	if err := fromUnstructured(obj, out); err != nil {
 		return out, err
 	}

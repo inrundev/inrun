@@ -170,6 +170,10 @@ func Resolve(src orktypes.ReplicaSetTemplateSource, ownerName string, reg *orkty
 		VolumeMounts:    src.VolumeMounts,
 		Sleep:           src.Sleep,
 		ForceConflict:   src.ForceConflict,
+
+		ServiceAccountName: src.ServiceAccountName,
+		NodeSelector:       src.NodeSelector,
+		ImagePullSecrets:   src.ImagePullSecrets,
 	}
 
 	if spec.Name == "" {
@@ -191,9 +195,6 @@ func Resolve(src orktypes.ReplicaSetTemplateSource, ownerName string, reg *orkty
 	}
 	for k, v := range src.Annotations {
 		spec.Annotations[k] = v
-	}
-	for _, a := range src.NodeSelector {
-		spec.NodeSelector[a] = a
 	}
 
 	spec.Env = []orktypes.EnvVar(src.Env)

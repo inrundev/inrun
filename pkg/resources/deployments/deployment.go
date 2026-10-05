@@ -178,6 +178,10 @@ func Resolve(src orktypes.DeploymentTemplateSource, ownerName string, reg *orkty
 		VolumeMounts:    src.VolumeMounts,
 		Sleep:           src.Sleep,
 		ForceConflict:   src.ForceConflict,
+
+		ServiceAccountName: src.ServiceAccountName,
+		NodeSelector:       src.NodeSelector,
+		ImagePullSecrets:   src.ImagePullSecrets,
 	}
 
 	if spec.Name == "" {

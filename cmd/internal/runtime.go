@@ -8,10 +8,19 @@ import (
 	"github.com/orkspace/orkestra/pkg/logger"
 	"github.com/orkspace/orkestra/pkg/merger"
 	"github.com/orkspace/orkestra/pkg/runtime/konductor"
+	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/orkspace/orkestra/pkg/version"
 )
 
 func KonductRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) {
+	// Runtime facts, available to every template expression as .ork.*. Set on
+	// the context that construction, startup and the kordinator all share.
+	ctx = orktmpl.ContextWithOrkContext(ctx, orktmpl.NewOrkContext(
+		kfg.Cluster().Namespace(),
+		version.Version,
+	))
+
 	// create domain komponent and build orkestra
 	startup := konstructRuntime(kfg, m, ctx)
 

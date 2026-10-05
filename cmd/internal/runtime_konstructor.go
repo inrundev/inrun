@@ -30,9 +30,7 @@ import (
 	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/generic"
 	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/mux"
 	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/remote"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
 	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/version"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -59,12 +57,7 @@ type runtimeKfg struct {
 // and make it harder to reason about startup order.
 func konstructRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) *runtimeKfg {
 
-	// ── 0. Runtime facts — available to all template expressions as .ork.* ──────
 	orkestraNamespace := kfg.Cluster().Namespace()
-	ctx = orktmpl.ContextWithOrkContext(ctx, orktmpl.NewOrkContext(
-		kfg.Cluster().Namespace(),
-		version.Version,
-	))
 
 	// ── 1a. Instance ────────────────────────────────────────────────────────────
 	kfg.SetInstance(konfig.Runtime())

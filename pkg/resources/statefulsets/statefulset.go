@@ -148,6 +148,10 @@ func Resolve(src orktypes.StatefulSetTemplateSource, ownerName string, reg *orkt
 		VolumeMounts:    src.VolumeMounts,
 		Sleep:           src.Sleep,
 		ForceConflict:   src.ForceConflict,
+
+		ServiceAccountName: src.ServiceAccountName,
+		NodeSelector:       src.NodeSelector,
+		ImagePullSecrets:   src.ImagePullSecrets,
 	}
 
 	for _, vct := range src.VolumeClaimTemplates {
