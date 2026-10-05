@@ -1,3 +1,6 @@
+// Package event records Kubernetes events for reconcilers and other
+// components without depending on client-go's recorder directly. Discard is
+// a no-op recorder for tests and simulation.
 package event
 
 import (

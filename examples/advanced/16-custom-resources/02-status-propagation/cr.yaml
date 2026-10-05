@@ -1,9 +1,0 @@
-apiVersion: data.example.io/v1alpha1
-kind: DataPipeline
-metadata:
-  name: my-pipeline
-  namespace: default
-spec:
-  source: "s3://data-lake/raw/events"
-  destination: "gs://analytics/processed/events"
-  format: parquet

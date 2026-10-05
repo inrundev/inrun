@@ -1,9 +1,0 @@
-apiVersion: platform.acme.io/v1alpha1
-kind: DatabaseCluster
-metadata:
-  name: prod-db
-  namespace: default
-spec:
-  engine: postgres
-  image: postgres:15-alpine
-  nodes: 2

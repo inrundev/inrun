@@ -1,4 +1,0 @@
-runtime:
-  image:
-    repository: ghcr.io/myorg/database-operator
-    tag: latest

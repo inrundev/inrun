@@ -1,9 +1,0 @@
-apiVersion: infra.example.io/v1alpha1
-kind: Platform
-metadata:
-  name: dev-platform
-  namespace: default
-spec:
-  size: small
-  owner: platform-eng
-  region: eu-west-1

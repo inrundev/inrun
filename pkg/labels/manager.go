@@ -1,37 +1,3 @@
-// Package labels provides a stateless label and annotation manager for any
-// Kubernetes object that implements the [domain.Object] interface.
-//
-// # Responsibilities
-//
-// The Manager answers one question per reconcile cycle: given the current
-// Katalog configuration, what labels should this object carry? It then
-// applies the answer in memory. The caller is responsible for persisting the
-// result to the API server (e.g., via kube.PatchLabels).
-//
-// # What the Manager owns
-//
-//   - [Manager.EnsureManagedLabel] — adds "orkestra.orkspace.io/managed: true"
-//     to identify Orkestra-owned resources.
-//   - [Manager.EnsureManagedAnnotations] — adds "managed-by" and "managed-since"
-//     annotations for audit and ownership tracking.
-//   - [Manager.EnsureDeletionProtectionLabel] — adds or removes the
-//     "orkestra.io/deletion-protection: true" label based on the CRD's
-//     effective protection setting.
-//   - [Manager.EnsureStrictModeExemptLabel] — adds or removes the
-//     "orkestra.io/strict-mode-exempt: true" label based on whether the CRD
-//     has opted out of strict-mode enforcement.
-//
-// # What the Manager does not own
-//
-// The Manager performs no API calls and imports no Orkestra internal packages
-// (katalog, reconciler, etc.). All configuration is passed at construction
-// time via [Config]. This keeps the package safe to import from any layer.
-//
-// # Threading
-//
-// Manager is safe to construct per reconcile cycle (it holds no mutable
-// state). Sharing a Manager across goroutines is also safe because all
-// exported methods are pure transformations on the object they receive.
 package labels
 
 import (

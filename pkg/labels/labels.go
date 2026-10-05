@@ -1,17 +1,3 @@
-// Package labels defines all label, annotation, and finalizer constants used by
-// the Orkestra control plane. These identifiers form the contract between the
-// runtime, admission webhooks, generators, CLI tooling, and developer-created
-// workloads.
-//
-// Nothing in this package performs logic — it only provides:
-//   - stable label keys
-//   - stable annotation keys
-//   - stable finalizer keys
-//   - helpers for constructing label sets
-//   - selectors used by the admission webhooks
-//
-// This package is intentionally dependency‑free and safe to import from any
-// layer of the system (runtime, CLI, generators, komposers, motifs, etc.).
 package labels
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

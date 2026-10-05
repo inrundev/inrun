@@ -287,7 +287,6 @@ Six Runtimes. 75 CRDs. One Control Center.
 | [Migration Guide](https://orkestra.sh/docs/guides/migration) | Bring an existing controller-runtime operator into Orkestra — zero changes to your reconciler |
 | [Why Orkestra](https://orkestra.sh/blog/why-orkestra) | What Orkestra is, how it works, and why it's different |
 | [Foundations](https://orkestra.sh/docs/foundations) | The decisions that shaped the design — and why they hold |
-| [Trust and Failure Model](https://orkestra.sh/publications/trust-and-failure-model) | What happens when things go wrong |
 | [Self-Service and Intent Delivery](https://orkestra.sh/docs/concepts/self-service/gateway-as-delivery-layer/) | The gateway as a delivery surface — security, field routing, and provenance without changing the operator |
 | [Getting Started](https://orkestra.sh/docs/getting-started) | First operator in under an hour |
 | [Learning to Orkestrate](https://orkestra.sh/docs/getting-started/learning-to-orkestrate) | Every capability, as a runnable example |

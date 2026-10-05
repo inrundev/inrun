@@ -1,4 +1,5 @@
-// pkg/version/version.go
+// Package version reports the build's version, commit and date, injected
+// with -ldflags. String gives the full form and Short just the version.
 package version
 
 import "fmt"

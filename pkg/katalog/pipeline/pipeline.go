@@ -1,6 +1,6 @@
-// Package pipeline owns the top-level Katalog build sequence:
-// merge → expand motifs → validate → wire runtime objects.
-// Callers that need a fully ready *katalog.Katalog should use this package.
+// Package pipeline builds a ready Katalog from merged sources: parse, enrich,
+// validate and wire it for the runtime. NewKatalog is the runtime path and
+// exits on error; BuildExpanded is the CLI path and returns the error.
 package pipeline
 
 import (

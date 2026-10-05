@@ -1,9 +1,0 @@
-apiVersion: postgres.orkestra.io/v1
-kind: Postgres
-metadata:
-  name: my-postgres
-  namespace: default
-spec:
-  version: "14"
-  database: myapp
-  user: myapp_user

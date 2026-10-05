@@ -1,8 +1,0 @@
-apiVersion: safe.demo.orkestra.io/v1alpha1
-kind: Monitor
-metadata:
-  name: my-monitor
-  namespace: default
-spec:
-  interval: "30s"
-  endpoint: "https://api.example.com/health"

@@ -1,11 +1,3 @@
-// Package profiles provides named presets — resource, security, probe, and
-// autoscaler — that expand into fully-formed Orkestra types at katalog load
-// time. The runtime never sees profile names; it only ever sees the expanded
-// struct as if the user had written every field manually.
-//
-// Both pkg/katalog (validation + expansion) and pkg/resources (runtime
-// resolution) import this package. It imports only pkg/types and pkg/utils,
-// keeping the dependency graph clean.
 package profiles
 
 import (

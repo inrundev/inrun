@@ -1,0 +1,6 @@
+# Helm values for ork e2e: the in-cluster gateway reads the dev token from
+# INTENT_TOKEN, like the local `ork gate run`.
+gateway:
+  extraEnv:
+    - name: INTENT_TOKEN
+      value: dev-token

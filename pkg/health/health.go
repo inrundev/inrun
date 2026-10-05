@@ -1,37 +1,3 @@
-// Package health implements Orkestra's HTTP health, readiness, and metrics surface.
-//
-// # Responsibility
-//
-// The health package owns the HTTP server that Kubernetes uses to probe the
-// operator's lifecycle. It serves three standard probe endpoints:
-//
-//   - GET /startup  — Kubernetes startupProbe. Returns 200 once the controller has
-//     fully initialised. Prevents liveness/readiness probes from running too early.
-//   - GET /health   — Kubernetes livenessProbe. Returns 200 when the process is
-//     operational; 500 when a fatal condition is detected.
-//   - GET /ready    — Kubernetes readinessProbe. Returns 200 when the controller
-//     is ready to process requests; 503 during startup, informer sync, and shutdown.
-//
-// Additionally, the Prometheus metrics endpoint is served at GET /metrics.
-// All Katalog API routes (/katalog/...) are registered externally via Register()
-// by cmd/internal/runtime_konstructor.go before Start() is called.
-//
-// # What this package does NOT do
-//
-// Webhook admission and conversion handling, TLS server lifecycle, and webhook
-// configuration registration are handled by pkg/webhook. The two packages are
-// intentionally separated: this package starts first to serve /ready during
-// startup, and the webhook server starts after it, once the cluster-facing
-// admission surface is needed.
-//
-// # Lifecycle
-//
-// HealthServer implements domain.Komponent:
-//
-//	New(konfig)
-//	  → Register(path, handler)   — called before Start() to add Katalog routes
-//	  → Start(ctx)                — bind port, start HTTP server
-//	  → Shutdown(ctx)             — graceful drain, mark not-ready
 package health
 
 import (

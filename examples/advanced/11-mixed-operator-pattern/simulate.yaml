@@ -1,9 +1,0 @@
-apiVersion: orkestra.orkspace.io/v1
-kind: Simulate
-metadata:
-  name: mixed-operator-suite
-  description: Run simulate for all typed operators in the mixed pattern
-
-imports:
-  - ./09-hooks/simulate.yaml
-  - ./10-constructor/simulate.yaml

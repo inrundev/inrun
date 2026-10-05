@@ -1,9 +1,0 @@
-apiVersion: security.orkestra.io/v1alpha1
-kind: App
-metadata:
-  name: my-app
-  namespace: default
-spec:
-  image: nginx:1.25
-  replicas: 1
-  port: 8080

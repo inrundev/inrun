@@ -1,9 +1,3 @@
-// Package oidc provides JWKS caching and JWT verification for gateway token auth.
-//
-// Usage:
-//
-//	cache := oidc.NewCache(oidc.DefaultTTL)
-//	claims, err := cache.Verify(issuerURL, discoveryBase, bearerToken, audience)
 package oidc
 
 import (

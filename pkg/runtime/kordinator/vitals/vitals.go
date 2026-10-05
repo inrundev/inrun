@@ -1,20 +1,3 @@
-// Package vitals holds the live health state of the Orkestra runtime.
-//
-// It tracks two things:
-//
-//   - CRDHealth: the lifecycle state of each CRD as the kordinator
-//     processes it — pending, started, healthy, degraded — along with
-//     the counters, worker states, and dependency status that feed the
-//     Control Center and the /katalog health endpoints.
-//
-//   - RuntimeHealth: the runtimes's own readiness — engine ready,
-//     Katalog loaded, all CRDs online, and whether this pod is the
-//     current konductor (leader).
-//
-// Both are state only. This package does not serve HTTP, register
-// routes, or decide when to reconcile. The handlers that expose this
-// state, and the kordinator logic that drives the transitions, live
-// one level up in pkg/runtime/kordinator.
 package vitals
 
 import (

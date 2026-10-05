@@ -6,7 +6,7 @@ metadata:
   description: >
     Gateway webhook regression suite — admission webhooks (validation +
     mutation), deletion protection, and namespace restriction enforcement.
-    Runs all three in the same cluster. Adapted from examples/security/.
+    Runs all three in the same cluster.
 
 imports:
   - ./admission/e2e.yaml

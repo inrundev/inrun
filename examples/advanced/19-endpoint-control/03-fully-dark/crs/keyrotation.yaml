@@ -1,7 +1,0 @@
-apiVersion: endpoint-control.orkestra.io/v1alpha1
-kind: KeyRotation
-metadata:
-  name: platform-key
-  namespace: default
-spec:
-  key: ecdsa-p256-v2

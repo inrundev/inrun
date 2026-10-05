@@ -210,15 +210,10 @@ jobs:
             dist/orkcc_windows_amd64.zip.asc
             dist/checksums.txt
             dist/${{ inputs.ork }}-public-key.asc
-            dist/examples_beginner_${{ github.ref_name }}.tar.gz
-            dist/examples_intermediate_${{ github.ref_name }}.tar.gz
-            dist/examples_advanced_${{ github.ref_name }}.tar.gz
-            dist/examples_use-cases_${{ github.ref_name }}.tar.gz
-            dist/examples_security_${{ github.ref_name }}.tar.gz
-            dist/examples_resilience_${{ github.ref_name }}.tar.gz
-            dist/examples_registry-guide_${{ github.ref_name }}.tar.gz
-            dist/examples_from-controller-runtime_${{ github.ref_name }}.tar.gz
-            dist/examples_ecosystem-composition_${{ github.ref_name }}.tar.gz
+            dist/examples_declarative_${{ github.ref_name }}.tar.gz
+            dist/examples_remote_${{ github.ref_name }}.tar.gz
+            dist/examples_typed_${{ github.ref_name }}.tar.gz
+            dist/examples_intent_${{ github.ref_name }}.tar.gz
           fail_on_unmatched_files: true
       
       - name: Upload checksums as artifact

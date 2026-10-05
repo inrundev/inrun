@@ -1,7 +1,3 @@
-// Package maintain applies labels, annotations, and finalizers to a CR
-// on every reconcile cycle — after prepare and before reconcile.
-//
-// It is a standalone package; it does not import the reconciler package.
 package maintain
 
 import (

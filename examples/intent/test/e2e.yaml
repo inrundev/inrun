@@ -1,0 +1,87 @@
+apiVersion: orkestra.orkspace.io/v1
+kind: E2E
+metadata:
+  name: website-intent-e2e
+  description: >
+    Send intent.json to the in-cluster gateway, check the CR it creates is
+    reconciled, and read the view back through the gateway.
+
+spec:
+  katalog: ../katalog.yaml
+  crd: ../manifests/crd.yaml
+  valuesFiles:
+    - ./e2e-values.yaml
+
+  cluster:
+    provider: kind
+    name: ork-e2e
+    reuse: false
+
+  expect:
+    - name: Intent accepted by the gateway
+      after: cr-applied
+      timeout: 60s
+      kubectl:
+        port-forward:
+          - service: orkestra-gateway
+            namespace: orkestra-system
+            port: 8080
+            path: /api/v1/apply
+            method: POST
+            headers:
+              Authorization: "Bearer dev-token"
+              Content-Type: "application/json"
+            body: '{"target":"website","name":"hello-intent","image":"nginx:1.25","replicas":1,"port":80}'
+            jq: .accepted
+            equals: "true"
+
+    - name: Intent became a reconciled Website
+      after: cr-applied
+      timeout: 120s
+      resources:
+        - kind: Deployment
+          name: hello-intent
+          namespace: default
+          ready: true
+        - kind: Service
+          name: hello-intent-svc
+          namespace: default
+
+    - name: View read back through the gateway
+      after: cr-applied
+      timeout: 60s
+      kubectl:
+        port-forward:
+          - service: orkestra-gateway
+            namespace: orkestra-system
+            port: 8080
+            path: /api/v1/resources/website/default/hello-intent
+            headers:
+              Authorization: "Bearer dev-token"
+            jq: .phase
+            equals: Running
+
+    # The CR came from the gateway, not a file, so delete it the same way —
+    # while the runtime is still running to clear its finalizer.
+    - name: Deleted through the gateway
+      after: cr-deleted
+      timeout: 60s
+      kubectl:
+        port-forward:
+          - service: orkestra-gateway
+            namespace: orkestra-system
+            port: 8080
+            path: /api/v1/resources/website/default/hello-intent
+            method: DELETE
+            headers:
+              Authorization: "Bearer dev-token"
+            statusCode: 204
+      resources:
+        - kind: Website
+          name: hello-intent
+          namespace: default
+          count: 0
+        - kind: Deployment
+          name: hello-intent
+          namespace: default
+          count: 0

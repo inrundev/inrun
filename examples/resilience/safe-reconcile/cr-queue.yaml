@@ -1,8 +1,0 @@
-apiVersion: safe.demo.orkestra.io/v1alpha1
-kind: Queue
-metadata:
-  name: my-queue
-  namespace: default
-spec:
-  maxSize: 500
-  processingTimeout: "60s"

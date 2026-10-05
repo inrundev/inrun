@@ -1,9 +1,0 @@
-apiVersion: demo.orkestra.io/v1
-kind: CDNEdge
-metadata:
-  name: my-cdn-edge
-  namespace: default
-spec:
-  image: nginx:alpine
-  peakReplicas: 8
-  baseReplicas: 2

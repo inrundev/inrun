@@ -1,8 +1,0 @@
-# 03a — cross: database side (create this first)
-apiVersion: advanced.orkestra.io/v1alpha1
-kind: ManagedDatabase
-metadata:
-  name: my-app-db
-  namespace: default
-spec: {}
-

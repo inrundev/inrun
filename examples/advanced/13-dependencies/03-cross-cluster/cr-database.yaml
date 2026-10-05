@@ -1,8 +1,0 @@
-apiVersion: deps.orkestra.io/v1alpha1
-kind: Database
-metadata:
-  name: my-database
-  namespace: default
-spec:
-  image: postgres:16-alpine
-  replicas: 1

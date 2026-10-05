@@ -1,9 +1,0 @@
-apiVersion: resilience.demo.orkestra.io/v1alpha1
-kind: BlockchainApp
-metadata:
-  name: my-chain
-  namespace: default
-spec:
-  image: "public.ecr.aws/blockchain-node:v1.0.0"   # not from myorg/ — will fail validation
-  replicas: 2
-  port: 8545

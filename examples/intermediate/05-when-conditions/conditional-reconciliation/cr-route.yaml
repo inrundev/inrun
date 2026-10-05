@@ -1,8 +1,0 @@
-apiVersion: demo.orkestra.io/v1alpha1
-kind: Route
-metadata:
-  name: my-route
-  namespace: default
-spec:
-  host: my-app.example.com
-  port: 8080

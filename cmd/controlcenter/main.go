@@ -1,3 +1,8 @@
+// Command controlcenter is the console: a web UI that shows the Katalogs,
+// CRDs and custom resources of one or more running runtimes, and lets
+// developers submit intents through the gateway's generated forms. It reads
+// everything over the runtime and gateway HTTP APIs and has no Kubernetes
+// access of its own.
 package main
 
 import (

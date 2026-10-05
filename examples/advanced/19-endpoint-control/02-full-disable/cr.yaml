@@ -1,7 +1,0 @@
-apiVersion: endpoint-control.orkestra.io/v1alpha1
-kind: Credential
-metadata:
-  name: api-creds
-  namespace: default
-spec:
-  service: postgres

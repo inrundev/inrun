@@ -1,7 +1,0 @@
-apiVersion: endpoint-control.orkestra.io/v1alpha1
-kind: AuditLog
-metadata:
-  name: platform-key   # same name — cross: selector looks up keyrotation/platform-key
-  namespace: default
-spec:
-  message: "Rotation triggered for platform-key"

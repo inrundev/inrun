@@ -1,6 +1,3 @@
-// Package post runs the postReconcile phase: status patch and declarative event emission.
-// Called by Kordinator after the reconciler returns, whether or not it errored.
-// All operations are best-effort — failures are logged and do not requeue.
 package post
 
 import (

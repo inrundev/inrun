@@ -1,8 +1,0 @@
-apiVersion: external.orkestra.io/v1alpha1
-kind: Processor
-metadata:
-  name: my-processor
-  namespace: default
-spec:
-  image: nginx:stable-alpine
-  replicas: 1

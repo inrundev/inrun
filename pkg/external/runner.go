@@ -1,6 +1,3 @@
-// Package external executes declarative external calls and injects results
-// into the resolver context under .external.<name>.
-// Used by both the reconciler (at reconcile time) and the gateway webhook (at admission time).
 package external
 
 import (

@@ -1,8 +1,0 @@
-apiVersion: demo.orkestra.io/v1
-kind: App
-metadata:
-  name: app-full
-  namespace: default
-spec:
-  image: registry.internal/nginx:1.25   # normalize → unchanged
-  replicas: 3

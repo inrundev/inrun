@@ -1,3 +1,6 @@
+// Package konductor wraps Kubernetes leader election so only one runtime pod
+// reconciles at a time. The pod that wins the lease runs the workers; a pod
+// that loses it stops them.
 package konductor
 
 import (

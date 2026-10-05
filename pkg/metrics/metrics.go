@@ -1,23 +1,3 @@
-// Package metrics provides all Prometheus metrics emitted by the Orkestra
-// operator runtime.
-//
-// These metrics are intentionally minimal, high‑signal, and CRD‑aware.
-// Unlike generic Kubernetes metrics, Orkestra exposes *per‑CRD* operational
-// insights that reveal:
-//   - reconcile volume
-//   - reconcile latency
-//   - queue pressure
-//   - informer resource counts
-//   - worker utilization
-//   - CRD activation behavior
-//
-// These metrics are unique to Orkestra because they reflect the *declarative
-// operator model* — every CRD is treated as a first‑class unit of work, and
-// metrics are labeled by CRD name.
-//
-// The goal is to give platform engineers deep visibility into operator
-// behavior without requiring custom instrumentation or Go code.
-
 package metrics
 
 import (

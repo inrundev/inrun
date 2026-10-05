@@ -1,15 +1,3 @@
-// pkg/merger/merger.go
-//
-// Package merger resolves and merges Katalog and Komposer YAML files into a
-// single unified CRD map that the Katalog runtime consumes. It is the
-// ingestion layer between raw YAML on disk (or remote sources) and the
-// operator's live configuration.
-//
-// Entry point: New(paths...).Merge() — call once; query with Enabled, All,
-// ToSpec and ToSecurity.
-//
-// See README.md for merge rules, source-loading order, and top-level field
-// accumulation semantics.
 package merger
 
 import (

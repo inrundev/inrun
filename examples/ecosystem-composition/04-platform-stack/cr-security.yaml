@@ -1,8 +1,0 @@
-apiVersion: ecosystem.demo.orkestra.io/v1alpha1
-kind: SecurityConfig
-metadata:
-  name: webapp-cert
-  namespace: default
-spec:
-  domain: "webapp.myorg.io"
-  renewBefore: "720h"

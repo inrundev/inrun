@@ -1,9 +1,0 @@
-apiVersion: demo.orkestra.io/v1
-kind: WorkerPool
-metadata:
-  name: my-pool
-  namespace: default
-spec:
-  image: nginx:1.25
-  port: 8080
-  metricsEndpoint: "http://localhost:9999/workload-metrics"

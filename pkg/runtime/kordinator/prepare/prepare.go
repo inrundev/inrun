@@ -1,5 +1,3 @@
-// Package prepare builds the domain.PreparedRequest for a single reconcile cycle.
-// Called by Kordinator after the reconcile gate passes, before the reconciler is invoked.
 package prepare
 
 import (

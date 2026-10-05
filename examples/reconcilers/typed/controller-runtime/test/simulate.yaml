@@ -1,0 +1,22 @@
+# Schema reference: https://orkestra.sh/docs/reference/schema/simulate/
+apiVersion: orkestra.orkspace.io/v1
+kind: Simulate
+metadata:
+  name: webapp-constructor-sim
+  description: Verify Deployment and Service created by the constructor in cycle 1
+
+spec:
+  katalog: ../katalog.yaml
+  cr: ../manifests/cr.yaml
+  cycles: 3
+
+  expect:
+    steady: true
+    noErrors: true
+    ops:
+      - cycle: 1
+        verb: create
+        resource: deployments
+      - cycle: 1
+        verb: create
+        resource: services

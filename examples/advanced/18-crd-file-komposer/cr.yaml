@@ -1,9 +1,0 @@
-apiVersion: platform.acme.io/v1alpha1
-kind: ManagedService
-metadata:
-  name: my-service
-  namespace: default
-spec:
-  image: nginx:stable-alpine
-  replicas: 2
-  port: 8080

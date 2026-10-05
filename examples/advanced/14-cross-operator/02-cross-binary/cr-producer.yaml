@@ -1,8 +1,0 @@
-apiVersion: cross.orkestra.io/v1alpha1
-kind: Producer
-metadata:
-  name: my-producer
-  namespace: default
-spec:
-  image: nginx:stable-alpine
-  replicas: 1

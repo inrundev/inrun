@@ -1,237 +1,25 @@
-# Orkestra Examples
+# Examples
 
-A progressive set of examples — from a single Deployment to multi-source composition, autoscaling, cross-operator dependencies, and full platform stacks built from custom resources.
-
----
-
-## The fastest way to start
+The intent loop, from the reconciler side and from the caller side. Each pack
+is embedded in the CLI:
 
 ```bash
-ork init my-operator --pack beginner
-cd my-operator/beginner/01-hello-website
-ork run --dev
+ork init my-operator --pack declarative    # or remote, typed, intent
+ork init --list
 ```
 
-The examples are **embedded in the CLI binary** — no internet connection needed. They are extracted instantly into your project folder.
+| Pack | Where | Shows |
+|------|-------|-------|
+| `declarative` | [reconcilers/declarative](reconcilers/declarative/) | Operators declared in a Katalog, no code. Start here. |
+| `remote` | [reconcilers/remote](reconcilers/remote/) | A reconciler in any language, called over HTTP |
+| `typed` | [reconcilers/typed](reconcilers/typed/) | Go hooks, a constructor, and a controller-runtime drop-in |
+| `intent` | [intent](intent/) | Intent in through the gateway, view out |
 
----
+Every example has the same layout:
 
-## Choose your pack
-
-```bash
-ork init my-operator                                # defaults to beginner
-ork init my-operator --pack beginner                # Simple CRDs, Deployments, Services
-ork init my-operator --pack intermediate            # Multi-resource, conditions, state machines, Komposer
-ork init my-operator --pack advanced                # Hooks, constructors, validation, registries, autoscale, custom resources
-ork init my-operator --pack security                # Deletion protection, namespace isolation, admission webhooks
-ork init my-operator --pack resilience              # Operators that stay running — panic recovery, degraded state
-ork init my-operator --pack use-cases               # Full-stack, cross-CRD, external gates, multi-region, and more
-ork init my-operator --pack from-controller-runtime # Migrate from controller-runtime: all 5 options in one pack
-ork init my-operator --pack ecosystem-composition   # Build an IDP: ArgoCD, cert-manager, Crossplane, Prometheus
-ork init my-operator --pack registry-guide          # Publish and consume Orkestra patterns via OCI registry
 ```
-
-List all packs:
-```bash
-ork init --list-packs
+katalog.yaml      the operator; ork run, validate and generate read it
+manifests/        what is applied to the cluster: the CRD, a CR, setup objects
+test/             simulate.yaml, e2e.yaml and their values; found by ork simulate and ork e2e
+cleanup.sh
 ```
-
-After init, your examples live at:
-```text
-my-operator/
-└── <pack>/
-    ├── e2e.yaml            full suite — runs all examples in one command
-    └── <example>/
-        ├── README.md       step-by-step walkthrough
-        ├── katalog.yaml    operator definition
-        ├── crd.yaml        the CRD to install
-        ├── cr.yaml         sample custom resource
-        └── e2e.yaml        end-to-end test for this example
-```
-
----
-
-## Learning Path
-
-### Beginner — `--pack beginner`
-
-Start here. No cluster setup beyond the `ork` CLI.
-
-| Example | What you learn |
-|---------|----------------|
-| [01 — Hello Website](./beginner/01-hello-website/) | Your first operator. One CRD, one Deployment. |
-| [02 — With ServiceAccount](./beginner/02-with-serviceaccount/) | RBAC, ServiceAccount wiring, multiple resources. |
-| [03 — Copy Secret](./beginner/03-secret-copy/) | Built-in Kubernetes kinds. Cross-namespace secret copy. |
-| [03b — Copy ConfigMap](./beginner/03b-configmap-copy/) | Same pattern applied to ConfigMaps. |
-
-### Intermediate — `--pack intermediate`
-
-You know the basics. Now use more of Orkestra's surface.
-
-| Example | What you learn |
-|---------|----------------|
-| [04 — Multi-Resource](./intermediate/04-multi-resource/) | ConfigMap, status fields, child resource status propagation. |
-| [05 — When Conditions](./intermediate/05-when-conditions/) | Conditional resource creation. Topology that changes with CR state. |
-| [06 — Basic Komposer](./intermediate/06-komposer-basic/) | Composing two Katalogs. Environment-specific overrides. |
-| [07 — CRD File](./intermediate/07-crd-file/) | `crdFile:` — derive API types from the CRD YAML, no `apiTypes:` needed. |
-| [08 — State Machine](./intermediate/08-state-machine/) | Phase-driven reconciliation. Ordered transitions with status guards. |
-
-### Advanced — `--pack advanced`
-
-Production patterns. Admission policy, typed Go operators, autoscaling, custom resources, and more.
-
-| Example | What you learn |
-|---------|----------------|
-| [07 — Validation and Mutation](./advanced/07-validation-mutation/) | Admission-time deny/warn. Defaults. Full status. |
-| [08 — Komposer with Registry](./advanced/08-komposer-registry/) | OCI registry source. Multi-environment Komposer. |
-| [09 — Go Hooks](./advanced/09-hooks/) | Typed hooks. OrkestraRegistry from Go. |
-| [10 — Custom Constructor](./advanced/10-constructor/) | Full reconciler control. Migration from existing operators. |
-| [11 — Mixed Operator Pattern](./advanced/11-mixed-operator-pattern/) | Dynamic + Hooks + Constructor in one binary. |
-| [12 — Autoscale](./advanced/12-autoscale/) | Queue-depth autoscaling, sibling metrics, external gates. |
-| [13 — Dependencies](./advanced/13-dependencies/) | Ordered startup across CRDs in-binary, cross-binary, cross-cluster. |
-| [14 — Cross-Operator](./advanced/14-cross-operator/) | Share data between operators. |
-| [15 — Any Language](./advanced/15-any-language/) | Generate Katalogs from Python, Go, or Node.js. |
-| [16 — Custom Resources](./advanced/16-custom-resources/) | Compose third-party CRDs as children — 7 sub-examples from single child to full platform. |
-| [17 — API Type Override](./advanced/17-apitype-override/) | Override API types per Komposer import without editing source Katalogs. |
-| [18 — CRD File Komposer](./advanced/18-crd-file-komposer/) | `crdFile:` across Komposer imports. |
-| [19 — Endpoint Control](./advanced/19-endpoint-control/) | Per-CRD HTTP visibility and cross-read access control. Selective health disable, full endpoint disable, and the fully-dark asymmetric pattern — one CRD cross-reads its sibling while the sibling's read back is denied. |
-
-### Security — `--pack security`
-
-Protect your cluster from accidental deletions, rogue workloads, and bad input.
-
-| Example | What you learn |
-|---------|----------------|
-| [Admission Webhooks](./security/admission/) | Validate and mutate CRs at admission time. |
-| [Deletion Protection](./security/deletion-protection/) | Block deletion of critical CRs via admission. |
-| [Namespace Protection](./security/namespace-protection/) | Restrict what namespaces operators can act on. |
-
-### Resilience — `--pack resilience`
-
-Operators that stay running when things go wrong.
-
-| Example | What you learn |
-|---------|----------------|
-| [Safe Reconcile](./resilience/safe-reconcile/) | Panic isolation in the worker pool. A nil pointer in a typed hook is caught and recovered — the operator keeps running and other CRDs are unaffected. |
-| [Admission Protection](./resilience/admission-protection/) | Runtime validation as a resilience layer. Bad CR → operator degrades after `failureThreshold`. Patch the CR → operator recovers automatically. |
-| [CRD Missing Recovery](./resilience/crd-missing-recovery/) | Delete the CRD at runtime — Orkestra detects the disappearance, degrades, and retries. Re-apply the CRD and CR and the operator recovers with no restart. |
-| [Leader Failover](./resilience/leader-failover/) | HA leader election with two replicas. Kill the konductor pod — a follower is elected within `leaseDuration` and reconciliation continues automatically. |
-
-### Use Cases — `--pack use-cases`
-
-Real-world patterns combining multiple Orkestra features.
-
-| Example | What you learn |
-|---------|----------------|
-| [Full-Stack App](./use-cases/full-stack-app/) | forEach + external + cross + once + or in one CR. |
-| [Multi-Region Map](./use-cases/multi-region-map/) | Deploy across regions using `forEach` over a map. |
-| [CRD Conversion](./use-cases/crd-conversion/) | Multi-version CRDs with or without a conversion webhook. |
-| [Custom Target](./use-cases/custom-operator/) | `spec.custom.target: kubernetes` — use `ork e2e` as a test harness for any operator. |
-| [External](./use-cases/external/) | Gate resource creation on upstream health checks. |
-| [Multi-Tenancy](./use-cases/multi-tenancy/) | Namespace isolation, per-tenant configuration. |
-| [Enrich](./use-cases/enrich/) | Inject data from external sources into CR status. |
-| [Normalize](./use-cases/normalize/) | Validate and normalise CR fields at reconcile time. |
-| [Profiles](./use-cases/profiles/) | Apply different resource configurations based on environment profiles. |
-| [Namespace Provisioner](./use-cases/namespace-provisioner/) | Tenant namespaces, RBAC, quotas, and network policies from a single CRD. |
-
-### From controller-runtime — `--pack from-controller-runtime`
-
-Migrating an existing operator from controller-runtime to Orkestra. Six progressive examples from baseline to all-5-options.
-
-| Example | What you learn |
-|---------|----------------|
-| [00 — Baseline](./from-controller-runtime/00-controller-runtime-baseline/) | The controller-runtime starting point. The before picture. |
-| [01 — Declarative](./from-controller-runtime/01-declarative/) | Zero Go. Same behaviour. |
-| [02 — Hybrid](./from-controller-runtime/02-hybrid/) | Declarative + one Go hook for resources templates can't express. |
-| [03 — Hooks Only](./from-controller-runtime/03-hooks-only/) | All resources in Go. Typed access to your CRD spec. |
-| [04 — Constructor Migration](./from-controller-runtime/04-constructor-migration/) | Lift the existing reconcile loop into Orkestra's constructor. |
-| [05 — Constructor Ork Resources](./from-controller-runtime/05-constructor-orkestra-resources/) | Same constructor, Orkestra resource helpers replace manual Get/Create/Patch. |
-| [06 — Ork Migrate](./from-controller-runtime/06-ork-migrate/) | `ork migrate` rewrites controller-runtime reconcilers automatically. |
-| [07 — All Options](./from-controller-runtime/07-all-options/) | All five migration options running in one binary via Komposer. |
-
-### Ecosystem Composition — `--pack ecosystem-composition`
-
-Build an internal developer platform on top of the tools you already run.
-
-| Example | What you learn |
-|---------|----------------|
-| [00 — ArgoCD](./ecosystem-composition/00-argocd/) | `App` CRD → ArgoCD Application. Status propagation. Admission rules. |
-| [01 — cert-manager](./ecosystem-composition/01-cert-manager/) | `SecurityConfig` CRD → Certificate. |
-| [02 — Prometheus](./ecosystem-composition/02-prometheus/) | `MonitoringConfig` CRD → ServiceMonitor + PrometheusRule. |
-| [03 — Crossplane](./ecosystem-composition/03-crossplane/) | `Infra` CRD → Crossplane Composite Claim. |
-| [04 — Platform Stack](./ecosystem-composition/04-platform-stack/) | All four, composed with Komposer. |
-| [05 — All-in-One](./ecosystem-composition/05-all-in-one/) | Single `PlatformResource` CRD, `workloadType` discriminator, all four tools. |
-
-### Registry Guide — `--pack registry-guide`
-
-The distribution pack. Publish and consume Orkestra patterns via OCI registry — from pulling a proven pattern to building your own, gating every publish behind simulate and e2e, and automating with GitHub Actions.
-
-| Example | What you learn |
-|---------|----------------|
-| [00 — Consume](./registry-guide/00-consume/) | Pull a proven pattern from the public registry. Inspect its simulate proof before importing. |
-| [01 — Motifs](./registry-guide/01-motifs/) | Author and push reusable motifs. Version and tag must agree. |
-| [02 — Katalog API](./registry-guide/02-katalog-api/) | Build a Katalog from a motif. Gate publish behind `ork simulate`. |
-| [03 — Katalog Cache](./registry-guide/03-katalog-cache/) | Simulate gate catches a broken assertion before the pattern ships. |
-| [04 — Katalog Platform](./registry-guide/04-katalog-platform/) | E2E gate: simulate passes, e2e fails — blocks the publish. |
-| [05 — Komposer](./registry-guide/05-komposer/) | Compose registry patterns into a production deployment with supply chain verification. |
-| [06 — Pattern Zoo](./registry-guide/06-pattern-zoo/) | Seven official patterns, one Komposer, twenty lines. Cross-registry composition. |
-| [07 — Upgrade](./registry-guide/07-upgrade/) | Release a new motif version. One katalog upgrades; another stays pinned. |
-| [08 — Bad Actor](./registry-guide/08-bad-actor/) | Audit trail inspection. Detect unexpected pushes by comparing digests, diffing against known-good source, and deprecating compromised versions. |
-| [09 — Deprecation](./registry-guide/09-deprecation/) | Declare `deprecation:` — `ork inspect` and `ork validate` warn consumers. |
-| [10 — Hooks Katalog](./registry-guide/10-hooks-katalog/) | Typed Go hooks published as a registry pattern. |
-| [11 — Typed Komposer](./registry-guide/11-typed-komposer/) | Mix typed and declarative katalogs in one Komposer. |
-| [12 — Ork Action](./registry-guide/12-ork-action/) | Full pipeline in GitHub Actions using `orkspace/orkestra-action`. |
-
----
-
-## E2E test suites
-
-Every example ships with `e2e.yaml`. Every pack ships with a root `e2e.yaml` that runs the full suite.
-
-```bash
-# Run a single example
-cd beginner/01-hello-website && ork e2e
-
-# Run an entire pack
-ork e2e -f beginner/e2e.yaml
-ork e2e -f intermediate/e2e.yaml
-ork e2e -f security/e2e.yaml
-ork e2e -f resilience/e2e.yaml
-
-# Simulate the full pack (no cluster needed)
-ork simulate ./...
-```
-
----
-
-## Prerequisites
-
-All examples:
-- `ork` CLI — `curl get.orkestra.sh | bash`
-- A running Kubernetes cluster (`ork create cluster` works for every example here)
-- `kubectl` configured
-
-Advanced typed examples (09, 10, 11) also require:
-- Go 1.22+
-- `make registry && make build` to compile your operator binary before running e2e
-
----
-
-## Running any example
-
-```bash
-# 1. Pick a pack and scaffold your project
-ork init my-operator --pack beginner
-cd my-operator/beginner/01-hello-website
-
-# 2. Start the runtime
-ork run --dev
-
-# 3. Watch the resources appear
-kubectl get websites -n default
-
-# 4. Cleanup
-./cleanup.sh
-```
-
-Each example's `README.md` has the exact commands for that example.

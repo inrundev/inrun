@@ -1,19 +1,6 @@
-// pkg/kordinator/gateway_handlers.go
-//
-// HTTP handlers served by the gateway process at /katalog and /katalog/{crd}.
-//
-// The gateway /katalog response carries the same per-CRD shape as the runtime
-// /katalog response but only populates the fields the gateway owns:
-// admission, conversion, deletion-protection, and namespace-protection stats.
-// Reconciler health fields (workers, queue depth, error rate, etc.) are omitted.
-//
-// Control center merge strategy
-// ──────────────────────────────
-// The runtime /katalog response includes a "gatewayEndpoint" field.
-// The control center reads that URL, fetches the gateway /katalog, then merges
-// per-CRD by GVR string ("group/version/resource") — the canonical key used by
-// both processes.  Neither process pushes to the other; each is independently
-// queryable.
+// Package handlers serves the gateway's /katalog and /katalog/{crd}: the
+// per-CRD admission, conversion and protection stats the gateway owns. The
+// control center merges them with the runtime's /katalog by GVR.
 package handlers
 
 import (
@@ -25,9 +12,8 @@ import (
 	"github.com/orkspace/orkestra/pkg/version"
 )
 
-// GatewayStatsProvider is the subset of webhook.WebhookServer that the gateway
-// /katalog handlers need.  Defined here so pkg/kordinator does not import
-// pkg/webhook (which would create a cycle).
+// GatewayStatsProvider is the subset of webhook.WebhookServer the handlers
+// need, declared here to avoid importing pkg/gateway/webhook.
 type GatewayStatsProvider interface {
 	AdmissionStatsFor(gvrKey string) *health.AdmissionStats
 	ConversionStatsFor(gvrKey string) *health.ConversionStats

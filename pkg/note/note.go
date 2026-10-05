@@ -1,35 +1,3 @@
-// Package note provides the Orkestra template function library.
-//
-// A note is a pure, named transformation function available in every
-// template expression across the Orkestra runtime — conversion paths,
-// status fields, mutation rules, when conditions, onCreate templates.
-//
-// The name aligns with Orkestra's musical identity. Notes are the atomic
-// units from which music is composed. In Orkestra, notes are the atomic
-// units from which declarative operator behavior is composed — small,
-// precise, and available everywhere a template expression is evaluated.
-//
-// Notes are pure functions. They receive values and return transformed
-// values. They cannot perform I/O, call external APIs, or produce side
-// effects. For those, use Go hooks.
-//
-// Usage in a Katalog:
-//
-//	conversion:
-//	  paths:
-//	    - from: v1
-//	      to: v2
-//	      spec:
-//	        schedule: "{{ cronToMap .spec.schedule }}"
-//
-//	status:
-//	  fields:
-//	    - path: environment
-//	      value: "{{ toLower .spec.environment }}"
-//	    - path: replicas
-//	      value: "{{ default .spec.replicas 2 }}"
-//	    - path: schedule
-//	      value: "{{ cronFromAny .spec.schedule }}"
 package note
 
 import "text/template"

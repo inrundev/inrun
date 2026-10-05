@@ -1,7 +1,0 @@
-apiVersion: autoscale.orkestra.io/v1alpha1
-kind: Auditor
-metadata:
-  name: my-auditor
-  namespace: default
-spec:
-  auditMode: "standard"
