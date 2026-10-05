@@ -13,5 +13,5 @@ denied synchronously at `kubectl apply` time.
 ## Run
 
 ```sh
-ork e2e pkg/gateway/webhook/fixture/protection/namespace/e2e.yaml
+inrun e2e pkg/gateway/webhook/fixture/protection/namespace/e2e.yaml
 ```

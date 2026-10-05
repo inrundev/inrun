@@ -1,6 +1,6 @@
 # Declarative
 
-Operators declared entirely in a Katalog: no code. Work through them in order.
+Operators declared entirely in a Catalog: no code. Work through them in order.
 
 | Example | Shows |
 |---------|-------|
@@ -16,7 +16,7 @@ cd 01-hello-website
 ```
 
 ```bash
-ork run
+inrun
 ```
 
 ### Simulate all of them
@@ -24,7 +24,7 @@ ork run
 No cluster needed.
 
 ```bash
-ork simulate
+inrun simulate
 ```
 
 ### End to end
@@ -32,5 +32,5 @@ ork simulate
 Every example in one kind cluster.
 
 ```bash
-ork e2e
+inrun e2e
 ```

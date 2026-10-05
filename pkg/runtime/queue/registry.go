@@ -7,8 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/logger"
 )
 
 type QueueRegistry struct {
@@ -95,7 +95,7 @@ func (qr *QueueRegistry) Drain(gvkStr string) error {
 }
 
 // Shutdown drains all registered workqueues
-// This is called by orkestra.Shutdown() for graceful degradation
+// This is called by inrun.Shutdown() for graceful degradation
 func (qr *QueueRegistry) Shutdown(ctx context.Context) {
 	qr.mu.Lock()
 	defer qr.mu.Unlock()
@@ -107,10 +107,10 @@ func (qr *QueueRegistry) Shutdown(ctx context.Context) {
 	}
 }
 
-// Methods implementation of the Komponent interface
-var _ domain.Komponent = (*QueueRegistry)(nil)
+// Methods implementation of the Component interface
+var _ domain.Component = (*QueueRegistry)(nil)
 
-// Called by orkestra.Start() to start the workqueue registry
+// Called by inrun.Start() to start the workqueue registry
 func (qr *QueueRegistry) Start(ctx context.Context) error {
 	count := len(qr.queues)
 	logger.Debug().Str("name", qr.name).Int("queues", count).Msg("queue registry started")
@@ -119,7 +119,7 @@ func (qr *QueueRegistry) Start(ctx context.Context) error {
 	return nil
 }
 
-// Started is a status check for all orkestra komponents
+// Started is a status check for all inrun components
 func (qr *QueueRegistry) Started() bool { return qr.started.Load() }
 
 // Name returns the name of the queue registry

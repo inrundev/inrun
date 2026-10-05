@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: noteprobes.note.orkestra.io
+  name: noteprobes.note.inrun.dev
 spec:
-  group: note.orkestra.io
+  group: note.inrun.dev
   names:
     kind: NoteProbe
     plural: noteprobes
@@ -61,7 +61,7 @@ spec:
 
                 host:
                   type: string
-                  default: notes.orkestra.io
+                  default: notes.inrun.dev
                   description: Hostname for the service
                 
                 debug:

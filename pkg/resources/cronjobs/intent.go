@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/resources/shared"
 	batchv1 "k8s.io/api/batch/v1"
 )
 

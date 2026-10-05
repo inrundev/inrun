@@ -9,13 +9,13 @@ read from the live Deployment with a note.
 No cluster needed.
 
 ```bash
-ork simulate
+inrun simulate
 ```
 
 ### 2. Run
 
 ```bash
-ork run
+inrun
 ```
 
 ### 3. Check the ServiceAccount
@@ -47,5 +47,5 @@ chmod +x cleanup.sh && ./cleanup.sh
 Runs the same checks in a kind cluster.
 
 ```bash
-ork e2e
+inrun e2e
 ```

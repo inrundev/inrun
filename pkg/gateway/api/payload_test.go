@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,8 +22,8 @@ func TestEvaluatePayload(t *testing.T) {
 
 	t.Run("no payload declared returns nil", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{},
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{},
 		}
 		result := EvaluatePayload(map[string]interface{}{}, crd, "", noopNotes())
 		assert.Nil(t, result)
@@ -31,8 +31,8 @@ func TestEvaluatePayload(t *testing.T) {
 
 	t.Run("plain string passes through", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Payload: map[string]string{
 					"supportChannel": "#platform",
 				},
@@ -45,8 +45,8 @@ func TestEvaluatePayload(t *testing.T) {
 
 	t.Run("template expression resolved against CR", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Payload: map[string]string{
 					"phase": `{{ .status.phase }}`,
 				},
@@ -62,8 +62,8 @@ func TestEvaluatePayload(t *testing.T) {
 
 	t.Run("unresolvable expression returns empty string not error", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Payload: map[string]string{
 					"phase": `{{ .status.phase }}`,
 				},
@@ -81,8 +81,8 @@ func TestEvaluatePayload(t *testing.T) {
 		// itself always returns only the declared payload fields.
 		crd := appCRD()
 		tr := true
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Default: &tr,
 				Payload: map[string]string{"extra": "value"},
 			},
@@ -101,8 +101,8 @@ func TestEvaluatePayload(t *testing.T) {
 		// Exclude is applied by ApplyExclusions at the resource GET/list
 		// level, before EvaluatePayload runs — not by EvaluatePayload itself.
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Exclude: []string{"metadata.managedFields"},
 				Payload: map[string]string{"name": `{{ .metadata.name }}`},
 			},

@@ -1,11 +1,11 @@
-module github.com/orkspace/orkestra-resource-probe
+module github.com/inrundev/inrun-resource-probe
 
 go 1.26.6
 
-replace github.com/orkspace/orkestra => ../../..
+replace github.com/inrundev/inrun => ../../..
 
 require (
-	github.com/orkspace/orkestra v0.0.0
+	github.com/inrundev/inrun v0.0.0
 	k8s.io/apimachinery v0.36.1
 )
 

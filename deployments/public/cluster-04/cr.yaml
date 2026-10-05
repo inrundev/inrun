@@ -1,4 +1,4 @@
-apiVersion: apps.demo.orkestra.io/v1alpha1
+apiVersion: apps.demo.inrun.dev/v1alpha1
 kind: Application
 metadata:
   name: my-app
@@ -9,7 +9,7 @@ spec:
   port: 80
   host: my-app.demo-04.example.com
 ---
-apiVersion: apps.demo.orkestra.io/v1alpha1
+apiVersion: apps.demo.inrun.dev/v1alpha1
 kind: AppService
 metadata:
   name: my-app-svc
@@ -18,7 +18,7 @@ spec:
   app: my-app
   port: "8080"
 ---
-apiVersion: apps.demo.orkestra.io/v1alpha1
+apiVersion: apps.demo.inrun.dev/v1alpha1
 kind: Route
 metadata:
   name: my-app-route
@@ -28,7 +28,7 @@ spec:
   path: /
   service: my-app-svc
 ---
-apiVersion: apps.demo.orkestra.io/v1alpha1
+apiVersion: apps.demo.inrun.dev/v1alpha1
 kind: ConfigBundle
 metadata:
   name: my-app-config
@@ -37,7 +37,7 @@ spec:
   target: my-app
   env: production
 ---
-apiVersion: apps.demo.orkestra.io/v1alpha1
+apiVersion: apps.demo.inrun.dev/v1alpha1
 kind: ScalePolicy
 metadata:
   name: my-app-scale

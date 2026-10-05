@@ -1,23 +1,23 @@
 package migrate
 
 const (
-	domain     = "github.com/orkspace/orkestra/domain"
-	kubeclient = "github.com/orkspace/orkestra/pkg/kubeclient"
-	ctrlclient = "github.com/orkspace/orkestra/pkg/kubeclient/orkadapter"
+	domain     = "github.com/inrundev/inrun/domain"
+	kubeclient = "github.com/inrundev/inrun/pkg/kubeclient"
+	ctrlclient = "github.com/inrundev/inrun/pkg/kubeclient/adapter"
 )
 
 // Mode controls how much of the source file migrate rewrites.
 type Mode string
 
 const (
-	// ModeNative rewrites the full controller-runtime signature to Orkestra's
+	// ModeNative rewrites the full controller-runtime signature to Inrun's
 	// native style: Reconcile(ctx context.Context, req domain.Request) (domain.Result, error),
-	// struct fields replaced, call sites adapted. Most invasive; produces fully idiomatic Orkestra code.
+	// struct fields replaced, call sites adapted. Most invasive; produces fully idiomatic Inrun code.
 	ModeNative Mode = "native"
 
 	// ModeToClient is the minimal migration path. The Reconcile signature,
 	// struct fields, and call sites are left completely unchanged. Only
-	// SetupWithManager is removed and a constructor using orkadapter.ToClient
+	// SetupWithManager is removed and a constructor using adapter.ToClient
 	// and domain.ReconcilerFrom is injected. Two lines of new code; zero
 	// changes to existing reconciler logic.
 	ModeToClient Mode = "toclient"

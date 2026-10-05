@@ -8,7 +8,7 @@ from `platform` into each target namespace and keeps the copies in sync.
 No cluster needed.
 
 ```bash
-ork simulate
+inrun simulate
 ```
 
 ### 2. Run
@@ -16,7 +16,7 @@ ork simulate
 Applies `manifests/setup.yaml` first: the `platform` namespace and the source ConfigMap.
 
 ```bash
-ork run
+inrun
 ```
 
 ### 3. Check a copy
@@ -38,5 +38,5 @@ chmod +x cleanup.sh && ./cleanup.sh
 Runs the same checks in a kind cluster.
 
 ```bash
-ork e2e
+inrun e2e
 ```

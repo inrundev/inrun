@@ -1,6 +1,6 @@
 # Exercises: warn when — production without productionApproval.
 # Expected: accepted, ValidationWarning event for spec.productionApproval.
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: PlatformResource
 metadata:
   name: payments-api-prod

@@ -8,7 +8,7 @@ package types
 //   - conditions: the conditions to set on the kept resource
 //   - or: the or conditions to set on the kept resource
 //
-// Callers use this to separate motif-time static conditions (evaluated now)
+// Callers use this to separate module-time static conditions (evaluated now)
 // from runtime conditions (preserved on the resource for the reconciler).
 //
 // External calls are copied unchanged — their when: conditions are always

@@ -3,8 +3,8 @@ package children
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // enrichGroupWithHPAData embeds current metrics and scale target info for each
@@ -16,7 +16,7 @@ import (
 //	{type, name, current, target}.
 //
 // _scaleTarget: from spec.scaleTargetRef — {name, kind, apiVersion}.
-func enrichGroupWithHPAData(_ context.Context, _ kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry) {
+func enrichGroupWithHPAData(_ context.Context, _ kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry) {
 	if !enrichmentEnabled("hpa", crd) {
 		return
 	}

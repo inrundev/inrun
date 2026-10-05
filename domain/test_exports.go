@@ -7,7 +7,7 @@ import (
 func UnstructuredForTest() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "demo.orkestra.io/v1alpha1",
+			"apiVersion": "demo.inrun.dev/v1alpha1",
 			"kind":       "Website",
 			"metadata": map[string]interface{}{
 				"name":      "example",
@@ -21,7 +21,7 @@ func UnstructuredForTest() *unstructured.Unstructured {
 }
 
 func GVKForTest() string {
-	return "demo.orkestra.io/v1alpha1, Kind=Website"
+	return "demo.inrun.dev/v1alpha1, Kind=Website"
 }
 
 func KeyForTest() string {

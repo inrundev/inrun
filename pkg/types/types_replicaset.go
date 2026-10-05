@@ -3,7 +3,7 @@ package types
 
 // ── ReplicaSet ────────────────────────────────────────────────────────────────
 
-// ReplicaSetTemplateSource declares one ReplicaSet to be managed by Orkestra.
+// ReplicaSetTemplateSource declares one ReplicaSet to be managed by Inrun.
 //
 // Minimal example — static values only:
 //
@@ -26,7 +26,7 @@ package types
 //	        - key: app
 //	          value: "{{ .metadata.name }}"
 //	        - key: managed-by
-//	          value: orkestra
+//	          value: inrun
 //	      resources:
 //	        requests:
 //	          cpu: 100m
@@ -72,7 +72,7 @@ type ReplicaSetTemplateSource struct {
 
 	// Labels — applied to the ReplicaSet ObjectMeta and the pod template.
 	// Label values support template expressions.
-	// Orkestra always adds: managed-by=orkestra, orkestra-owner=<cr-name>
+	// Inrun always adds: managed-by=inrun, inrun-owner=<cr-name>
 	Labels Labels `yaml:"labels,omitempty" json:"labels,omitempty" validate:"omitempty"`
 
 	// Annotations — applied to the ReplicaSet ObjectMeta only.

@@ -1,11 +1,11 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: informer-probe-restricted
   description: CR in restricted namespace (team-b) — namespace guard blocks reconcile, no resources created
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   cr: ../cr-restricted.yaml
   cycles: 2
 

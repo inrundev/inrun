@@ -14,10 +14,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/examples"
-	"github.com/orkspace/orkestra/pkg/version"
+	"github.com/inrundev/inrun/examples"
+	"github.com/inrundev/inrun/pkg/version"
 )
 
 //
@@ -28,7 +28,7 @@ import (
 func extractEmbeddedPack(root, pack string) error {
 	p, ok := GetPack(pack)
 	if !ok {
-		return fmt.Errorf("unknown pack %q — run `ork init --list` to see available packs", pack)
+		return fmt.Errorf("unknown pack %q — run `inrun init --list` to see available packs", pack)
 	}
 	srcPath := p.Path
 
@@ -75,10 +75,10 @@ func extractEmbeddedPack(root, pack string) error {
 			data = bytes.TrimPrefix(data, []byte("//go:build ignore\n\n"))
 		}
 
-		// Substitute the Orkestra version placeholder so the extracted go.mod
-		// always requires the exact version of ork the user is running.
+		// Substitute the Inrun version placeholder so the extracted go.mod
+		// always requires the exact version of inrun the user is running.
 		if isGoMod {
-			data = bytes.ReplaceAll(data, []byte("{{ .OrkVersion }}"), []byte(version.Short()))
+			data = bytes.ReplaceAll(data, []byte("{{ .InrunVersion }}"), []byte(version.Short()))
 		}
 
 		// The embedded FS keeps no file modes; scripts must stay runnable.
@@ -95,12 +95,12 @@ func extractEmbeddedPack(root, pack string) error {
 }
 
 // extractCanonical writes the canonical hello-website operator into the
-// project root in the standard layout: katalog.yaml, manifests/ (CRD and CR)
+// project root in the standard layout: catalog.yaml, manifests/ (CRD and CR)
 // and test/ (simulate and e2e specs).
 func extractCanonical(root string) error {
 	srcPath := "reconcilers/declarative/01-hello-website"
 	keep := map[string]bool{
-		cmdutil.FileKatalog: true,
+		cmdutil.FileCatalog: true,
 		filepath.Join(cmdutil.DirManifests, cmdutil.FileCrd): true,
 		filepath.Join(cmdutil.DirManifests, cmdutil.FileCr):  true,
 		filepath.Join(cmdutil.DirTest, cmdutil.FileSimulate): true,
@@ -138,13 +138,13 @@ func extractCanonical(root string) error {
 //
 // They are cached locally under:
 //
-//   ~/.orkestra/packs/
+//   ~/.inrun/packs/
 //
-// so repeated `ork init` calls are instant and work offline.
+// so repeated `inrun init` calls are instant and work offline.
 //
 
 func downloadExamplePack(root, pack, version string, refresh bool) error {
-	// Resolve cache directory (~/.orkestra/packs)
+	// Resolve cache directory (~/.inrun/packs)
 	cache, err := cacheDir()
 	if err != nil {
 		return err
@@ -167,7 +167,7 @@ func downloadExamplePack(root, pack, version string, refresh bool) error {
 
 	// Otherwise download
 	url := fmt.Sprintf(
-		"https://github.com/orkspace/orkestra/releases/download/%s/%s",
+		"https://github.com/inrundev/inrun/releases/download/%s/%s",
 		version, filename,
 	)
 
@@ -275,13 +275,13 @@ func extractExamplePack(root, pack, version string) error {
 // ──────────────────────────────────────────────────────────────────────────────
 //
 
-// cacheDir returns ~/.orkestra/packs and ensures it exists.
+// cacheDir returns ~/.inrun/packs and ensures it exists.
 func cacheDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(home, ".orkestra", "packs")
+	dir := filepath.Join(home, ".inrun", "packs")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
 	}

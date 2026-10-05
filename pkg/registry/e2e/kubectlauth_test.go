@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -33,7 +33,7 @@ func fakeAuthClientset(allowed bool) *fake.Clientset {
 
 func TestCheckKubectlAuth_Allowed(t *testing.T) {
 	cs := fakeAuthClientset(true)
-	e := orktypes.E2EKubectlAuth{Verb: "get", Resource: "pods", Equals: "yes"}
+	e := types.E2EKubectlAuth{Verb: "get", Resource: "pods", Equals: "yes"}
 	if err := checkKubectlAuth(context.Background(), cs, e); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestCheckKubectlAuth_Allowed(t *testing.T) {
 
 func TestCheckKubectlAuth_Denied(t *testing.T) {
 	cs := fakeAuthClientset(false)
-	e := orktypes.E2EKubectlAuth{Verb: "delete", Resource: "secrets", Equals: "no"}
+	e := types.E2EKubectlAuth{Verb: "delete", Resource: "secrets", Equals: "no"}
 	if err := checkKubectlAuth(context.Background(), cs, e); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestCheckKubectlAuth_Denied(t *testing.T) {
 
 func TestCheckKubectlAuth_UnexpectedResult(t *testing.T) {
 	cs := fakeAuthClientset(false)
-	e := orktypes.E2EKubectlAuth{Verb: "delete", Resource: "secrets", Equals: "yes"}
+	e := types.E2EKubectlAuth{Verb: "delete", Resource: "secrets", Equals: "yes"}
 	if err := checkKubectlAuth(context.Background(), cs, e); err == nil {
 		t.Fatal("expected error — access was denied but Equals: \"yes\" asserted it would be allowed")
 	}
@@ -57,7 +57,7 @@ func TestCheckKubectlAuth_UnexpectedResult(t *testing.T) {
 
 func TestCheckKubectlAuth_Impersonated(t *testing.T) {
 	cs := fakeAuthClientset(true)
-	e := orktypes.E2EKubectlAuth{
+	e := types.E2EKubectlAuth{
 		Verb:     "list",
 		Resource: "websites",
 		As:       "system:serviceaccount:default:site-a",

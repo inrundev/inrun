@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Orkestra is currently in active development.  
+Inrun is currently in active development.  
 Security fixes will be applied to the latest minor release.
 
 | Version | Supported |
@@ -14,7 +14,7 @@ Security fixes will be applied to the latest minor release.
 
 If you discover a security vulnerability, please report it privately.
 
-Use [GitHub private security advisories](https://github.com/orkspace/orkestra/security/advisories/new) to report privately.
+Use [GitHub private security advisories](https://github.com/inrundev/inrun/security/advisories/new) to report privately.
 
 Please include:
 
@@ -38,11 +38,11 @@ We will acknowledge your report within **72 hours**.
 - Unauthorized resource access  
 - CRD or cluster‑wide compromise  
 - Remote code execution  
-- Bypass of Orkestra’s isolation guarantees  
+- Bypass of Inrun’s isolation guarantees  
 
 ## What Is *Not* Considered a Security Issue?
 
 - Misconfigured RBAC in user clusters  
-- Incorrect Katalog definitions  
+- Incorrect Catalog definitions  
 - Expected Kubernetes behavior  
 - Resource exhaustion caused by user‑defined CRDs  

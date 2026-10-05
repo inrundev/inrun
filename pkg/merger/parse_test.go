@@ -4,22 +4,22 @@ package merger
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
+	"github.com/inrundev/inrun/pkg/config"
 )
 
 // ── containsValidKind ─────────────────────────────────────────────────────────
 
-func TestContainsValidKind_Katalog(t *testing.T) {
-	doc := []byte("kind: " + konfig.KatalogKind() + "\napiVersion: orkestra.orkspace.io/v1\n")
+func TestContainsValidKind_Catalog(t *testing.T) {
+	doc := []byte("kind: " + config.CatalogKind() + "\napiVersion: inrun.dev/v1\n")
 	if !containsValidKind(doc) {
-		t.Error("document with Katalog kind must return true")
+		t.Error("document with Catalog kind must return true")
 	}
 }
 
-func TestContainsValidKind_Komposer(t *testing.T) {
-	doc := []byte("kind: " + konfig.KomposerKind() + "\napiVersion: orkestra.orkspace.io/v1\n")
+func TestContainsValidKind_Stack(t *testing.T) {
+	doc := []byte("kind: " + config.StackKind() + "\napiVersion: inrun.dev/v1\n")
 	if !containsValidKind(doc) {
-		t.Error("document with Komposer kind must return true")
+		t.Error("document with Stack kind must return true")
 	}
 }
 
@@ -37,84 +37,84 @@ func TestContainsValidKind_Empty(t *testing.T) {
 }
 
 func TestContainsValidKind_KindInComment(t *testing.T) {
-	// The word "Katalog" appears in a comment — fast check will match.
+	// The word "Catalog" appears in a comment — fast check will match.
 	// This is known behaviour: the full parse handles it, not containsValidKind.
-	doc := []byte("# kind: Katalog\napiVersion: apps/v1\nkind: Deployment\n")
+	doc := []byte("# kind: Catalog\napiVersion: apps/v1\nkind: Deployment\n")
 	// We don't assert here — the fast check can produce false positives.
 	// The test documents the known limitation.
 	_ = containsValidKind(doc)
 }
 
-// ── parseKatalogDoc ───────────────────────────────────────────────────────────
+// ── parseCatalogDoc ───────────────────────────────────────────────────────────
 
-func validKatalogDoc() []byte {
-	return []byte(`apiVersion: orkestra.orkspace.io/v1
-kind: Katalog
+func validCatalogDoc() []byte {
+	return []byte(`apiVersion: inrun.dev/v1
+kind: Catalog
 metadata:
-  name: test-katalog
+  name: test-catalog
 `)
 }
 
-func TestParseKatalogDoc_Valid(t *testing.T) {
-	kf, err := parseKatalogDoc(validKatalogDoc(), "test")
+func TestParseCatalogDoc_Valid(t *testing.T) {
+	kf, err := parseCatalogDoc(validCatalogDoc(), "test")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if kf == nil {
-		t.Fatal("expected non-nil KatalogFile")
+		t.Fatal("expected non-nil CatalogFile")
 	}
-	if kf.Metadata.Name != "test-katalog" {
-		t.Errorf("expected name=test-katalog, got %q", kf.Metadata.Name)
+	if kf.Metadata.Name != "test-catalog" {
+		t.Errorf("expected name=test-catalog, got %q", kf.Metadata.Name)
 	}
-	if kf.Kind != konfig.KatalogKind() {
-		t.Errorf("expected kind=%s, got %q", konfig.KatalogKind(), kf.Kind)
+	if kf.Kind != config.CatalogKind() {
+		t.Errorf("expected kind=%s, got %q", config.CatalogKind(), kf.Kind)
 	}
 }
 
-func TestParseKatalogDoc_NonKatalogReturnsNil(t *testing.T) {
+func TestParseCatalogDoc_NonCatalogReturnsNil(t *testing.T) {
 	doc := []byte("apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: foo\n")
-	kf, err := parseKatalogDoc(doc, "test")
+	kf, err := parseCatalogDoc(doc, "test")
 	if err != nil {
-		t.Fatalf("non-katalog doc must not error: %v", err)
+		t.Fatalf("non-catalog doc must not error: %v", err)
 	}
 	if kf != nil {
-		t.Error("non-katalog doc must return nil KatalogFile")
+		t.Error("non-catalog doc must return nil CatalogFile")
 	}
 }
 
-func TestParseKatalogDoc_MissingName_Error(t *testing.T) {
-	doc := []byte("apiVersion: orkestra.orkspace.io/v1\nkind: Katalog\nmetadata:\n  name: \"\"\n")
-	_, err := parseKatalogDoc(doc, "test")
+func TestParseCatalogDoc_MissingName_Error(t *testing.T) {
+	doc := []byte("apiVersion: inrun.dev/v1\nkind: Catalog\nmetadata:\n  name: \"\"\n")
+	_, err := parseCatalogDoc(doc, "test")
 	if err == nil {
 		t.Error("missing metadata.name must return error")
 	}
 }
 
-func TestParseKatalogDoc_UnsupportedApiVersion_Error(t *testing.T) {
-	doc := []byte("apiVersion: example.io/v999\nkind: Katalog\nmetadata:\n  name: foo\n")
-	_, err := parseKatalogDoc(doc, "test")
+func TestParseCatalogDoc_UnsupportedApiVersion_Error(t *testing.T) {
+	doc := []byte("apiVersion: example.io/v999\nkind: Catalog\nmetadata:\n  name: foo\n")
+	_, err := parseCatalogDoc(doc, "test")
 	if err == nil {
 		t.Error("unsupported apiVersion must return error")
 	}
 }
 
-func TestParseKatalogDoc_ValidKomposer(t *testing.T) {
-	doc := []byte(`apiVersion: orkestra.orkspace.io/v1
-kind: Komposer
+func TestParseCatalogDoc_ValidStack(t *testing.T) {
+	doc := []byte(`apiVersion: inrun.dev/v1
+kind: Stack
 metadata:
-  name: my-komposer
+  name: my-stack
 `)
-	kf, err := parseKatalogDoc(doc, "test")
+	kf, err := parseCatalogDoc(doc, "test")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if kf == nil || kf.Kind != konfig.KomposerKind() {
-		t.Errorf("expected Komposer kind, got %v", kf)
+	if kf == nil || kf.Kind != config.StackKind() {
+		t.Errorf("expected Stack kind, got %v", kf)
 	}
 }
 
-func TestParseKatalogDoc_EmptyDoc(t *testing.T) {
-	kf, err := parseKatalogDoc([]byte{}, "empty")
+func TestParseCatalogDoc_EmptyDoc(t *testing.T) {
+	kf, err := parseCatalogDoc([]byte{}, "empty")
 	if err != nil {
 		t.Fatalf("empty doc must not error: %v", err)
 	}
@@ -123,14 +123,14 @@ func TestParseKatalogDoc_EmptyDoc(t *testing.T) {
 	}
 }
 
-func TestParseKatalogDoc_UnknownField_Error(t *testing.T) {
-	doc := []byte(`apiVersion: orkestra.orkspace.io/v1
-kind: Katalog
+func TestParseCatalogDoc_UnknownField_Error(t *testing.T) {
+	doc := []byte(`apiVersion: inrun.dev/v1
+kind: Catalog
 metadata:
   name: test
 unknownTopLevelField: boom
 `)
-	_, err := parseKatalogDoc(doc, "test")
+	_, err := parseCatalogDoc(doc, "test")
 	if err == nil {
 		t.Error("unknown field in strict parse must return error")
 	}

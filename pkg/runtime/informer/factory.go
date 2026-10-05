@@ -4,8 +4,8 @@ package informer
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/logger"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
@@ -13,7 +13,7 @@ import (
 
 // OwnerNameIndex is the name of the auto-registered owner-reference index on every
 // informer created by this factory. Use it with indexer.ByIndex(OwnerNameIndex, ownerName).
-const OwnerNameIndex = "orkestra.io/owner-name"
+const OwnerNameIndex = "inrun.dev/owner-name"
 
 // OwnerNameIndexFunc indexes an object by the names of its owner references.
 // Works for both unstructured and typed informer caches.
@@ -31,7 +31,7 @@ func OwnerNameIndexFunc(obj interface{}) ([]string, error) {
 }
 
 // StoreFor returns the informer store for the given GVK, or nil if no informer
-// is registered for that type. Used by orkadapter.ToClient to serve cached reads.
+// is registered for that type. Used by adapter.ToClient to serve cached reads.
 func (f *Factory) StoreFor(gvk schema.GroupVersionKind) cache.Store {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
@@ -56,7 +56,7 @@ func (f *Factory) IndexerFor(gvk schema.GroupVersionKind) cache.Indexer {
 }
 
 // RegisterInformer records an already-running informer under the given GVK so
-// that StoreFor and IndexerFor can serve it. Used by the kordinator to expose
+// that StoreFor and IndexerFor can serve it. Used by the coordinator to expose
 // watch-entry informers (which it owns and starts itself) to the kubeclient
 // cache layer without going through the full ForListerWatcher path.
 func (f *Factory) RegisterInformer(gvk schema.GroupVersionKind, inf cache.SharedIndexInformer) {

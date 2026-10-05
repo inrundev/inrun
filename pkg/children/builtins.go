@@ -1,10 +1,10 @@
 // pkg/children/builtins.go
 //
 // Single authoritative registry for every Kubernetes built-in resource kind
-// Orkestra knows about. Adding one entry here is the only change required to:
+// Inrun knows about. Adding one entry here is the only change required to:
 //
 //   - Resolve GVR for children and GVR lookups
-//   - Generate RBAC rules (ClusterRole) for any katalog that uses the resource
+//   - Generate RBAC rules (ClusterRole) for any catalog that uses the resource
 //   - Detect usage in onReconcile / onCreate / onDelete template blocks
 //   - Expand kind shorthands (e.g. "hpa" → "horizontalpodautoscaler")
 //   - Derive the canonical PascalCase Kind name
@@ -19,12 +19,12 @@
 package children
 
 import (
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // BuiltInKind holds the fully-qualified API metadata for a Kubernetes
-// built-in resource kind, plus Orkestra-specific readiness and usage metadata.
+// built-in resource kind, plus Inrun-specific readiness and usage metadata.
 type BuiltInKind struct {
 	// ── Kubernetes API identity ───────────────────────────────────────────────
 
@@ -47,15 +47,15 @@ type BuiltInKind struct {
 	// Detect reports whether a CRD's operatorBox uses this resource in any
 	// hook template block (onCreate / onReconcile / onDelete).
 	// nil for resources that cannot appear in hook templates (e.g. Node, Event).
-	Detect func(crd orktypes.CRDEntry) bool
+	Detect func(crd types.CRDEntry) bool
 
-	// ── Orkestra readiness metadata ───────────────────────────────────────────
+	// ── Inrun readiness metadata ───────────────────────────────────────────
 
 	Statusless             bool // No meaningful status; treat as ready on existence
 	SkipStatusSubresource  bool // No /status subresource; never PATCH status
 	SkipObservedGeneration bool // Has status but no observedGeneration; skip generation check
-	IsChild                bool // Orkestra may create this as a child resource
-	OrkestraInternal       bool // Part of Orkestra's own control-plane installation
+	IsChild                bool // Inrun may create this as a child resource
+	InrunInternal          bool // Part of Inrun's own control-plane installation
 
 	// HookKey is the YAML key used in HookTemplates for this resource type
 	// (e.g. "networkPolicies", "deployments", "hpa"). Non-empty only for
@@ -75,7 +75,7 @@ type enrichmentEntry struct {
 
 // enrichmentMeta maps each canonical kind name to its enrichment configuration.
 // This is a sibling of builtInRegistry — update both when adding a resource kind
-// that should be reachable via enrich: in a katalog spec.
+// that should be reachable via enrich: in a catalog spec.
 var enrichmentMeta = map[string]enrichmentEntry{
 	"pod":                     {Target: true},
 	"service":                 {Target: true, EnrichKeys: []string{"backingpods"}},
@@ -97,11 +97,11 @@ var enrichmentMeta = map[string]enrichmentEntry{
 
 // detectAny returns true if any hook template block in the CRD uses the
 // resource selected by sel.
-func detectAny[T any](crd orktypes.CRDEntry, sel func(*orktypes.HookTemplates) []T) bool {
+func detectAny[T any](crd types.CRDEntry, sel func(*types.HookTemplates) []T) bool {
 	rc := crd.OperatorBox
-	return orktypes.UsesTemplates(rc.EffectiveOnCreate(), sel) ||
-		orktypes.UsesTemplates(rc.EffectiveOnReconcile(), sel) ||
-		orktypes.UsesTemplates(rc.EffectiveOnDelete(), sel)
+	return types.UsesTemplates(rc.EffectiveOnCreate(), sel) ||
+		types.UsesTemplates(rc.EffectiveOnReconcile(), sel) ||
+		types.UsesTemplates(rc.EffectiveOnDelete(), sel)
 }
 
 // builtInRegistry is the single source of truth for all Kubernetes built-in
@@ -115,8 +115,8 @@ var builtInRegistry = map[string]BuiltInKind{
 		Namespaced: true, APIPath: "/api",
 		SkipObservedGeneration: true,
 		Shorthands:             []string{"po"},
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.PodTemplateSource { return t.Pods })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.PodTemplateSource { return t.Pods })
 		},
 	},
 
@@ -124,21 +124,21 @@ var builtInRegistry = map[string]BuiltInKind{
 		Kind: "Service", Group: "", Version: "v1", Plural: "services",
 		Namespaced: true, APIPath: "/api",
 		Shorthands:             []string{"svc"},
-		SkipObservedGeneration: true, IsChild: true, OrkestraInternal: true,
+		SkipObservedGeneration: true, IsChild: true, InrunInternal: true,
 		HookKey: "services",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.ServiceTemplateSource { return t.Services })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.ServiceTemplateSource { return t.Services })
 		},
 	},
 
 	"configmap": {
 		Kind: "ConfigMap", Group: "", Version: "v1", Plural: "configmaps",
 		Namespaced: true, APIPath: "/api",
-		Statusless: true, SkipStatusSubresource: true, IsChild: true, OrkestraInternal: true,
+		Statusless: true, SkipStatusSubresource: true, IsChild: true, InrunInternal: true,
 		Shorthands: []string{"cm"},
 		HookKey:    "configMaps",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.ConfigMapTemplateSource { return t.ConfigMaps })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.ConfigMapTemplateSource { return t.ConfigMaps })
 		},
 	},
 
@@ -147,30 +147,30 @@ var builtInRegistry = map[string]BuiltInKind{
 		Namespaced: true, APIPath: "/api",
 		Statusless: true, SkipStatusSubresource: true, IsChild: true,
 		HookKey: "secrets",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.SecretTemplateSource { return t.Secrets })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.SecretTemplateSource { return t.Secrets })
 		},
 	},
 
 	"namespace": {
 		Kind: "Namespace", Group: "", Version: "v1", Plural: "namespaces",
 		Namespaced: false, APIPath: "/api",
-		SkipObservedGeneration: true, OrkestraInternal: true, IsChild: true,
+		SkipObservedGeneration: true, InrunInternal: true, IsChild: true,
 		Shorthands: []string{"ns"},
 		HookKey:    "namespaces",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.NamespaceTemplateSource { return t.Namespaces })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.NamespaceTemplateSource { return t.Namespaces })
 		},
 	},
 
 	"serviceaccount": {
 		Kind: "ServiceAccount", Group: "", Version: "v1", Plural: "serviceaccounts",
 		Namespaced: true, APIPath: "/api",
-		Statusless: true, SkipStatusSubresource: true, IsChild: true, OrkestraInternal: true,
+		Statusless: true, SkipStatusSubresource: true, IsChild: true, InrunInternal: true,
 		Shorthands: []string{"sa"},
 		HookKey:    "serviceAccounts",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.ServiceAccountTemplateSource { return t.ServiceAccounts })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.ServiceAccountTemplateSource { return t.ServiceAccounts })
 		},
 	},
 
@@ -180,8 +180,8 @@ var builtInRegistry = map[string]BuiltInKind{
 		SkipObservedGeneration: true,
 		Shorthands:             []string{"pvc", "pvcs", "pvclaim"},
 		HookKey:                "persistentVolumeClaims",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.PVCTemplateSource { return t.PersistentVolumeClaims })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.PVCTemplateSource { return t.PersistentVolumeClaims })
 		},
 	},
 
@@ -191,8 +191,8 @@ var builtInRegistry = map[string]BuiltInKind{
 		SkipObservedGeneration: true,
 		Shorthands:             []string{"pv", "pvs"},
 		HookKey:                "persistentVolumes",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.PVTemplateSource { return t.PersistentVolumes })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.PVTemplateSource { return t.PersistentVolumes })
 		},
 	},
 
@@ -212,20 +212,20 @@ var builtInRegistry = map[string]BuiltInKind{
 	"resourcequota": {
 		Kind: "ResourceQuota", Group: "", Version: "v1", Plural: "resourcequotas",
 		Namespaced: true, APIPath: "/api",
-		SkipObservedGeneration: true, OrkestraInternal: true, IsChild: true,
+		SkipObservedGeneration: true, InrunInternal: true, IsChild: true,
 		HookKey: "resourceQuotas",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.ResourceQuotaTemplateSource { return t.ResourceQuotas })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.ResourceQuotaTemplateSource { return t.ResourceQuotas })
 		},
 	},
 
 	"limitrange": {
 		Kind: "LimitRange", Group: "", Version: "v1", Plural: "limitranges",
 		Namespaced: true, APIPath: "/api",
-		SkipObservedGeneration: true, OrkestraInternal: true, IsChild: true,
+		SkipObservedGeneration: true, InrunInternal: true, IsChild: true,
 		HookKey: "limitRanges",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.LimitRangeTemplateSource { return t.LimitRanges })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.LimitRangeTemplateSource { return t.LimitRanges })
 		},
 	},
 
@@ -239,8 +239,8 @@ var builtInRegistry = map[string]BuiltInKind{
 		Kind: "PodTemplate", Group: "", Version: "v1", Plural: "podtemplates",
 		Namespaced: true, APIPath: "/api",
 		Statusless: true, SkipStatusSubresource: true,
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.PlaceholderSource { return t.PodTemplates })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.PlaceholderSource { return t.PodTemplates })
 		},
 	},
 
@@ -249,11 +249,11 @@ var builtInRegistry = map[string]BuiltInKind{
 	"deployment": {
 		Kind: "Deployment", Group: "apps", Version: "v1", Plural: "deployments",
 		Namespaced: true, APIPath: "/apis",
-		IsChild: true, OrkestraInternal: true,
+		IsChild: true, InrunInternal: true,
 		Shorthands: []string{"deploy", "dep"},
 		HookKey:    "deployments",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.DeploymentTemplateSource { return t.Deployments })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.DeploymentTemplateSource { return t.Deployments })
 		},
 	},
 
@@ -262,8 +262,8 @@ var builtInRegistry = map[string]BuiltInKind{
 		Namespaced: true, APIPath: "/apis",
 		HookKey:    "statefulSets",
 		Shorthands: []string{"sts"},
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.StatefulSetTemplateSource { return t.StatefulSets })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.StatefulSetTemplateSource { return t.StatefulSets })
 		},
 	},
 
@@ -271,8 +271,8 @@ var builtInRegistry = map[string]BuiltInKind{
 		Kind: "DaemonSet", Group: "apps", Version: "v1", Plural: "daemonsets",
 		Namespaced: true, APIPath: "/apis",
 		Shorthands: []string{"ds"},
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.PlaceholderSource { return t.DaemonSets })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.PlaceholderSource { return t.DaemonSets })
 		},
 	},
 
@@ -280,8 +280,8 @@ var builtInRegistry = map[string]BuiltInKind{
 		Kind: "ReplicaSet", Group: "apps", Version: "v1", Plural: "replicasets",
 		Namespaced: true, APIPath: "/apis",
 		Shorthands: []string{"rs"},
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.ReplicaSetTemplateSource { return t.ReplicaSets })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.ReplicaSetTemplateSource { return t.ReplicaSets })
 		},
 	},
 
@@ -292,8 +292,8 @@ var builtInRegistry = map[string]BuiltInKind{
 		Namespaced: true, APIPath: "/apis",
 		SkipStatusSubresource: true, IsChild: true,
 		HookKey: "jobs",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.JobTemplateSource { return t.Jobs })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.JobTemplateSource { return t.Jobs })
 		},
 	},
 
@@ -303,8 +303,8 @@ var builtInRegistry = map[string]BuiltInKind{
 		SkipStatusSubresource: true, IsChild: true,
 		Shorthands: []string{"cj"},
 		HookKey:    "cronJobs",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.CronJobTemplateSource { return t.CronJobs })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.CronJobTemplateSource { return t.CronJobs })
 		},
 	},
 
@@ -313,22 +313,22 @@ var builtInRegistry = map[string]BuiltInKind{
 	"ingress": {
 		Kind: "Ingress", Group: "networking.k8s.io", Version: "v1", Plural: "ingresses",
 		Namespaced: true, APIPath: "/apis",
-		OrkestraInternal: true, IsChild: true,
+		InrunInternal: true, IsChild: true,
 		Shorthands: []string{"ing"},
 		HookKey:    "ingresses",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.IngressTemplateSource { return t.Ingresses })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.IngressTemplateSource { return t.Ingresses })
 		},
 	},
 
 	"networkpolicy": {
 		Kind: "NetworkPolicy", Group: "networking.k8s.io", Version: "v1", Plural: "networkpolicies",
 		Namespaced: true, APIPath: "/apis",
-		Statusless: true, SkipStatusSubresource: true, OrkestraInternal: true, IsChild: true,
+		Statusless: true, SkipStatusSubresource: true, InrunInternal: true, IsChild: true,
 		Shorthands: []string{"np"},
 		HookKey:    "networkPolicies",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.NetworkPolicyTemplateSource { return t.NetworkPolicies })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.NetworkPolicyTemplateSource { return t.NetworkPolicies })
 		},
 	},
 
@@ -342,11 +342,11 @@ var builtInRegistry = map[string]BuiltInKind{
 	"horizontalpodautoscaler": {
 		Kind: "HorizontalPodAutoscaler", Group: "autoscaling", Version: "v2", Plural: "horizontalpodautoscalers",
 		Namespaced: true, APIPath: "/apis",
-		OrkestraInternal: true, IsChild: true,
+		InrunInternal: true, IsChild: true,
 		Shorthands: []string{"hpa"},
 		HookKey:    "hpa",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.HPATemplateSource { return t.HorizontalPodAutoscalers })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.HPATemplateSource { return t.HorizontalPodAutoscalers })
 		},
 	},
 
@@ -355,43 +355,43 @@ var builtInRegistry = map[string]BuiltInKind{
 	"role": {
 		Kind: "Role", Group: "rbac.authorization.k8s.io", Version: "v1", Plural: "roles",
 		Namespaced: true, APIPath: "/apis",
-		Statusless: true, SkipStatusSubresource: true, OrkestraInternal: true, IsChild: true,
+		Statusless: true, SkipStatusSubresource: true, InrunInternal: true, IsChild: true,
 		HookKey: "roles",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.RoleTemplateSource { return t.Roles })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.RoleTemplateSource { return t.Roles })
 		},
 	},
 
 	"rolebinding": {
 		Kind: "RoleBinding", Group: "rbac.authorization.k8s.io", Version: "v1", Plural: "rolebindings",
 		Namespaced: true, APIPath: "/apis",
-		Statusless: true, SkipStatusSubresource: true, OrkestraInternal: true, IsChild: true,
+		Statusless: true, SkipStatusSubresource: true, InrunInternal: true, IsChild: true,
 		Shorthands: []string{"rb"},
 		HookKey:    "roleBindings",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.RoleBindingTemplateSource { return t.RoleBindings })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.RoleBindingTemplateSource { return t.RoleBindings })
 		},
 	},
 
 	"clusterrole": {
 		Kind: "ClusterRole", Group: "rbac.authorization.k8s.io", Version: "v1", Plural: "clusterroles",
 		Namespaced: false, APIPath: "/apis",
-		Statusless: true, SkipStatusSubresource: true, OrkestraInternal: true, IsChild: true,
+		Statusless: true, SkipStatusSubresource: true, InrunInternal: true, IsChild: true,
 		Shorthands: []string{"cr"},
 		HookKey:    "clusterRoles",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.ClusterRoleTemplateSource { return t.ClusterRoles })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.ClusterRoleTemplateSource { return t.ClusterRoles })
 		},
 	},
 
 	"clusterrolebinding": {
 		Kind: "ClusterRoleBinding", Group: "rbac.authorization.k8s.io", Version: "v1", Plural: "clusterrolebindings",
 		Namespaced: false, APIPath: "/apis",
-		Statusless: true, SkipStatusSubresource: true, OrkestraInternal: true, IsChild: true,
+		Statusless: true, SkipStatusSubresource: true, InrunInternal: true, IsChild: true,
 		Shorthands: []string{"crb"},
 		HookKey:    "clusterRoleBindings",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.ClusterRoleBindingTemplateSource {
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.ClusterRoleBindingTemplateSource {
 				return t.ClusterRoleBindings
 			})
 		},
@@ -402,11 +402,11 @@ var builtInRegistry = map[string]BuiltInKind{
 	"poddisruptionbudget": {
 		Kind: "PodDisruptionBudget", Group: "policy", Version: "v1", Plural: "poddisruptionbudgets",
 		Namespaced: true, APIPath: "/apis",
-		SkipObservedGeneration: true, OrkestraInternal: true, IsChild: true,
+		SkipObservedGeneration: true, InrunInternal: true, IsChild: true,
 		Shorthands: []string{"pdb"},
 		HookKey:    "pdb",
-		Detect: func(crd orktypes.CRDEntry) bool {
-			return detectAny(crd, func(t *orktypes.HookTemplates) []orktypes.PDBTemplateSource { return t.PodDisruptionBudgets })
+		Detect: func(crd types.CRDEntry) bool {
+			return detectAny(crd, func(t *types.HookTemplates) []types.PDBTemplateSource { return t.PodDisruptionBudgets })
 		},
 	},
 
@@ -429,7 +429,7 @@ var builtInRegistry = map[string]BuiltInKind{
 	"customresourcedefinition": {
 		Kind: "CustomResourceDefinition", Group: "apiextensions.k8s.io", Version: "v1", Plural: "customresourcedefinitions",
 		Namespaced: false, APIPath: "/apis",
-		SkipObservedGeneration: true, OrkestraInternal: true,
+		SkipObservedGeneration: true, InrunInternal: true,
 		Shorthands: []string{"crd"},
 	},
 
@@ -446,13 +446,13 @@ var builtInRegistry = map[string]BuiltInKind{
 	"mutatingwebhookconfiguration": {
 		Kind: "MutatingWebhookConfiguration", Group: "admissionregistration.k8s.io", Version: "v1", Plural: "mutatingwebhookconfigurations",
 		Namespaced: false, APIPath: "/apis",
-		Statusless: true, SkipStatusSubresource: true, OrkestraInternal: true,
+		Statusless: true, SkipStatusSubresource: true, InrunInternal: true,
 	},
 
 	"validatingwebhookconfiguration": {
 		Kind: "ValidatingWebhookConfiguration", Group: "admissionregistration.k8s.io", Version: "v1", Plural: "validatingwebhookconfigurations",
 		Namespaced: false, APIPath: "/apis",
-		Statusless: true, SkipStatusSubresource: true, OrkestraInternal: true,
+		Statusless: true, SkipStatusSubresource: true, InrunInternal: true,
 	},
 
 	// ── scheduling.k8s.io/v1 ─────────────────────────────────────────────────
@@ -486,7 +486,7 @@ var builtInRegistry = map[string]BuiltInKind{
 	"lease": {
 		Kind: "Lease", Group: "coordination.k8s.io", Version: "v1", Plural: "leases",
 		Namespaced: true, APIPath: "/apis",
-		SkipObservedGeneration: true, OrkestraInternal: true,
+		SkipObservedGeneration: true, InrunInternal: true,
 	},
 }
 

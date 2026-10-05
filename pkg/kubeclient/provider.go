@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/orkspace/orkestra/pkg/runtime/informer"
+	"github.com/inrundev/inrun/pkg/runtime/informer"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -17,7 +17,7 @@ type ClientProvider struct {
 
 // ClientFactory accepts kubeclient and returns a generic client
 // The generic client is the hallmark of the whole design
-// konstructRuntime() performs per CRD registration and
+// constructRuntime() performs per CRD registration and
 // hands over to ghe informer factory
 type ClientFactory func(*Kubeclient) (informer.GenericClient, error)
 

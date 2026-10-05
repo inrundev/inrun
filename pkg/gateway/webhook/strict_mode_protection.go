@@ -1,6 +1,6 @@
 // webhook/strict_mode_protection.go — /strict-mode-protection webhook handler.
 //
-// Registered only when security.deletionProtection.strictMode: true in the Katalog.
+// Registered only when security.deletionProtection.strictMode: true in the Catalog.
 // Intercepts UPDATE operations on resources that carry the deletion-protection label
 // and denies any request that removes that label — treating label removal as a
 // deletion attempt.
@@ -26,10 +26,10 @@
 // # Unlock
 //
 // To remove the label from a protected resource, set strictMode: false in the
-// Katalog, edit the Orkestra ConfigMap, and restart Orkestra. The new pods will
+// Catalog, edit the Inrun ConfigMap, and restart Inrun. The new pods will
 // not register the strict-mode webhook, so label removal becomes possible again.
 // This mirrors how deletion protection itself is disabled — the trust boundary is
-// the Katalog, not a separate escape hatch.
+// the Catalog, not a separate escape hatch.
 package webhook
 
 import (
@@ -37,9 +37,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/metrics"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/metrics"
 )
 
 // strictModeProtectionHandler handles /strict-mode-protection admission reviews.
@@ -113,13 +113,13 @@ func (ws *WebhookServer) strictModeProtectionHandler(w http.ResponseWriter, r *h
 			Allowed: false,
 			Status: &AdmissionStatus{
 				Message: fmt.Sprintf(
-					"\n\n[Orkestra Security] %s\n\n"+
+					"\n\n[Inrun Security] %s\n\n"+
 						"Removing this label is blocked because strictMode is enabled.\n\n"+
 						"To unprotect this resource:\n"+
-						"- Opt out in the katalog using: '<crd>.deletionProtection.strictMode: false'\n\n"+
+						"- Opt out in the catalog using: '<crd>.deletionProtection.strictMode: false'\n\n"+
 
 						"To disable strict mode globally:\n"+
-						"- Set security.deletionProtection.strictMode: false in the Katalog\n"+
+						"- Set security.deletionProtection.strictMode: false in the Catalog\n"+
 						"- Regenerate and apply the bundle, and restart the Gateway\n\n",
 					header,
 				),

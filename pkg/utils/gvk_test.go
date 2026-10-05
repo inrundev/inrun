@@ -30,7 +30,7 @@ func TestSetGroupVersionKind_EmptyGroup(t *testing.T) {
 }
 
 func TestSetGroupVersionKind_String(t *testing.T) {
-	gvk := SetGroupVersionKind("orkestra.orkspace.io", "v1", "Website")
+	gvk := SetGroupVersionKind("inrun.dev", "v1", "Website")
 	if gvk.String() == "" {
 		t.Error("String() must return non-empty value")
 	}

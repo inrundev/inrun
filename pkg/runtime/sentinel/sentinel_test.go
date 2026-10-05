@@ -116,85 +116,85 @@ func TestCompute_DeletionStarted_AlreadyDeleting(t *testing.T) {
 }
 
 func TestCompute_FinalizersChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{Finalizers: []string{"orkestra.io/protect"}}
+	old := &metav1.ObjectMeta{Finalizers: []string{"inrun.dev/protect"}}
 	new := &metav1.ObjectMeta{}
 	result := Compute([]string{FinalizersChanged.String()}, old, new)
 	assert.Equal(t, "true", result[FinalizersChanged.String()])
 }
 
 func TestCompute_FinalizersUnchanged(t *testing.T) {
-	old := &metav1.ObjectMeta{Finalizers: []string{"orkestra.io/protect"}}
-	new := &metav1.ObjectMeta{Finalizers: []string{"orkestra.io/protect"}}
+	old := &metav1.ObjectMeta{Finalizers: []string{"inrun.dev/protect"}}
+	new := &metav1.ObjectMeta{Finalizers: []string{"inrun.dev/protect"}}
 	result := Compute([]string{FinalizersChanged.String()}, old, new)
 	assert.Equal(t, "false", result[FinalizersChanged.String()])
 }
 
 func TestCompute_NameChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{Name: "ork"}
-	new := &metav1.ObjectMeta{Name: "orkestra"}
+	old := &metav1.ObjectMeta{Name: "inrun"}
+	new := &metav1.ObjectMeta{Name: "inrun-v2"}
 	result := Compute([]string{NameChanged.String()}, old, new)
 	assert.Equal(t, "true", result[NameChanged.String()])
 }
 
 func TestCompute_NameUnChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{Name: "ork"}
-	new := &metav1.ObjectMeta{Name: "ork"}
+	old := &metav1.ObjectMeta{Name: "inrun"}
+	new := &metav1.ObjectMeta{Name: "inrun"}
 	result := Compute([]string{NameChanged.String()}, old, new)
 	assert.Equal(t, "false", result[NameChanged.String()])
 }
 
 func TestCompute_NamespaceChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{Namespace: "ork-system"}
-	new := &metav1.ObjectMeta{Namespace: "orkestra-system"}
+	old := &metav1.ObjectMeta{Namespace: "inrun-system"}
+	new := &metav1.ObjectMeta{Namespace: "inrun-v2-system"}
 	result := Compute([]string{NamespaceChanged.String()}, old, new)
 	assert.Equal(t, "true", result[NamespaceChanged.String()])
 }
 
 func TestCompute_NamespaceUnChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{Namespace: "ork-system"}
-	new := &metav1.ObjectMeta{Namespace: "ork-system"}
+	old := &metav1.ObjectMeta{Namespace: "inrun-system"}
+	new := &metav1.ObjectMeta{Namespace: "inrun-system"}
 	result := Compute([]string{NamespaceChanged.String()}, old, new)
 	assert.Equal(t, "false", result[NamespaceChanged.String()])
 }
 
 func TestCompute_GenerateNameChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{GenerateName: "ork-generate"}
-	new := &metav1.ObjectMeta{GenerateName: "orkestra-generate"}
+	old := &metav1.ObjectMeta{GenerateName: "inrun-generate"}
+	new := &metav1.ObjectMeta{GenerateName: "inrun-v2-generate"}
 	result := Compute([]string{GenerateNameChanged.String()}, old, new)
 	assert.Equal(t, "true", result[GenerateNameChanged.String()])
 }
 
 func TestCompute_GenerateNameUnChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{GenerateName: "ork-generate"}
-	new := &metav1.ObjectMeta{GenerateName: "ork-generate"}
+	old := &metav1.ObjectMeta{GenerateName: "inrun-generate"}
+	new := &metav1.ObjectMeta{GenerateName: "inrun-generate"}
 	result := Compute([]string{GenerateNameChanged.String()}, old, new)
 	assert.Equal(t, "false", result[GenerateNameChanged.String()])
 }
 
 func TestCompute_UIDChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{UID: "ORK-XX-12-Y-TX"}
-	new := &metav1.ObjectMeta{UID: "ORK-XX-12-Y-TY"}
+	old := &metav1.ObjectMeta{UID: "UID-XX-12-Y-TX"}
+	new := &metav1.ObjectMeta{UID: "UID-XX-12-Y-TY"}
 	result := Compute([]string{UIDChanged.String()}, old, new)
 	assert.Equal(t, "true", result[UIDChanged.String()])
 }
 
 func TestCompute_UIDUnChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{UID: "ORK-XX-12-Y-TX"}
-	new := &metav1.ObjectMeta{UID: "ORK-XX-12-Y-TX"}
+	old := &metav1.ObjectMeta{UID: "UID-XX-12-Y-TX"}
+	new := &metav1.ObjectMeta{UID: "UID-XX-12-Y-TX"}
 	result := Compute([]string{UIDChanged.String()}, old, new)
 	assert.Equal(t, "false", result[UIDChanged.String()])
 }
 
 func TestCompute_ResourceVersionChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{ResourceVersion: "ork-v1.0"}
-	new := &metav1.ObjectMeta{ResourceVersion: "orkestra-v1.1"}
+	old := &metav1.ObjectMeta{ResourceVersion: "inrun-v1.0"}
+	new := &metav1.ObjectMeta{ResourceVersion: "inrun-v2-v1.1"}
 	result := Compute([]string{ResourceVersionChanged.String()}, old, new)
 	assert.Equal(t, "true", result[ResourceVersionChanged.String()])
 }
 
 func TestCompute_ResourceVersionUnChanged(t *testing.T) {
-	old := &metav1.ObjectMeta{ResourceVersion: "ork-v1.0"}
-	new := &metav1.ObjectMeta{ResourceVersion: "ork-v1.0"}
+	old := &metav1.ObjectMeta{ResourceVersion: "inrun-v1.0"}
+	new := &metav1.ObjectMeta{ResourceVersion: "inrun-v1.0"}
 	result := Compute([]string{ResourceVersionChanged.String()}, old, new)
 	assert.Equal(t, "false", result[ResourceVersionChanged.String()])
 }
@@ -235,9 +235,9 @@ func TestCompute_DeletionGracePeriodSecondsUnChanged(t *testing.T) {
 func TestCompute_OwnerReferenceChangedNewControllerPtr(t *testing.T) {
 	ref := func(ctrl bool) refAndManagedFields {
 		return refAndManagedFields{
-			name:       "orkestra",
-			kind:       "Katalog",
-			apiversion: "test.orkestra.io",
+			name:       "inrun-v2",
+			kind:       "Catalog",
+			apiversion: "test.inrun.dev",
 			controller: boolPtr(ctrl),
 		}
 	}
@@ -254,16 +254,16 @@ func TestCompute_OwnerReferenceChangedNewControllerPtr(t *testing.T) {
 func TestCompute_OwnerReferenceChangedAddNewRef(t *testing.T) {
 	oldRef := []refAndManagedFields{
 		{
-			name:       "orkestra",
-			kind:       "Katalog",
-			apiversion: "test.orkestra.io",
+			name:       "inrun-v2",
+			kind:       "Catalog",
+			apiversion: "test.inrun.dev",
 			controller: boolPtr(false),
 		},
 	}
 	newRef := append(oldRef, refAndManagedFields{
-		name:       "orkestra-gateway",
-		kind:       "Komposer",
-		apiversion: "test.orkestra.io",
+		name:       "inrun-v2-gateway",
+		kind:       "Stack",
+		apiversion: "test.inrun.dev",
 		controller: boolPtr(true),
 	})
 
@@ -276,9 +276,9 @@ func TestCompute_OwnerReferenceChangedAddNewRef(t *testing.T) {
 func TestCompute_OwnerReferenceUnChanged(t *testing.T) {
 	ref := func(ctrl bool) refAndManagedFields {
 		return refAndManagedFields{
-			name:       "orkestra",
-			kind:       "Katalog",
-			apiversion: "test.orkestra.io",
+			name:       "inrun-v2",
+			kind:       "Catalog",
+			apiversion: "test.inrun.dev",
 			controller: boolPtr(ctrl),
 		}
 	}
@@ -294,15 +294,15 @@ func TestCompute_OwnerReferenceUnChanged(t *testing.T) {
 func TestCompute_ManagedFieldsChanged(t *testing.T) {
 	entry := func(manager, operation string) refAndManagedFields {
 		return refAndManagedFields{
-			apiversion: "test.orkestra.io",
+			apiversion: "test.inrun.dev",
 			fieldType:  "test",
 			manager:    manager,
 			operation:  operation,
 		}
 	}
 
-	oldEntry := []refAndManagedFields{entry("ork", "apply")}
-	newEntry := []refAndManagedFields{entry("orkestra", "apply")}
+	oldEntry := []refAndManagedFields{entry("inrun", "apply")}
+	newEntry := []refAndManagedFields{entry("inrun-v2", "apply")}
 
 	old := &metav1.ObjectMeta{ManagedFields: collectManagedFields(oldEntry)}
 	new := &metav1.ObjectMeta{ManagedFields: collectManagedFields(newEntry)}
@@ -313,16 +313,16 @@ func TestCompute_ManagedFieldsChanged(t *testing.T) {
 func TestCompute_OwnerReferenceChangedAddNewField(t *testing.T) {
 	oldEntry := []refAndManagedFields{
 		{
-			apiversion: "test.orkestra.io",
+			apiversion: "test.inrun.dev",
 			fieldType:  "test",
-			manager:    "orkestra-manager",
+			manager:    "inrun-v2-manager",
 			operation:  "apply",
 		},
 	}
 	newEntry := append(oldEntry, refAndManagedFields{
-		apiversion: "test.orkestra.io",
+		apiversion: "test.inrun.dev",
 		fieldType:  "test",
-		manager:    "orkestra-manager",
+		manager:    "inrun-v2-manager",
 		operation:  "update",
 	})
 
@@ -335,14 +335,14 @@ func TestCompute_OwnerReferenceChangedAddNewField(t *testing.T) {
 func TestCompute_ManagedFieldsUnChanged(t *testing.T) {
 	entry := func(manager, operation string) refAndManagedFields {
 		return refAndManagedFields{
-			apiversion: "test.orkestra.io",
+			apiversion: "test.inrun.dev",
 			fieldType:  "test",
 			manager:    manager,
 			operation:  operation,
 		}
 	}
 
-	oldEntry := []refAndManagedFields{entry("ork", "exists")}
+	oldEntry := []refAndManagedFields{entry("inrun", "exists")}
 
 	old := &metav1.ObjectMeta{ManagedFields: collectManagedFields(oldEntry)}
 	new := &metav1.ObjectMeta{ManagedFields: collectManagedFields(oldEntry)}

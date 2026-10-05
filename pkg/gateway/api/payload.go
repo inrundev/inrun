@@ -3,8 +3,8 @@ package api
 import (
 	"strings"
 
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // EvaluatePayload applies serve.config.response to a CR object and returns the
@@ -26,16 +26,16 @@ import (
 // GET/list level, not here. This function only builds the payload map.
 func EvaluatePayload(
 	obj map[string]interface{},
-	crd *orktypes.CRDEntry,
+	crd *types.CRDEntry,
 	alias string,
-	notes orktypes.NoteRegistry,
+	notes types.NoteRegistry,
 ) map[string]interface{} {
 	cfg := crd.ServeResponseConfigFor(alias)
 	if cfg == nil || !cfg.HasPayload() {
 		return nil
 	}
 
-	resolver := orktmpl.NewResolverFromMap(obj).WithUserNotes(notes)
+	resolver := template.NewResolverFromMap(obj).WithUserNotes(notes)
 
 	// ── Build payload map ─────────────────────────────────────────────────────
 	// The payload is ALWAYS a flat map of only the declared fields.

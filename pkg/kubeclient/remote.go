@@ -11,7 +11,7 @@ import (
 // NewKubeclientFromConfig builds a fully started Kubeclient from an existing
 // rest.Config. Used by the gateway cluster registry to construct clients for
 // remote clusters declared in gateway.clusters. buildConfig short-circuits
-// when restConfig is pre-seeded, so konfig is not required.
+// when restConfig is pre-seeded, so config is not required.
 func NewKubeclientFromConfig(ctx context.Context, cfg *rest.Config, scheme *runtime.Scheme) (*Kubeclient, error) {
 	k := &Kubeclient{
 		name:       "remote",

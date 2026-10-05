@@ -1,0 +1,72 @@
+// Package pipeline builds a ready Catalog from merged sources: parse, enrich,
+// validate and wire it for the runtime. NewCatalog is the runtime path and
+// exits on error; BuildExpanded is the CLI path and returns the error.
+package pipeline
+
+import (
+	"fmt"
+
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/validate"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/typeregistry"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
+)
+
+// NewCatalog returns a fully built and validated Catalog.
+// Exits the process on any error
+func NewCatalog(kfg *config.Config, m *merger.Merger) *catalog.Catalog {
+	k := &catalog.Catalog{}
+	k.SetConfig(kfg)
+
+	paths := kfg.Catalog().Paths()
+
+	typeregistry.RegisterRuntimeObjects()
+
+	entries, err := k.BuildRuntimeCatalog(kfg, m, paths...)
+	if err != nil {
+		utils.Exit(err)
+	}
+
+	if len(entries) == 0 && !k.IsStandaloneGateway() {
+		utils.Exit(fmt.Errorf("validation error: catalog empty"))
+	}
+
+	for _, crd := range entries {
+		if len(types.ObjectRegistry) == 0 && !crd.IsDynamic() {
+			utils.Exit(fmt.Errorf(
+				"ObjectRegistry is empty — run 'inrun generate registry --file <my-catalog.yaml>' first",
+			))
+		}
+	}
+
+	if err := validate.Execute(k, kfg); err != nil {
+		utils.Exit(err)
+	}
+
+	if err := k.CheckDeprecationPolicy(); err != nil {
+		utils.Exit(err)
+	}
+
+	k, err = k.UpdateResourceMapAndReturn()
+	if err != nil {
+		utils.Exit(err)
+	}
+
+	return k
+}
+
+// BuildExpanded is the canonical pipeline for CLI commands that need a fully
+// ready Catalog: merge → expand modules → validate.
+func BuildExpanded(kfg *config.Config, m *merger.Merger) (*catalog.Catalog, error) {
+	k := &catalog.Catalog{}
+	if _, err := k.BuildRuntimeCatalog(kfg, m); err != nil {
+		return nil, err
+	}
+	if err := validate.Execute(k, kfg); err != nil {
+		return nil, fmt.Errorf("catalog validate: %w", err)
+	}
+	return k, nil
+}

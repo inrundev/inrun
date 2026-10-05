@@ -65,7 +65,7 @@ type PipelineList struct {
 }
 
 var (
-	Group    = "demo.orkestra.io"
+	Group    = "demo.inrun.dev"
 	Kind     = "Pipeline"
 	Version  = "v1alpha1"
 	Resource = "pipelines"

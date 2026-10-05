@@ -5,25 +5,25 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// registeredKatalog builds a *katalog.Katalog with one serve-enabled CRD whose
+// registeredCatalog builds a *catalog.Catalog with one serve-enabled CRD whose
 // Kind matches the given kind string, for tests that need kind lookup to
 // succeed so execution reaches the method/name checks after it.
-func registeredKatalog(kind string) *katalog.Katalog {
-	return katalog.NewFromEntryPointers(map[string]*orktypes.CRDEntry{
+func registeredCatalog(kind string) *catalog.Catalog {
+	return catalog.NewFromEntryPointers(map[string]*types.CRDEntry{
 		kind: {
-			APITypes: orktypes.APITypes{
+			APITypes: types.APITypes{
 				Group:   "platform.myorg.io",
 				Version: "v1",
 				Kind:    kind,
 				Plural:  kind + "s",
 			},
-			Serve: &orktypes.ServeConfig{Enabled: true},
+			Serve: &types.ServeConfig{Enabled: true},
 		},
 	})
 }
@@ -71,7 +71,7 @@ func TestResourcesHandler_UnknownKind(t *testing.T) {
 }
 
 func TestResourcesHandler_MethodNotAllowed(t *testing.T) {
-	h := resourcesHandler(nil, &ClusterRegistry{}, registeredKatalog("platform"))
+	h := resourcesHandler(nil, &ClusterRegistry{}, registeredCatalog("platform"))
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/resources/platform/default/x", nil)
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
@@ -91,7 +91,7 @@ func TestResourcesHandler_BadPath(t *testing.T) {
 }
 
 func TestResourcesHandler_DeleteRequiresName(t *testing.T) {
-	h := resourcesHandler(nil, &ClusterRegistry{}, registeredKatalog("thing"))
+	h := resourcesHandler(nil, &ClusterRegistry{}, registeredCatalog("thing"))
 	req := httptest.NewRequest(http.MethodDelete, "/api/v1/resources/thing/default", nil)
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)

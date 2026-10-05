@@ -1,4 +1,4 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: args-demo-suite

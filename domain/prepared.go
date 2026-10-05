@@ -50,7 +50,7 @@ func fromUnstructured(obj Object, out any) error {
 
 // PreparedContext is the runtime-enriched resolver context handed to a reconciler.
 // It is an interface so domain does not import the concrete template resolver package.
-// *orktmpl.Resolver satisfies this interface.
+// *template.Resolver satisfies this interface.
 type PreparedContext interface {
 	// Resolve evaluates a Go template expression against the enriched CR context.
 	Resolve(expr string) (string, error)
@@ -58,7 +58,7 @@ type PreparedContext interface {
 	Data() map[string]interface{}
 }
 
-// PreparedRequest holds the fully prepared reconciliation context built by Kordinator
+// PreparedRequest holds the fully prepared reconciliation context built by Coordinator
 // before the reconciler is invoked. Both typed and declarative reconcilers receive the
 // same PreparedRequest — the difference is how they reconcile, not what they receive.
 type PreparedRequest struct {

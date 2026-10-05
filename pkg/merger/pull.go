@@ -1,17 +1,17 @@
 // pkg/merger/pull.go
 //
-// Exported pull helpers — shared with pkg/motif and any other package
-// that needs to fetch a registry artifact without loading a full Katalog.
+// Exported pull helpers — shared with pkg/module and any other package
+// that needs to fetch a registry artifact without loading a full Catalog.
 //
-// Both PullToDir and PullMotifToDir follow a cache-first strategy for OCI
-// artifacts: ~/.orkestra/registry/<host>/<repo>/<version>/ is checked for a
-// sentinel file (katalog.yaml or motif.yaml) before any network call is made.
+// Both PullToDir and PullModuleToDir follow a cache-first strategy for OCI
+// artifacts: ~/.inrun/registry/<host>/<repo>/<version>/ is checked for a
+// sentinel file (catalog.yaml or module.yaml) before any network call is made.
 // This avoids redundant pulls and removes the need for Docker credential
-// forwarding inside the process — callers should use `ork pull`
+// forwarding inside the process — callers should use `inrun pull`
 // to populate the cache, then rely on these helpers to read from it.
 //
 // Authoring-time only, same as registry.go: depends on its pullPattern /
-// pullMotifFromGit methods, which don't exist in the runtime/gateway
+// pullModuleFromGit methods, which don't exist in the runtime/gateway
 // builds. See pull_stub.go.
 
 //go:build !runtime && !gateway
@@ -22,15 +22,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/orkspace/orkestra/pkg/registry"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/registry"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // noop cleanup used when serving from cache — nothing to remove.
 var noopCleanup = func() {}
 
 // PullToDir returns the directory for a registry pattern artifact (OCI or Git).
-// For OCI artifacts it checks the local cache (~/.orkestra/registry/) first and
+// For OCI artifacts it checks the local cache (~/.inrun/registry/) first and
 // returns the cached directory without a network call when available.
 //
 // Returns (dir, cleanup, err). Always call cleanup() when done —
@@ -45,23 +45,23 @@ func PullToDir(url, version string, oci bool, auth *utils.FileAuth) (dir string,
 	return m.pullPattern(url, version, oci, auth)
 }
 
-// PullMotifToDir returns the directory for a motif artifact (OCI or Git).
-// For OCI artifacts it checks the local cache (~/.orkestra/registry/) first and
+// PullModuleToDir returns the directory for a module artifact (OCI or Git).
+// For OCI artifacts it checks the local cache (~/.inrun/registry/) first and
 // returns the cached directory without a network call when available.
 //
-// For OCI: the entire OCI artifact is pulled — motif.yaml must be at the root.
-// For Git (GitHub/GitLab): only motif.yaml is fetched via raw URL.
-// For generic Git: the repo is cloned and motif.yaml is copied.
+// For OCI: the entire OCI artifact is pulled — module.yaml must be at the root.
+// For Git (GitHub/GitLab): only module.yaml is fetched via raw URL.
+// For generic Git: the repo is cloned and module.yaml is copied.
 //
 // Returns (dir, cleanup, err). Always call cleanup() when done.
-func PullMotifToDir(url, version string, oci bool, auth *utils.FileAuth) (dir string, cleanup func(), err error) {
+func PullModuleToDir(url, version string, oci bool, auth *utils.FileAuth) (dir string, cleanup func(), err error) {
 	if oci {
 		if cached, ok := registry.CachedDir(url, version); ok {
 			return cached, noopCleanup, nil
 		}
 	}
 
-	tmpDir, err := os.MkdirTemp("", "orkestra-motif-*")
+	tmpDir, err := os.MkdirTemp("", "inrun-module-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("creating temp dir: %w", err)
 	}
@@ -71,7 +71,7 @@ func PullMotifToDir(url, version string, oci bool, auth *utils.FileAuth) (dir st
 	if oci {
 		err = m.pullOCIPattern(url, version, tmpDir, auth)
 	} else {
-		err = m.pullMotifFromGit(url, version, tmpDir, auth)
+		err = m.pullModuleFromGit(url, version, tmpDir, auth)
 	}
 	if err != nil {
 		cleanup()

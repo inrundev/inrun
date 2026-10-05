@@ -158,7 +158,7 @@ func RecordCRDActivation(crd, result string) {
 //
 // ─────────────────────────────────────────────────────────────────────────────
 var conversionTotal = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "orkestra_conversion_requests_total",
+	Name: "inrun_conversion_requests_total",
 	Help: "Total number of conversion requests processed",
 }, []string{"kind", "from_version", "to_version", "result"})
 
@@ -173,7 +173,7 @@ func RecordConversion(kind, fromVersion, toVersion, result string) {
 // Helps identify slow conversions that might affect API server performance.
 // ─────────────────────────────────────────────────────────────────────────────
 var conversionDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-	Name:    "orkestra_conversion_duration_seconds",
+	Name:    "inrun_conversion_duration_seconds",
 	Help:    "Duration of conversion requests",
 	Buckets: []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1},
 }, []string{"kind", "from_version", "to_version"})
@@ -189,7 +189,7 @@ func ObserveConversionDuration(kind, fromVersion, toVersion string, seconds floa
 // Helps debug conversion rule misconfigurations.
 // ─────────────────────────────────────────────────────────────────────────────
 var conversionErrors = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "orkestra_conversion_errors_total",
+	Name: "inrun_conversion_errors_total",
 	Help: "Total number of conversion errors",
 }, []string{"kind", "error_type"})
 
@@ -204,7 +204,7 @@ func RecordConversionError(kind, errorType string) {
 // Helps detect conversion backpressure.
 // ─────────────────────────────────────────────────────────────────────────────
 var conversionActiveRequests = promauto.NewGauge(prometheus.GaugeOpts{
-	Name: "orkestra_conversion_active_requests",
+	Name: "inrun_conversion_active_requests",
 	Help: "Number of conversion requests currently being processed",
 })
 
@@ -342,7 +342,7 @@ var admissionMutationAppliedTotal = promauto.NewCounterVec(
 // mutation are measured by the existing controller_reconcile_duration_seconds.
 //
 // Buckets: sub-millisecond to 100ms. Admission webhook timeout is 5 seconds.
-// Rule evaluation should complete in under 1ms for typical Katalog sizes.
+// Rule evaluation should complete in under 1ms for typical Catalog sizes.
 // Alert if p99 exceeds 50ms — that is approaching timeout territory.
 
 var admissionValidationDuration = promauto.NewHistogramVec(

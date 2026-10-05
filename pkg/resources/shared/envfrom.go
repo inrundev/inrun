@@ -3,7 +3,7 @@ package shared
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ExpandEnvFrom converts an EnvFrom declaration into Kubernetes container
@@ -12,7 +12,7 @@ import (
 // set is expanded into individual corev1.EnvVar entries instead — Kubernetes
 // has no way to rename or suffix a key during a blanket envFrom import.
 // Returns (nil, nil) when ef is nil.
-func ExpandEnvFrom(ef *orktypes.EnvFrom) (envFrom []corev1.EnvFromSource, extraEnv []corev1.EnvVar) {
+func ExpandEnvFrom(ef *types.EnvFrom) (envFrom []corev1.EnvFromSource, extraEnv []corev1.EnvVar) {
 	if ef == nil {
 		return nil, nil
 	}

@@ -11,22 +11,22 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/version"
+	"github.com/inrundev/inrun/pkg/version"
 	"github.com/spf13/cobra"
 )
 
 var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
-	Short: "Upgrade the Orkestra CLI to the latest or a specific version",
-	Long: `Upgrade the Orkestra CLI (and optionally the Control Center) to the latest release.
+	Short: "Upgrade the Inrun CLI to the latest or a specific version",
+	Long: `Upgrade the Inrun CLI (and optionally the Console) to the latest release.
 
 Examples:
-  ork upgrade
-  ork upgrade --version v1.4.0
-  ork upgrade -v v1.4.0
-  ork upgrade --runtime-only`,
+  inrun upgrade
+  inrun upgrade --version v1.4.0
+  inrun upgrade -v v1.4.0
+  inrun upgrade --runtime-only`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		check, _ := cmd.Flags().GetBool("check")
 		requestedVersion, _ := cmd.Flags().GetString("version")
@@ -43,10 +43,10 @@ Examples:
 func init() {
 	cmdutil.RootCmd.AddCommand(upgradeCmd)
 
-	upgradeCmd.Flags().Bool("runtime-only", false, "Upgrade only the ork runtime (skip orkcc)")
-	upgradeCmd.Flags().Bool("check", false, "Check if a newer Orkestra version is available")
+	upgradeCmd.Flags().Bool("runtime-only", false, "Upgrade only the inrun runtime (skip inrun-console)")
+	upgradeCmd.Flags().Bool("check", false, "Check if a newer Inrun version is available")
 
-	// Shadow global flags so they don't appear under `ork upgrade`
+	// Shadow global flags so they don't appear under `inrun upgrade`
 	cmdutil.ShadowGlobalCommandFlags(upgradeCmd, "file")
 }
 
@@ -59,7 +59,7 @@ func init() {
 func runUpgrade(requestedVersion string, runtimeOnly bool) error {
 	cmdutil.PrintBanner()
 
-	fmt.Printf("Upgrading Orkestra CLI...\n")
+	fmt.Printf("Upgrading Inrun CLI...\n")
 
 	// Detect platform (linux_amd64, darwin_arm64, etc.)
 	platform, err := detectPlatform()
@@ -76,14 +76,14 @@ func runUpgrade(requestedVersion string, runtimeOnly bool) error {
 	fmt.Printf("→ Target version: %s\n", version)
 	fmt.Printf("→ Platform: %s\n\n", platform)
 
-	// Install ork runtime
-	if err := installBinary("ork", platform, version); err != nil {
+	// Install inrun runtime
+	if err := installBinary("inrun", platform, version); err != nil {
 		return err
 	}
 
-	// Install orkcc unless runtime-only
+	// Install inrun-console unless runtime-only
 	if !runtimeOnly {
-		_ = installBinary("orkcc", platform, version)
+		_ = installBinary("inrun-console", platform, version)
 	}
 
 	fmt.Println()
@@ -140,7 +140,7 @@ func resolveVersion(requested string) (string, error) {
 	}
 
 	// Fetch latest release tag from GitHub API
-	resp, err := http.Get("https://api.github.com/repos/orkspace/orkestra/releases/latest")
+	resp, err := http.Get("https://api.github.com/repos/inrundev/inrun/releases/latest")
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch latest version: %w", err)
 	}
@@ -165,7 +165,7 @@ func resolveVersion(requested string) (string, error) {
 func runUpgradeCheck(requested string) error {
 	cmdutil.PrintBanner()
 
-	fmt.Printf("Checking for Orkestra CLI updates...\n")
+	fmt.Printf("Checking for Inrun CLI updates...\n")
 
 	// Current version from ldflags
 	current := version.Version
@@ -186,7 +186,7 @@ func runUpgradeCheck(requested string) error {
 
 	fmt.Println("⚠ A new version is available!")
 	fmt.Println("Run:")
-	fmt.Println("  ork upgrade")
+	fmt.Println("  inrun upgrade")
 	fmt.Println()
 
 	return nil
@@ -194,7 +194,7 @@ func runUpgradeCheck(requested string) error {
 
 //
 // ──────────────────────────────────────────────────────────────────────────────
-//  Install a Single Binary (ork or orkcc)
+//  Install a Single Binary (inrun or inrun-console)
 // ──────────────────────────────────────────────────────────────────────────────
 //
 
@@ -209,7 +209,7 @@ func installBinary(binary, platform, ver string) error {
 	installPath := filepath.Join(installDir, binary)
 
 	archive := fmt.Sprintf("%s_%s.tar.gz", binary, platform)
-	url := fmt.Sprintf("https://github.com/orkspace/orkestra/releases/download/%s/%s", ver, archive)
+	url := fmt.Sprintf("https://github.com/inrundev/inrun/releases/download/%s/%s", ver, archive)
 
 	fmt.Printf("→ Downloading %s...\n", archive)
 

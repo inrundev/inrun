@@ -5,13 +5,13 @@ expect:
     timeout: 30s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/apply
           method: POST
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
             Content-Type: "application/json"
           body: '{"target":"does-not-exist","name":"gw-bad","workloadType":"app"}'
           outputContains: "unknown target"
@@ -22,8 +22,8 @@ expect:
     timeout: 30s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/apply
           method: POST
@@ -32,19 +32,19 @@ expect:
           body: '{"target":"apifixture","name":"gw-unauth"}'
           statusCode: 401
 
-  # ── control-center restricted operations ───────────────────────────────────
-  - name: control-center denied delete on preview alias (only get/list allowed)
+  # ── console restricted operations ───────────────────────────────────
+  - name: console denied delete on preview alias (only get/list allowed)
     after: cr-applied
     timeout: 30s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/resources/platformresource/team-payments/gw-preview
           method: DELETE
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           statusCode: 403
 
   # ── ci-pipeline token via secretRef ───────────────────────────────────────
@@ -57,8 +57,8 @@ expect:
     timeout: 30s
     commands:
       - run: |
-          CI_TOKEN=$(kubectl get secret fixture-ci-token -n orkestra-system -o jsonpath='{.data.token}' | base64 -d)
-          kubectl port-forward -n orkestra-system svc/orkestra-gateway 18081:8080 &
+          CI_TOKEN=$(kubectl get secret fixture-ci-token -n inrun-system -o jsonpath='{.data.token}' | base64 -d)
+          kubectl port-forward -n inrun-system svc/inrun-gateway 18081:8080 &
           PF_PID=$!
           trap "kill $PF_PID 2>/dev/null" EXIT
           sleep 2
@@ -75,8 +75,8 @@ expect:
     timeout: 30s
     commands:
       - run: |
-          CI_TOKEN=$(kubectl get secret fixture-ci-token -n orkestra-system -o jsonpath='{.data.token}' | base64 -d)
-          kubectl port-forward -n orkestra-system svc/orkestra-gateway 18082:8080 &
+          CI_TOKEN=$(kubectl get secret fixture-ci-token -n inrun-system -o jsonpath='{.data.token}' | base64 -d)
+          kubectl port-forward -n inrun-system svc/inrun-gateway 18082:8080 &
           PF_PID=$!
           trap "kill $PF_PID 2>/dev/null" EXIT
           sleep 2
@@ -93,8 +93,8 @@ expect:
     timeout: 30s
     commands:
       - run: |
-          CI_TOKEN=$(kubectl get secret fixture-ci-token -n orkestra-system -o jsonpath='{.data.token}' | base64 -d)
-          kubectl port-forward -n orkestra-system svc/orkestra-gateway 18083:8080 &
+          CI_TOKEN=$(kubectl get secret fixture-ci-token -n inrun-system -o jsonpath='{.data.token}' | base64 -d)
+          kubectl port-forward -n inrun-system svc/inrun-gateway 18083:8080 &
           PF_PID=$!
           trap "kill $PF_PID 2>/dev/null" EXIT
           sleep 2
@@ -111,8 +111,8 @@ expect:
     timeout: 30s
     commands:
       - run: |
-          CI_TOKEN=$(kubectl get secret fixture-ci-token -n orkestra-system -o jsonpath='{.data.token}' | base64 -d)
-          kubectl port-forward -n orkestra-system svc/orkestra-gateway 18084:8080 &
+          CI_TOKEN=$(kubectl get secret fixture-ci-token -n inrun-system -o jsonpath='{.data.token}' | base64 -d)
+          kubectl port-forward -n inrun-system svc/inrun-gateway 18084:8080 &
           PF_PID=$!
           trap "kill $PF_PID 2>/dev/null" EXIT
           sleep 2

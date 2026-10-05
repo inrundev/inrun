@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/runtime/queue"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/runtime/queue"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -81,8 +81,8 @@ type Factory struct {
 	// Checked in handleEvent before enqueue — read lock only on the hot path.
 	namespaceFilters map[string]*NamespaceFilter
 
-	// katalog is the domain.Katalog with useful interface methods for the informer
-	katalog domain.Katalog
+	// catalog is the domain.Catalog with useful interface methods for the informer
+	catalog domain.Catalog
 	cs      kubernetes.Interface
 }
 
@@ -91,8 +91,8 @@ type FactoryOptions struct {
 	QueueRegistry *queue.QueueRegistry
 	DefaultWq     *queue.Workqueue
 	Scheme        *runtime.Scheme
-	Konfig        *konfig.Konfig
-	Katalog       domain.Katalog
+	Config        *config.Config
+	Catalog       domain.Catalog
 	ClientSet     kubernetes.Interface
 }
 
@@ -102,10 +102,10 @@ func SharedInformerFactory(restConfig *rest.Config, opts FactoryOptions) *Factor
 		restConfig:       restConfig,
 		queueRegistry:    opts.QueueRegistry,
 		defaultWq:        opts.DefaultWq,
-		namespace:        opts.Konfig.Cluster().Namespace(),
+		namespace:        opts.Config.Cluster().Namespace(),
 		scheme:           opts.Scheme,
-		defaultResync:    opts.Konfig.Katalog().DefaultResync(),
-		katalog:          opts.Katalog,
+		defaultResync:    opts.Config.Catalog().DefaultResync(),
+		catalog:          opts.Catalog,
 		cs:               opts.ClientSet,
 		informers:        make(map[string]*InformerEntry),
 		missing:          make(map[string]*InformerEntry),

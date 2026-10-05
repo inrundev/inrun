@@ -6,13 +6,13 @@ One `Website` CR becomes a Deployment and a Service, owned by the CR, with
 ### 1. Validate
 
 ```bash
-ork validate
+inrun validate
 ```
 
 ### 2. Run
 
 ```bash
-ork run
+inrun
 ```
 
 ### 3. Check the status
@@ -48,5 +48,5 @@ chmod +x cleanup.sh && ./cleanup.sh
 Runs the same checks in a kind cluster.
 
 ```bash
-ork e2e
+inrun e2e
 ```

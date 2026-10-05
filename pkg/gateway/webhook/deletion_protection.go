@@ -1,10 +1,10 @@
 // webhook/deletion_protection.go — /deletion-protection webhook handler.
 //
-// Registered only when security.deletionProtection.enabled: true in the Katalog.
-// Intercepts DELETE operations on CRDs owned by this operator and Orkestra's
+// Registered only when security.deletionProtection.enabled: true in the Catalog.
+// Intercepts DELETE operations on CRDs owned by this operator and Inrun's
 // own resources (deployment, service, ingress, webhook configurations).
 //
-// failurePolicy: Fail — if Orkestra is unreachable, DELETE is blocked.
+// failurePolicy: Fail — if Inrun is unreachable, DELETE is blocked.
 // To decommission: set deletionProtection.enabled: false, redeploy, then delete.
 package webhook
 
@@ -14,8 +14,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/metrics"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/metrics"
 )
 
 func (ws *WebhookServer) deletionProtectionHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,10 +64,10 @@ func (ws *WebhookServer) deletionProtectionHandler(w http.ResponseWriter, r *htt
 			Allowed: false,
 			Status: &AdmissionStatus{
 				Message: fmt.Sprintf(
-					"\n\n[Orkestra Security] The deletion-protection webhook \"%s\" is itself protected.\n\n"+
+					"\n\n[Inrun Security] The deletion-protection webhook \"%s\" is itself protected.\n\n"+
 						"To disable deletion protection entirely:\n"+
-						"- Set security.deletionProtection.enabled: false in the Katalog\n"+
-						"- Redeploy Orkestra Gateway, then delete the webhook.\n\n",
+						"- Set security.deletionProtection.enabled: false in the Catalog\n"+
+						"- Redeploy Inrun Gateway, then delete the webhook.\n\n",
 					deletionProtectionWebhookConfigName,
 				),
 				Code: 403,
@@ -98,10 +98,10 @@ func (ws *WebhookServer) deletionProtectionHandler(w http.ResponseWriter, r *htt
 				Allowed: false,
 				Status: &AdmissionStatus{
 					Message: fmt.Sprintf(
-						"\n\n[Orkestra Security] CRD %q is protected from deletion.\n\n"+
+						"\n\n[Inrun Security] CRD %q is protected from deletion.\n\n"+
 							"To delete it:\n"+
-							"- Set security.deletionProtection.enabled: false in the Katalog\n"+
-							"- Redeploy Orkestra Gateway, then delete the CRD.\n\n",
+							"- Set security.deletionProtection.enabled: false in the Catalog\n"+
+							"- Redeploy Inrun Gateway, then delete the CRD.\n\n",
 						req.Name,
 					),
 					Code: 403,
@@ -116,16 +116,16 @@ func (ws *WebhookServer) deletionProtectionHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Non-CRD Orkestra resource (Deployment, Service, etc.) — always block.
+	// Non-CRD Inrun resource (Deployment, Service, etc.) — always block.
 	// Counted against infraProtStats because these have no CRD GVR.
 	logger.Info().
 		Str("resource", req.Resource.Resource).
 		Str("name", req.Name).
 		Str("namespace", req.Namespace).
 		Str("uid", req.UID).
-		Msgf("%s: blocking Orkestra resource deletion", deletionProtection)
+		Msgf("%s: blocking Inrun resource deletion", deletionProtection)
 
-	metrics.RecordDeletionProtectionBlocked("orkestra-" + req.Resource.Resource)
+	metrics.RecordDeletionProtectionBlocked("inrun-" + req.Resource.Resource)
 	ws.infraProtStats.RecordBlocked()
 
 	kind := req.Kind.Kind
@@ -133,8 +133,8 @@ func (ws *WebhookServer) deletionProtectionHandler(w http.ResponseWriter, r *htt
 	ns := req.Namespace
 
 	footer := "\n\nTo remove protection:\n" +
-		"- Set security.deletionProtection.enabled: false in the Katalog.\n" +
-		"- Redeploy Orkestra Gateway.\n" +
+		"- Set security.deletionProtection.enabled: false in the Catalog.\n" +
+		"- Redeploy Inrun Gateway.\n" +
 		"- Retry the deletion."
 
 	var header string
@@ -144,7 +144,7 @@ func (ws *WebhookServer) deletionProtectionHandler(w http.ResponseWriter, r *htt
 		header = fmt.Sprintf("The %s %q in namespace %q is protected from deletion.", kind, name, ns)
 	}
 
-	message := "\n\n[Orkestra Security] " + header + footer
+	message := "\n\n[Inrun Security] " + header + footer
 
 	ws.writeAdmissionResponse(w, review.APIVersion, review.Kind, &AdmissionResponse{
 		UID:     req.UID,

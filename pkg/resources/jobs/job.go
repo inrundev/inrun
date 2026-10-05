@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -47,17 +47,17 @@ type ResolvedJobSpec struct {
 	ImagePullSecrets []string
 
 	// Resources — CPU and memory requests/limits. nil means no limits set.
-	Resources *orktypes.ResourceRequirements
+	Resources *types.ResourceRequirements
 
 	// SecurityContext — container-level security settings.
-	SecurityContext *orktypes.ContainerSecurityContext
+	SecurityContext *types.ContainerSecurityContext
 
 	// PodSecurity — pod-level security settings.
-	PodSecurity *orktypes.PodSecurityContext
+	PodSecurity *types.PodSecurityContext
 
 	// Volumes / VolumeMounts — pod volumes and container mounts.
-	Volumes      []orktypes.VolumeSource
-	VolumeMounts []orktypes.VolumeMount
+	Volumes      []types.VolumeSource
+	VolumeMounts []types.VolumeMount
 
 	// Sleep injects an artificial delay into the reconcile of this resource.
 	// Useful for autoscale testing, latency simulation, and chaos engineering.
@@ -153,7 +153,7 @@ func Delete(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 
 // Resolve builds a ResolvedJobSpec from a JobTemplateSource.
 // Template expressions must already be evaluated by template.Resolver before calling.
-func Resolve(src orktypes.JobTemplateSource, backoffLimit int, ownerName string, reg *orktypes.ProfileRegistry) ResolvedJobSpec {
+func Resolve(src types.JobTemplateSource, backoffLimit int, ownerName string, reg *types.ProfileRegistry) ResolvedJobSpec {
 	spec := ResolvedJobSpec{
 		Name:            src.Name,
 		Namespace:       src.Namespace,
@@ -190,7 +190,7 @@ func Resolve(src orktypes.JobTemplateSource, backoffLimit int, ownerName string,
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 func buildJob(owner domain.Object, spec ResolvedJobSpec, namespace string, ownerRef bool) *batchv1.Job {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 	backoffLimit := int32(spec.BackoffLimit)
 
 	container := corev1.Container{

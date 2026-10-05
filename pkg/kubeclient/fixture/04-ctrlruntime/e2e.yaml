@@ -1,22 +1,22 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: webapp-ctrlruntime-e2e
   description: >
-    Run with: ork e2e
+    Run with: inrun e2e
 
     Verifies that a controller-runtime reconciler plugged in via
-    domain.ReconcilerFrom and orkadapter.ToClient reconciles a WebApp
+    domain.ReconcilerFrom and adapter.ToClient reconciles a WebApp
     into a live Deployment end-to-end on a real cluster.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd-webapp.yaml
   cr: ./cr-webapp.yaml
 
   cluster:
     provider: kind
-    name: ork-ctrlruntime
+    name: inrun-ctrlruntime
     reuse: false
 
   expect:

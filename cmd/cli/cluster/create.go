@@ -5,22 +5,22 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/tools/cluster"
+	"github.com/inrundev/inrun/pkg/tools/cluster"
 	"github.com/spf13/cobra"
 )
 
 var createClusterCmd = &cobra.Command{
 	Use:   "cluster",
-	Short: "Create a local kind cluster for Orkestra development or testing",
+	Short: "Create a local kind cluster for Inrun development or testing",
 	Long: `Creates a local kind cluster and switches kubectl to its context.
 Downloads kind automatically if not found in PATH.
 
-  ork create cluster
-  ork create cluster --name ork-e2e
-  ork create cluster --name ork --count 3     # creates ork-1, ork-2, ork-3
-  ork create cluster --provider kind --name my-cluster`,
+  inrun create cluster
+  inrun create cluster --name inrun-e2e
+  inrun create cluster --name inrun --count 3     # creates inrun-1, inrun-2, inrun-3
+  inrun create cluster --provider kind --name my-cluster`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
 		provider, _ := cmd.Flags().GetString("provider")
@@ -59,7 +59,7 @@ func init() {
 	cmdutil.RootCmd.AddCommand(cmdutil.CreateCmd)
 	cmdutil.CreateCmd.AddCommand(createClusterCmd)
 
-	createClusterCmd.Flags().StringP("name", "n", "ork-playground", "Cluster name")
+	createClusterCmd.Flags().StringP("name", "n", "inrun-playground", "Cluster name")
 	createClusterCmd.Flags().StringP("provider", "p", "kind", "Cluster provider (only 'kind' is supported)")
 	createClusterCmd.Flags().IntP("workers", "w", 0, "Number of kind worker nodes (default: 0, control-plane only)")
 	createClusterCmd.Flags().StringP("version", "v", "", "kind version to use (default: "+cluster.DefaultKindVersion+")")

@@ -3,12 +3,12 @@ package profiles_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func TestNetworkPolicyProfiles(t *testing.T) {
-	var empty *orktypes.ProfileRegistry
+	var empty *types.ProfileRegistry
 
 	tests := []struct {
 		name          string
@@ -56,7 +56,7 @@ func TestNetworkPolicyProfiles(t *testing.T) {
 }
 
 func TestNetworkPolicyCaseInsensitive(t *testing.T) {
-	var empty *orktypes.ProfileRegistry
+	var empty *types.ProfileRegistry
 	for _, name := range []string{"DENY-ALL", "Deny-All-Ingress", "ALLOW-DNS-EGRESS"} {
 		_, err := profiles.ApplyNetworkPolicyProfile(name, empty)
 		if err != nil {
@@ -66,13 +66,13 @@ func TestNetworkPolicyCaseInsensitive(t *testing.T) {
 }
 
 func TestNetworkPolicyProfileUserDefined(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		NetworkPolicies: []orktypes.NetworkPolicyProfileDef{
+	reg := types.ProfileRegistry{
+		NetworkPolicies: []types.NetworkPolicyProfileDef{
 			{
 				Name:        "allow-internal",
 				PolicyTypes: []string{"Ingress"},
-				Ingress: []orktypes.NetworkPolicyIngressRule{
-					{From: []orktypes.NetworkPolicyPeer{{PodSelector: map[string]string{"app": "frontend"}}}},
+				Ingress: []types.NetworkPolicyIngressRule{
+					{From: []types.NetworkPolicyPeer{{PodSelector: map[string]string{"app": "frontend"}}}},
 				},
 			},
 		},

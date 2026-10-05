@@ -3,7 +3,7 @@ package types
 
 // ── ConfigMap ─────────────────────────────────────────────────────────────────
 
-// ConfigMapTemplateSource declares one ConfigMap to be managed by Orkestra.
+// ConfigMapTemplateSource declares one ConfigMap to be managed by Inrun.
 //
 // ConfigMap data values are static — template expressions are not evaluated
 // in ConfigMap data entries. For dynamic configuration, use a custom Go hook.
@@ -36,7 +36,7 @@ type ConfigMapTemplateSource struct {
 	// Labels — applied to ConfigMap metadata. Values support template expressions.
 	Labels Labels `yaml:"labels,omitempty" json:"labels,omitempty" validate:"omitempty"`
 	// FromConfigMap — name of an existing ConfigMap to copy data from.
-	// Orkestra reads this at reconcile time — copies stay in sync with the source.
+	// Inrun reads this at reconcile time — copies stay in sync with the source.
 	FromConfigMap string `yaml:"fromConfigMap,omitempty" json:"fromConfigMap,omitempty" validate:"omitempty"`
 
 	// FromNamespace — namespace where FromConfigMap lives.

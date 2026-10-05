@@ -1,4 +1,4 @@
-apiVersion: integration.orkestra.io/v1
+apiVersion: integration.inrun.dev/v1
 kind: Probe
 metadata:
   name: test-probe

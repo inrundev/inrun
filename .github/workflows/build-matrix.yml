@@ -55,10 +55,10 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            dist/ork
-            dist/ork.exe
-            dist/orkcc
-            dist/orkcc.exe
+            dist/inrun
+            dist/inrun.exe
+            dist/inrun-console
+            dist/inrun-console.exe
           key: binaries-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('go.sum', '**/*.go', 'cmd/**/*.go') }}
 
       # Record cache miss for this matrix entry
@@ -71,11 +71,11 @@ jobs:
       - name: Set binary names
         run: |
           if [ "${{ matrix.goos }}" = "windows" ]; then
-            echo "RUNTIME=ork.exe" >> $GITHUB_ENV
-            echo "CONTROL=orkcc.exe" >> $GITHUB_ENV
+            echo "RUNTIME=inrun.exe" >> $GITHUB_ENV
+            echo "CONTROL=inrun-console.exe" >> $GITHUB_ENV
           else
-            echo "RUNTIME=ork" >> $GITHUB_ENV
-            echo "CONTROL=orkcc" >> $GITHUB_ENV
+            echo "RUNTIME=inrun" >> $GITHUB_ENV
+            echo "CONTROL=inrun-console" >> $GITHUB_ENV
           fi
 
       - name: Build runtime binary
@@ -90,45 +90,45 @@ jobs:
           go build \
             -trimpath \
             -ldflags="-s -w \
-              -X github.com/orkspace/orkestra/pkg/version.Version=${{ github.ref_name }} \
-              -X github.com/orkspace/orkestra/pkg/version.Commit=${{ github.sha }} \
-              -X github.com/orkspace/orkestra/pkg/version.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              -X github.com/inrundev/inrun/pkg/version.Version=${{ github.ref_name }} \
+              -X github.com/inrundev/inrun/pkg/version.Commit=${{ github.sha }} \
+              -X github.com/inrundev/inrun/pkg/version.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             -o dist/${{ env.RUNTIME }} \
-            ./cmd/orkestra/
+            ./cmd/inrun/
           echo "✅ Runtime built: dist/${{ env.RUNTIME }}"
 
-      - name: Build control center binary
+      - name: Build console binary
         if: steps.cache-binaries.outputs.cache-hit != 'true'
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
           CONTROL: ${{ env.CONTROL }}
-        working-directory: cmd/controlcenter
+        working-directory: cmd/console
         run: |
           go build \
             -trimpath \
             -ldflags="-s -w \
-              -X github.com/orkspace/orkestra-cc/version.Version=${{ github.ref_name }} \
-              -X github.com/orkspace/orkestra-cc/version.Commit=${{ github.sha }} \
-              -X github.com/orkspace/orkestra-cc/version.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              -X github.com/inrundev/inrun/console/version.Version=${{ github.ref_name }} \
+              -X github.com/inrundev/inrun/console/version.Commit=${{ github.sha }} \
+              -X github.com/inrundev/inrun/console/version.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             -o ../../dist/${{ env.CONTROL }} .
-          echo "✅ Control Center built: dist/${{ env.CONTROL }}"
+          echo "✅ Console built: dist/${{ env.CONTROL }}"
 
       - name: Package runtime tarball
         env:
           RUNTIME: ${{ env.RUNTIME }}
         run: |
-          ARCHIVE="ork_${{ matrix.os }}_${{ matrix.arch }}.tar.gz"
-          tar -czf "dist/${ARCHIVE}" -C dist "${{ env.RUNTIME }}" -C "${{ github.workspace }}" README.md LICENSE
+          ARCHIVE="inrun_${{ matrix.os }}_${{ matrix.arch }}.tar.gz"
+          tar -czf "dist/${ARCHIVE}" -C dist "${{ env.RUNTIME }}" -C "${{ github.winrundev }}" README.md LICENSE
           echo "✅ Archive: dist/${ARCHIVE}"
 
-      - name: Package control center tarball
+      - name: Package console tarball
         env:
           CONTROL: ${{ env.CONTROL }}
         run: |
-          ARCHIVE="orkcc_${{ matrix.os }}_${{ matrix.arch }}.tar.gz"
-          tar -czf "dist/${ARCHIVE}" -C dist "${{ env.CONTROL }}" -C "${{ github.workspace }}" README.md LICENSE
+          ARCHIVE="inrun-console_${{ matrix.os }}_${{ matrix.arch }}.tar.gz"
+          tar -czf "dist/${ARCHIVE}" -C dist "${{ env.CONTROL }}" -C "${{ github.winrundev }}" README.md LICENSE
           echo "✅ Archive: dist/${ARCHIVE}"
 
       - name: Package Windows ZIP (optional)
@@ -137,34 +137,34 @@ jobs:
           RUNTIME: ${{ env.RUNTIME }}
           CONTROL: ${{ env.CONTROL }}
         run: |
-          zip -j "dist/ork_${{ matrix.os }}_${{ matrix.arch }}.zip" "dist/${{ env.RUNTIME }}"
-          zip -j "dist/orkcc_${{ matrix.os }}_${{ matrix.arch }}.zip" "dist/${{ env.CONTROL }}"
-          zip -u "dist/ork_${{ matrix.os }}_${{ matrix.arch }}.zip" README.md LICENSE
-          zip -u "dist/orkcc_${{ matrix.os }}_${{ matrix.arch }}.zip" README.md LICENSE
+          zip -j "dist/inrun_${{ matrix.os }}_${{ matrix.arch }}.zip" "dist/${{ env.RUNTIME }}"
+          zip -j "dist/inrun-console_${{ matrix.os }}_${{ matrix.arch }}.zip" "dist/${{ env.CONTROL }}"
+          zip -u "dist/inrun_${{ matrix.os }}_${{ matrix.arch }}.zip" README.md LICENSE
+          zip -u "dist/inrun-console_${{ matrix.os }}_${{ matrix.arch }}.zip" README.md LICENSE
           echo "✅ ZIP packages created"
 
       - name: Upload runtime artifact (tar.gz)
         uses: actions/upload-artifact@v7
         with:
-          name: ork_${{ matrix.os }}_${{ matrix.arch }}
-          path: dist/ork_${{ matrix.os }}_${{ matrix.arch }}.tar.gz
+          name: inrun_${{ matrix.os }}_${{ matrix.arch }}
+          path: dist/inrun_${{ matrix.os }}_${{ matrix.arch }}.tar.gz
           retention-days: 1
 
-      - name: Upload control center artifact (tar.gz)
+      - name: Upload console artifact (tar.gz)
         uses: actions/upload-artifact@v7
         with:
-          name: orkcc_${{ matrix.os }}_${{ matrix.arch }}
-          path: dist/orkcc_${{ matrix.os }}_${{ matrix.arch }}.tar.gz
+          name: inrun-console_${{ matrix.os }}_${{ matrix.arch }}
+          path: dist/inrun-console_${{ matrix.os }}_${{ matrix.arch }}.tar.gz
           retention-days: 1
 
       - name: Upload Windows ZIP artifacts
         if: matrix.goos == 'windows'
         uses: actions/upload-artifact@v7
         with:
-          name: ork_windows_amd64_zip
+          name: inrun_windows_amd64_zip
           path: |
-            dist/ork_windows_amd64.zip
-            dist/orkcc_windows_amd64.zip
+            dist/inrun_windows_amd64.zip
+            dist/inrun-console_windows_amd64.zip
           retention-days: 1
 
       # Upload cache miss flag for this matrix entry (only if miss)

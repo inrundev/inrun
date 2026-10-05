@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	Group    = "migration.demo.orkestra.io"
+	Group    = "migration.demo.inrun.dev"
 	Version  = "v1alpha1"
 	Kind     = "WebApp"
 	Resource = "webapps"

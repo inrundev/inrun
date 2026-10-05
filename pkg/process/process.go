@@ -9,17 +9,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 const eventHandler = "event handler"
 
 type Manager struct {
-	komponents      []domain.Komponent
+	components      []domain.Component
 	postStart       []postStart
-	shutdownHooks   []func(context.Context) // called after all komponents stop
+	shutdownHooks   []func(context.Context) // called after all components stop
 	timeout         time.Duration
 	logLevel        string
 	done            chan struct{}
@@ -28,7 +28,7 @@ type Manager struct {
 
 type postStart struct {
 	hook func(context.Context)
-	comp domain.Komponent
+	comp domain.Component
 }
 
 func New(instance string, timeout time.Duration, logLevel string) *Manager {
@@ -40,7 +40,7 @@ func New(instance string, timeout time.Duration, logLevel string) *Manager {
 	}
 }
 
-// OnShutdown registers a function to be called after all komponents have
+// OnShutdown registers a function to be called after all components have
 // stopped, within the graceful shutdown timeout.
 //
 // Use this for cleanup that must happen after the operator stops processing
@@ -60,8 +60,8 @@ func (o *Manager) Start(ctx context.Context) error {
 	mCtx, mCancel := context.WithCancel(ctx)
 	defer mCancel()
 
-	logger.Info().Msgf("Starting %s komponents...", o.runningInstance)
-	for _, comp := range o.komponents {
+	logger.Info().Msgf("Starting %s components...", o.runningInstance)
+	for _, comp := range o.components {
 		name := comp.Name()
 
 		logger.Debug().Msgf("[%s] starting...", name)
@@ -79,15 +79,15 @@ func (o *Manager) Start(ctx context.Context) error {
 		go p.hook(mCtx)
 	}
 
-	logger.Info().Msgf("%s All komponents started successfully", utils.SuccessMarkPlain())
+	logger.Info().Msgf("%s All components started successfully", utils.SuccessMarkPlain())
 
 	if strings.ToLower(o.logLevel) == "debug" {
-		// Display started komponents
+		// Display started components
 		fmt.Println("===============================")
-		fmt.Println("STARTED KOMPONENTS:")
+		fmt.Println("STARTED COMPONENTS:")
 
 		n := 1
-		for _, comp := range o.komponents {
+		for _, comp := range o.components {
 			fmt.Printf("%d. %s\n", n, comp.Name())
 			n++
 		}
@@ -100,7 +100,7 @@ func (o *Manager) Start(ctx context.Context) error {
 
 	}
 
-	logger.Info().Msgf("%s Orkestra %s is running...", utils.SuccessMarkPlain(), o.runningInstance)
+	logger.Info().Msgf("%s Inrun %s is running...", utils.SuccessMarkPlain(), o.runningInstance)
 
 	o.gracefulShutdown(mCtx, mCancel)
 	return nil
@@ -122,8 +122,8 @@ func (o *Manager) gracefulShutdown(ctx context.Context, cancel context.CancelFun
 		)
 		defer shutdownCancel()
 
-		// Stop komponents in reverse start order
-		for _, comp := range utils.Reversed(o.komponents) {
+		// Stop components in reverse start order
+		for _, comp := range utils.Reversed(o.components) {
 			// Respect the timeout between iterations
 			select {
 			case <-shutdownCtx.Done():
@@ -144,12 +144,12 @@ func (o *Manager) gracefulShutdown(ctx context.Context, cancel context.CancelFun
 		}
 
 		// Event handler always last
-		if ev := o.GetKomponent(eventHandler); ev != nil {
+		if ev := o.GetComponent(eventHandler); ev != nil {
 			ev.Shutdown(shutdownCtx)
 			logger.Warn().Msgf("%s: offline", ev.Name())
 		}
 
-		// Run shutdown hooks after all komponents have stopped
+		// Run shutdown hooks after all components have stopped
 		// Hooks run in registration order — RBAC cleanup, webhook removal, etc.
 		for i, hook := range o.shutdownHooks {
 			select {
@@ -164,7 +164,7 @@ func (o *Manager) gracefulShutdown(ctx context.Context, cancel context.CancelFun
 			hook(shutdownCtx)
 		}
 
-		logger.Warn().Msg("all komponents shut down gracefully")
+		logger.Warn().Msg("all components shut down gracefully")
 		close(o.done)
 
 	case <-ctx.Done():
@@ -172,30 +172,30 @@ func (o *Manager) gracefulShutdown(ctx context.Context, cancel context.CancelFun
 	}
 }
 
-// Register all komponents
-func (o *Manager) Register(c []domain.Komponent) {
-	logger.Info().Msgf("Registering orkestra %s komponents...", o.runningInstance)
+// Register all components
+func (o *Manager) Register(c []domain.Component) {
+	logger.Info().Msgf("Registering inrun %s components...", o.runningInstance)
 	for _, comp := range c {
-		o.komponents = append(o.komponents, comp)
+		o.components = append(o.components, comp)
 		logger.Info().Msgf("[%s] registered", comp.Name())
 	}
-	logger.Info().Msgf("%s All komponents registered successfully", utils.SuccessMarkPlain())
+	logger.Info().Msgf("%s All components registered successfully", utils.SuccessMarkPlain())
 
 	if strings.ToLower(o.logLevel) == "debug" {
-		// Display registered komponents
+		// Display registered components
 		fmt.Println("==================================")
-		fmt.Println("REGISTERED KOMPONENTS:")
+		fmt.Println("REGISTERED COMPONENTS:")
 		n := 1
-		for _, comp := range o.komponents {
+		for _, comp := range o.components {
 			fmt.Printf("%d. %s\n", n, comp.Name())
 			n++
 		}
 	}
 }
 
-// GetKomponent returns a komponent if present
-func (o *Manager) GetKomponent(name string) domain.Komponent {
-	for _, comp := range o.komponents {
+// GetComponent returns a component if present
+func (o *Manager) GetComponent(name string) domain.Component {
+	for _, comp := range o.components {
 		if comp.Name() == name {
 			return comp
 		}
@@ -204,7 +204,7 @@ func (o *Manager) GetKomponent(name string) domain.Komponent {
 }
 
 // AddPostStartHook: for services that need to start after the manager has started
-func (o *Manager) AddPostStartHook(comp domain.Komponent, hook func(context.Context)) {
+func (o *Manager) AddPostStartHook(comp domain.Component, hook func(context.Context)) {
 	o.postStart = append(o.postStart, postStart{
 		hook: hook,
 		comp: comp,

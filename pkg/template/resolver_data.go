@@ -22,7 +22,7 @@
 package template
 
 import (
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ func (r *Resolver) OwnerNamespace() string {
 //   - <as>    — the name declared in forEach.as, e.g. "region", "namespace"
 //
 // Both resolve to the same value. "item" is the canonical accessor;
-// <as> is the semantic name that makes the Katalog more readable:
+// <as> is the semantic name that makes the Catalog more readable:
 //
 //	forEach:
 //	  field: spec.regions
@@ -121,7 +121,7 @@ func (r *Resolver) WithItemAndValue(key interface{}, value interface{}, as strin
 // WithExternal returns a new Resolver with HTTP call results injected under
 // the "external" key. Used after runExternal completes.
 //
-// Each call result is keyed by the call's name from the Katalog:
+// Each call result is keyed by the call's name from the Catalog:
 //
 //	external:
 //	  - name: healthCheck
@@ -193,7 +193,7 @@ func (r *Resolver) WithCross(data map[string]interface{}) *Resolver {
 //	  databaseReady:
 //	    reason: DatabaseReady
 //	    type: Normal
-//	    reportingController: database.orkestra.io
+//	    reportingController: database.inrun.dev
 //
 // Results are accessible in subsequent expressions and when: conditions:
 //
@@ -279,10 +279,10 @@ func (r *Resolver) WithHealth(health map[string]interface{}) *Resolver {
 // injected under the "_uniquenessChecker" key — the string must match
 // pkg/types' uniquenessCheckerKey constant (same convention as _cronWindows,
 // see when.go). Not template-visible; read internally by operator: unique in
-// both validation.rules and when:/or: (see orktypes.UniquenessChecker).
+// both validation.rules and when:/or: (see types.UniquenessChecker).
 // Only the reconciler calls this, so the operator is enforced at reconcile
 // time only.
-func (r *Resolver) WithUniquenessChecker(checker orktypes.UniquenessChecker) *Resolver {
+func (r *Resolver) WithUniquenessChecker(checker types.UniquenessChecker) *Resolver {
 	if checker == nil {
 		return r
 	}

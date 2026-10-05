@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -101,7 +101,7 @@ func (k *Kubeclient) PatchStatus(
 // The conditions list is always written in full — buildReadyCondition produces
 // a complete conditions entry. For a simple "one condition" status model this
 // is equivalent to a replace. For CRDs that manage multiple conditions via hooks,
-// only the Ready condition is written by Orkestra; others are left untouched
+// only the Ready condition is written by Inrun; others are left untouched
 // because they are not present in the patch at all.
 //
 // If a future Layer requires strategic merge patch semantics (e.g. merging

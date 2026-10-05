@@ -1,9 +1,9 @@
-module github.com/orkspace/orkestra-args-hooks
+module github.com/inrundev/inrun-args-hooks
 
 go 1.26.6
 
 require (
-	github.com/orkspace/orkestra v0.0.0
+	github.com/inrundev/inrun v0.0.0
 	k8s.io/apimachinery v0.36.1
 )
 
@@ -216,4 +216,4 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace github.com/orkspace/orkestra => ../../../..
+replace github.com/inrundev/inrun => ../../../..

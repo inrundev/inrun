@@ -1,8 +1,8 @@
 package intent
 
 import (
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/utils/common"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/utils/common"
 )
 
 // Target extracts the effective target from a CR's annotations.
@@ -29,7 +29,7 @@ func Target(annotations map[string]string) string {
 }
 
 // FromObject extracts the raw intent payload from the
-// orkestra.orkspace.io/serve-intent annotation on a CR object map.
+// inrun.dev/serve-intent annotation on a CR object map.
 // Returns nil when the annotation is absent or unparseable.
 // Used by both the webhook and the reconciler to inject .request into
 // the resolver so validation rules can reference intent-vocabulary fields.

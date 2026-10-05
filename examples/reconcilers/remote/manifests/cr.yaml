@@ -1,4 +1,4 @@
-apiVersion: migration.demo.orkestra.io/v1alpha1
+apiVersion: migration.demo.inrun.dev/v1alpha1
 kind: WebApp
 metadata:
   name: my-webapp

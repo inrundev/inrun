@@ -6,9 +6,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ClusterCheckResult holds the outcome for a single gateway cluster.
@@ -43,8 +43,8 @@ func (r ClusterCheckResult) Failed() bool {
 // produce — callers may range over them directly.
 func CheckClusters(
 	ctx context.Context,
-	k *katalog.Katalog,
-	clusters map[string]orktypes.GatewayClusterConfig,
+	k *catalog.Catalog,
+	clusters map[string]types.GatewayClusterConfig,
 	localKube kubeclient.Interface,
 	ownNS string,
 ) []ClusterCheckResult {

@@ -13,6 +13,6 @@ Key points demonstrated:
 - The primary CR's reconciler runs as normal; no Go code is needed to wire the watch.
 
 ```bash
-ork validate    pkg/runtime/informer/fixture/watch/katalog.yaml
-ork e2e      -f pkg/runtime/informer/fixture/watch/e2e.yaml
+inrun validate    pkg/runtime/informer/fixture/watch/catalog.yaml
+inrun e2e      -f pkg/runtime/informer/fixture/watch/e2e.yaml
 ```

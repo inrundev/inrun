@@ -9,15 +9,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var _ domain.Komponent = (*HealthServer)(nil)
+var _ domain.Component = (*HealthServer)(nil)
 
-// HealthServer serves Orkestra's HTTP health, readiness, and metrics endpoints.
+// HealthServer serves Inrun's HTTP health, readiness, and metrics endpoints.
 // It is intentionally minimal — all webhook and admission logic lives in pkg/webhook.
 //
 // Routes are registered before Start() via Register(). Start() binds the HTTP port
@@ -25,7 +25,7 @@ var _ domain.Komponent = (*HealthServer)(nil)
 type HealthServer struct {
 	name string
 
-	// HTTP server for health, readiness, metrics, and Katalog API routes.
+	// HTTP server for health, readiness, metrics, and Catalog API routes.
 	server *http.Server
 	mux    *http.ServeMux
 
@@ -43,12 +43,12 @@ type HealthServer struct {
 
 // NewHealthServer constructs a HealthServer. No I/O is performed.
 // Routes must be registered via Register() before calling Start().
-func NewHealthServer(kfg *konfig.Konfig) *HealthServer {
+func NewHealthServer(kfg *config.Config) *HealthServer {
 	hs := &HealthServer{
 		name:     "health server",
-		client:   kfg.Ork().Name(),
+		client:   kfg.Inrun().Name(),
 		httpPort: kfg.Health().Port(),
-		logLevel: kfg.Ork().LogLevel(),
+		logLevel: kfg.Inrun().LogLevel(),
 		mux:      http.NewServeMux(),
 	}
 	hs.ready.Store(false)

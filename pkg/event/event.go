@@ -8,11 +8,11 @@ import (
 	"sync"
 
 	"errors"
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -26,7 +26,7 @@ type Recorder interface {
 }
 
 // Discard returns a Recorder that silently drops all events.
-// Passed to constructors by ork simulate so ev is always non-nil.
+// Passed to constructors by inrun simulate so ev is always non-nil.
 func Discard() Recorder { return discardEvent{} }
 
 type discardEvent struct{}
@@ -39,14 +39,14 @@ type Event struct {
 	scheme      *runtime.Scheme
 	broadcaster record.EventBroadcaster
 	recorder    record.EventRecorder
-	komponent   string
+	component   string
 	stopped     bool           // Track state
 	wg          sync.WaitGroup // Track in-flight events
 	mu          sync.Mutex     // Protect shutdown
 	started     bool
 }
 
-var _ domain.Komponent = (*Event)(nil)
+var _ domain.Component = (*Event)(nil)
 
 func NewEvent(kube *kubeclient.Kubeclient) *Event {
 	if kube.Scheme() == nil {
@@ -55,7 +55,7 @@ func NewEvent(kube *kubeclient.Kubeclient) *Event {
 
 	return &Event{
 		name:      "event handler",
-		komponent: "orkestra runtime",
+		component: "inrun runtime",
 		kube:      kube,
 		scheme:    kube.Scheme(),
 	}
@@ -78,7 +78,7 @@ func (e *Event) Start(ctx context.Context) error {
 	e.recorder = e.broadcaster.NewRecorder(
 		e.scheme,
 		corev1.EventSource{
-			Component: e.komponent,
+			Component: e.component,
 		})
 
 	e.started = true

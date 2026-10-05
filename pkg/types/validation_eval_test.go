@@ -39,7 +39,7 @@ func TestScalarToString(t *testing.T) {
 
 func TestResolveScalarField(t *testing.T) {
 	data := map[string]interface{}{
-		"apiVersion": "demo.orkestra.io/v1alpha1",
+		"apiVersion": "demo.inrun.dev/v1alpha1",
 		"metadata": map[string]interface{}{
 			"name":      "my-site",
 			"namespace": "default",
@@ -69,7 +69,7 @@ func TestResolveScalarField(t *testing.T) {
 		wantValue string
 		wantFound bool
 	}{
-		{"top-level string", "apiVersion", "demo.orkestra.io/v1alpha1", true},
+		{"top-level string", "apiVersion", "demo.inrun.dev/v1alpha1", true},
 		{"nested string", "spec.stringVal", "hello", true},
 		{"nested int", "spec.intVal", "42", true},
 		{"nested float", "spec.floatVal", "3.14", true},

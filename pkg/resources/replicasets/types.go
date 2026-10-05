@@ -4,7 +4,7 @@ package replicasets
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ResolvedReplicaSetSpec is the fully resolved ReplicaSet specification.
@@ -29,18 +29,18 @@ type ResolvedReplicaSetSpec struct {
 	Namespace string
 
 	// Labels — applied to the ReplicaSet and pod template.
-	// Orkestra always adds: managed-by=orkestra, orkestra-owner=<cr-name>
+	// Inrun always adds: managed-by=inrun, inrun-owner=<cr-name>
 	Labels map[string]string
 
 	// Annotations — applied to the ReplicaSet.
 	Annotations map[string]string
 
 	// Env — environment variables.
-	Env     []orktypes.EnvVar
-	EnvFrom *orktypes.EnvFrom
+	Env     []types.EnvVar
+	EnvFrom *types.EnvFrom
 
 	// Resources — CPU and memory requests/limits. nil means no limits set.
-	Resources *orktypes.ResourceRequirements
+	Resources *types.ResourceRequirements
 
 	// NodeSelector is a selector which must be true for the pod to fit on a node.
 	// Selector which must match a node's labels for the pod to be scheduled on that node.
@@ -60,23 +60,23 @@ type ResolvedReplicaSetSpec struct {
 	ImagePullSecrets []string
 
 	// Probes — startup, liveness, and readiness probe configuration.
-	Probes *orktypes.ProbesConfig
+	Probes *types.ProbesConfig
 
 	// SecurityContext — container-level security settings.
-	SecurityContext *orktypes.ContainerSecurityContext
+	SecurityContext *types.ContainerSecurityContext
 
 	// PodSecurity — pod-level security settings.
-	PodSecurity *orktypes.PodSecurityContext
+	PodSecurity *types.PodSecurityContext
 
 	// Profiles — user-defined profile registry for runtime profile resolution.
-	Profiles *orktypes.ProfileRegistry
+	Profiles *types.ProfileRegistry
 
-	// RollingUpdate — resolved rolling update strategy. nil means Orkestra manages lifecycle directly.
-	RollingUpdate *orktypes.RollingUpdateBehavior
+	// RollingUpdate — resolved rolling update strategy. nil means Inrun manages lifecycle directly.
+	RollingUpdate *types.RollingUpdateBehavior
 
 	// Volumes / VolumeMounts — pod volumes and container mounts.
-	Volumes      []orktypes.VolumeSource
-	VolumeMounts []orktypes.VolumeMount
+	Volumes      []types.VolumeSource
+	VolumeMounts []types.VolumeMount
 
 	// Sleep injects an artificial delay into the reconcile of this resource.
 	// Useful for autoscale testing, latency simulation, and chaos engineering.

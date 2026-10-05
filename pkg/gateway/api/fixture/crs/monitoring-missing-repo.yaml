@@ -1,7 +1,7 @@
 # Exercises: deny or — monitoring workload missing spec.repoURL.
 # Expected: rejected, "spec.repoURL is required for app and monitoring workloads".
 # The when: deny (domain for cert) does NOT fire — workloadType is monitoring.
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: PlatformResource
 metadata:
   name: monitoring-no-repo

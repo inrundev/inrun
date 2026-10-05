@@ -10,7 +10,7 @@ import (
 // Resource quantity notes for Kubernetes-style CPU and memory math.
 //
 // Kubernetes quantities use SI suffixes (m, K, M, G, T, P, E) and binary
-// suffixes (Ki, Mi, Gi, Ti, Pi, Ei). These notes let Katalog authors do
+// suffixes (Ki, Mi, Gi, Ti, Pi, Ei). These notes let Catalog authors do
 // resource budget arithmetic without writing Go:
 //
 //	"give each tenant 1/N of available capacity"

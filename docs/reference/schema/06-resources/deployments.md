@@ -1,6 +1,6 @@
 # Deployment
 
-This declares one Deployment to be managed by Orkestra.
+This declares one Deployment to be managed by Inrun.
 
 Minimal example — static values only:
 
@@ -11,7 +11,7 @@ onCreate:
       replicas: "3"
       port: "8080"
       resources:
-        profile: burst      # Use orkestra's burst resource configuration
+        profile: burst      # Use inrun's burst resource configuration
 ```
 
 Full example — dynamic values from the CR:
@@ -26,7 +26,7 @@ onCreate:
       namespace: "{{ .metadata.namespace }}"
       labels:
         app: "{{ .metadata.name }}"
-        managed-by: orkestra
+        managed-by: inrun
       resources:
         requests:
           cpu: 100m
@@ -40,7 +40,7 @@ onCreate:
 
 ## Lifecycle
 
-Declare this resource under `onCreate` for an idempotent, one-time create: Orkestra creates it on the first reconcile and leaves it untouched afterward. Set `reconcile: true` on the same entry to also apply it as drift correction on every subsequent reconcile. This is a shorthand for declaring the identical entry under `onReconcile` as well — there's no need to do both.
+Declare this resource under `onCreate` for an idempotent, one-time create: Inrun creates it on the first reconcile and leaves it untouched afterward. Set `reconcile: true` on the same entry to also apply it as drift correction on every subsequent reconcile. This is a shorthand for declaring the identical entry under `onReconcile` as well — there's no need to do both.
 
 Declare a resource under `onDelete` to run explicit cleanup before the CR's finalizer is removed. Most resources need no `onDelete` entry — they are garbage-collected automatically through owner references when the CR itself is deleted.
 
@@ -108,7 +108,7 @@ Namespace — target namespace for the Deployment. Default when omitted: "{{ .me
 
 Type: map
 
-Labels — applied to the Deployment ObjectMeta and the pod template. Label values support template expressions. Orkestra always adds: managed-by=orkestra, orkestra-owner=\<cr-name>
+Labels — applied to the Deployment ObjectMeta and the pod template. Label values support template expressions. Inrun always adds: managed-by=inrun, inrun-owner=\<cr-name>
 
 ---
 

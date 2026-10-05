@@ -5,23 +5,23 @@ package serve
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
-// chainTestKatalog builds a single-CRD katalog for kind "ServiceRequest" —
+// chainTestCatalog builds a single-CRD catalog for kind "ServiceRequest" —
 // its ServeTarget() defaults to the lowercased kind, "servicerequest",
 // which every test below uses directly.
-func chainTestKatalog(serveName string, tokens map[string]orktypes.ServeTokenPermissions) *katalog.Katalog {
-	return katalog.NewFromEntryPointers(map[string]*orktypes.CRDEntry{
+func chainTestCatalog(serveName string, tokens map[string]types.ServeTokenPermissions) *catalog.Catalog {
+	return catalog.NewFromEntryPointers(map[string]*types.CRDEntry{
 		"servicerequest": {
-			APITypes: orktypes.APITypes{
-				Group:   "demo.orkestra.io",
+			APITypes: types.APITypes{
+				Group:   "demo.inrun.dev",
 				Version: "v1",
 				Kind:    "ServiceRequest",
 				Plural:  "servicerequests",
 			},
-			Serve: &orktypes.ServeConfig{
+			Serve: &types.ServeConfig{
 				Enabled:   true,
 				Name:      serveName,
 				Namespace: "default",
@@ -32,9 +32,9 @@ func chainTestKatalog(serveName string, tokens map[string]orktypes.ServeTokenPer
 }
 
 func TestRunCreateUpdateChain_UnknownTarget(t *testing.T) {
-	k := chainTestKatalog("", nil)
+	k := chainTestCatalog("", nil)
 	_, _, _, err := runCreateUpdateChain(
-		k, map[string]interface{}{"target": "does-not-exist"}, "dev", "", orktypes.ServeOpCreate,
+		k, map[string]interface{}{"target": "does-not-exist"}, "dev", "", types.ServeOpCreate,
 	)
 	if err == nil {
 		t.Fatal("expected an error for an unknown target")
@@ -42,9 +42,9 @@ func TestRunCreateUpdateChain_UnknownTarget(t *testing.T) {
 }
 
 func TestRunCreateUpdateChain_MissingTarget(t *testing.T) {
-	k := chainTestKatalog("", nil)
+	k := chainTestCatalog("", nil)
 	_, _, _, err := runCreateUpdateChain(
-		k, map[string]interface{}{"name": "x"}, "dev", "", orktypes.ServeOpCreate,
+		k, map[string]interface{}{"name": "x"}, "dev", "", types.ServeOpCreate,
 	)
 	if err == nil {
 		t.Fatal(`expected an error when "target" is absent`)
@@ -52,11 +52,11 @@ func TestRunCreateUpdateChain_MissingTarget(t *testing.T) {
 }
 
 func TestRunCreateUpdateChain_TokenDenied(t *testing.T) {
-	k := chainTestKatalog("", map[string]orktypes.ServeTokenPermissions{
-		"dev": {Permissions: orktypes.ServePermissionSet{Global: []string{"get"}}}, // no create
+	k := chainTestCatalog("", map[string]types.ServeTokenPermissions{
+		"dev": {Permissions: types.ServePermissionSet{Global: []string{"get"}}}, // no create
 	})
 	_, _, _, err := runCreateUpdateChain(
-		k, map[string]interface{}{"target": "servicerequest", "name": "x"}, "dev", "", orktypes.ServeOpCreate,
+		k, map[string]interface{}{"target": "servicerequest", "name": "x"}, "dev", "", types.ServeOpCreate,
 	)
 	if err == nil {
 		t.Fatal("expected the token to be denied create")
@@ -66,11 +66,11 @@ func TestRunCreateUpdateChain_TokenDenied(t *testing.T) {
 func TestRunCreateUpdateChain_UnknownTokenDenied(t *testing.T) {
 	// Once ANY token is declared, an unlisted token name is denied outright —
 	// no implicit fallback to "allow all".
-	k := chainTestKatalog("", map[string]orktypes.ServeTokenPermissions{
-		"dev": {Permissions: orktypes.ServePermissionSet{Global: []string{"*"}}},
+	k := chainTestCatalog("", map[string]types.ServeTokenPermissions{
+		"dev": {Permissions: types.ServePermissionSet{Global: []string{"*"}}},
 	})
 	_, _, _, err := runCreateUpdateChain(
-		k, map[string]interface{}{"target": "servicerequest", "name": "x"}, "someone-else", "", orktypes.ServeOpCreate,
+		k, map[string]interface{}{"target": "servicerequest", "name": "x"}, "someone-else", "", types.ServeOpCreate,
 	)
 	if err == nil {
 		t.Fatal("expected an unlisted token name to be denied")
@@ -78,11 +78,11 @@ func TestRunCreateUpdateChain_UnknownTokenDenied(t *testing.T) {
 }
 
 func TestRunCreateUpdateChain_BuildsCRWithProvenance(t *testing.T) {
-	k := chainTestKatalog("", nil) // no token restrictions -> allow all
+	k := chainTestCatalog("", nil) // no token restrictions -> allow all
 	obj, crd, alias, err := runCreateUpdateChain(
 		k,
 		map[string]interface{}{"target": "servicerequest", "name": "payments-api"},
-		"payments-repo", "payments-repo", orktypes.ServeOpCreate,
+		"payments-repo", "payments-repo", types.ServeOpCreate,
 	)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -96,33 +96,33 @@ func TestRunCreateUpdateChain_BuildsCRWithProvenance(t *testing.T) {
 	if alias != "" {
 		t.Errorf("alias = %q, want empty (primary target)", alias)
 	}
-	if got := obj.GetAnnotations()["orkestra.orkspace.io/serve-source"]; got != "payments-repo" {
+	if got := obj.GetAnnotations()["inrun.dev/serve-source"]; got != "payments-repo" {
 		t.Errorf("serve-source annotation = %q, want payments-repo", got)
 	}
-	if got := obj.GetAnnotations()["orkestra.orkspace.io/serve-target"]; got != "servicerequest" {
+	if got := obj.GetAnnotations()["inrun.dev/serve-target"]; got != "servicerequest" {
 		t.Errorf("serve-target annotation = %q, want servicerequest", got)
 	}
 }
 
 func TestRunCreateUpdateChain_EmptySourceOmitsServeSourceAnnotation(t *testing.T) {
-	// "ork serve play" passes source="" — no caller identity beyond the token.
-	k := chainTestKatalog("", nil)
+	// "inrun serve play" passes source="" — no caller identity beyond the token.
+	k := chainTestCatalog("", nil)
 	obj, _, _, err := runCreateUpdateChain(
-		k, map[string]interface{}{"target": "servicerequest", "name": "x"}, "dev", "", orktypes.ServeOpCreate,
+		k, map[string]interface{}{"target": "servicerequest", "name": "x"}, "dev", "", types.ServeOpCreate,
 	)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if _, ok := obj.GetAnnotations()["orkestra.orkspace.io/serve-source"]; ok {
+	if _, ok := obj.GetAnnotations()["inrun.dev/serve-source"]; ok {
 		t.Error("serve-source annotation should be absent when source is empty")
 	}
 }
 
 func TestRunCreateUpdateChain_MissingNameRejected(t *testing.T) {
 	// serve.name isn't declared and no raw "name" is supplied.
-	k := chainTestKatalog("", nil)
+	k := chainTestCatalog("", nil)
 	_, _, _, err := runCreateUpdateChain(
-		k, map[string]interface{}{"target": "servicerequest"}, "dev", "", orktypes.ServeOpCreate,
+		k, map[string]interface{}{"target": "servicerequest"}, "dev", "", types.ServeOpCreate,
 	)
 	if err == nil {
 		t.Fatal("expected an error when neither serve.name nor a raw name is available")

@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-// Args is the typed view of the args: map declared in katalog.yaml
+// Args is the typed view of the args: map declared in catalog.yaml
 // under hooks.args or constructor.args.
 //
 // Values come in as raw YAML scalars (string, int, bool, map, slice).

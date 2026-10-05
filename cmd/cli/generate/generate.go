@@ -10,19 +10,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	"github.com/orkspace/orkestra/pkg/merger"
-	"github.com/orkspace/orkestra/pkg/tools/generate"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/tools/generate"
 	"github.com/spf13/cobra"
 )
 
 // bundleOptsFromFor reads the --for flag and returns the corresponding BundleOptions.
 // --for accepts a comma-separated list of component names: runtime (alias: run),
-// gateway (alias: gw), cc (aliases: controlcenter, control-center).
+// gateway (alias: gw), console.
 // When --for is absent or empty, all three components are included (default).
 func bundleOptsFromFor(cmd *cobra.Command) (generate.BundleOptions, error) {
 	forVal, _ := cmd.Flags().GetString("for")
@@ -41,27 +40,27 @@ func bundleOptsFromFor(cmd *cobra.Command) (generate.BundleOptions, error) {
 			opts.IncludeRuntime = true
 		case "gw", "gateway":
 			opts.IncludeGateway = true
-		case "cc", "controlcenter", "control-center":
-			opts.IncludeControlCenter = true
+		case "console":
+			opts.IncludeConsole = true
 		default:
 			unknown = append(unknown, part)
 		}
 	}
 	if len(unknown) > 0 {
 		return generate.BundleOptions{}, fmt.Errorf(
-			"orkestra: unknown --for value(s): %s\n\nValid values are:\n"+
+			"inrun: unknown --for value(s): %s\n\nValid values are:\n"+
 				"  runtime   (alias: run)          — reconcilers, leader election\n"+
 				"  gateway   (alias: gw)            — TLS, admission webhooks\n"+
-				"  cc        (alias: controlcenter) — control-center\n\n"+
+				"  console   — console\n\n"+
 				"Example: --for gateway\n"+
-				"         --for runtime,cc",
+				"         --for runtime,console",
 			strings.Join(unknown, ", "),
 		)
 	}
-	if !opts.IncludeRuntime && !opts.IncludeGateway && !opts.IncludeControlCenter {
+	if !opts.IncludeRuntime && !opts.IncludeGateway && !opts.IncludeConsole {
 		return generate.BundleOptions{}, fmt.Errorf(
-			"orkestra: --for produced an empty component list; nothing to generate\n\n" +
-				"Valid values are: runtime (run), gateway (gw), cc (controlcenter, control-center)",
+			"inrun: --for produced an empty component list; nothing to generate\n\n" +
+				"Valid values are: runtime (run), gateway (gw), console",
 		)
 	}
 	return opts, nil
@@ -69,64 +68,36 @@ func bundleOptsFromFor(cmd *cobra.Command) (generate.BundleOptions, error) {
 
 var generateCmd = &cobra.Command{
 	Use:   "generate",
-	Short: "Generate Orkestra components",
+	Short: "Generate Inrun components",
 }
 
-// rejectCRDFile returns an error if any CRD used a local crdFile shortcut.
-// Pass k.WithCRDFiles() as names and k.Enabled() as resolved — both available
-// after pipeline.BuildExpanded, which records crdFile names before clearing the field.
-func rejectCRDFile(names []string, resolved map[string]orktypes.CRDEntry) error {
-	for _, name := range names {
-		crd := resolved[name]
-		g := cmdutil.OrDefault(crd.APITypes.Group, "<group>")
-		v := cmdutil.OrDefault(crd.APITypes.Version, "<version>")
-		k := cmdutil.OrDefault(crd.APITypes.Kind, "<Kind>")
-		p := cmdutil.OrDefault(crd.APITypes.Plural, "<plural>")
-		return fmt.Errorf(
-			"CRD %q uses crdFile, which is a local development shortcut.\n\n"+
-				"bundle, configmap, and rbac are production artifacts — the file will not\n"+
-				"be available at runtime. Replace crdFile with explicit apiTypes:\n\n"+
-				"  spec:\n"+
-				"    crds:\n"+
-				"      %s:\n"+
-				"        apiTypes:\n"+
-				"          group: %s\n"+
-				"          version: %s\n"+
-				"          kind: %s\n"+
-				"          plural: %s",
-			name, name, g, v, k, p,
-		)
-	}
-	return nil
-}
-
-// buildKatalogFromPath builds an expanded Katalog from a file path without
+// buildCatalogFromPath builds an expanded Catalog from a file path without
 // requiring a cobra command context. Useful when the path is already known.
-func buildKatalogFromPath(path string) (*katalog.Katalog, error) {
+func buildCatalogFromPath(path string) (*catalog.Catalog, error) {
 	m := merger.New(path)
 	if err := m.Merge(); err != nil {
-		return nil, fmt.Errorf("merging katalog: %w", err)
+		return nil, fmt.Errorf("merging catalog: %w", err)
 	}
 	return pipeline.BuildExpanded(cmdutil.Kfg, m)
 }
 
 var generateRbacCmd = &cobra.Command{
 	Use:   "rbac",
-	Short: "Generate RBAC ClusterRoles and ServiceAccounts for Orkestra components",
-	Long: `Reads one or more katalog.yaml files, merges them, and generates minimal
+	Short: "Generate RBAC ClusterRoles and ServiceAccounts for Inrun components",
+	Long: `Reads one or more catalog.yaml files, merges them, and generates minimal
 ClusterRoles for the runtime and gateway processes, plus ServiceAccounts for
-all three components (runtime, gateway, control center).
+all three components (runtime, gateway, console).
 
 Use --for to limit the output to specific components. By default all three
 are included. Multiple values are comma-separated.
 
 Examples:
-  ork generate rbac -f katalog.yaml
-  ork generate rbac -f katalog.yaml --for gateway
-  ork generate rbac -f katalog.yaml --for runtime,cc
-  ork generate rbac -f a.yaml,b.yaml`,
+  inrun generate rbac -f catalog.yaml
+  inrun generate rbac -f catalog.yaml --for gateway
+  inrun generate rbac -f catalog.yaml --for runtime,console
+  inrun generate rbac -f a.yaml,b.yaml`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		out, err := cmdutil.GenerateKatalog(cmd)
+		out, err := cmdutil.GenerateCatalog(cmd)
 		if err != nil {
 			return err
 		}
@@ -135,10 +106,7 @@ Examples:
 
 		k, err := pipeline.BuildExpanded(cmdutil.Kfg, out.Merger)
 		if err != nil {
-			return fmt.Errorf("build katalog: %w", err)
-		}
-		if err := rejectCRDFile(k.WithCRDFiles(), k.Enabled()); err != nil {
-			return err
+			return fmt.Errorf("build catalog: %w", err)
 		}
 
 		log.Println("generating rbac...")
@@ -169,16 +137,16 @@ Examples:
 
 var generateConfigMapCmd = &cobra.Command{
 	Use:   "configmap",
-	Short: "Generate a ConfigMap embedding a Katalog or Komposer",
-	Long: `Reads a katalog.yaml or komposer.yaml file and produces a ConfigMap
-that embeds the file under data:<filename>. Useful for injecting Katalogs
-into the in-cluster Orkestra runtime.
+	Short: "Generate a ConfigMap embedding a Catalog or Stack",
+	Long: `Reads a catalog.yaml or stack.yaml file and produces a ConfigMap
+that embeds the file under data:<filename>. Useful for injecting Catalogs
+into the in-cluster Inrun runtime.
 
 Example:
-  ork generate configmap -f katalog.yaml
-  ork generate configmap -f komposer.yaml -n orkestra-system -o out.yaml`,
+  inrun generate configmap -f catalog.yaml
+  inrun generate configmap -f stack.yaml -n inrun-system -o out.yaml`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		out, err := cmdutil.GenerateKatalog(cmd)
+		out, err := cmdutil.GenerateCatalog(cmd)
 		if err != nil {
 			return err
 		}
@@ -188,17 +156,14 @@ Example:
 
 		k, err := pipeline.BuildExpanded(cmdutil.Kfg, out.Merger)
 		if err != nil {
-			return fmt.Errorf("build katalog: %w", err)
-		}
-		if err := rejectCRDFile(k.WithCRDFiles(), k.Enabled()); err != nil {
-			return err
+			return fmt.Errorf("build catalog: %w", err)
 		}
 
 		log.Println("generating configmap...")
 
 		expanded, err := k.SerializeExpanded()
 		if err != nil {
-			return fmt.Errorf("serialize katalog: %w", err)
+			return fmt.Errorf("serialize catalog: %w", err)
 		}
 
 		cm, err := generate.ConfigMap(expanded, namespace)
@@ -213,22 +178,22 @@ Example:
 var generateBundleCmd = &cobra.Command{
 	Use:   "bundle",
 	Short: "Generate a complete installation bundle (RBAC + ConfigMap)",
-	Long: `Generates a complete Orkestra installation bundle containing:
-  • Namespace (default: 'orkestra-system')
-  • ServiceAccounts for runtime, gateway, and control center
+	Long: `Generates a complete Inrun installation bundle containing:
+  • Namespace (default: 'inrun-system')
+  • ServiceAccounts for runtime, gateway, and console
   • ClusterRoles and ClusterRoleBindings (one per process, minimal permissions)
-  • ConfigMap embedding your Katalog
+  • ConfigMap embedding your Catalog
 
 Use --for to limit the output to specific components. By default all three
 are included. Multiple values are comma-separated.
 
 Examples:
-  ork generate bundle -f katalog.yaml
-  ork generate bundle -f katalog.yaml --for gateway
-  ork generate bundle -f katalog.yaml --for runtime,cc
-  ork generate bundle -f katalog.yaml -o bundle.yaml -n orkestra-system`,
+  inrun generate bundle -f catalog.yaml
+  inrun generate bundle -f catalog.yaml --for gateway
+  inrun generate bundle -f catalog.yaml --for runtime,console
+  inrun generate bundle -f catalog.yaml -o bundle.yaml -n inrun-system`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		out, err := cmdutil.GenerateKatalog(cmd)
+		out, err := cmdutil.GenerateCatalog(cmd)
 		if err != nil {
 			return err
 		}
@@ -239,10 +204,7 @@ Examples:
 
 		k, err := pipeline.BuildExpanded(cmdutil.Kfg, out.Merger)
 		if err != nil {
-			return fmt.Errorf("build katalog: %w", err)
-		}
-		if err := rejectCRDFile(k.WithCRDFiles(), k.Enabled()); err != nil {
-			return err
+			return fmt.Errorf("build catalog: %w", err)
 		}
 
 		opts, err := bundleOptsFromFor(cmd)
@@ -260,7 +222,7 @@ Examples:
 
 		expanded, err := k.SerializeExpanded()
 		if err != nil {
-			return fmt.Errorf("serialize katalog: %w", err)
+			return fmt.Errorf("serialize catalog: %w", err)
 		}
 
 		bundle, err := generate.RenderBundle(runtimeRules, gatewayRules, expanded, namespace, workloadNamespace, opts)
@@ -280,7 +242,7 @@ Examples:
 // that has serve-enabled CRDs routed to it. Files land in the same directory as
 // outputFile (or the current directory when outputFile is empty or "-").
 // Template-routed CRDs appear in every cluster file; a warning is printed for those.
-func writeClusterRBACFiles(k *katalog.Katalog, outputFile string) error {
+func writeClusterRBACFiles(k *catalog.Catalog, outputFile string) error {
 	clusterRules, templateKinds := k.GenerateGatewayClusterRBACRules()
 	if len(clusterRules) == 0 {
 		return nil
@@ -345,9 +307,9 @@ func init() {
 	generateCmd.AddCommand(generateConfigMapCmd)
 	generateCmd.AddCommand(generateBundleCmd)
 
-	// All three commands use StringSliceP so generateKatalog can read them uniformly.
+	// All three commands use StringSliceP so generateCatalog can read them uniformly.
 	for _, cmd := range []*cobra.Command{generateConfigMapCmd, generateBundleCmd, generateRbacCmd} {
-		cmd.Flags().StringSliceP("file", "f", []string{}, "Path to katalog.yaml or komposer.yaml (repeatable or comma-separated)")
+		cmd.Flags().StringSliceP("file", "f", []string{}, "Path to catalog.yaml or stack.yaml (repeatable or comma-separated)")
 	}
 
 	generateRegistryCmd.Flags().StringP("dirs", "d", "", "Comma-separated list of project directories to generate registries for")
@@ -366,19 +328,19 @@ func init() {
 	}
 
 	// bundle-only flags
-	generateBundleCmd.Flags().StringP("workload-namespace", "w", "", "Namespace for Deployment workloads (used by ork doctor deploy)")
+	generateBundleCmd.Flags().StringP("workload-namespace", "w", "", "Extra namespace to create in the bundle for the operator's workloads")
 
 	// component-selection flag (shared by rbac and bundle)
 	// --for runtime          → runtime SA + ClusterRole only
 	// --for gateway          → gateway SA + ClusterRole only
-	// --for runtime,gateway  → both, no CC SA
-	// --for runtime,cc       → runtime + CC SA, no gateway
+	// --for runtime,gateway  → both, no console SA
+	// --for runtime,console       → runtime + console SA, no gateway
 	// (absent)               → all three (default)
 	for _, cmd := range []*cobra.Command{generateRbacCmd, generateBundleCmd} {
-		cmd.Flags().String("for", "", "Limit output to specific components: runtime, gateway, cc (comma-separated; default: all)")
+		cmd.Flags().String("for", "", "Limit output to specific components: runtime, gateway, console (comma-separated; default: all)")
 	}
 
-	// Shadow global flags so they don't appear under `ork generate`
+	// Shadow global flags so they don't appear under `inrun generate`
 	cmdutil.ShadowGlobalCommandFlags(generateCmd)
-	cobra.MarkFlagRequired(generateCmd.Flags(), "katalog")
+	cobra.MarkFlagRequired(generateCmd.Flags(), "catalog")
 }

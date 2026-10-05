@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-const katalogWithNotesYAML = `apiVersion: orkestra.orkspace.io/v1
-kind: Katalog
+const catalogWithNotesYAML = `apiVersion: inrun.dev/v1
+kind: Catalog
 metadata:
   name: noted
 notes:
@@ -24,11 +24,11 @@ spec:
         group: example.io
 `
 
-// TestKatalog_InlineNotes_ForwardedToToNotes verifies that notes: declared
-// directly in a Katalog are returned by ToNotes() after Merge().
-func TestKatalog_InlineNotes_ForwardedToToNotes(t *testing.T) {
+// TestCatalog_InlineNotes_ForwardedToToNotes verifies that notes: declared
+// directly in a Catalog are returned by ToNotes() after Merge().
+func TestCatalog_InlineNotes_ForwardedToToNotes(t *testing.T) {
 	dir := t.TempDir()
-	path := writeTempKatalog(t, dir, "katalog.yaml", katalogWithNotesYAML)
+	path := writeTempCatalog(t, dir, "catalog.yaml", catalogWithNotesYAML)
 
 	m := New(path)
 	if err := m.Merge(); err != nil {
@@ -44,23 +44,23 @@ func TestKatalog_InlineNotes_ForwardedToToNotes(t *testing.T) {
 		names[n.Name] = true
 	}
 	if !names["host"] {
-		t.Error("expected note 'host' from Katalog")
+		t.Error("expected note 'host' from Catalog")
 	}
 	if !names["img"] {
-		t.Error("expected note 'img' from Katalog")
+		t.Error("expected note 'img' from Catalog")
 	}
 }
 
-// TestKomposer_InlineNotes_ForwardedToToNotes verifies that notes: declared on
-// a Komposer are visible via ToNotes() after the Katalog files are imported.
-func TestKomposer_InlineNotes_ForwardedToToNotes(t *testing.T) {
+// TestStack_InlineNotes_ForwardedToToNotes verifies that notes: declared on
+// a Stack are visible via ToNotes() after the Catalog files are imported.
+func TestStack_InlineNotes_ForwardedToToNotes(t *testing.T) {
 	dir := t.TempDir()
-	katalogPath := writeTempKatalog(t, dir, "katalog.yaml", katalogWithNotesYAML)
+	catalogPath := writeTempCatalog(t, dir, "catalog.yaml", catalogWithNotesYAML)
 
-	komposer := "apiVersion: orkestra.orkspace.io/v1\nkind: Komposer\nmetadata:\n  name: k\nnotes:\n  functions:\n    - name: env\n      expression: \"prod\"\nimports:\n  files:\n    - url: " + katalogPath + "\n"
-	komposerPath := writeTempKatalog(t, dir, "komposer.yaml", komposer)
+	stack := "apiVersion: inrun.dev/v1\nkind: Stack\nmetadata:\n  name: k\nnotes:\n  functions:\n    - name: env\n      expression: \"prod\"\nimports:\n  files:\n    - url: " + catalogPath + "\n"
+	stackPath := writeTempCatalog(t, dir, "stack.yaml", stack)
 
-	m := New(komposerPath)
+	m := New(stackPath)
 	if err := m.Merge(); err != nil {
 		t.Fatalf("Merge() error: %v", err)
 	}
@@ -71,33 +71,33 @@ func TestKomposer_InlineNotes_ForwardedToToNotes(t *testing.T) {
 		names[n.Name] = true
 	}
 	if !names["env"] {
-		t.Error("expected Komposer inline note 'env'")
+		t.Error("expected Stack inline note 'env'")
 	}
-	// Notes from the imported Katalog must also be present.
+	// Notes from the imported Catalog must also be present.
 	if !names["host"] {
-		t.Error("expected Katalog note 'host' to pass through")
+		t.Error("expected Catalog note 'host' to pass through")
 	}
 }
 
-// TestKomposer_InlineNotes_OverrideKatalogNote verifies that when a Komposer
-// declares a note with the same name as one in an imported Katalog, the
-// Komposer's expression is the one returned (last-wins via FuncMap ordering).
-func TestKomposer_InlineNotes_OverrideKatalogNote(t *testing.T) {
+// TestStack_InlineNotes_OverrideCatalogNote verifies that when a Stack
+// declares a note with the same name as one in an imported Catalog, the
+// Stack's expression is the one returned (last-wins via FuncMap ordering).
+func TestStack_InlineNotes_OverrideCatalogNote(t *testing.T) {
 	dir := t.TempDir()
-	katalogPath := writeTempKatalog(t, dir, "katalog.yaml", katalogWithNotesYAML)
+	catalogPath := writeTempCatalog(t, dir, "catalog.yaml", catalogWithNotesYAML)
 
-	// host is also declared in the Katalog; Komposer's value must win (appended last).
-	komposer := "apiVersion: orkestra.orkspace.io/v1\nkind: Komposer\nmetadata:\n  name: k\nnotes:\n  functions:\n    - name: host\n      expression: \"{{ .metadata.name }}.prod.example.com\"\nimports:\n  files:\n    - url: " + katalogPath + "\n"
-	komposerPath := writeTempKatalog(t, dir, "komposer.yaml", komposer)
+	// host is also declared in the Catalog; Stack's value must win (appended last).
+	stack := "apiVersion: inrun.dev/v1\nkind: Stack\nmetadata:\n  name: k\nnotes:\n  functions:\n    - name: host\n      expression: \"{{ .metadata.name }}.prod.example.com\"\nimports:\n  files:\n    - url: " + catalogPath + "\n"
+	stackPath := writeTempCatalog(t, dir, "stack.yaml", stack)
 
-	m := New(komposerPath)
+	m := New(stackPath)
 	if err := m.Merge(); err != nil {
 		t.Fatalf("Merge() error: %v", err)
 	}
 
 	notes := m.ToNotes()
-	// The Komposer note is appended after Katalog notes, so it appears last in the registry.
-	// Confirm the last entry for 'host' comes from the Komposer.
+	// The Stack note is appended after Catalog notes, so it appears last in the registry.
+	// Confirm the last entry for 'host' comes from the Stack.
 	var lastHost string
 	for _, n := range notes.Functions {
 		if n.Name == "host" {
@@ -105,19 +105,19 @@ func TestKomposer_InlineNotes_OverrideKatalogNote(t *testing.T) {
 		}
 	}
 	if !strings.Contains(lastHost, "prod.example.com") {
-		t.Errorf("expected Komposer's host expression to win, got %q", lastHost)
+		t.Errorf("expected Stack's host expression to win, got %q", lastHost)
 	}
 }
 
-// TestKomposer_CrossKatalogNoteConflict_Errors verifies that two imported Katalogs
-// declaring the same note name returns an error. Unlike the Komposer's own notes:
-// block (which intentionally overrides), cross-Katalog conflicts are ambiguous and
+// TestStack_CrossCatalogNoteConflict_Errors verifies that two imported Catalogs
+// declaring the same note name returns an error. Unlike the Stack's own notes:
+// block (which intentionally overrides), cross-Catalog conflicts are ambiguous and
 // must be surfaced rather than silently resolved by import order.
-func TestKomposer_CrossKatalogNoteConflict_Errors(t *testing.T) {
+func TestStack_CrossCatalogNoteConflict_Errors(t *testing.T) {
 	dir := t.TempDir()
 
-	src1 := writeTempKatalog(t, dir, "src1.yaml", `apiVersion: orkestra.orkspace.io/v1
-kind: Katalog
+	src1 := writeTempCatalog(t, dir, "src1.yaml", `apiVersion: inrun.dev/v1
+kind: Catalog
 metadata:
   name: src1
 notes:
@@ -131,8 +131,8 @@ spec:
         kind: Alpha
         group: example.io
 `)
-	src2 := writeTempKatalog(t, dir, "src2.yaml", `apiVersion: orkestra.orkspace.io/v1
-kind: Katalog
+	src2 := writeTempCatalog(t, dir, "src2.yaml", `apiVersion: inrun.dev/v1
+kind: Catalog
 metadata:
   name: src2
 notes:
@@ -147,44 +147,44 @@ spec:
         group: example.io
 `)
 
-	komposer := "apiVersion: orkestra.orkspace.io/v1\nkind: Komposer\nmetadata:\n  name: k\nimports:\n  files:\n    - url: " + src1 + "\n    - url: " + src2 + "\n"
-	komposerPath := writeTempKatalog(t, dir, "komposer.yaml", komposer)
+	stack := "apiVersion: inrun.dev/v1\nkind: Stack\nmetadata:\n  name: k\nimports:\n  files:\n    - url: " + src1 + "\n    - url: " + src2 + "\n"
+	stackPath := writeTempCatalog(t, dir, "stack.yaml", stack)
 
-	m := New(komposerPath)
+	m := New(stackPath)
 	err := m.Merge()
 	if err == nil {
-		t.Fatal("expected conflict error for note 'host' declared in two Katalogs, got nil")
+		t.Fatal("expected conflict error for note 'host' declared in two Catalogs, got nil")
 	}
 	if !strings.Contains(err.Error(), "host") {
 		t.Errorf("expected error to mention conflicting note name 'host', got: %v", err)
 	}
 }
 
-// TestKomposer_SpecImports_Rejected verifies that a Komposer with spec.imports
-// is rejected with an error. spec.imports is reserved for Katalogs only.
-func TestKomposer_SpecImports_Rejected(t *testing.T) {
+// TestStack_SpecImports_Rejected verifies that a Stack with spec.imports
+// is rejected with an error. spec.imports is reserved for Catalogs only.
+func TestStack_SpecImports_Rejected(t *testing.T) {
 	dir := t.TempDir()
 
-	// Komposer has both spec.crds (passes the empty-komposer guard) and spec.imports.
-	komposer := `apiVersion: orkestra.orkspace.io/v1
-kind: Komposer
+	// Stack has both spec.crds (passes the empty-stack guard) and spec.imports.
+	stack := `apiVersion: inrun.dev/v1
+kind: Stack
 metadata:
-  name: bad-komposer
+  name: bad-stack
 spec:
   imports:
-    - motif: ./some-motif.yaml
+    - module: ./some-module.yaml
   crds:
     widget:
       apiTypes:
         kind: Widget
         group: example.io
 `
-	komposerPath := writeTempKatalog(t, dir, "komposer.yaml", komposer)
+	stackPath := writeTempCatalog(t, dir, "stack.yaml", stack)
 
-	m := New(komposerPath)
+	m := New(stackPath)
 	err := m.Merge()
 	if err == nil {
-		t.Fatal("expected error for Komposer with spec.imports, got nil")
+		t.Fatal("expected error for Stack with spec.imports, got nil")
 	}
 	if !strings.Contains(err.Error(), "spec.imports") {
 		t.Errorf("expected error to mention spec.imports, got: %v", err)

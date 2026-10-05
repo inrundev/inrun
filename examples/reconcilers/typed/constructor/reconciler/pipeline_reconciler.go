@@ -7,23 +7,23 @@ import (
 	"fmt"
 	"time"
 
-	apiv1 "github.com/orkspace/orkestra-constructor-demo/api/v1alpha1"
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orkjobs "github.com/orkspace/orkestra/pkg/resources/jobs"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	apiv1 "github.com/inrundev/inrun-constructor-demo/api/v1alpha1"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/resources/jobs"
+	"github.com/inrundev/inrun/pkg/types"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	finalizerName = "orkestra.orkspace.io/pipeline-cleanup"
+	finalizerName = "inrun.dev/pipeline-cleanup"
 	backoffLimit  = 5
 )
 
 // PipelineReconciler implements domain.Reconciler directly; the generic
-// reconciler is not used. Orkestra still runs the informer, queue, workers,
+// reconciler is not used. Inrun still runs the informer, queue, workers,
 // panic recovery, metrics and health. This file owns everything else: cache
 // reads, the finalizer, events, status and the phase machine
 // (Pending → Running → Succeeded | Failed).
@@ -31,12 +31,12 @@ type PipelineReconciler struct {
 	kube kubeclient.Interface
 }
 
-// NewPipelineReconciler is the constructor function registered in the Katalog.
+// NewPipelineReconciler is the constructor function registered in the Catalog.
 func NewPipelineReconciler(kube kubeclient.Interface) domain.Reconciler {
 	return &PipelineReconciler{kube: kube}
 }
 
-// Reconcile is called by Orkestra's worker pool for every queued Pipeline key.
+// Reconcile is called by Inrun's worker pool for every queued Pipeline key.
 // It is wrapped in safeReconcile — panics are caught and returned as errors.
 func (r *PipelineReconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
 	if req.Prepared == nil {
@@ -86,8 +86,8 @@ func (r *PipelineReconciler) handlePending(ctx context.Context, p *apiv1.Pipelin
 	firstStep := p.Spec.Steps[0]
 
 	// Create the Job for the first step via pkg/resources
-	jobSpec := orkjobs.Resolve(
-		orktypes.JobTemplateSource{
+	jobSpec := jobs.Resolve(
+		types.JobTemplateSource{
 			Name:      fmt.Sprintf("%s-%s", p.Name, firstStep.Name),
 			Namespace: p.Namespace,
 			Image:     p.Spec.Image,
@@ -97,7 +97,7 @@ func (r *PipelineReconciler) handlePending(ctx context.Context, p *apiv1.Pipelin
 		p.Name,
 		nil,
 	)
-	if err := orkjobs.Create(ctx, r.kube, p, jobSpec); err != nil {
+	if err := jobs.Create(ctx, r.kube, p, jobSpec); err != nil {
 		return fmt.Errorf("creating step job %q: %w", firstStep.Name, err)
 	}
 
@@ -167,8 +167,8 @@ func (r *PipelineReconciler) advanceStep(ctx context.Context, p *apiv1.Pipeline)
 
 	// Create next step Job
 	nextStep := p.Spec.Steps[nextIdx]
-	jobSpec := orkjobs.Resolve(
-		orktypes.JobTemplateSource{
+	jobSpec := jobs.Resolve(
+		types.JobTemplateSource{
 			Name:      fmt.Sprintf("%s-%s", p.Name, nextStep.Name),
 			Namespace: p.Namespace,
 			Image:     p.Spec.Image,
@@ -178,7 +178,7 @@ func (r *PipelineReconciler) advanceStep(ctx context.Context, p *apiv1.Pipeline)
 		p.Name,
 		nil,
 	)
-	if err := orkjobs.Create(ctx, r.kube, p, jobSpec); err != nil {
+	if err := jobs.Create(ctx, r.kube, p, jobSpec); err != nil {
 		return fmt.Errorf("creating step job %q: %w", nextStep.Name, err)
 	}
 

@@ -15,11 +15,11 @@ api:
     tokens:
       - name: ci-pipeline
         secretRef:
-          name: ork-apply-token
+          name: inrun-apply-token
           key: token
           rotateAfter: 90d
       - name: local-dev
-        token: "${ORK_DEV_TOKEN}"
+        token: "${INRUN_DEV_TOKEN}"
 `
 	var gw GatewayConfig
 	if err := yaml.Unmarshal([]byte(input), &gw); err != nil {
@@ -43,7 +43,7 @@ api:
 	if sr.SecretRef == nil {
 		t.Fatal("token[0].SecretRef is nil")
 	}
-	if sr.SecretRef.Name != "ork-apply-token" {
+	if sr.SecretRef.Name != "inrun-apply-token" {
 		t.Errorf("secretRef.Name = %q", sr.SecretRef.Name)
 	}
 	if sr.SecretRef.Key != "token" {
@@ -54,7 +54,7 @@ api:
 	}
 
 	ev := tokens[1]
-	if ev.Token != "${ORK_DEV_TOKEN}" {
+	if ev.Token != "${INRUN_DEV_TOKEN}" {
 		t.Errorf("token[1].Token = %q", ev.Token)
 	}
 }

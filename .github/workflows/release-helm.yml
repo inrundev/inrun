@@ -12,16 +12,16 @@ on:
         required: false
         type: string
         default: ${{ github.repository }}
-      ork:
-        description: 'Shorthand for orkestra (used in chart name, repo, namespace)'
+      inrun:
+        description: 'Shorthand for inrun (used in chart name, repo, namespace)'
         required: false
         type: string
-        default: 'orkestra'
+        default: 'inrun'
       helm_repo_url:
         description: 'URL of the Helm repository (GitHub Pages)'
         required: false
         type: string
-        default: 'https://orkspace.github.io/orkestra'
+        default: 'https://inrundev.github.io/inrun'
       helm_chart:
         description: 'Helm chart reference (repo/chart) – used in summary'
         required: false
@@ -29,13 +29,13 @@ on:
         default: ${{ github.repository }}
 
 jobs:
-  # chart-e2e:
-  #   name: Gate — Helm chart e2e
-  #   uses: ./.github/workflows/orkestra-chart-e2e.yml
-  #   with:
-  #     image_tag: ${{ inputs.image_tag }}
-  #     repository: ${{ inputs.repository }}
-  #     ork: ${{ inputs.ork }}
+  chart-e2e:
+    name: Gate — Helm chart e2e
+    uses: ./.github/workflows/inrun-chart-e2e.yml
+    with:
+      image_tag: ${{ inputs.image_tag }}
+      repository: ${{ inputs.repository }}
+      inrun: ${{ inputs.inrun }}
 
   helm:
     name: Release Helm Chart
@@ -64,22 +64,22 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           VERSION="${TAG#v}"
-          yq eval ".version = \"${VERSION}\"" -i charts/${{ inputs.ork }}/Chart.yaml
-          yq eval ".appVersion = \"${{ inputs.image_tag }}\"" -i charts/${{ inputs.ork }}/Chart.yaml
-          yq eval ".runtime.image.tag = \"${{ inputs.image_tag }}\"" -i charts/${{ inputs.ork }}/values.yaml
-          yq eval ".runtime.image.repository = \"ghcr.io/${{ inputs.repository }}\"" -i charts/${{ inputs.ork }}/values.yaml
-          yq eval ".gateway.image.tag = \"${{ inputs.image_tag }}\"" -i charts/${{ inputs.ork }}/values.yaml
-          yq eval ".gateway.image.repository = \"ghcr.io/${{ inputs.repository }}-gateway\"" -i charts/${{ inputs.ork }}/values.yaml
-          yq eval ".controlCenter.image.tag = \"${{ inputs.image_tag }}\"" -i charts/${{ inputs.ork }}/values.yaml
-          yq eval ".controlCenter.image.repository = \"ghcr.io/${{ inputs.repository }}-cc\"" -i charts/${{ inputs.ork }}/values.yaml
+          yq eval ".version = \"${VERSION}\"" -i charts/${{ inputs.inrun }}/Chart.yaml
+          yq eval ".appVersion = \"${{ inputs.image_tag }}\"" -i charts/${{ inputs.inrun }}/Chart.yaml
+          yq eval ".runtime.image.tag = \"${{ inputs.image_tag }}\"" -i charts/${{ inputs.inrun }}/values.yaml
+          yq eval ".runtime.image.repository = \"ghcr.io/${{ inputs.repository }}\"" -i charts/${{ inputs.inrun }}/values.yaml
+          yq eval ".gateway.image.tag = \"${{ inputs.image_tag }}\"" -i charts/${{ inputs.inrun }}/values.yaml
+          yq eval ".gateway.image.repository = \"ghcr.io/${{ inputs.repository }}-gateway\"" -i charts/${{ inputs.inrun }}/values.yaml
+          yq eval ".console.image.tag = \"${{ inputs.image_tag }}\"" -i charts/${{ inputs.inrun }}/values.yaml
+          yq eval ".console.image.repository = \"ghcr.io/${{ inputs.repository }}-console\"" -i charts/${{ inputs.inrun }}/values.yaml
 
       - name: Package Helm chart and push to gh-pages
         env:
-          GH_TOKEN: ${{ secrets.ORK_PUBLISH_PAT }}
+          GH_TOKEN: ${{ secrets.INRUN_PUBLISH_PAT }}
         run: |
           set -eux
-          ORK="${{ inputs.ork }}"
-          CHART_DIR="charts/${ORK}"
+          INRUN="${{ inputs.inrun }}"
+          CHART_DIR="charts/${INRUN}"
           TAG="${{ github.ref_name }}"
           VERSION="${TAG#v}"
           IMAGE_TAG="${{ inputs.image_tag }}"
@@ -90,7 +90,7 @@ jobs:
 
           git clone --branch gh-pages "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
 
-          cp ".cr-release-packages/${ORK}-${VERSION}.tgz" /tmp/gh-pages/
+          cp ".cr-release-packages/${INRUN}-${VERSION}.tgz" /tmp/gh-pages/
 
           # Sync README with version badges
           cp "${CHART_DIR}/README.md" /tmp/gh-pages/README.md
@@ -99,7 +99,7 @@ jobs:
           awk 'NR==1{print; print ""; print "![Chart Version](https://img.shields.io/badge/chart%20version-'"${VERSION_BADGE}"'-blue?style=flat-square) ![App Version](https://img.shields.io/badge/app%20version-'"${IMAGE_TAG_BADGE}"'-blue?style=flat-square)"; print ""; next}1' \
             /tmp/gh-pages/README.md > /tmp/README.tmp && mv /tmp/README.tmp /tmp/gh-pages/README.md
 
-          cp "charts/${ORK}/values.yaml" /tmp/gh-pages/values.yaml
+          cp "charts/${INRUN}/values.yaml" /tmp/gh-pages/values.yaml
 
           cd /tmp/gh-pages
           if [[ -f index.yaml ]]; then
@@ -111,7 +111,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "*.tgz" index.yaml README.md values.yaml
-          git commit -m "Release ${ORK}-${VERSION}"
+          git commit -m "Release ${INRUN}-${VERSION}"
           git push origin gh-pages
 
       - name: Write summary
@@ -119,8 +119,8 @@ jobs:
           echo "### ⎈ Helm chart published" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo "helm repo add ${{ inputs.ork }} ${{ inputs.helm_repo_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "helm repo add ${{ inputs.inrun }} ${{ inputs.helm_repo_url }}" >> "$GITHUB_STEP_SUMMARY"
           echo "helm repo update" >> "$GITHUB_STEP_SUMMARY"
-          echo "helm upgrade --install ${{ inputs.ork }} ${{ inputs.helm_chart }} --namespace ${{ inputs.ork }}-system --create-namespace" >> "$GITHUB_STEP_SUMMARY"
+          echo "helm upgrade --install ${{ inputs.inrun }} ${{ inputs.helm_chart }} --namespace ${{ inputs.inrun }}-system --create-namespace" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"

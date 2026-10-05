@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -60,11 +60,11 @@ func (r *Resolver) ResolveStringSlice(values []string) ([]string, error) {
 
 // ResolveEnvFromRefs resolves Name/Prefix/Suffix template expressions in each
 // EnvFromRef. Keys and Optional are not template expressions — copied as-is.
-func (r *Resolver) ResolveEnvFromRefs(refs []orktypes.EnvFromRef, field string) ([]orktypes.EnvFromRef, error) {
+func (r *Resolver) ResolveEnvFromRefs(refs []types.EnvFromRef, field string) ([]types.EnvFromRef, error) {
 	if len(refs) == 0 {
 		return nil, nil
 	}
-	resolved := make([]orktypes.EnvFromRef, 0, len(refs))
+	resolved := make([]types.EnvFromRef, 0, len(refs))
 	for _, ref := range refs {
 		name, err := r.Resolve(ref.Name)
 		if err != nil {
@@ -78,7 +78,7 @@ func (r *Resolver) ResolveEnvFromRefs(refs []orktypes.EnvFromRef, field string) 
 		if err != nil {
 			return nil, fmt.Errorf("%s: suffix: %w", field, err)
 		}
-		resolved = append(resolved, orktypes.EnvFromRef{
+		resolved = append(resolved, types.EnvFromRef{
 			Name:     name,
 			Prefix:   prefix,
 			Suffix:   suffix,
@@ -109,7 +109,7 @@ func (r *Resolver) ResolveEnvFromRefs(refs []orktypes.EnvFromRef, field string) 
 // The 5% of patterns that still require Go hooks do so because of business logic
 // complexity — not because of any templating limitation.
 // ObjectToMap is the exported variant of objectToMap for external packages
-// (e.g. kordinator/prepare) that need the same typed/unstructured unification.
+// (e.g. coordinator/prepare) that need the same typed/unstructured unification.
 func ObjectToMap(obj domain.Object) (map[string]interface{}, error) {
 	return objectToMap(obj)
 }

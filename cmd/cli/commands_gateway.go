@@ -2,4 +2,4 @@
 
 package cli
 
-import _ "github.com/orkspace/orkestra/cmd/cli/gate"
+import _ "github.com/inrundev/inrun/cmd/cli/gate"

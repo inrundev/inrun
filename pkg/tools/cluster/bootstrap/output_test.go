@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"gopkg.in/yaml.v3"
 )
 
@@ -13,7 +13,7 @@ func TestToGatewayClusterConfig_WithCA(t *testing.T) {
 	r := &Result{
 		Entry:           ClusterEntry{Name: "prod"},
 		Endpoint:        "https://prod.internal:6443",
-		SecretName:      "orkestra-prod",
+		SecretName:      "inrun-prod",
 		SecretNamespace: "default",
 		HasCA:           true,
 	}
@@ -26,13 +26,13 @@ func TestToGatewayClusterConfig_WithCA(t *testing.T) {
 	if cfg.TokenRef == nil {
 		t.Fatal("expected TokenRef")
 	}
-	if cfg.TokenRef.Name != "orkestra-prod" || cfg.TokenRef.Namespace != "default" || cfg.TokenRef.Key != "token" {
+	if cfg.TokenRef.Name != "inrun-prod" || cfg.TokenRef.Namespace != "default" || cfg.TokenRef.Key != "token" {
 		t.Errorf("unexpected TokenRef: %+v", cfg.TokenRef)
 	}
 	if cfg.CARef == nil {
 		t.Fatal("expected CARef when HasCA=true")
 	}
-	if cfg.CARef.Name != "orkestra-prod" || cfg.CARef.Key != "ca.crt" {
+	if cfg.CARef.Name != "inrun-prod" || cfg.CARef.Key != "ca.crt" {
 		t.Errorf("unexpected CARef: %+v", cfg.CARef)
 	}
 	if cfg.SecretRef != nil {
@@ -44,8 +44,8 @@ func TestToGatewayClusterConfig_WithoutCA(t *testing.T) {
 	r := &Result{
 		Entry:           ClusterEntry{Name: "staging"},
 		Endpoint:        "https://staging.internal:6443",
-		SecretName:      "orkestra-staging",
-		SecretNamespace: "orkestra",
+		SecretName:      "inrun-staging",
+		SecretNamespace: "inrun",
 		HasCA:           false,
 	}
 
@@ -64,14 +64,14 @@ func TestWriteClusterCredentials_RoundTrip(t *testing.T) {
 		{
 			Entry:           ClusterEntry{Name: "staging"},
 			Endpoint:        "https://staging.internal:6443",
-			SecretName:      "orkestra-staging",
+			SecretName:      "inrun-staging",
 			SecretNamespace: "default",
 			HasCA:           true,
 		},
 		{
 			Entry:           ClusterEntry{Name: "prod"},
 			Endpoint:        "https://prod.internal:6443",
-			SecretName:      "orkestra-prod",
+			SecretName:      "inrun-prod",
 			SecretNamespace: "default",
 			HasCA:           false,
 		},
@@ -88,7 +88,7 @@ func TestWriteClusterCredentials_RoundTrip(t *testing.T) {
 	}
 
 	var out struct {
-		Clusters map[string]orktypes.GatewayClusterConfig `yaml:"clusters"`
+		Clusters map[string]types.GatewayClusterConfig `yaml:"clusters"`
 	}
 	if err := yaml.Unmarshal(data, &out); err != nil {
 		t.Fatalf("unmarshalling output: %v", err)
@@ -122,7 +122,7 @@ func TestWriteClusterCredentials_FilePermissions(t *testing.T) {
 	r := &Result{
 		Entry:           ClusterEntry{Name: "prod"},
 		Endpoint:        "https://prod.internal:6443",
-		SecretName:      "orkestra-prod",
+		SecretName:      "inrun-prod",
 		SecretNamespace: "default",
 	}
 
@@ -147,7 +147,7 @@ func TestWriteClusterCredentials_CreatesDirectory(t *testing.T) {
 	r := &Result{
 		Entry:      ClusterEntry{Name: "prod"},
 		Endpoint:   "https://prod.internal:6443",
-		SecretName: "orkestra-prod", SecretNamespace: "default",
+		SecretName: "inrun-prod", SecretNamespace: "default",
 	}
 	if err := WriteClusterCredentials(path, []*Result{r}); err != nil {
 		t.Fatalf("WriteClusterCredentials: %v", err)

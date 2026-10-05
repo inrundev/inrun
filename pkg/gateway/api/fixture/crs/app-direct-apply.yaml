@@ -1,6 +1,6 @@
 # Direct apply: no provenance annotations — simulates a kubectl apply bypassing the Gateway API.
 # Exercises: warn when: isDirectApply . → should fire ValidationWarning.
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: PlatformResource
 metadata:
   name: payments-api-direct

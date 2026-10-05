@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 	"gopkg.in/yaml.v3"
 )
 

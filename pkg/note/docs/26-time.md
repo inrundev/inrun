@@ -1,6 +1,6 @@
 # 26 — Time Notes
 
-Parse timestamps, measure elapsed time, and validate duration strings in Katalog templates. Primarily used in `status.fields` to surface human-readable time values and in `when:` conditions to drive time-based rotation and expiry logic.
+Parse timestamps, measure elapsed time, and validate duration strings in Catalog templates. Primarily used in `status.fields` to surface human-readable time values and in `when:` conditions to drive time-based rotation and expiry logic.
 
 All timestamp notes accept RFC3339, RFC3339Nano, `2006-01-02T15:04:05Z`, and `YYYY-MM-DD` formats. Safe zero values are returned for unparseable input.
 

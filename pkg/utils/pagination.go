@@ -64,7 +64,7 @@ func ParsePagination(r *http.Request) PaginationParams {
 // PageItems slices a string slice according to pagination params and returns
 // the page and the total count. Out-of-bounds offsets return an empty slice.
 //
-// Used for catalog and schema list responses where items are already in memory.
+// Used for service-list and schema list responses where items are already in memory.
 // For Kubernetes resource lists, use the continue token with the dynamic client.
 func PageItems[T any](items []T, p PaginationParams) (page []T, total int) {
 	total = len(items)

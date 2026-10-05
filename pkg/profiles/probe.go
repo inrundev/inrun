@@ -1,6 +1,6 @@
 package profiles
 
-import orktypes "github.com/orkspace/orkestra/pkg/types"
+import "github.com/inrundev/inrun/pkg/types"
 
 // ProbeProfile is a named set of Kubernetes probe timing parameters.
 //
@@ -47,7 +47,7 @@ var probeTimings = map[ProbeProfile]ProbeTimings{
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // The second return value is false when the name is not recognized — callers
 // should fall back to DefaultProbeTimings in that case.
-func ApplyProbeProfile(name string, reg *orktypes.ProfileRegistry) (ProbeTimings, bool) {
+func ApplyProbeProfile(name string, reg *types.ProfileRegistry) (ProbeTimings, bool) {
 	if reg != nil {
 		if def, found := reg.LookupProbe(name); found {
 			return ProbeTimings{

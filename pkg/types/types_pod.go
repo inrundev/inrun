@@ -3,7 +3,7 @@ package types
 
 // ── Pod ───────────────────────────────────────────────────────────────────────
 
-// PodTemplateSource declares one Pod to be managed by Orkestra.
+// PodTemplateSource declares one Pod to be managed by Inrun.
 //
 // Prefer DeploymentTemplateSource for long-running workloads.
 // Deployments manage Pod restarts, rolling updates, and replica sets automatically.

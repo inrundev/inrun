@@ -121,7 +121,7 @@ Keywords: map, convert, parse, json, yaml, coerce, object
 
 ```yaml
 # Use when a field may be a native map or a JSON-serialized map:
-# value: "{{ (asMap .metadata.annotations).orkestra\\.io/config | default \"{}\" }}"
+# value: "{{ (asMap .metadata.annotations).inrun\\.dev/config | default \"{}\" }}"
 ```
 
 ---

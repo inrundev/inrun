@@ -3,24 +3,24 @@ package generate
 import (
 	"fmt"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/labels"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
 
 const (
-	defaultConfigMapName = "orkestra-katalog"
-	defaultConfigMapKey  = "katalog.yaml"
+	defaultConfigMapName = "inrun-catalog"
+	defaultConfigMapKey  = "catalog.yaml"
 )
 
-// ConfigMap renders a Namespace + ConfigMap from pre-expanded katalog bytes.
-// expandedYAML must be the output of katalog.Katalog.SerializeExpanded() —
+// ConfigMap renders a Namespace + ConfigMap from pre-expanded catalog bytes.
+// expandedYAML must be the output of catalog.Catalog.SerializeExpanded() —
 // fully resolved, no OCI imports remaining.
 func ConfigMap(expandedYAML []byte, namespace string) ([]byte, error) {
 	if namespace == "" {
-		namespace = konfig.GetStrEnv("ORK_NAMESPACE", "orkestra-system")
+		namespace = config.GetStrEnv("INRUN_NAMESPACE", "inrun-system")
 	}
 	return renderNamespaceAndConfigMap(expandedYAML, namespace)
 }
@@ -38,7 +38,7 @@ func renderNamespaceAndConfigMap(expandedYAML []byte, namespace string) ([]byte,
 	return []byte("---\n" + string(nsBytes) + "\n---\n" + string(cmBytes)), nil
 }
 
-// renderConfigMapBytes marshals a ConfigMap embedding the given expanded katalog YAML.
+// renderConfigMapBytes marshals a ConfigMap embedding the given expanded catalog YAML.
 // The Namespace is intentionally excluded — callers prepend it so that
 // bundle assembly can include it exactly once.
 func renderConfigMapBytes(expandedYAML []byte, namespace string) ([]byte, error) {
@@ -50,7 +50,7 @@ func renderConfigMapBytes(expandedYAML []byte, namespace string) ([]byte, error)
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultConfigMapName,
 			Namespace: namespace,
-			Labels:    labels.OrkestraBaseLabels(),
+			Labels:    labels.InrunBaseLabels(),
 		},
 		Data: map[string]string{
 			defaultConfigMapKey: string(expandedYAML),

@@ -1,6 +1,6 @@
 # Happy path: app workload, staging — all required fields present.
 # Exercises: no admission violations, no warn (staging skips productionApproval check).
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: PlatformResource
 metadata:
   name: payments-api

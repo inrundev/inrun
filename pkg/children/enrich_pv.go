@@ -3,15 +3,15 @@ package children
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // enrichGroupWithPVC embeds the bound PVC object under "_pvc" for each PV in
 // the group. A no-op when pv enrichment is not enabled on the CRD.
 // The PVC reference comes from spec.claimRef on the PV, set by Kubernetes once bound.
-func enrichGroupWithPVC(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry) {
+func enrichGroupWithPVC(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry) {
 	if !enrichmentEnabled("pv", crd) {
 		return
 	}

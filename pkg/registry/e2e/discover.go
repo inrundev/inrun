@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"gopkg.in/yaml.v3"
 )
 
@@ -58,19 +58,19 @@ func DiscoverE2EFiles(root string, skip []string) ([]string, error) {
 
 // BuildDiscoveryE2E constructs an in-memory E2E aggregator from a list of
 // discovered file paths. wait is injected on every import except the first.
-func BuildDiscoveryE2E(paths []string, wait string) orktypes.E2E {
-	imports := make([]orktypes.E2EImport, len(paths))
+func BuildDiscoveryE2E(paths []string, wait string) types.E2E {
+	imports := make([]types.E2EImport, len(paths))
 	for i, p := range paths {
-		imp := orktypes.E2EImport{Path: p}
+		imp := types.E2EImport{Path: p}
 		if i > 0 && wait != "" {
 			imp.Wait = wait
 		}
 		imports[i] = imp
 	}
-	return orktypes.E2E{
-		APIVersion: "orkestra.orkspace.io/v1",
+	return types.E2E{
+		APIVersion: "inrun.dev/v1",
 		Kind:       "E2E",
-		Metadata:   orktypes.E2EMeta{Name: "discovered-suite"},
+		Metadata:   types.E2EMeta{Name: "discovered-suite"},
 		Imports:    imports,
 	}
 }
@@ -144,7 +144,7 @@ func isSimulatePureAggregator(path string) bool {
 	var doc struct {
 		Imports []string `yaml:"imports"`
 		Spec    *struct {
-			Katalog string `yaml:"katalog"`
+			Catalog string `yaml:"catalog"`
 		} `yaml:"spec"`
 	}
 	if err := yaml.Unmarshal(data, &doc); err != nil {
@@ -162,7 +162,7 @@ func isPureAggregatorFile(path string) bool {
 	var doc struct {
 		Imports []interface{} `yaml:"imports"`
 		Spec    struct {
-			Katalog string   `yaml:"katalog"`
+			Catalog string   `yaml:"catalog"`
 			CR      string   `yaml:"cr"`
 			CRFiles []string `yaml:"crFiles"`
 			Custom  *struct {
@@ -173,6 +173,6 @@ func isPureAggregatorFile(path string) bool {
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return false
 	}
-	hasSpec := doc.Spec.Katalog != "" || doc.Spec.CR != "" || len(doc.Spec.CRFiles) > 0 || (doc.Spec.Custom != nil && doc.Spec.Custom.Target != "")
+	hasSpec := doc.Spec.Catalog != "" || doc.Spec.CR != "" || len(doc.Spec.CRFiles) > 0 || (doc.Spec.Custom != nil && doc.Spec.Custom.Target != "")
 	return len(doc.Imports) > 0 && !hasSpec
 }

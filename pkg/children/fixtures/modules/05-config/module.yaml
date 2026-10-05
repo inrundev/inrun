@@ -1,0 +1,26 @@
+apiVersion: inrun.dev/v1
+kind: Module
+metadata:
+  name: fixture-config
+  description: >
+    Fixture module — ConfigMap and Secret, forEach over spec.namespaces.
+
+resources:
+  configMaps:
+    - name: "{{ .metadata.name }}-{{ .ns }}-config"
+      namespace: "{{ .ns }}"
+      data:
+        namespace: "{{ .ns }}"
+        tenant: "{{ .metadata.name }}"
+      forEach:
+        field: spec.namespaces
+        as: ns
+
+  secrets:
+    - name: "{{ .metadata.name }}-{{ .ns }}-secret"
+      namespace: "{{ .ns }}"
+      data:
+        ns: "{{ .ns }}"
+      forEach:
+        field: spec.namespaces
+        as: ns

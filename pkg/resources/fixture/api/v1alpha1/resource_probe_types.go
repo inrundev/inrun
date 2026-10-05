@@ -1,6 +1,6 @@
 // api/v1alpha1/resource_probe_types.go
 //
-// Typed Go struct for the ResourceProbe CRD (group: resources.orkestra.io).
+// Typed Go struct for the ResourceProbe CRD (group: resources.inrun.dev).
 // Gives type-safe spec access in resource_hooks.go instead of unstructured map navigation.
 package v1alpha1
 
@@ -57,7 +57,7 @@ type ResourceProbeList struct {
 }
 
 var (
-	GroupVersion  = schema.GroupVersion{Group: "resources.orkestra.io", Version: "v1alpha1"}
+	GroupVersion  = schema.GroupVersion{Group: "resources.inrun.dev", Version: "v1alpha1"}
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
 	AddToScheme   = SchemeBuilder.AddToScheme
 )

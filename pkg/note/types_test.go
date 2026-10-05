@@ -31,7 +31,7 @@ func TestTypeOf(t *testing.T) {
 	}
 }
 
-func TestOrkLen(t *testing.T) {
+func TestInrunLen(t *testing.T) {
 	tests := []struct {
 		name string
 		v    interface{}
@@ -48,8 +48,8 @@ func TestOrkLen(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := OrkLen(tt.v); got != tt.want {
-				t.Errorf("OrkLen(%v) = %d, want %d", tt.v, got, tt.want)
+			if got := InrunLen(tt.v); got != tt.want {
+				t.Errorf("InrunLen(%v) = %d, want %d", tt.v, got, tt.want)
 			}
 		})
 	}

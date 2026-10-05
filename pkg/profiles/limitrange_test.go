@@ -3,16 +3,16 @@ package profiles_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func TestLimitRangeProfileUserDefined(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		LimitRanges: []orktypes.LimitRangeProfileDef{
+	reg := types.ProfileRegistry{
+		LimitRanges: []types.LimitRangeProfileDef{
 			{
 				Name: "default-container",
-				Limits: []orktypes.LimitRangeItem{
+				Limits: []types.LimitRangeItem{
 					{
 						Type:           "Container",
 						Default:        map[string]string{"cpu": "500m", "memory": "256Mi"},
@@ -47,11 +47,11 @@ func TestLimitRangeProfileUserDefined(t *testing.T) {
 }
 
 func TestLimitRangeProfileMultipleItems(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		LimitRanges: []orktypes.LimitRangeProfileDef{
+	reg := types.ProfileRegistry{
+		LimitRanges: []types.LimitRangeProfileDef{
 			{
 				Name: "multi",
-				Limits: []orktypes.LimitRangeItem{
+				Limits: []types.LimitRangeItem{
 					{Type: "Container", Max: map[string]string{"cpu": "2"}},
 					{Type: "Pod", Max: map[string]string{"cpu": "4", "memory": "4Gi"}},
 				},
@@ -79,9 +79,9 @@ func TestLimitRangeProfileUnknownReturnsError(t *testing.T) {
 }
 
 func TestIsValidLimitRangeProfile(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		LimitRanges: []orktypes.LimitRangeProfileDef{
-			{Name: "my-limits", Limits: []orktypes.LimitRangeItem{{Type: "Container"}}},
+	reg := types.ProfileRegistry{
+		LimitRanges: []types.LimitRangeProfileDef{
+			{Name: "my-limits", Limits: []types.LimitRangeItem{{Type: "Container"}}},
 		},
 	}
 

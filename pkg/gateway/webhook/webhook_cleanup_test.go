@@ -14,19 +14,19 @@ func TestCleanupValidatingWebhook_RemovesExisting(t *testing.T) {
 	client := fake.NewClientset(
 		&admissionv1.ValidatingWebhookConfiguration{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "orkestra-admission-validation",
+				Name: "inrun-admission-validation",
 			},
 		},
 	)
 
-	err := cleanupValidatingWebhook(ctx, client, "orkestra-admission-validation")
+	err := cleanupValidatingWebhook(ctx, client, "inrun-admission-validation")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	_, err = client.AdmissionregistrationV1().
 		ValidatingWebhookConfigurations().
-		Get(ctx, "orkestra-admission-validation", metav1.GetOptions{})
+		Get(ctx, "inrun-admission-validation", metav1.GetOptions{})
 
 	if err == nil {
 		t.Fatalf("expected webhook to be deleted")
@@ -37,7 +37,7 @@ func TestCleanupValidatingWebhook_NoErrorWhenNotFound(t *testing.T) {
 	ctx := context.Background()
 	client := fake.NewClientset()
 
-	err := cleanupValidatingWebhook(ctx, client, "orkestra-admission-validation")
+	err := cleanupValidatingWebhook(ctx, client, "inrun-admission-validation")
 	if err != nil {
 		t.Fatalf("expected no error when webhook does not exist, got: %v", err)
 	}
@@ -48,19 +48,19 @@ func TestCleanupMutatingWebhook_RemovesExisting(t *testing.T) {
 	client := fake.NewClientset(
 		&admissionv1.MutatingWebhookConfiguration{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "orkestra-admission-mutation",
+				Name: "inrun-admission-mutation",
 			},
 		},
 	)
 
-	err := cleanupMutatingWebhook(ctx, client, "orkestra-admission-mutation")
+	err := cleanupMutatingWebhook(ctx, client, "inrun-admission-mutation")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	_, err = client.AdmissionregistrationV1().
 		MutatingWebhookConfigurations().
-		Get(ctx, "orkestra-admission-mutation", metav1.GetOptions{})
+		Get(ctx, "inrun-admission-mutation", metav1.GetOptions{})
 
 	if err == nil {
 		t.Fatalf("expected webhook to be deleted")
@@ -71,7 +71,7 @@ func TestCleanupMutatingWebhook_NoErrorWhenNotFound(t *testing.T) {
 	ctx := context.Background()
 	client := fake.NewClientset()
 
-	err := cleanupMutatingWebhook(ctx, client, "orkestra-admission-mutation")
+	err := cleanupMutatingWebhook(ctx, client, "inrun-admission-mutation")
 	if err != nil {
 		t.Fatalf("expected no error when webhook does not exist, got: %v", err)
 	}

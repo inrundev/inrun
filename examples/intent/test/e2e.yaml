@@ -1,4 +1,4 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: website-intent-e2e
@@ -7,14 +7,14 @@ metadata:
     reconciled, and read the view back through the gateway.
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   crd: ../manifests/crd.yaml
   valuesFiles:
     - ./e2e-values.yaml
 
   cluster:
     provider: kind
-    name: ork-e2e
+    name: inrun-e2e
     reuse: false
 
   expect:
@@ -23,8 +23,8 @@ spec:
       timeout: 60s
       kubectl:
         port-forward:
-          - service: orkestra-gateway
-            namespace: orkestra-system
+          - service: inrun-gateway
+            namespace: inrun-system
             port: 8080
             path: /api/v1/apply
             method: POST
@@ -52,8 +52,8 @@ spec:
       timeout: 60s
       kubectl:
         port-forward:
-          - service: orkestra-gateway
-            namespace: orkestra-system
+          - service: inrun-gateway
+            namespace: inrun-system
             port: 8080
             path: /api/v1/resources/website/default/hello-intent
             headers:
@@ -68,8 +68,8 @@ spec:
       timeout: 60s
       kubectl:
         port-forward:
-          - service: orkestra-gateway
-            namespace: orkestra-system
+          - service: inrun-gateway
+            namespace: inrun-system
             port: 8080
             path: /api/v1/resources/website/default/hello-intent
             method: DELETE

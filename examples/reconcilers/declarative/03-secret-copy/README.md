@@ -2,7 +2,7 @@
 
 A cluster-scoped `SecretDistribution` copies a Secret from a source namespace
 into each target namespace and keeps the copies in sync. It shows that
-Katalogs manage built-in kinds, not only new ones.
+Catalogs manage built-in kinds, not only new ones.
 
 > **Trust:** whoever can create a `SecretDistribution` can copy any Secret the
 > operator can read into any namespace. Treat it as a platform-internal CRD:
@@ -14,7 +14,7 @@ Katalogs manage built-in kinds, not only new ones.
 No cluster needed.
 
 ```bash
-ork simulate
+inrun simulate
 ```
 
 ### 2. Run
@@ -22,7 +22,7 @@ ork simulate
 Applies `manifests/setup.yaml` first: the `platform` namespace and the source Secret.
 
 ```bash
-ork run
+inrun
 ```
 
 ### 3. Check a copy
@@ -56,5 +56,5 @@ chmod +x cleanup.sh && ./cleanup.sh
 Runs the same checks in a kind cluster.
 
 ```bash
-ork e2e
+inrun e2e
 ```

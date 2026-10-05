@@ -5,27 +5,27 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkhpa "github.com/orkspace/orkestra/pkg/resources/hpas"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/hpas"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunHPAs resolves and applies HorizontalPodAutoscaler template declarations.
 func RunHPAs(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.HPATemplateSource,
+	srcs []types.HPATemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -37,7 +37,7 @@ func RunHPAs(
 	}
 
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 		ns, _ := resolver.Resolve(src.Namespace)
@@ -52,7 +52,7 @@ func RunHPAs(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orkhpa.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := hpas.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("hpas[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -69,18 +69,18 @@ func RunHPAs(
 			return fmt.Errorf("hpas[%d]: %w", i, err)
 		}
 
-		spec := orkhpa.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
+		spec := hpas.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
 
 		if update {
-			if err := orkhpa.Update(ctx, kube, owner, spec); err != nil {
+			if err := hpas.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("hpas[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkhpa.Create(ctx, kube, owner, spec); err != nil {
+			if err := hpas.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("hpas[%d].create: %w", i, err)
 			}
 			if src.Reconcile {
-				if err := orkhpa.Update(ctx, kube, owner, spec); err != nil {
+				if err := hpas.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("hpas[%d].reconcile: %w", i, err)
 				}
 			}

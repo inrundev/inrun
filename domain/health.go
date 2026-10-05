@@ -1,7 +1,7 @@
 // domain/health.go
 package domain
 
-// Health is the observability contract for any Orkestra Komponent that
+// Health is the observability contract for any Inrun Component that
 // exposes liveness and readiness state.
 //
 // Implementations are expected to be safe for concurrent use — all methods

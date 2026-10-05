@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,9 +35,9 @@ func cooldownKey(ns, crName, name string) string {
 func EvaluateWorkloadAutoscaleDeployment(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	crName, ns, resourceName string,
-	cfg *orktypes.WorkloadAutoscale,
+	cfg *types.WorkloadAutoscale,
 ) error {
 	return evaluateWorkloadAutoscaleForKind(ctx, kube, resolver, crName, ns, resourceName, cfg, WorkloadKindDeployment)
 }
@@ -46,9 +46,9 @@ func EvaluateWorkloadAutoscaleDeployment(
 func EvaluateWorkloadAutoscaleStatefulSet(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	crName, ns, resourceName string,
-	cfg *orktypes.WorkloadAutoscale,
+	cfg *types.WorkloadAutoscale,
 ) error {
 	return evaluateWorkloadAutoscaleForKind(ctx, kube, resolver, crName, ns, resourceName, cfg, WorkloadKindStatefulSet)
 }
@@ -57,9 +57,9 @@ func EvaluateWorkloadAutoscaleStatefulSet(
 func EvaluateWorkloadAutoscaleReplicaSet(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	crName, ns, resourceName string,
-	cfg *orktypes.WorkloadAutoscale,
+	cfg *types.WorkloadAutoscale,
 ) error {
 	return evaluateWorkloadAutoscaleForKind(ctx, kube, resolver, crName, ns, resourceName, cfg, WorkloadKindReplicaSet)
 }
@@ -67,9 +67,9 @@ func EvaluateWorkloadAutoscaleReplicaSet(
 func evaluateWorkloadAutoscaleForKind(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	crName, ns, resourceName string,
-	cfg *orktypes.WorkloadAutoscale,
+	cfg *types.WorkloadAutoscale,
 	kind WorkloadKind,
 ) error {
 	if cfg == nil {
@@ -123,7 +123,7 @@ func evaluateWorkloadAutoscaleForKind(
 	// ── Evaluate scale-up ────────────────────────────────────────────────────
 	if cfg.ScaleUp != nil && current < max {
 		c := cfg.ScaleUp
-		if orktypes.EvaluateConditions(data, c.Conditions.When, c.Conditions.Or, eval) {
+		if types.EvaluateConditions(data, c.Conditions.When, c.Conditions.Or, eval) {
 			target := resolveTarget(current, max, c, true)
 			if target != current {
 				log.Info().Int32("from", current).Int32("to", target).Msg("autoscale: scaling up")
@@ -141,7 +141,7 @@ func evaluateWorkloadAutoscaleForKind(
 	// ── Evaluate scale-down ──────────────────────────────────────────────────
 	if cfg.ScaleDown != nil && current > min {
 		c := cfg.ScaleDown
-		if orktypes.EvaluateConditions(data, c.Conditions.When, c.Conditions.Or, eval) {
+		if types.EvaluateConditions(data, c.Conditions.When, c.Conditions.Or, eval) {
 			target := resolveTarget(current, min, c, false)
 			if target != current {
 				log.Info().Int32("from", current).Int32("to", target).Msg("autoscale: scaling down")
@@ -160,7 +160,7 @@ func evaluateWorkloadAutoscaleForKind(
 
 // resolveTarget computes the desired replica count from a scale direction.
 // scaleUp=true: clamps to max. scaleUp=false: clamps to min (floor).
-func resolveTarget(current, bound int32, dir *orktypes.WorkloadScaleDirection, scaleUp bool) int32 {
+func resolveTarget(current, bound int32, dir *types.WorkloadScaleDirection, scaleUp bool) int32 {
 	if dir.Target != nil {
 		t := *dir.Target
 		if scaleUp && t > bound {
@@ -188,7 +188,7 @@ func resolveTarget(current, bound int32, dir *orktypes.WorkloadScaleDirection, s
 	return current
 }
 
-const cooldownAnnotation = "orkestra.orkspace.io/last-scale-event"
+const cooldownAnnotation = "inrun.dev/last-scale-event"
 
 // readCooldownAnnotation reads the last scale event time from the workload annotation.
 // Returns zero time if the annotation is absent or unparseable.

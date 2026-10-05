@@ -7,29 +7,29 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/registry"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/registry"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/spf13/cobra"
 )
 
 // ── inspect ───────────────────────────────────────────────────────────────────
 
-var inspectMotif bool
+var inspectModule bool
 
 var inspectCmd = &cobra.Command{
 	Use:   "inspect <name>:<version>",
 	Short: "Show metadata for a pattern version",
 	Args:  cobra.ExactArgs(1),
-	Example: `  ork inspect postgres:v14
-  ork inspect web-service:v1.0.0 --motif
-  ork inspect oci://ghcr.io/myorg/patterns/redis:v7
-  ork inspect redis:v1.0.0 --view katalog.yaml,simulate.yaml`,
+	Example: `  inrun inspect postgres:v14
+  inrun inspect web-service:v1.0.0 --module
+  inrun inspect oci://ghcr.io/myorg/patterns/redis:v7
+  inrun inspect redis:v1.0.0 --view catalog.yaml,simulate.yaml`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		kind := registry.KatalogKind
-		if inspectMotif {
-			kind = registry.MotifKind
+		kind := registry.CatalogKind
+		if inspectModule {
+			kind = registry.ModuleKind
 		}
 		ref, err := registry.ResolveForKind(args[0], kind)
 		if err != nil {
@@ -63,7 +63,7 @@ var inspectCmd = &cobra.Command{
 				tagW = 12
 				simW = 27
 			)
-			if !inspectMotif {
+			if !inspectModule {
 				fmt.Printf("  %s  %s  %s\n",
 					cmdutil.Gray(fmt.Sprintf("%-*s", tagW, "VERSION")),
 					cmdutil.PadRight(cmdutil.Gray("SIMULATE"), simW),
@@ -77,12 +77,12 @@ var inspectCmd = &cobra.Command{
 				}
 				if v.Meta.Deprecated != nil {
 					dep := v.Meta.Deprecated
-					d := &orktypes.KatalogDeprecation{
+					d := &types.CatalogDeprecation{
 						MigratedTo: dep.MigratedTo,
 						Message:    dep.Message,
 					}
 					if dep.TimelineFrom != "" || dep.TimelineTo != "" {
-						d.Timeline = &orktypes.DeprecationTimeline{
+						d.Timeline = &types.DeprecationTimeline{
 							From: dep.TimelineFrom,
 							To:   dep.TimelineTo,
 						}
@@ -95,7 +95,7 @@ var inspectCmd = &cobra.Command{
 						deprecated = cmdutil.Yellow(" ⚠ deprecated")
 					}
 				}
-				if inspectMotif {
+				if inspectModule {
 					fmt.Printf("  %-*s%s\n", tagW, v.Tag, latest)
 					continue
 				}
@@ -141,8 +141,8 @@ var inspectCmd = &cobra.Command{
 			errStr := err.Error()
 			if strings.Contains(errStr, "401") || strings.Contains(errStr, "unauthorized") {
 				hint := fmt.Sprintf("\n\nhint: authenticate first:\n  docker login %s", ref.Registry)
-				if !inspectMotif {
-					hint += "\nhint: if this is a motif, re-run with --motif"
+				if !inspectModule {
+					hint += "\nhint: if this is a module, re-run with --module"
 				}
 				return fmt.Errorf("fetching info: %w%s", err, hint)
 			}
@@ -181,12 +181,12 @@ var inspectCmd = &cobra.Command{
 		if m.Deprecated != nil {
 			cmdutil.PrintPatternDeprecation(m.Deprecated)
 			dep := m.Deprecated
-			d := &orktypes.KatalogDeprecation{
+			d := &types.CatalogDeprecation{
 				MigratedTo: dep.MigratedTo,
 				Message:    dep.Message,
 			}
 			if dep.TimelineFrom != "" || dep.TimelineTo != "" {
-				d.Timeline = &orktypes.DeprecationTimeline{
+				d.Timeline = &types.DeprecationTimeline{
 					From: dep.TimelineFrom,
 					To:   dep.TimelineTo,
 				}
@@ -248,7 +248,7 @@ var inspectCmd = &cobra.Command{
 				fmt.Printf("  Simulate:    %s\n", cmdutil.SimulateNoAssertion())
 			}
 		}
-		if m.Kind != registry.MotifKind {
+		if m.Kind != registry.ModuleKind {
 			if m.E2E != nil {
 				switch m.E2E.Status {
 				case "passed":
@@ -328,15 +328,15 @@ var inspectCmd = &cobra.Command{
 			}
 		}
 		fmt.Printf("\nTo pull:\n")
-		if m.Kind == registry.MotifKind {
-			fmt.Printf("  ork pull %s:%s --motif %s\n", m.Name, m.Version, deprecated)
+		if m.Kind == registry.ModuleKind {
+			fmt.Printf("  inrun pull %s:%s --module %s\n", m.Name, m.Version, deprecated)
 		} else {
-			fmt.Printf("  ork pull %s:%s %s\n", m.Name, m.Version, deprecated)
+			fmt.Printf("  inrun pull %s:%s %s\n", m.Name, m.Version, deprecated)
 		}
 		fmt.Printf("\nTo import:\n")
-		if m.Kind == registry.MotifKind {
+		if m.Kind == registry.ModuleKind {
 			fmt.Printf("  imports:\n")
-			fmt.Printf("    - motif: %s %s\n", ref.String(), deprecated)
+			fmt.Printf("    - module: %s %s\n", ref.String(), deprecated)
 		} else {
 			fmt.Printf("  imports:\n")
 			fmt.Printf("    registry:\n")
@@ -348,8 +348,8 @@ var inspectCmd = &cobra.Command{
 }
 
 func init() {
-	inspectCmd.Flags().BoolVarP(&inspectMotif, "motif", "m", false, "Resolve as a motif (uses ORK_MOTIFS_REGISTRY)")
-	inspectCmd.Flags().String("view", "", "Comma-separated list of files to print before pulling (e.g. katalog.yaml,cr.yaml)")
+	inspectCmd.Flags().BoolVarP(&inspectModule, "module", "m", false, "Resolve as a module (uses INRUN_MODULES_REGISTRY)")
+	inspectCmd.Flags().String("view", "", "Comma-separated list of files to print before pulling (e.g. catalog.yaml,cr.yaml)")
 	inspectCmd.Flags().Bool("versions", false, "List up to 10 tracked versions with simulate and E2E status")
 	cmdutil.RootCmd.AddCommand(inspectCmd)
 

@@ -9,12 +9,12 @@ import (
 
 // RenderBundle assembles a complete installation bundle:
 // Namespace (once) → ServiceAccounts → ClusterRoles → ClusterRoleBindings → ConfigMap.
-// expandedYAML must be the output of katalog.Katalog.SerializeExpanded() —
+// expandedYAML must be the output of catalog.Catalog.SerializeExpanded() —
 // fully resolved, no OCI imports remaining. The ConfigMap embeds this content
 // so the runtime never needs to do OCI pulls at startup.
 //
-// runtimeRules are bound to the orkestra ClusterRole.
-// gatewayRules are bound to the orkestra-gateway ClusterRole.
+// runtimeRules are bound to the inrun ClusterRole.
+// gatewayRules are bound to the inrun-gateway ClusterRole.
 // opts controls which components are included in the output.
 func RenderBundle(
 	runtimeRules, gatewayRules []rbacv1.PolicyRule,

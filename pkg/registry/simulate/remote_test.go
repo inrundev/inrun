@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/merger"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/merger"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -21,9 +21,9 @@ const remoteTestCRD = `
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: webapps.testground.orkestra.io
+  name: webapps.testground.inrun.dev
 spec:
-  group: testground.orkestra.io
+  group: testground.inrun.dev
   names:
     kind: WebApp
     plural: webapps
@@ -49,9 +49,9 @@ stringData:
   token: test-token
 `
 
-const remoteTestKatalog = `
-apiVersion: orkestra.orkspace.io/v1
-kind: Katalog
+const remoteTestCatalog = `
+apiVersion: inrun.dev/v1
+kind: Catalog
 metadata:
   name: remote-harness-test
   version: 0.1.0
@@ -60,7 +60,7 @@ spec:
   crds:
     webapp:
       apiTypes:
-        group: testground.orkestra.io
+        group: testground.inrun.dev
         version: v1alpha1
         kind: WebApp
         plural: webapps
@@ -109,24 +109,24 @@ func TestRun_RemoteReconciler(t *testing.T) {
 	files := map[string]string{
 		"crd.yaml":     remoteTestCRD,
 		"secret.yaml":  remoteTestSecret,
-		"katalog.yaml": strings.Replace(remoteTestKatalog, "ENDPOINT", srv.URL+"/reconcile", 1),
+		"catalog.yaml": strings.Replace(remoteTestCatalog, "ENDPOINT", srv.URL+"/reconcile", 1),
 	}
 	for name, content := range files {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
 			t.Fatalf("writing %s: %v", name, err)
 		}
 	}
-	m := merger.New(filepath.Join(dir, "katalog.yaml"))
+	m := merger.New(filepath.Join(dir, "catalog.yaml"))
 	if err := m.Merge(); err != nil {
-		t.Fatalf("merging katalog: %v", err)
+		t.Fatalf("merging catalog: %v", err)
 	}
-	kat, err := pipeline.BuildExpanded(konfig.NewDefaultKonfig(), m)
+	kat, err := pipeline.BuildExpanded(config.NewDefaultConfig(), m)
 	if err != nil {
-		t.Fatalf("building katalog: %v", err)
+		t.Fatalf("building catalog: %v", err)
 	}
 
 	cr := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": "testground.orkestra.io/v1alpha1",
+		"apiVersion": "testground.inrun.dev/v1alpha1",
 		"kind":       "WebApp",
 		"metadata":   map[string]interface{}{"name": "my-app", "namespace": "default"},
 		"spec":       map[string]interface{}{"image": "nginx:1.25"},

@@ -1,23 +1,22 @@
-// pkg/orktypes/types.go
 package types
 
 import (
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/utils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // ── Registries ────────────────────────────────────────────────────────────────
-// Package-level registries — one set per Orkestra instance.
+// Package-level registries — one set per Inrun instance.
 // Populated by RegisterRuntimeObjects() in zz_generated_runtime_registry.go,
-// which is produced by `ork generate registry --file <path>`.
-// Keyed by schema.GroupVersionKind. Set during Katalog validation.
+// which is produced by `inrun generate registry --file <path>`.
+// Keyed by schema.GroupVersionKind. Set during Catalog validation.
 //
-// User code never reads or writes these directly. Orkestra reads them during
-// Katalog validation via addRuntimeObjects(), addHooks(), and addReconcilers().
+// User code never reads or writes these directly. Inrun reads them during
+// Catalog validation via addRuntimeObjects(), addHooks(), and addReconcilers().
 
 var ObjectRegistry = map[schema.GroupVersionKind]func() runtime.Object{}
 var ListRegistry = map[schema.GroupVersionKind]func() runtime.Object{}
@@ -28,7 +27,7 @@ var ReconcilerRegistry = map[schema.GroupVersionKind]NewReconcilerFunc{}
 // CRDs whose targets declare a distinct hook binary or custom constructor.
 // Outer key: GVK. Inner key: target name (matches serve.target.<name>).
 // Populated by the generator alongside HookRegistry / ReconcilerRegistry and
-// consumed by addTargetHooks() / addTargetConstructors() during Katalog validation.
+// consumed by addTargetHooks() / addTargetConstructors() during Catalog validation.
 //
 // Targets that share the CRD-level binary (only overriding hooks.args) do NOT
 // appear here — mergeReconcilerConfig in EffectiveOperatorBox handles them at
@@ -39,7 +38,7 @@ var TargetReconcilerRegistry = map[schema.GroupVersionKind]map[string]NewReconci
 // SchemeAdderFns holds AddToScheme functions collected from generated init()
 // calls. Each generated zz_generated_runtime_registry.go appends to this slice
 // in its init(); NewSchemeRegistry drains it via RegisterTypedScheme.
-// This is the bridge between the user's generated package and the Orkestra
+// This is the bridge between the user's generated package and the Inrun
 // internal pkg/runtime stub — no explicit call needed beyond the blank import.
 var SchemeAdderFns []func(*runtime.Scheme) error
 
@@ -62,7 +61,7 @@ var SchemeAdderFns []func(*runtime.Scheme) error
 //	Required for declarative hook templates (onCreate, onReconcile, onDelete)
 //	because field values are resolved at reconcile time via Go text/template
 //	expressions against the live CR object map.
-//	Use when you want zero-code operator behavior from the Katalog alone.
+//	Use when you want zero-code operator behavior from the Catalog alone.
 //
 // Auto-detection when mode is omitted:
 //
@@ -79,8 +78,8 @@ type CRDMode string
 type DependencyCondtion string
 
 const (
-	// KonductorLeaseName is the coordination.k8s.io/v1 Lease that holds the Runtime leader identity.
-	KonductorLeaseName = "orkestra-konductor"
+	// LeaderLeaseName is the coordination.k8s.io/v1 Lease that holds the Runtime leader identity.
+	LeaderLeaseName = "inrun-leader"
 
 	CRDModeTyped   CRDMode = "typed"
 	CRDModeDynamic CRDMode = "dynamic"
@@ -104,18 +103,18 @@ var (
 )
 
 // ── APITypes ──────────────────────────────────────────────────────────────────
-// Mirrors the apiTypes block in crd-katalog.yaml.
-// ork generate reads this block to emit ObjectRegistry + ListRegistry entries
+// Mirrors the apiTypes block in crd-catalog.yaml.
+// inrun generate reads this block to emit ObjectRegistry + ListRegistry entries
 // and the RegisterScheme() function.
 
 type APITypes struct {
 	// Object — Go type name for a single CR instance. Required for typed mode.
-	// Used by ork generate to emit ObjectRegistry entries.
+	// Used by inrun generate to emit ObjectRegistry entries.
 	// e.g. "Project" → func() runtime.Object { return &projv1.Project{} }
 	Object string `yaml:"object,omitempty" json:"object,omitempty" validate:"omitempty"`
 
 	// List — Go type name for the CR list. Required for typed mode.
-	// Used by ork generate to emit ListRegistry entries.
+	// Used by inrun generate to emit ListRegistry entries.
 	// e.g. "ProjectList" → func() runtime.Object { return &projv1.ProjectList{} }
 	List string `yaml:"objectList,omitempty" json:"objectList,omitempty" validate:"omitempty"`
 
@@ -125,7 +124,7 @@ type APITypes struct {
 	Alias string `yaml:"alias,omitempty" json:"alias,omitempty" validate:"omitempty"`
 
 	// Group — Kubernetes API group. Required in all modes.
-	// e.g. "platform.orkestra.io"
+	// e.g. "platform.inrun.dev"
 	Group string `yaml:"group" json:"group" validate:"required,hostname_rfc1123"`
 
 	// Version — API version. Required in all modes.
@@ -143,14 +142,14 @@ type APITypes struct {
 
 	// APIPath — REST API path prefix. Default: /apis.
 	// Override to /api only for core Kubernetes types (Pod, ConfigMap, etc.)
-	// Almost always leave this empty — Orkestra defaults it to /apis.
+	// Almost always leave this empty — Inrun defaults it to /apis.
 	APIPath string `yaml:"apiPath,omitempty" json:"apiPath,omitempty" validate:"omitempty"`
 
 	// Location — fully qualified Go import path for the API types package.
-	// Required for typed mode. Used by ork generate for import statements
+	// Required for typed mode. Used by inrun generate for import statements
 	// and scheme registration in RegisterScheme().
 	// Not needed for dynamic mode — omit entirely.
-	// e.g. "github.com/orkspace/orkestra/api/types/project/v1alpha1"
+	// e.g. "github.com/inrundev/inrun/api/types/project/v1alpha1"
 	Location string `yaml:"location,omitempty" json:"location,omitempty" validate:"omitempty"`
 }
 
@@ -247,7 +246,7 @@ type Queue struct {
 }
 
 // Empty reports whether the queue configuration has no meaningful settings.
-// Used to skip unnecessary config blocks in the Katalog.
+// Used to skip unnecessary config blocks in the Catalog.
 func (q *Queue) Empty() bool {
 	if q == nil {
 		return true
@@ -392,7 +391,7 @@ func (q *Queue) ThresholdReached(depth int) bool {
 }
 
 // Empty reports whether the queue behaviour configuration has no meaningful settings.
-// Used to skip unnecessary config blocks in the Katalog.
+// Used to skip unnecessary config blocks in the Catalog.
 func (q *QueueBehaviour) Empty() bool {
 	if q == nil {
 		return true

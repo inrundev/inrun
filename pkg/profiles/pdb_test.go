@@ -3,7 +3,7 @@ package profiles_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/profiles"
 )
 
 func TestPDBProfiles(t *testing.T) {

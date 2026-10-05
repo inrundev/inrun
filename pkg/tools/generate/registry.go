@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
-// TypeRegistry generates zz_generated_typeregistry.go from the merged Katalog.
+// TypeRegistry generates zz_generated_typeregistry.go from the merged Catalog.
 //
 // When generation is needed (and why):
 //
@@ -31,10 +31,10 @@ import (
 // When generation is NOT needed:
 //
 //	Dynamic template CRDs (only onCreate/onReconcile/onDelete declared)
-//	  generic.Reconciler.runTemplateReconcile() reads the Katalog's operatorBox:Config
-//	  directly at runtime and calls the OrkestraRegistry functions itself.
-//	  No generated file. No ork generate registry. Just ork run.
-func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) {
+//	  generic.Reconciler.runTemplateReconcile() reads the Catalog's operatorBox:Config
+//	  directly at runtime and calls the InrunRegistry functions itself.
+//	  No generated file. No inrun generate registry. Just inrun.
+func TypeRegistry(crds map[string]types.CRDEntry, dryRun bool) (bool, error) {
 
 	var (
 		imports           []importEntry
@@ -131,7 +131,7 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 				return false, fmt.Errorf(
 					"CRD %q: reconciler.default is false but no constructor declared — "+
 						"add reconciler.constructor with location and function, "+
-						"then re-run ork generate registry",
+						"then re-run inrun generate registry",
 					crd.Name,
 				)
 			}
@@ -239,7 +239,7 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 	}
 
 	// ── Nothing to generate ───────────────────────────────────────────────────
-	// Pure dynamic template Katalogs produce zero entries — this is correct.
+	// Pure dynamic template Catalogs produce zero entries — this is correct.
 	// generic.Reconciler handles them at runtime. Exit cleanly, no file written.
 	if len(entries) == 0 && len(recEntries) == 0 && len(hookEntries) == 0 &&
 		len(targetHookEntries) == 0 && len(targetRecEntries) == 0 {
@@ -268,7 +268,7 @@ func TypeRegistry(crds map[string]orktypes.CRDEntry, dryRun bool) (bool, error) 
 
 // validateAPITypes checks that all required fields are present for typed CRD registration.
 // These fields are needed to generate correct ObjectRegistry entries and scheme imports.
-func validateAPITypes(crd orktypes.CRDEntry) error {
+func validateAPITypes(crd types.CRDEntry) error {
 	t := crd.APITypes
 	var missing []string
 	if t.Object == "" {
@@ -297,7 +297,7 @@ func validateAPITypes(crd orktypes.CRDEntry) error {
 
 // validateHookEntry checks that location and function are both declared.
 // Both are required to generate a valid import and HookRegistry closure.
-func validateHookEntry(h *orktypes.HookDeclaration, crdName string) error {
+func validateHookEntry(h *types.HookDeclaration, crdName string) error {
 	var missing []string
 	if h.Location == "" {
 		missing = append(missing, "reconciler.hooks.location")
@@ -313,7 +313,7 @@ func validateHookEntry(h *orktypes.HookDeclaration, crdName string) error {
 
 // validateConstructorEntry checks that location and function are both declared.
 // Both are required to generate a valid import and ReconcilerRegistry closure.
-func validateConstructorEntry(c *orktypes.ConstructorDeclaration, crdName string) error {
+func validateConstructorEntry(c *types.ConstructorDeclaration, crdName string) error {
 	var missing []string
 	if c.Location == "" {
 		missing = append(missing, "reconciler.constructor.location")
@@ -328,7 +328,7 @@ func validateConstructorEntry(c *orktypes.ConstructorDeclaration, crdName string
 }
 
 // dedupeImport returns an error if the same alias is used for two different
-// import paths. This catches cases where two CRDs in the same Katalog have
+// import paths. This catches cases where two CRDs in the same Catalog have
 // conflicting aliases — the user must set an explicit alias to resolve.
 func dedupeImport(seen map[string]string, alias, location, crdName string) error {
 	if existing, ok := seen[alias]; ok && existing != location {
@@ -342,7 +342,7 @@ func dedupeImport(seen map[string]string, alias, location, crdName string) error
 }
 
 // resolveAlias returns the import alias to use for a package.
-// Priority: explicit alias from Katalog → derived from the last two path segments.
+// Priority: explicit alias from Catalog → derived from the last two path segments.
 //
 // Examples:
 //

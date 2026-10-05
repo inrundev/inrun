@@ -1,17 +1,17 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: hello-website-e2e
   description: Deploy a single nginx website and verify the deployment and service comes up and are cleaned up on delete
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   crd: ../manifests/crd.yaml
   cr: ../manifests/cr.yaml
 
   cluster:
     provider: kind
-    name: ork-e2e
+    name: inrun-e2e
     reuse: false
 
   expect:

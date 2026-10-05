@@ -1,4 +1,4 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: validation-external-e2e
@@ -10,13 +10,13 @@ metadata:
     call was suppressed. The webhook fixture tests the admission side.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./cr.yaml
 
   cluster:
     provider: kind
-    name: ork-validation-external
+    name: inrun-validation-external
     reuse: false
 
   expect:
@@ -31,6 +31,6 @@ spec:
           namespace: default
       logs:
         - leaderElection:
-            lease: orkestra-konductor
-            namespace: orkestra-system
+            lease: inrun-leader
+            namespace: inrun-system
           since: 2m

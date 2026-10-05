@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // splitLocationVersion splits "path" into modulePath and version.
@@ -28,7 +28,7 @@ func splitLocationVersion(path string) (modulePath, version string) {
 // collectModulesToGet inspects enabled CRDs and returns unique module@version strings
 // for any HookDeclaration or ConstructorDeclaration that has Version set and Fetch == true.
 // It tolerates version present in location (location@vX) by normalizing via splitLocationVersion.
-func collectModulesToGet(crds map[string]orktypes.CRDEntry) []string {
+func collectModulesToGet(crds map[string]types.CRDEntry) []string {
 	seen := map[string]struct{}{}
 	var mods []string
 
@@ -98,7 +98,7 @@ func goGetModules(mods []string, timeoutPerModule time.Duration, dryRun bool) er
 		return nil
 	}
 
-	fmt.Printf("best-effort fetching %d module(s) referenced by katalog", len(mods))
+	fmt.Printf("best-effort fetching %d module(s) referenced by catalog", len(mods))
 
 	// ensure 'go' exists
 	if _, err := exec.LookPath("go"); err != nil {

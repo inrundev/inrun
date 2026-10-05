@@ -2,4 +2,4 @@
 
 package cli
 
-import _ "github.com/orkspace/orkestra/cmd/cli/run"
+import _ "github.com/inrundev/inrun/cmd/cli/run"

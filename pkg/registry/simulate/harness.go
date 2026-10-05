@@ -8,15 +8,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/event"
-	orkexternal "github.com/orkspace/orkestra/pkg/external"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator/contract"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
-	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/generic"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/event"
+	"github.com/inrundev/inrun/pkg/external"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator/contract"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator/prepare"
+	"github.com/inrundev/inrun/pkg/runtime/reconcilers/generic"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -60,9 +60,9 @@ type RunOptions struct {
 	// When false (the default), external calls are attempted against the real network.
 	SkipExternal bool
 
-	// Peers holds CRs for sibling CRDs in the same Katalog, keyed by lowercase kind.
+	// Peers holds CRs for sibling CRDs in the same Catalog, keyed by lowercase kind.
 	// When set, cross: declarations in the reconciler can observe these CRs
-	// via the fake katalog registry instead of returning empty results.
+	// via the fake catalog registry instead of returning empty results.
 	Peers map[string]*unstructured.Unstructured
 
 	// ExistingInstances holds other, already-existing instances of the SAME
@@ -78,11 +78,11 @@ type RunOptions struct {
 
 // Run simulates the operator against an in-memory cluster.
 //
-// kat is the parsed Katalog.
+// kat is the parsed Catalog.
 // crdName is the CRD entry to simulate.
 // cr is the CR to reconcile.
 // maxCycles is the maximum number of reconcile cycles.
-func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstructured.Unstructured, maxCycles int, opts RunOptions) (*Result, error) {
+func Run(ctx context.Context, kat *catalog.Catalog, crdName string, cr *unstructured.Unstructured, maxCycles int, opts RunOptions) (*Result, error) {
 	// Silence the reconciler's JSON logs — simulation output is structured by the caller.
 	prev := log.Logger
 	log.Logger = log.Output(io.Discard)
@@ -92,14 +92,14 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	// Without it, external calls hit the real network — useful when targeting a
 	// local mock server or a staging API from a development machine.
 	if opts.SkipExternal {
-		prevTransport := orkexternal.HTTPTransport
-		orkexternal.HTTPTransport = noopTransport{}
-		defer func() { orkexternal.HTTPTransport = prevTransport }()
+		prevTransport := external.HTTPTransport
+		external.HTTPTransport = noopTransport{}
+		defer func() { external.HTTPTransport = prevTransport }()
 	}
 
 	crdEntry, ok := kat.CRDEntry(crdName)
 	if !ok {
-		return nil, fmt.Errorf("CRD %q not found in Katalog", crdName)
+		return nil, fmt.Errorf("CRD %q not found in Catalog", crdName)
 	}
 	// Strip cross-namespace copy resources (fromNamespace / toNamespaces) from
 	// all hook phases before the fake reconciler runs. These require a live API
@@ -114,7 +114,7 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	boxCopy := *box
 	if boxCopy.Reconcile != nil {
 		reconcileCopy := *boxCopy.Reconcile
-		for _, phase := range []*orktypes.HookTemplates{
+		for _, phase := range []*types.HookTemplates{
 			reconcileCopy.OnCreate,
 			reconcileCopy.OnReconcile,
 			reconcileCopy.OnDelete,
@@ -122,7 +122,7 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 			if phase == nil {
 				continue
 			}
-			filtered, skipped := orktypes.FilterSimulatable(*phase)
+			filtered, skipped := types.FilterSimulatable(*phase)
 			*phase = filtered
 			result.Notes = append(result.Notes, skipped...)
 		}
@@ -175,14 +175,14 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	seedObj := interface{}(cr)
 	newObjFn := func() domain.Object { return &unstructured.Unstructured{} }
 
-	if objFactory, ok := orktypes.ObjectRegistry[gvk]; ok {
+	if objFactory, ok := types.ObjectRegistry[gvk]; ok {
 		typed := objFactory()
 		if jsonBytes, err := json.Marshal(cr.Object); err == nil {
 			if json.Unmarshal(jsonBytes, typed) == nil {
 				if domObj, ok := typed.(domain.Object); ok {
 					seedObj = domObj
 					newObjFn = func() domain.Object {
-						return orktypes.ObjectRegistry[gvk]().(domain.Object)
+						return types.ObjectRegistry[gvk]().(domain.Object)
 					}
 				}
 			}
@@ -196,13 +196,13 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	}
 	informer := newFakeInformer(indexer)
 
-	// Look up hooks from the registry. In the standard ork binary the map is
+	// Look up hooks from the registry. In the standard inrun binary the map is
 	// empty for custom types and hookBinder stays nil.
 	// In a custom operator binary produced by `make registry && make build`,
 	// the init() in zz_generated_typeregistry.go populates HookRegistry so
 	// the actual hook function runs inside the fake cluster.
 	var hookBinder domain.AnyReconcileHooks
-	if fn, ok := orktypes.HookRegistry[gvk]; ok {
+	if fn, ok := types.HookRegistry[gvk]; ok {
 		hookBinder = fn()
 	}
 
@@ -210,7 +210,7 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	// from the fake informer cache rather than returning empty results.
 	// Each peer CR is seeded into its own static indexer and wrapped in a
 	// fakeInformer; the registry maps CRD name → informer for readCross().
-	peerRegistry := kordinator.NewKordinatorRegistry()
+	peerRegistry := coordinator.NewCoordinatorRegistry()
 	for _, peerName := range kat.CRDNames() {
 		if peerName == crdEntry.Name {
 			continue
@@ -245,7 +245,7 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 			return nil, err
 		}
 		result.Notes = append(result.Notes, remoteNote)
-	} else if factoryFn, ok := orktypes.ReconcilerRegistry[gvk]; ok {
+	} else if factoryFn, ok := types.ReconcilerRegistry[gvk]; ok {
 		r = factoryFn(fakeKube.WithInformer(informer).WithEventRecorder(event.Discard()))
 	} else {
 		r = generic.New(

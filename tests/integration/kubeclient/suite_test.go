@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/orkspace/orkestra/tests/integration/testenv"
+	"github.com/inrundev/inrun/tests/integration/testenv"
 	"k8s.io/client-go/rest"
 )
 

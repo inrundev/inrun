@@ -1,7 +1,7 @@
 # Per-Target OperatorBox — BlockchainAppWithTargets
 
 Three surfaces, one CRD, three different reconcile strategies — all dispatched
-by the runtime based on the `orkestra.io/serve-target` annotation the gateway
+by the runtime based on the `inrun.dev/serve-target` annotation the gateway
 stamps on the CR.
 
 | Target | Strategy | What it does |
@@ -10,7 +10,7 @@ stamps on the CR.
 | `v2-disabled` | Per-target hooks | Same binary; args force `featureEnabled=false`, no gate |
 | `v2-ctor` | Per-target constructor | Distinct `domain.Reconciler` implementation; reads `featureEnabled` from args, owns the full reconcile loop |
 
-**Hooks targets** share one binary. The Katalog's `args` determine what each
+**Hooks targets** share one binary. The Catalog's `args` determine what each
 surface means — the hook reads `kube.Args()` and never knows which surface it came from:
 
 ```yaml
@@ -49,7 +49,7 @@ dispatch time:
         reconcile:
           default: false
           constructor:
-            location: github.com/orkspace/orkestra-args-hooks-targets/constructor
+            location: github.com/inrundev/inrun-args-hooks-targets/constructor
             function: NewBlockchainAppWithTargetsReconciler
             alias: bcctor
             args:
@@ -58,7 +58,7 @@ dispatch time:
 
 The caller just picks a target:
 
-**Requirement:** `ork` CLI — install from [orkestra-install](https://github.com/orkspace/orkestra#getting-started)
+**Requirement:** `inrun` CLI — install from [inrun-install](https://github.com/inrundev/inrun#getting-started)
 
 ---
 
@@ -72,7 +72,7 @@ make registry
 
 ```bash
 make clean && make build
-ork validate katalog.yaml
+inrun validate catalog.yaml
 ```
 
 ### Simulate and Play without a cluster
@@ -81,9 +81,9 @@ ork validate katalog.yaml
 #### Simulate
 
 ```bash
-ork simulate -f simulate-v2-enabled.yaml
-ork simulate -f simulate-v2-disabled.yaml
-ork simulate
+inrun simulate -f simulate-v2-enabled.yaml
+inrun simulate -f simulate-v2-disabled.yaml
+inrun simulate
 ```
 
 #### Play
@@ -91,36 +91,36 @@ ork simulate
 - First check permissions:
 
 ```bash
-ork serve can-i --token dev --operation create --target v2-enabled
+inrun serve can-i --token dev --operation create --target v2-enabled
 ```
 
 - Then Play:
 
 ```bash
-ork serve play -i intent/intent-v2-enabled.yaml --token dev
+inrun serve play -i intent/intent-v2-enabled.yaml --token dev
 ```
 
 ## Step 3 — Run
 
 ```bash
-ork run --dev-server
+inrun --dev-server
 ```
 
 In another terminal, start the gateway and get the token:
 
 ```bash
-export ORK_PORT=8888
-ork gate run
+export INRUN_PORT=8888
+inrun gate run
 ```
 
 Apply via the `v2-enabled` surface (feature on, business-hours gate active):
 
 ```bash
-export TOKEN=$(kubectl get secret ork-dev-token -n default -o jsonpath='{.data.token}' | base64 -d)
+export TOKEN=$(kubectl get secret inrun-dev-token -n default -o jsonpath='{.data.token}' | base64 -d)
 ```
 
 ```bash
-ork serve apply -f intent/intent-v2-enabled.yaml --token $TOKEN --api http://localhost:8888
+inrun serve apply -f intent/intent-v2-enabled.yaml --token $TOKEN --api http://localhost:8888
 ```
 
 Check the result:
@@ -139,13 +139,13 @@ kubectl get blockchainappwithtargets 03-hooks-targets-my-chain \
 Switch to `v2-disabled` (feature off, no gate):
 
 ```bash
-ork serve apply -f intent/intent-v2-disabled.json --token $TOKEN --api http://localhost:8888
+inrun serve apply -f intent/intent-v2-disabled.json --token $TOKEN --api http://localhost:8888
 ```
 
 Switch to `v2-ctor` (constructor reconciler, feature on):
 
 ```bash
-ork serve apply -f intent/intent-v2-ctor.json --token $TOKEN --api http://localhost:8888
+inrun serve apply -f intent/intent-v2-ctor.json --token $TOKEN --api http://localhost:8888
 ```
 
 The runtime routes this CR to `BlockchainAppWithTargetsReconciler` via `MuxReconciler`
@@ -160,7 +160,7 @@ instead of the CRD-level `Generic Reconciler`.
 ```bash
 make docker push IMAGE_REPO=yourregistry/blockchainappwithtargets-operator IMAGE_TAG=latest
 
-ork e2e --dev-server \
+inrun e2e --dev-server \
   --set runtime.image.repository=yourregistry/blockchainappwithtargets-operator \
   --set runtime.image.tag=latest
 ```

@@ -1,14 +1,14 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: probe-namespace-filter
   description: >
-    Probe CR is in namespace "default" but the katalog only allows "staging".
+    Probe CR is in namespace "default" but the catalog only allows "staging".
     The real informer's namespace filter drops the watch event — the reconciler
     never runs and no Deployments are created.
 
 spec:
-  katalog: ./katalog-staging-only.yaml
+  catalog: ./catalog-staging-only.yaml
   cr: ../cr.yaml
   crd: ../crd.yaml
   cycles: 3

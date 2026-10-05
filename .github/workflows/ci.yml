@@ -55,9 +55,9 @@ jobs:
 
       - name: Build CLI binary
         run: |
-          go build -o ./bin/ork ./cmd/orkestra/
+          go build -o ./bin/inrun ./cmd/inrun/
           echo "✅ Binary built:"
-          ls -lh ./bin/ork
+          ls -lh ./bin/inrun
 
       - name: Write summary
         if: always()
@@ -145,12 +145,12 @@ jobs:
           cache: true
 
       - name: Build CLI
-        run: go build -o ./bin/ork ./cmd/orkestra/
+        run: go build -o ./bin/inrun ./cmd/inrun/
 
       - name: Validate examples
         run: |
-          for k in $(find examples -name katalog.yaml | sort); do
-            ./bin/ork validate --file "$k"
+          for k in $(find examples -name catalog.yaml | sort); do
+            ./bin/inrun validate --file "$k"
           done
 
   # ── Summary ────────────────────────────────────────────────────────────────

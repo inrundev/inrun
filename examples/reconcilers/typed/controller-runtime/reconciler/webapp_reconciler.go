@@ -15,15 +15,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	demov1alpha1 "github.com/orkspace/from-controller-runtime-demo/api/v1alpha1"
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/kubeclient/orkadapter"
+	demov1alpha1 "github.com/inrundev/from-controller-runtime-demo/api/v1alpha1"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/kubeclient/adapter"
 )
 
 // WebAppReconciler is a controller-runtime reconciler, unchanged apart from
-// dropping Scheme (Orkestra registers types at startup) and SetupWithManager
-// (Orkestra runs the informer, queue, workers, leader election and metrics).
+// dropping Scheme (Inrun registers types at startup) and SetupWithManager
+// (Inrun runs the informer, queue, workers, leader election and metrics).
 type WebAppReconciler struct {
 	client.Client
 }
@@ -32,7 +32,7 @@ type WebAppReconciler struct {
 // Two lines replace all of main.go, scheme registration, and SetupWithManager.
 func NewWebAppReconciler(kube kubeclient.Interface) domain.Reconciler {
 	return domain.ReconcilerFrom(&WebAppReconciler{
-		Client: orkadapter.ToClient(kube),
+		Client: adapter.ToClient(kube),
 	})
 }
 

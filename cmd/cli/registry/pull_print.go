@@ -7,34 +7,34 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 	"gopkg.in/yaml.v3"
 
-	"github.com/orkspace/orkestra/pkg/registry"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/registry"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // detectCacheType resolves the artifact kind by checking for sentinel files on
-// disk — not by sniffing the path string. Returns (isMotif, isKatalog, patternFile).
+// disk — not by sniffing the path string. Returns (isModule, isCatalog, patternFile).
 func detectCacheType(cacheDir string) (bool, bool, string) {
-	motifFile := filepath.Join(cacheDir, registry.FileMotif)
-	if _, err := os.Stat(motifFile); err == nil {
-		return true, false, motifFile
+	moduleFile := filepath.Join(cacheDir, registry.FileModule)
+	if _, err := os.Stat(moduleFile); err == nil {
+		return true, false, moduleFile
 	}
-	katalogFile := filepath.Join(cacheDir, registry.FileKatalog)
-	if _, err := os.Stat(katalogFile); err == nil {
-		return false, true, katalogFile
+	catalogFile := filepath.Join(cacheDir, registry.FileCatalog)
+	if _, err := os.Stat(catalogFile); err == nil {
+		return false, true, catalogFile
 	}
 	return false, false, ""
 }
 
-// readMotif reads and unmarshals a motif file. Returns nil and error on failure.
-func readMotif(path string) (*orktypes.Motif, error) {
+// readModule reads and unmarshals a module file. Returns nil and error on failure.
+func readModule(path string) (*types.Module, error) {
 	data, err := cmdutil.ReadLocal(path)
 	if err != nil {
 		return nil, err
 	}
-	var m orktypes.Motif
+	var m types.Module
 	if err := yaml.Unmarshal(data, &m); err != nil {
 		return nil, err
 	}
@@ -46,11 +46,11 @@ type inputsSummary struct {
 	TotalCount       int
 	HasInputs        bool
 	RequiredCount    int
-	RequiredInputs   []orktypes.MotifInput
-	FirstTwoDefaults []orktypes.MotifInput
+	RequiredInputs   []types.ModuleInput
+	FirstTwoDefaults []types.ModuleInput
 }
 
-func collectInputsSummary(inputs []orktypes.MotifInput) inputsSummary {
+func collectInputsSummary(inputs []types.ModuleInput) inputsSummary {
 	s := inputsSummary{TotalCount: len(inputs)}
 	if s.TotalCount == 0 {
 		return s
@@ -71,20 +71,20 @@ func collectInputsSummary(inputs []orktypes.MotifInput) inputsSummary {
 	return s
 }
 
-// printValidationHint prints the ork validate hint for the pattern file.
+// printValidationHint prints the inrun validate hint for the pattern file.
 func printValidationHint(patternFile string) {
 	if patternFile == "" {
 		return
 	}
 	fmt.Print("\nValidate the pattern:\n")
-	fmt.Printf("  ork validate -f %s\n", patternFile)
+	fmt.Printf("  inrun validate -f %s\n", patternFile)
 }
 
-// printMotifReference prints motif usage and inputs sample.
-func printMotifReference(ref *registry.Ref, motif *orktypes.Motif, sum inputsSummary) {
-	fmt.Printf("\nReference in a Katalog:\n")
+// printModuleReference prints module usage and inputs sample.
+func printModuleReference(ref *registry.Ref, module *types.Module, sum inputsSummary) {
+	fmt.Printf("\nReference in a Catalog:\n")
 	fmt.Printf("  imports:\n")
-	fmt.Printf("    - motif: %s\n", ref.String())
+	fmt.Printf("    - module: %s\n", ref.String())
 
 	if !sum.HasInputs {
 		return
@@ -111,11 +111,11 @@ func printMotifReference(ref *registry.Ref, motif *orktypes.Motif, sum inputsSum
 	}
 }
 
-// printKatalogReference prints katalog usage and run hint.
-func printKatalogReference(ref *registry.Ref, cacheDir string) {
-	fmt.Printf("\nRun this katalog pattern:\n")
-	fmt.Printf("  ork run -f %s\n", filepath.Join(cacheDir, registry.FileKatalog))
-	fmt.Printf("\nOr reference in a Komposer:\n")
+// printCatalogReference prints catalog usage and run hint.
+func printCatalogReference(ref *registry.Ref, cacheDir string) {
+	fmt.Printf("\nRun this catalog pattern:\n")
+	fmt.Printf("  inrun -f %s\n", filepath.Join(cacheDir, registry.FileCatalog))
+	fmt.Printf("\nOr reference in a Stack:\n")
 	fmt.Printf("  imports:\n")
 	fmt.Printf("    registry:\n")
 	fmt.Printf("      - url: %s\n", ref.String())
@@ -143,27 +143,27 @@ func printCachedFiles(cacheDir string) {
 
 // printPullSuggestions orchestrates the helpers and handles errors gracefully.
 func printPullSuggestions(ref *registry.Ref, cacheDir string) {
-	isMotif, isKatalog, patternFile := detectCacheType(cacheDir)
+	isModule, isCatalog, patternFile := detectCacheType(cacheDir)
 	printCachedFiles(cacheDir)
 	printValidationHint(patternFile)
 
-	if isMotif {
-		motif, err := readMotif(patternFile)
+	if isModule {
+		module, err := readModule(patternFile)
 		if err != nil {
 			// non-fatal: print a short message and return
-			fmt.Fprintf(os.Stderr, "warning: failed to read motif %s: %v\n", patternFile, err)
+			fmt.Fprintf(os.Stderr, "warning: failed to read module %s: %v\n", patternFile, err)
 			return
 		}
-		sum := collectInputsSummary(motif.Inputs)
-		printMotifReference(ref, motif, sum)
+		sum := collectInputsSummary(module.Inputs)
+		printModuleReference(ref, module, sum)
 		return
 	}
 
-	if isKatalog {
-		printKatalogReference(ref, cacheDir)
+	if isCatalog {
+		printCatalogReference(ref, cacheDir)
 		return
 	}
 
 	// fallback: nothing recognized
-	fmt.Println("No motif or katalog pattern detected in cache.")
+	fmt.Println("No module or catalog pattern detected in cache.")
 }

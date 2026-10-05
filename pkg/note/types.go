@@ -22,7 +22,7 @@ func typeNotes() template.FuncMap {
 
 		// len v — returns element count or string length
 		// Overrides the built-in template len with one that handles maps
-		"len": OrkLen,
+		"len": InrunLen,
 
 		// Shorthand type checks
 		"typeMap":     typeMap,
@@ -118,7 +118,7 @@ func noteToJson(v interface{}) (string, error) {
 // expression needs to produce a list from a single string — annotations,
 // labels, or literal values.
 //
-// Usage in a Katalog:
+// Usage in a Catalog:
 //
 //	exclude: '{{ toList (getAnnotation . "platform.myorg.io/exclude") }}'
 //	exclude: '{{ toList "metadata.managedFields,status.observedGeneration" }}'
@@ -141,7 +141,7 @@ func toList(s string) []string {
 }
 
 // typeOf — returns the runtime type name of any value.
-// orkLen — returns the length of a string, slice, or map.
+// inrunLen — returns the length of a string, slice, or map.
 //
 // typeOf is used in:
 //   - Template expressions: {{ typeOf .spec.schedule }} → "string" or "map"
@@ -149,7 +149,7 @@ func toList(s string) []string {
 //
 // The condition operator path uses NavigateRawPath → note.TypeOf directly.
 // The template expression path uses the FuncMap entry registered in note.Map().
-// Both must return the same strings for the Katalog to be predictable.
+// Both must return the same strings for the Catalog to be predictable.
 //
 // Type strings (match Python/JavaScript convention for familiarity):
 //
@@ -196,15 +196,15 @@ func TypeOf(v interface{}) string {
 	}
 }
 
-// OrkLen returns the length of a string, slice, or map.
-// Named orkLen to avoid shadowing Go's built-in len.
+// InrunLen returns the length of a string, slice, or map.
+// Named inrunLen to avoid shadowing Go's built-in len.
 // Registered in note.Map() as "len" since Go templates do not
 // have a built-in len that handles all three types uniformly.
 //
 // Template: {{ len .spec.regions }}          → 3 (slice with 3 elements)
 // Template: {{ len .spec.schedule }}         → 5 (map with 5 fields)
 // Template: {{ len .metadata.name }}         → 12 (string length)
-func OrkLen(v interface{}) int {
+func InrunLen(v interface{}) int {
 	if v == nil {
 		return 0
 	}

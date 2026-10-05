@@ -3,7 +3,7 @@ package simulate
 import (
 	"fmt"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // AssertionError is one failed expectation from Assert.
@@ -18,7 +18,7 @@ func (e AssertionError) Error() string {
 
 // Assert checks a Result against a SimulateExpect.
 // Returns nil when all expectations are satisfied.
-func Assert(result *Result, expect *orktypes.SimulateExpect) []AssertionError {
+func Assert(result *Result, expect *types.SimulateExpect) []AssertionError {
 	if expect == nil {
 		return nil
 	}
@@ -76,7 +76,7 @@ func Assert(result *Result, expect *orktypes.SimulateExpect) []AssertionError {
 	return errs
 }
 
-func describeRule(rule orktypes.SimulateOpRule) string {
+func describeRule(rule types.SimulateOpRule) string {
 	s := fmt.Sprintf("verb=%s resource=%s", rule.Verb, rule.Resource)
 	if rule.Name != "" {
 		s += fmt.Sprintf(" name=%s", rule.Name)
@@ -87,7 +87,7 @@ func describeRule(rule orktypes.SimulateOpRule) string {
 // ExpectForCRD returns the expect block for a named CRD.
 // If expect.crds has an entry for crdName, that is returned.
 // Otherwise the top-level expect (default) is returned.
-func ExpectForCRD(expect *orktypes.SimulateExpect, crdName string) *orktypes.SimulateExpect {
+func ExpectForCRD(expect *types.SimulateExpect, crdName string) *types.SimulateExpect {
 	if expect == nil {
 		return nil
 	}
@@ -99,7 +99,7 @@ func ExpectForCRD(expect *orktypes.SimulateExpect, crdName string) *orktypes.Sim
 
 // opCount returns how many ops in result.AllOps match all non-empty fields
 // of rule in the declared cycle.
-func opCount(result *Result, rule orktypes.SimulateOpRule) int {
+func opCount(result *Result, rule types.SimulateOpRule) int {
 	n := 0
 	for _, op := range result.AllOps {
 		if op.Cycle != rule.Cycle {
@@ -119,7 +119,7 @@ func opCount(result *Result, rule orktypes.SimulateOpRule) int {
 	return n
 }
 
-func describeOpFailure(rule orktypes.SimulateOpRule, got, want int) string {
+func describeOpFailure(rule types.SimulateOpRule, got, want int) string {
 	desc := fmt.Sprintf("cycle=%d verb=%s resource=%s", rule.Cycle, rule.Verb, rule.Resource)
 	if rule.Name != "" {
 		desc += fmt.Sprintf(" name=%s", rule.Name)

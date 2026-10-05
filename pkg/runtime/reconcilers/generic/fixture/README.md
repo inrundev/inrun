@@ -4,10 +4,10 @@ Living integration fixture for the reconciler's resource types.
 
 ## Why this exists
 
-The runner functions in `pkg/runner/` apply Kubernetes resources from katalog
+The runner functions in `pkg/runner/` apply Kubernetes resources from catalog
 templates. There is no meaningful way to unit-test them: the logic that matters
 — template rendering, server-side apply, status propagation, condition evaluation
-— only works against a real API server. Mocking it tests the mock, not Orkestra.
+— only works against a real API server. Mocking it tests the mock, not Inrun.
 
 This fixture is the right vehicle. It declares a `ReconcilerSuite` CRD (namespaced,
 in `default`) and a `ReconcilerProbe` CRD (cluster-scoped). A single `ReconcilerSuite`
@@ -24,7 +24,7 @@ observable without reading code.
 
 ## What each block covers
 
-| Block in `katalog.yaml`        | What it exercises                          |
+| Block in `catalog.yaml`        | What it exercises                          |
 |--------------------------------|--------------------------------------------|
 | `custom:` (ReconcilerSuite)    | Namespaced CR creating a cluster-scoped child; exercises explicit GC on deletion |
 | `validation.rules`             | Admission validation                       |
@@ -60,31 +60,31 @@ observable without reading code.
 Run simulate first — it exercises the real reconciler in-memory and is fast:
 
 ```bash
-ork simulate -f pkg/runtime/reconciler/fixture/simulate.yaml
+inrun simulate -f pkg/runtime/reconciler/fixture/simulate.yaml
 ```
 
 For full cluster verification:
 
 ```bash
-ork e2e -f pkg/runtime/reconciler/fixture/e2e.yaml --workers 3
+inrun e2e -f pkg/runtime/reconciler/fixture/e2e.yaml --workers 3
 ```
 
-`ork e2e` creates the kind cluster, installs Orkestra, applies the CRD and CR,
+`inrun e2e` creates the kind cluster, installs Inrun, applies the CRD and CR,
 runs all assertions, and tears down the cluster.
 
 To reuse an existing cluster during iteration:
 
 ```bash
-ork e2e -f pkg/runtime/reconciler/fixture/e2e.yaml --use-current
+inrun e2e -f pkg/runtime/reconciler/fixture/e2e.yaml --use-current
 ```
 
 ## Adding a new resource type
 
-1. Add a block to the appropriate fixture motif in
-   [pkg/runtime/reconciler/fixture/motifs/](./motifs/). Name resources
+1. Add a block to the appropriate fixture module in
+   [pkg/runtime/reconciler/fixture/modules/](./modules/). Name resources
    `{{ .metadata.name }}-<type>` to avoid collisions.
 2. Add a row to the table above.
 3. Add a `create` op to [simulate.yaml](./simulate.yaml) for the new resource type.
 4. Add a `resources:` assertion to the `All resources created` checkpoint in
    [e2e/01-resources.yaml](./e2e/01-resources.yaml).
-5. Run `ork e2e -f pkg/runtime/reconciler/fixture/simulate.yaml` locally before opening the PR.
+5. Run `inrun e2e -f pkg/runtime/reconciler/fixture/simulate.yaml` locally before opening the PR.

@@ -4,60 +4,60 @@ package types
 import (
 	"sort"
 
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // ── CRDEntry ──────────────────────────────────────────────────────────────────
-// One entry per CRD in the Katalog.
+// One entry per CRD in the Catalog.
 //
 // YAML fields are populated by the YAML parser when running in YAML mode,
-// or set directly in BuildKatalogFromGo() when running in Go mode.
+// or set directly in BuildCatalogFromGo() when running in Go mode.
 //
-// Fields tagged yaml:"-" are populated at runtime during Katalog validation
+// Fields tagged yaml:"-" are populated at runtime during Catalog validation
 // and wiring — they are never parsed from YAML and never set manually.
 
 type CRDEntry struct {
 	// ── Identity ──────────────────────────────────────────────────────────────
 
-	// Name — unique CRD identifier within the Katalog. Must be lowercase.
+	// Name — unique CRD identifier within the Catalog. Must be lowercase.
 	// Injected from the map key during loading — never set from YAML.
 	Name string `yaml:"-" json:"name" validate:"required,hostname_rfc1123"`
 
-	// KatalogName — unique identifier for the katalog in the runtime.
-	KatalogName string `yaml:"katalogName,omitempty" json:"katalogName,omitempty"`
+	// CatalogName — unique identifier for the catalog in the runtime.
+	CatalogName string `yaml:"catalogName,omitempty" json:"catalogName,omitempty"`
 
-	// KatalogNamespace — the namespace this CRD's Katalog belongs to.
-	// Defaults to "default" when not declared. Used by the Control Center to
+	// CatalogNamespace — the namespace this CRD's Catalog belongs to.
+	// Defaults to "default" when not declared. Used by the Console to
 	// group CRDs by team/tenant within a single runtime.
-	KatalogNamespace string `yaml:"katalogNamespace,omitempty" json:"katalogNamespace,omitempty"`
+	CatalogNamespace string `yaml:"catalogNamespace,omitempty" json:"catalogNamespace,omitempty"`
 
-	// KatalogDescription — the description from the source Katalog's metadata.
-	// Falls back to the Komposer's description when the sub-Katalog has none.
-	KatalogDescription string `yaml:"katalogDescription,omitempty" json:"katalogDescription,omitempty"`
+	// CatalogDescription — the description from the source Catalog's metadata.
+	// Falls back to the Stack's description when the sub-Catalog has none.
+	CatalogDescription string `yaml:"catalogDescription,omitempty" json:"catalogDescription,omitempty"`
 
-	// KatalogVersion — the version from the source Katalog's metadata.
-	// Falls back to the Komposer's version when the sub-Katalog has none.
-	KatalogVersion string `yaml:"katalogVersion,omitempty" json:"katalogVersion,omitempty"`
+	// CatalogVersion — the version from the source Catalog's metadata.
+	// Falls back to the Stack's version when the sub-Catalog has none.
+	CatalogVersion string `yaml:"catalogVersion,omitempty" json:"catalogVersion,omitempty"`
 
-	// CrossAccess controls whether other Katalogs can read this CRD's CR state
+	// CrossAccess controls whether other Catalogs can read this CRD's CR state
 	// via the cross: block. Defaults to true (readable). Set to false to opt
 	// this CRD out of cross reads — the reconciler returns empty for any
 	// cross: reference that targets an opted-out CRD.
 	CrossAccess *bool `yaml:"crossAccess,omitempty" json:"crossAccess,omitempty"`
 
 	// Enabled — include this CRD in the runtime. false = skipped entirely.
-	// WARNING: only set to false after stripping Orkestra finalizers from all
+	// WARNING: only set to false after stripping Inrun finalizers from all
 	// live CRs — disabled CRDs with live finalizers will cause stuck objects.
 	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
 
-	// Critical — if true, Orkestra marks the entire controller as degraded when
+	// Critical — if true, Inrun marks the entire controller as degraded when
 	// this CRD's health state transitions to degraded.
 	// Use for CRDs that are fundamental to the platform's correctness.
 	// Critical *bool `yaml:"critical,omitempty" json:"critical,omitempty"`
 
-	// Description — human-readable description. Shown in /katalog API responses.
+	// Description — human-readable description. Shown in /catalog API responses.
 	Description string `yaml:"description,omitempty" json:"description,omitempty" validate:"omitempty"`
 
 	// Mode — see CRDMode for full documentation.
@@ -69,13 +69,13 @@ type CRDEntry struct {
 	APITypes APITypes `yaml:"apiTypes" json:"apiTypes" validate:"required"`
 
 	// CRDFile is the path to the CRD YAML file to apply before operator start.
-	// Supports relative (resolved from katalog file location), absolute, or
+	// Supports relative (resolved from catalog file location), absolute, or
 	// remote (https://…) paths.
 	//
-	// Only applied when running outside the cluster (dev mode via ork run).
+	// Only applied when running outside the cluster (dev mode via inrun).
 	// In production, CRDs must be pre-applied by the platform operator.
 	//
-	// During ork validate, the file is read and its group/kind are checked
+	// During inrun validate, the file is read and its group/kind are checked
 	// against apiTypes to catch mismatches before deployment.
 	CRDFile string `yaml:"crdFile,omitempty" json:"crdFile,omitempty"`
 
@@ -84,16 +84,16 @@ type CRDEntry struct {
 	// Same path resolution as CRDFile. Dev mode only.
 	CRFiles []string `yaml:"crFiles,omitempty" json:"crFiles,omitempty"`
 
-	// Setup declares prerequisite resources to apply before Orkestra starts.
+	// Setup declares prerequisite resources to apply before Inrun starts.
 	// Shorthand: a plain list of strings applies each file (backward compatible).
 	Setup *SetupConfig `yaml:"setup,omitempty" json:"setup,omitempty"`
 
 	// ── Runtime objects ───────────────────────────────────────────────────────
-	// Set by addRuntimeObjects() during Katalog validation. Never set from YAML.
+	// Set by addRuntimeObjects() during Catalog validation. Never set from YAML.
 	//
 	// Typed mode:        DynamicModeObject and ListDynamicModeObject are factory functions
 	//                    from ObjectRegistry and ListRegistry respectively.
-	//                    TypedModeObject and ListTypedModeObject are set in BuildKatalogFromGo().
+	//                    TypedModeObject and ListTypedModeObject are set in BuildCatalogFromGo().
 	//
 	// Dynamic mode: DynamicModeObject and ListDynamicModeObject are factory functions
 	//                    that return *unstructured.Unstructured and *unstructured.UnstructuredList.
@@ -106,11 +106,11 @@ type CRDEntry struct {
 	// Scheme — AddToScheme function generated by controller-gen for this API type.
 	// Required for typed mode so the REST client can decode API server responses.
 	// Not needed for dynamic mode — the dynamic client bypasses scheme decoding.
-	// Set in BuildKatalogFromGo() for Go mode. Handled by RegisterScheme() for YAML mode.
+	// Set in BuildCatalogFromGo() for Go mode. Handled by RegisterScheme() for YAML mode.
 	Scheme func(s *runtime.Scheme) error `yaml:"-" json:"-"`
 
 	// ── Computed GVK/GVR ─────────────────────────────────────────────────────
-	// Set by setGroupVersionKind() during Katalog validation.
+	// Set by setGroupVersionKind() during Catalog validation.
 	// Derived from APITypes fields. Never set manually.
 	GroupVersion         *schema.GroupVersion        `yaml:"-" json:"-"`
 	GroupVersionKind     schema.GroupVersionKind     `yaml:"-" json:"-"`
@@ -132,7 +132,7 @@ type CRDEntry struct {
 	WorkersActive int `yaml:"workersActive,omitempty" json:"workersActive,omitempty" validate:"omitempty,gte=1,lte=50"`
 
 	// DependsOn — names of other CRDs that must reach a condition before this one starts.
-	// Orkestra resolves the dependency graph and starts CRDs in topological order.
+	// Inrun resolves the dependency graph and starts CRDs in topological order.
 	// Cycle detection runs at validation time — cycles fail fast with a clear error.
 	// Supports three YAML formats (list, key-value, full map) — see DependsOnMap.
 	DependsOn DependsOnMap `yaml:"dependsOn,omitempty" json:"dependsOn,omitempty"`
@@ -171,7 +171,7 @@ type CRDEntry struct {
 	RegistryRef string `yaml:"-" json:"-"`
 
 	// IsBuiltIn is set to true when this CRD entry was enriched from the
-	// built-in Kubernetes resource registry. Used for ork validate output
+	// built-in Kubernetes resource registry. Used for inrun validate output
 	// and informational logging only — does not affect runtime behavior.
 	IsBuiltIn bool `yaml:"-" json:"-"` // never serialized — runtime state only
 
@@ -212,7 +212,7 @@ type CRDEntry struct {
 	Info Info `json:"-"` // not serialized
 
 	// Serve exposes this CRD through the Gateway API as a stable delivery surface.
-	// When enabled, the Control Center renders a [+ Create] button for this CRD
+	// When enabled, the Console renders a [+ Create] button for this CRD
 	// and serves its schema via GET /api/v1/schema/{kind}.
 	Serve *ServeConfig `yaml:"serve,omitempty" json:"serve,omitempty"`
 
@@ -504,7 +504,7 @@ func (c *CRDEntry) HasServeTokenRestrictions() bool {
 	return c.ServeEnabled() && c.Serve.HasTokenRestrictions()
 }
 
-// RequireServeName reports whether an Gateway API caller (and the Control Center
+// RequireServeName reports whether an Gateway API caller (and the Console
 // form) must supply metadata.name themselves — true unless serve.name is
 // declared, in which case the name is resolved server-side instead.
 func (c *CRDEntry) RequireServeName() bool {
@@ -519,7 +519,7 @@ func (c *CRDEntry) RequireServeName() bool {
 //   - It exists in serve.labels with required: true, or
 //   - It exists in serve.annotations with required: true
 //
-// Used by the Control Center to mark form fields as required and by the
+// Used by the Console to mark form fields as required and by the
 // gateway to validate target-mode requests before building the CR.
 func (c *CRDEntry) IsServeRequiredField(field string) bool {
 	if c.Serve == nil {

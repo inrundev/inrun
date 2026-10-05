@@ -8,7 +8,7 @@ The unit tests in `pkg/registry/e2e/` verify the runner and validator logic in i
 
 **Rule: when you add a new `kubectl:` subcommand to the DSL, you must add at least one checkpoint to `e2e.yaml` that exercises it.**
 
-`e2e.yaml` is also the source for `documentation/reference/schema/04-e2e/08-complete-example.md`. Run `make ork` after any change here to keep the doc page in sync.
+`e2e.yaml` is also the source for `documentation/reference/schema/04-e2e/08-complete-example.md`. Run `make inrun` after any change here to keep the doc page in sync.
 
 ---
 
@@ -38,14 +38,14 @@ The unit tests in `pkg/registry/e2e/` verify the runner and validator logic in i
 cd pkg/registry/e2e/fixture
 
 # Start the runtime against a kind cluster:
-ork run
+inrun
 
 # In a second terminal, apply the CR:
 kubectl apply -f cr.yaml
 kubectl get e2eprobe my-probe -o yaml -w   # watch until phase: Ready
 
 # Run the full e2e suite:
-ork e2e
+inrun e2e
 
 # Clean up:
 bash cleanup.sh
@@ -59,7 +59,7 @@ The `E2EProbe` CRD creates one `Deployment` and one `Service` per CR. Two CRs ar
 
 | CR | Image | Port | Purpose |
 |---|---|---|---|
-| `my-probe-server` | `ghcr.io/orkspace/orkestra-dev-server:latest` | 9999 | Port-forward and JSON endpoint assertions (`/health`, `/startup`, `/ready`) |
+| `my-probe-server` | `ghcr.io/inrundev/inrun-dev-server:latest` | 9999 | Port-forward and JSON endpoint assertions (`/health`, `/startup`, `/ready`) |
 | `my-probe-exec` | `nginx:alpine` | 80 | Exec assertions — nginx has `sh`, the devserver is distroless |
 
 `status.phase` progresses `Pending` → `Deploying` → `Ready` on each CR independently.

@@ -1,8 +1,8 @@
 # Job
 
-This declares one Job to be run by Orkestra.
+This declares one Job to be run by Inrun.
 
-Most commonly used under onDelete for cleanup tasks that must complete before Orkestra removes finalizers from the CR:
+Most commonly used under onDelete for cleanup tasks that must complete before Inrun removes finalizers from the CR:
 
   - Draining queues or buffers
   - Archiving state to external storage
@@ -26,7 +26,7 @@ onDelete:
 
 ## Lifecycle
 
-Declare this resource under `onCreate` for an idempotent, one-time create: Orkestra creates it on the first reconcile and leaves it untouched afterward. Job entries are always a one-time create — `reconcile: true` and `onReconcile` have no effect. Job is also commonly declared under `onDelete`, for cleanup work that must complete before the CR's finalizer is removed.
+Declare this resource under `onCreate` for an idempotent, one-time create: Inrun creates it on the first reconcile and leaves it untouched afterward. Job entries are always a one-time create — `reconcile: true` and `onReconcile` have no effect. Job is also commonly declared under `onDelete`, for cleanup work that must complete before the CR's finalizer is removed.
 
 ---
 
@@ -138,7 +138,7 @@ Conditions allow templates to be selectively activated based on the CR's state, 
 
 Type: boolean
 
-Reconcile has no effect on a Job entry. Jobs are always a one-time, idempotent create — Orkestra never re-applies or updates a Job after it runs, since Jobs are meant to run once to completion. This field exists for schema consistency with other resource types only.
+Reconcile has no effect on a Job entry. Jobs are always a one-time, idempotent create — Inrun never re-applies or updates a Job after it runs, since Jobs are meant to run once to completion. This field exists for schema consistency with other resource types only.
 
 ---
 

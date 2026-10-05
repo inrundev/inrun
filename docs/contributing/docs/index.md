@@ -1,11 +1,11 @@
 # Contributing to the Docs
 
-The Orkestra documentation website is a Hugo site. All content lives in the `documentation/` directory at the root of the repo — not inside `website/`. A sync script copies it into Hugo before every build.
+The Inrun documentation website is a Hugo site. All content lives in the `documentation/` directory at the root of the repo — not inside `website/`. A sync script copies it into Hugo before every build.
 
 ```bash
 # Clone and enter the repo
-git clone https://github.com/orkspace/orkestra
-cd orkestra
+git clone https://github.com/inrundev/inrun
+cd inrun
 ```
 
 | I want to… | Go to |

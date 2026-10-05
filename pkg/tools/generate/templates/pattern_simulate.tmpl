@@ -1,14 +1,14 @@
-# https://orkestra.sh/docs/reference/schema/simulate/
-apiVersion: orkestra.orkspace.io/v1
+# https://inrun.dev/docs/reference/schema/simulate/
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: # TODO: operator name
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   cr: ../manifests/cr.yaml
   expect:
     # TODO: add assertions — or generate them from a live run:
-    #   ork simulate init
+    #   inrun simulate init
     #
     # - cycle: 1
     #   verb: create

@@ -4,13 +4,13 @@ expect:
     timeout: 60s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/apply
           method: POST
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
             Content-Type: "application/json"
           body: >
             {"target":"apifixture","name":"gw-primary","workloadType":"app",
@@ -28,7 +28,7 @@ expect:
         - kind: PlatformResource
           name: gw-primary
           namespace: team-payments
-          field: .metadata.annotations["orkestra.orkspace.io/serve-target"]
+          field: .metadata.annotations["inrun.dev/serve-target"]
           equals: "apifixture"
 
   - name: Apply via primary target — serve-alias annotation is absent
@@ -39,7 +39,7 @@ expect:
         - kind: PlatformResource
           name: gw-primary
           namespace: team-payments
-          field: .metadata.annotations["orkestra.orkspace.io/serve-alias"]
+          field: .metadata.annotations["inrun.dev/serve-alias"]
           equals: ""
 
   - name: GET via gateway returns provenance in payload — primary target
@@ -47,21 +47,21 @@ expect:
     timeout: 60s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/resources/platformresource/team-payments/gw-primary
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           jq: .payload.target
           equals: "apifixture"
 
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/resources/platformresource/team-payments/gw-primary
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           jq: .spec.workloadType
           equals: "app"
 
@@ -70,10 +70,10 @@ expect:
     timeout: 30s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/resources/platformresource/team-payments/gw-primary?field=status.phase
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           exists: true

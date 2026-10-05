@@ -5,23 +5,23 @@ import (
 	"os"
 	"path/filepath"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"gopkg.in/yaml.v3"
 )
 
 // ToGatewayClusterConfig converts a bootstrap result into a GatewayClusterConfig
 // ready to paste into (or include from) gateway.clusters.
-func (r *Result) ToGatewayClusterConfig() orktypes.GatewayClusterConfig {
-	cfg := orktypes.GatewayClusterConfig{
+func (r *Result) ToGatewayClusterConfig() types.GatewayClusterConfig {
+	cfg := types.GatewayClusterConfig{
 		Endpoint: r.Endpoint,
-		TokenRef: &orktypes.APISecretRef{
+		TokenRef: &types.APISecretRef{
 			Name:      r.SecretName,
 			Namespace: r.SecretNamespace,
 			Key:       "token",
 		},
 	}
 	if r.HasCA {
-		cfg.CARef = &orktypes.APISecretRef{
+		cfg.CARef = &types.APISecretRef{
 			Name:      r.SecretName,
 			Namespace: r.SecretNamespace,
 			Key:       "ca.crt",
@@ -32,15 +32,15 @@ func (r *Result) ToGatewayClusterConfig() orktypes.GatewayClusterConfig {
 
 // WriteClusterCredentials writes a clusters.yaml file in gateway.clusters format
 // from a slice of bootstrap results. The file can be passed directly to
-// `ork clusters check --config` or included via `gateway.clusters.include:`.
+// `inrun clusters check --config` or included via `gateway.clusters.include:`.
 func WriteClusterCredentials(path string, results []*Result) error {
-	entries := make(map[string]orktypes.GatewayClusterConfig, len(results))
+	entries := make(map[string]types.GatewayClusterConfig, len(results))
 	for _, r := range results {
 		entries[r.Entry.Name] = r.ToGatewayClusterConfig()
 	}
 
 	out := struct {
-		Clusters map[string]orktypes.GatewayClusterConfig `yaml:"clusters"`
+		Clusters map[string]types.GatewayClusterConfig `yaml:"clusters"`
 	}{Clusters: entries}
 
 	data, err := yaml.Marshal(out)

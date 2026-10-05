@@ -1,7 +1,7 @@
-// webhook/housekeeper.go — self-healing maintenance of Orkestra's admission surface.
+// webhook/housekeeper.go — self-healing maintenance of Inrun's admission surface.
 //
 // The housekeeper runs in the background and ensures that the webhook
-// configurations Orkestra owns exist exactly when the Katalog declares them —
+// configurations Inrun owns exist exactly when the Catalog declares them —
 // and disappear when they do not.
 //
 // Declarative Webhook Lifecycle
@@ -54,10 +54,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/orkspace/orkestra/pkg/gateway/certmanager"
-	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/metrics"
+	"github.com/inrundev/inrun/pkg/gateway/certmanager"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/metrics"
 )
 
 const (
@@ -67,21 +67,21 @@ const (
 	// watchRetryDelay is the pause before re-establishing a dropped Watch stream.
 	watchRetryDelay = 5 * time.Second
 
-	// orkestraWebhookLabelSelector narrows the Watch to Orkestra-owned webhook
+	// inrunWebhookLabelSelector narrows the Watch to Inrun-owned webhook
 	// configurations — unrelated webhooks in the same cluster are ignored.
-	orkestraWebhookLabelSelector = "app.kubernetes.io/tag=orkestra-internal"
+	inrunWebhookLabelSelector = "app.kubernetes.io/tag=inrun-internal"
 )
 
 // housekeeper continuously reconciles all admission webhook configurations
-// declared by the Katalog. Runs background goroutines until ctx is cancelled.
+// declared by the Catalog. Runs background goroutines until ctx is cancelled.
 // Called once on leader startup. Returns only fatal initialization errors.
 func (ws *WebhookServer) housekeeper(ctx context.Context) error {
-	if ws.kubeClient == nil || ws.katalog == nil {
-		logger.Debug().Msg("housekeeper disabled: kube client or katalog not set")
+	if ws.kubeClient == nil || ws.catalog == nil {
+		logger.Debug().Msg("housekeeper disabled: kube client or catalog not set")
 		return nil
 	}
 
-	kat := ws.katalog
+	kat := ws.catalog
 	hasAdmission := kat.HasValidationRules() || kat.HasMutationRules()
 	hasDeletionProtection := kat.IsDeletionProtectionEnabled() && kat.DeletionProtectionGVRs() != nil
 	hasNamespaceProtection := kat.IsNamespaceProtectionEnabled() && len(kat.NamespaceProtectionGVRs()) > 0
@@ -194,7 +194,7 @@ func (ws *WebhookServer) reconcileCertSecret() {
 	}
 
 	// Secret exists — check if pre-emptive rotation is needed.
-	if ws.katalog != nil && ws.katalog.CertAutoRotate() {
+	if ws.catalog != nil && ws.catalog.CertAutoRotate() {
 		ws.maybeRotateCert(ctx, existing)
 	}
 }
@@ -212,7 +212,7 @@ func (ws *WebhookServer) restoreCertSecret(ctx context.Context) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ws.certSecretName,
 			Namespace: ws.certSecretNamespace,
-			Labels:    orklabels.WithDeletionProtection(orklabels.OrkestraResourceLabels()),
+			Labels:    labels.WithDeletionProtection(labels.InrunResourceLabels()),
 		},
 		Type: corev1.SecretTypeTLS,
 		Data: map[string][]byte{
@@ -243,11 +243,11 @@ func (ws *WebhookServer) restoreCertSecret(ctx context.Context) {
 // for the full threshold window). The new certificate takes effect on the next
 // gateway restart — this is pre-emptive, not live rotation.
 func (ws *WebhookServer) maybeRotateCert(ctx context.Context, existing *corev1.Secret) {
-	if ws.konfig == nil {
+	if ws.config == nil {
 		return
 	}
 
-	threshold := ws.katalog.CertRotationThreshold()
+	threshold := ws.catalog.CertRotationThreshold()
 
 	// Parse expiry from the cert stored in the Secret (ground truth for next restart).
 	certData := existing.Data["tls.crt"]
@@ -273,10 +273,10 @@ func (ws *WebhookServer) maybeRotateCert(ctx context.Context, existing *corev1.S
 		Float64("days_until_expiry", daysLeft).
 		Msg("housekeeper: TLS cert within rotation window — pre-emptive rotation")
 
-	svcName := ws.konfig.GatewayServiceName()
+	svcName := ws.config.GatewayServiceName()
 	ns := ws.certSecretNamespace
 
-	newBundle, err := certmanager.GenerateClusterBundle(svcName, ns, certmanager.BundleOpts{ValidFor: ws.katalog.CertValidForStr()})
+	newBundle, err := certmanager.GenerateClusterBundle(svcName, ns, certmanager.BundleOpts{ValidFor: ws.catalog.CertValidForStr()})
 	if err != nil {
 		logger.Error().Err(err).Msg("housekeeper: cert rotation — failed to generate new bundle")
 		metrics.RecordWebhookReconciliationFailure("tls-secret-rotation")
@@ -305,7 +305,7 @@ func (ws *WebhookServer) maybeRotateCert(ctx context.Context, existing *corev1.S
 	if fresh.Annotations == nil {
 		fresh.Annotations = map[string]string{}
 	}
-	fresh.Annotations["orkestra.orkspace.io/rotated-at"] = time.Now().UTC().Format(time.RFC3339)
+	fresh.Annotations["inrun.dev/rotated-at"] = time.Now().UTC().Format(time.RFC3339)
 
 	if _, err := ws.kubeClient.CoreV1().Secrets(ws.certSecretNamespace).
 		Update(ctx, fresh, metav1.UpdateOptions{}); err != nil {
@@ -360,14 +360,14 @@ func (ws *WebhookServer) watchCertSecret(ctx context.Context, trigger chan<- str
 }
 
 // watchValidatingWebhooks watches ValidatingWebhookConfiguration objects owned
-// by Orkestra and sends to trigger on DELETED or MODIFIED events.
+// by Inrun and sends to trigger on DELETED or MODIFIED events.
 // Reconnects automatically when the stream expires or drops.
 func (ws *WebhookServer) watchValidatingWebhooks(ctx context.Context, trigger chan<- struct{}) {
 	for {
 		watcher, err := ws.kubeClient.AdmissionregistrationV1().
 			ValidatingWebhookConfigurations().
 			Watch(ctx, metav1.ListOptions{
-				LabelSelector: orkestraWebhookLabelSelector,
+				LabelSelector: inrunWebhookLabelSelector,
 			})
 		if err != nil {
 			logger.Warn().Err(err).Msg("housekeeper watch (validating): failed to start, retrying")
@@ -391,14 +391,14 @@ func (ws *WebhookServer) watchValidatingWebhooks(ctx context.Context, trigger ch
 }
 
 // watchMutatingWebhooks watches MutatingWebhookConfiguration objects owned
-// by Orkestra and sends to trigger on DELETED or MODIFIED events.
+// by Inrun and sends to trigger on DELETED or MODIFIED events.
 // Reconnects automatically when the stream expires or drops.
 func (ws *WebhookServer) watchMutatingWebhooks(ctx context.Context, trigger chan<- struct{}) {
 	for {
 		watcher, err := ws.kubeClient.AdmissionregistrationV1().
 			MutatingWebhookConfigurations().
 			Watch(ctx, metav1.ListOptions{
-				LabelSelector: orkestraWebhookLabelSelector,
+				LabelSelector: inrunWebhookLabelSelector,
 			})
 		if err != nil {
 			logger.Warn().Err(err).Msg("housekeeper watch (mutating): failed to start, retrying")
@@ -451,7 +451,7 @@ func (ws *WebhookServer) drainWatchEvents(ctx context.Context, w watch.Interface
 }
 
 func (ws *WebhookServer) reconcileAdmissionWebhooks() {
-	kat := ws.katalog
+	kat := ws.catalog
 
 	if !ws.webhooksEnabled || ws.admissionRegistry == nil {
 		cleanupOpts := WebhookCleanupOptions{}
@@ -507,7 +507,7 @@ func (ws *WebhookServer) reconcileAdmissionWebhooks() {
 }
 
 func (ws *WebhookServer) reconcileDeletionProtectionWebhook() {
-	kat := ws.katalog
+	kat := ws.catalog
 
 	enabled := kat.IsDeletionProtectionEnabled() && kat.DeletionProtectionGVRs() != nil
 	if !enabled {
@@ -557,7 +557,7 @@ func (ws *WebhookServer) reconcileDeletionProtectionWebhook() {
 }
 
 func (ws *WebhookServer) reconcileNamespaceProtectionWebhook() {
-	kat := ws.katalog
+	kat := ws.catalog
 
 	enabled := kat.IsNamespaceProtectionEnabled() && len(kat.NamespaceProtectionGVRs()) > 0
 	if !enabled {
@@ -614,15 +614,15 @@ func (ws *WebhookServer) reconcileNamespaceProtectionWebhook() {
 // secret deletion does not break in-flight requests (the TokenSet is in memory),
 // so the 30 s window is acceptable.
 func (ws *WebhookServer) reconcileTokenSecrets() {
-	if ws.kubeClient == nil || ws.katalog == nil || ws.konfig == nil {
+	if ws.kubeClient == nil || ws.catalog == nil || ws.config == nil {
 		return
 	}
-	kat := ws.katalog
+	kat := ws.catalog
 	if !kat.HasGatewayAPISecretRefs() {
 		return
 	}
 
-	ownNS := ws.konfig.Cluster().Namespace()
+	ownNS := ws.config.Cluster().Namespace()
 
 	ctx, cancel := context.WithTimeout(context.Background(), highTimeout)
 	defer cancel()
@@ -667,7 +667,7 @@ func (ws *WebhookServer) reconcileTokenSecrets() {
 }
 
 func (ws *WebhookServer) reconcileStrictModeWebhook() {
-	kat := ws.katalog
+	kat := ws.catalog
 
 	if !kat.IsStrictModeEnabled() {
 		if ws.kubeClient != nil {

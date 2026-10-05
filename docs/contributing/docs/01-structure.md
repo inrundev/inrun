@@ -3,8 +3,8 @@
 ```text
 documentation/          ← you write here
     getting-started/
-    orkestra-core/
-    orkestra-registry/
+    inrun-core/
+    inrun-registry/
     reference/
     blog/
     contributing/
@@ -38,7 +38,7 @@ On every push to `main` that touches `website/`, `docs/`, or `documentation/`:
 
 1. CI installs Hugo extended
 2. Runs `bash website/scripts/sync-docs.sh`
-3. Runs `hugo --source ./website --minify --baseURL "https://orkestra.sh/"`
+3. Runs `hugo --source ./website --minify --baseURL "https://inrun.dev/"`
 4. Deploys the built output to Cloudflare Pages
 
 → Next: [02-writing](02-writing.md)

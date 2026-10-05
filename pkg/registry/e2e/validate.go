@@ -5,14 +5,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"gopkg.in/yaml.v3"
 )
 
 // ValidateImports checks that every file listed in imports exists and declares
 // kind: E2E. baseDir is the directory that relative paths are resolved against.
 // Returns one error per invalid import — callers may print all of them.
-func ValidateImports(baseDir string, imports []orktypes.E2EImport) []error {
+func ValidateImports(baseDir string, imports []types.E2EImport) []error {
 	var errs []error
 	for _, imp := range imports {
 		path := imp.Path
@@ -46,8 +46,8 @@ func ValidateImports(baseDir string, imports []orktypes.E2EImport) []error {
 // ExpandExpectIncludes resolves include: entries in the expect list, loading each
 // referenced file and splicing its entries in place. Relative paths are resolved
 // against baseDir. Nested includes are not supported.
-func ExpandExpectIncludes(expects []orktypes.E2EExpectation, baseDir string) ([]orktypes.E2EExpectation, error) {
-	var result []orktypes.E2EExpectation
+func ExpandExpectIncludes(expects []types.E2EExpectation, baseDir string) ([]types.E2EExpectation, error) {
+	var result []types.E2EExpectation
 	for _, exp := range expects {
 		if exp.Include == "" {
 			result = append(result, exp)
@@ -62,7 +62,7 @@ func ExpandExpectIncludes(expects []orktypes.E2EExpectation, baseDir string) ([]
 			return nil, fmt.Errorf("include %s: %w", exp.Include, err)
 		}
 		var wrapper struct {
-			Expect []orktypes.E2EExpectation `yaml:"expect"`
+			Expect []types.E2EExpectation `yaml:"expect"`
 		}
 		if err := yaml.Unmarshal(data, &wrapper); err != nil {
 			return nil, fmt.Errorf("include %s: %w", exp.Include, err)
@@ -78,7 +78,7 @@ func ExpandExpectIncludes(expects []orktypes.E2EExpectation, baseDir string) ([]
 
 // ValidateKubectl checks every kubectl block across all expect entries.
 // Returns one error per violation — callers collect and print all of them.
-func ValidateKubectl(expects []orktypes.E2EExpectation) []error {
+func ValidateKubectl(expects []types.E2EExpectation) []error {
 	var errs []error
 	for i, exp := range expects {
 		if exp.Kubectl == nil {
@@ -133,7 +133,7 @@ func ValidateKubectl(expects []orktypes.E2EExpectation) []error {
 	return errs
 }
 
-func validateKubectlGet(loc string, g orktypes.E2EKubectlGet) []error {
+func validateKubectlGet(loc string, g types.E2EKubectlGet) []error {
 	var errs []error
 	if g.Kind == "" {
 		errs = append(errs, fmt.Errorf("%s: kind is required", loc))
@@ -159,7 +159,7 @@ func validateKubectlGet(loc string, g orktypes.E2EKubectlGet) []error {
 	return errs
 }
 
-func validateKubectlLogs(loc string, l orktypes.E2EKubectlLogs) []error {
+func validateKubectlLogs(loc string, l types.E2EKubectlLogs) []error {
 	var errs []error
 	if l.LeaderElection != nil {
 		if l.Name != "" || l.LabelSelector != "" {
@@ -177,7 +177,7 @@ func validateKubectlLogs(loc string, l orktypes.E2EKubectlLogs) []error {
 	return errs
 }
 
-func validateKubectlDescribe(loc string, d orktypes.E2EKubectlDescribe) []error {
+func validateKubectlDescribe(loc string, d types.E2EKubectlDescribe) []error {
 	var errs []error
 	if d.Kind == "" {
 		errs = append(errs, fmt.Errorf("%s: kind is required", loc))
@@ -191,7 +191,7 @@ func validateKubectlDescribe(loc string, d orktypes.E2EKubectlDescribe) []error 
 	return errs
 }
 
-func validateKubectlExec(loc string, e orktypes.E2EKubectlExec) []error {
+func validateKubectlExec(loc string, e types.E2EKubectlExec) []error {
 	var errs []error
 	if e.LeaderElection != nil {
 		if e.Name != "" || e.LabelSelector != "" {
@@ -212,7 +212,7 @@ func validateKubectlExec(loc string, e orktypes.E2EKubectlExec) []error {
 	return errs
 }
 
-func validateKubectlPortForward(loc string, p orktypes.E2EKubectlPortForward) []error {
+func validateKubectlPortForward(loc string, p types.E2EKubectlPortForward) []error {
 	var errs []error
 	if p.LeaderElection != nil {
 		if p.LeaderElection.Lease == "" {
@@ -231,7 +231,7 @@ func validateKubectlPortForward(loc string, p orktypes.E2EKubectlPortForward) []
 	return errs
 }
 
-func validateKubectlDelete(loc string, d orktypes.E2EKubectlDelete) []error {
+func validateKubectlDelete(loc string, d types.E2EKubectlDelete) []error {
 	var errs []error
 	if d.LeaderElection != nil {
 		if d.File != "" || d.Kind != "" || d.Name != "" {
@@ -251,7 +251,7 @@ func validateKubectlDelete(loc string, d orktypes.E2EKubectlDelete) []error {
 	return errs
 }
 
-func validateKubectlApply(loc string, a orktypes.E2EKubectlApply) []error {
+func validateKubectlApply(loc string, a types.E2EKubectlApply) []error {
 	var errs []error
 	if a.File == "" && a.Inline == "" {
 		errs = append(errs, fmt.Errorf("%s: file or inline is required", loc))
@@ -262,7 +262,7 @@ func validateKubectlApply(loc string, a orktypes.E2EKubectlApply) []error {
 	return errs
 }
 
-func validateKubectlPatch(loc string, p orktypes.E2EKubectlPatch) []error {
+func validateKubectlPatch(loc string, p types.E2EKubectlPatch) []error {
 	var errs []error
 	if p.Kind == "" {
 		errs = append(errs, fmt.Errorf("%s: kind is required", loc))
@@ -279,7 +279,7 @@ func validateKubectlPatch(loc string, p orktypes.E2EKubectlPatch) []error {
 	return errs
 }
 
-func validateKubectlEvents(loc string, e orktypes.E2EKubectlEvents) []error {
+func validateKubectlEvents(loc string, e types.E2EKubectlEvents) []error {
 	var errs []error
 	if e.Kind == "" {
 		errs = append(errs, fmt.Errorf("%s: kind is required", loc))
@@ -293,7 +293,7 @@ func validateKubectlEvents(loc string, e orktypes.E2EKubectlEvents) []error {
 	return errs
 }
 
-func validateKubectlAuth(loc string, a orktypes.E2EKubectlAuth) []error {
+func validateKubectlAuth(loc string, a types.E2EKubectlAuth) []error {
 	var errs []error
 	if a.Verb == "" {
 		errs = append(errs, fmt.Errorf("%s: verb is required", loc))
@@ -307,7 +307,7 @@ func validateKubectlAuth(loc string, a orktypes.E2EKubectlAuth) []error {
 	return errs
 }
 
-func validateKubectlCp(loc string, c orktypes.E2EKubectlCp) []error {
+func validateKubectlCp(loc string, c types.E2EKubectlCp) []error {
 	var errs []error
 	if c.Name == "" && c.LabelSelector == "" {
 		errs = append(errs, fmt.Errorf("%s: name or labelSelector is required", loc))
@@ -321,7 +321,7 @@ func validateKubectlCp(loc string, c orktypes.E2EKubectlCp) []error {
 	return errs
 }
 
-func validateKubectlTop(loc string, t orktypes.E2EKubectlTop) []error {
+func validateKubectlTop(loc string, t types.E2EKubectlTop) []error {
 	var errs []error
 	if t.Kind == "" {
 		errs = append(errs, fmt.Errorf("%s: kind is required (pod or node)", loc))
@@ -337,7 +337,7 @@ func validateKubectlTop(loc string, t orktypes.E2EKubectlTop) []error {
 	return errs
 }
 
-func validateKubectlRestart(loc string, r orktypes.E2EKubectlRestart) []error {
+func validateKubectlRestart(loc string, r types.E2EKubectlRestart) []error {
 	var errs []error
 	if r.Kind == "" {
 		errs = append(errs, fmt.Errorf("%s: kind is required", loc))
@@ -348,7 +348,7 @@ func validateKubectlRestart(loc string, r orktypes.E2EKubectlRestart) []error {
 	return errs
 }
 
-func validateKubectlScale(loc string, s orktypes.E2EKubectlScale) []error {
+func validateKubectlScale(loc string, s types.E2EKubectlScale) []error {
 	var errs []error
 	if s.Kind == "" {
 		errs = append(errs, fmt.Errorf("%s: kind is required", loc))

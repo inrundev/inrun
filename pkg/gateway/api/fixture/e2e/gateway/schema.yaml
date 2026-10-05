@@ -1,15 +1,15 @@
 expect:
-  - name: Schema catalog lists apifixture target
+  - name: Service list shows apifixture target
     after: cr-applied
     timeout: 30s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/schema
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           outputContains: "apifixture"
 
   - name: Schema for apifixture target returns field definitions
@@ -17,12 +17,12 @@ expect:
     timeout: 30s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/schema?target=apifixture
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           jq: .target
           equals: "apifixture"
 
@@ -31,12 +31,12 @@ expect:
     timeout: 30s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/schema?target=does-not-exist
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           outputContains: "unknown target"
 
   - name: Schema endpoint rejects unauthenticated request
@@ -44,8 +44,8 @@ expect:
     timeout: 30s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/schema?target=apifixture
           statusCode: 401

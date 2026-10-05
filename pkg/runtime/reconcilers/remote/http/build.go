@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/resources/configmaps"
-	"github.com/orkspace/orkestra/pkg/resources/cronjobs"
-	"github.com/orkspace/orkestra/pkg/resources/customresources"
-	"github.com/orkspace/orkestra/pkg/resources/deployments"
-	"github.com/orkspace/orkestra/pkg/resources/ingresses"
-	"github.com/orkspace/orkestra/pkg/resources/jobs"
-	"github.com/orkspace/orkestra/pkg/resources/secrets"
-	"github.com/orkspace/orkestra/pkg/resources/serviceaccounts"
-	"github.com/orkspace/orkestra/pkg/resources/services"
-	"github.com/orkspace/orkestra/pkg/resources/statefulsets"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/resources/configmaps"
+	"github.com/inrundev/inrun/pkg/resources/cronjobs"
+	"github.com/inrundev/inrun/pkg/resources/customresources"
+	"github.com/inrundev/inrun/pkg/resources/deployments"
+	"github.com/inrundev/inrun/pkg/resources/ingresses"
+	"github.com/inrundev/inrun/pkg/resources/jobs"
+	"github.com/inrundev/inrun/pkg/resources/secrets"
+	"github.com/inrundev/inrun/pkg/resources/serviceaccounts"
+	"github.com/inrundev/inrun/pkg/resources/services"
+	"github.com/inrundev/inrun/pkg/resources/statefulsets"
 )
 
 // supportedIntentTypes lists all named resource types accepted in the intent form.

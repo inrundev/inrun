@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/gateway/api"
+	"github.com/inrundev/inrun/pkg/gateway/api"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -30,16 +30,16 @@ The gateway handles target resolution, token validation, provenance stamping,
 and admission. This command only sends the body and prints the response.
 
 Example (intent mode):
-  ork serve apply --api https://gateway.myorg.io --token "$ORK_TOKEN"
+  inrun serve apply --api https://gateway.myorg.io --token "$INRUN_TOKEN"
 
 Example (explicit file):
-  ork serve apply -f intent.yaml --api https://gateway.myorg.io --token "$ORK_TOKEN"
+  inrun serve apply -f intent.yaml --api https://gateway.myorg.io --token "$INRUN_TOKEN"
 
 Example (dry run — no CR applied):
-  ork serve apply -f cr.yaml --api https://gateway.myorg.io --token "$ORK_TOKEN" --dry-run
+  inrun serve apply -f cr.yaml --api https://gateway.myorg.io --token "$INRUN_TOKEN" --dry-run
 
 Example (override routing surface conflict):
-  ork serve apply -f intent.yaml --api https://gateway.myorg.io --token "$ORK_TOKEN" --override`,
+  inrun serve apply -f intent.yaml --api https://gateway.myorg.io --token "$INRUN_TOKEN" --override`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		file, _ := cmd.Flags().GetString("file")

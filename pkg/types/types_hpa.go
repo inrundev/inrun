@@ -9,7 +9,7 @@ type ScaleTargetRef struct {
 	Name       string `yaml:"name" json:"name"`
 }
 
-// HPATemplateSource declares one HorizontalPodAutoscaler to be managed by Orkestra.
+// HPATemplateSource declares one HorizontalPodAutoscaler to be managed by Inrun.
 //
 // Example:
 //

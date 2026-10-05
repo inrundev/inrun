@@ -2,9 +2,9 @@
 
 package validate
 
-// printEnrichmentReport prints the enrichment summary as part of ork validate output.
+// printEnrichmentReport prints the enrichment summary as part of inrun validate output.
 //
-// Example output for a Katalog with built-in and custom CRDs:
+// Example output for a Catalog with built-in and custom CRDs:
 //
 //   ✓ deployment-governance
 //     kind: Deployment → enriched from built-in registry
@@ -15,25 +15,25 @@ package validate
 //     group: core / version: v1 / plural: pods / scope: Namespaced
 //
 //   ✓ website
-//     kind: Website / group: demo.orkestra.io / version: v1alpha1 / plural: websites
+//     kind: Website / group: demo.inrun.dev / version: v1alpha1 / plural: websites
 //
 //   ✓ platform-namespace
-//     kind: PlatformNamespace / group: platform.orkestra.io / version: v1alpha1
+//     kind: PlatformNamespace / group: platform.inrun.dev / version: v1alpha1
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/types"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 // printCRDValidationLine prints one CRD entry's validation result.
 // Shows enrichment clearly when it occurred, and any warnings.
-func printCRDValidationLine(k *katalog.Katalog, entry orktypes.CRDEntry) {
+func printCRDValidationLine(k *catalog.Catalog, entry types.CRDEntry) {
 	printCRDHeader(entry)
 	strictModeText := getStrictModeText(entry, k.IsStrictModeEnabled())
 	printKindInfo(entry)
@@ -44,7 +44,7 @@ func printCRDValidationLine(k *katalog.Katalog, entry orktypes.CRDEntry) {
 }
 
 // printCRDHeader prints the CRD name with appropriate icon.
-func printCRDHeader(entry orktypes.CRDEntry) {
+func printCRDHeader(entry types.CRDEntry) {
 	icon := cmdutil.HealthIconReady()
 	if entry.Warnings.HasWarnings() {
 		icon = cmdutil.HealthIconWarn()
@@ -57,8 +57,8 @@ func printCRDHeader(entry orktypes.CRDEntry) {
 
 // getStrictModeText returns a formatted string indicating strict mode status,
 // or an empty string if strict mode is not enforced for this CRD.
-func getStrictModeText(entry orktypes.CRDEntry, katalogStrictMode bool) string {
-	if katalogStrictMode && entry.IsStrictDeletionProtection(katalogStrictMode) {
+func getStrictModeText(entry types.CRDEntry, catalogStrictMode bool) string {
+	if catalogStrictMode && entry.IsStrictDeletionProtection(catalogStrictMode) {
 		return cmdutil.InfoMark() + " (strict)"
 	}
 	return ""
@@ -66,7 +66,7 @@ func getStrictModeText(entry orktypes.CRDEntry, katalogStrictMode bool) string {
 
 // printKindInfo prints the kind/group/version/plural/scope line.
 // For built‑in types, it shows enrichment info; for custom, the declared values.
-func printKindInfo(entry orktypes.CRDEntry) {
+func printKindInfo(entry types.CRDEntry) {
 	scope := "Namespaced"
 	if !entry.IsNamespaced() {
 		scope = "ClusterScoped"
@@ -89,7 +89,7 @@ func printKindInfo(entry orktypes.CRDEntry) {
 }
 
 // printModeResync prints the mode, workers, and resync period.
-func printModeResync(entry orktypes.CRDEntry) {
+func printModeResync(entry types.CRDEntry) {
 	fmt.Printf("    %s\n", cmdutil.Gray(fmt.Sprintf(
 		"mode: %s / workers: %v / resync: %v",
 		entry.Mode, entry.SetWorkers(0), entry.SetResync(0).String(),
@@ -101,13 +101,13 @@ func printModeResync(entry orktypes.CRDEntry) {
 // printProtectionStatus prints the protection level for custom CRDs.
 // For built‑ins, a simplified message is shown.
 // When strict mode is active, the label changes from "protection:" to "strict‑protection:".
-func printProtectionStatus(entry orktypes.CRDEntry, katalogProtected bool, strictModeText string) {
+func printProtectionStatus(entry types.CRDEntry, catalogProtected bool, strictModeText string) {
 	if entry.IsBuiltInType() {
 		fmt.Printf("    %s\n", cmdutil.Gray("protection: label-based (built-in)"))
 		return
 	}
 
-	if !katalogProtected {
+	if !catalogProtected {
 		return
 	}
 
@@ -141,9 +141,9 @@ func printProtectionStatus(entry orktypes.CRDEntry, katalogProtected bool, stric
 	fmt.Printf("    %s\n", cmdutil.Gray(fullText))
 }
 
-// printWarnings prints any warnings associated with the CRD or Katalog,
+// printWarnings prints any warnings associated with the CRD or Catalog,
 // with proper indentation.
-func printWarnings(crdWarnings, katalogWarnings []string) {
+func printWarnings(crdWarnings, catalogWarnings []string) {
 	// Print CRD-level warnings
 	for _, w := range crdWarnings {
 		lines := strings.Split(w, "\n")
@@ -156,8 +156,8 @@ func printWarnings(crdWarnings, katalogWarnings []string) {
 		}
 	}
 
-	// Print Katalog-level warnings
-	for _, w := range katalogWarnings {
+	// Print Catalog-level warnings
+	for _, w := range catalogWarnings {
 		lines := strings.Split(w, "\n")
 		for i, line := range lines {
 			if i == 0 {
@@ -169,9 +169,9 @@ func printWarnings(crdWarnings, katalogWarnings []string) {
 	}
 }
 
-// printInfo prints any informational messages associated with the CRD or Katalog,
+// printInfo prints any informational messages associated with the CRD or Catalog,
 // with proper indentation.
-func printInfo(crdInfo, katalogInfo []string) {
+func printInfo(crdInfo, catalogInfo []string) {
 	// Print CRD-level info
 	for _, msg := range crdInfo {
 		lines := strings.Split(msg, "\n")
@@ -184,8 +184,8 @@ func printInfo(crdInfo, katalogInfo []string) {
 		}
 	}
 
-	// Print Katalog-level info
-	for _, msg := range katalogInfo {
+	// Print Catalog-level info
+	for _, msg := range catalogInfo {
 		lines := strings.Split(msg, "\n")
 		for i, line := range lines {
 			if i == 0 {
@@ -227,7 +227,7 @@ func printCRDPermissions(rules []rbacv1.PolicyRule) {
 
 // printValidateDependencyGraph prints the startup-order dependency section for validate --full.
 // Only called when there are dependencies (dd is never nil here).
-func printValidateDependencyGraph(dd *katalog.DependencyDisplay) {
+func printValidateDependencyGraph(dd *catalog.DependencyDisplay) {
 	fmt.Println()
 	fmt.Println(cmdutil.Bold("startup order"))
 	maxName := 0
@@ -269,9 +269,9 @@ func printGatewayPermissionsSection(rules []rbacv1.PolicyRule) {
 	fmt.Println()
 	fmt.Println(cmdutil.Bold("gateway"))
 	printRuleBlock(rules, map[string]string{
-		// set TLS_CERT / TLS_KEY in orkestra-deployment to bring your own
-		"secrets":    "Orkestra provisions and rotates certs",
-		"namespaces": "labels orkestra-system to activate the deletion-protection admission scope",
+		// set TLS_CERT / TLS_KEY in inrun-deployment to bring your own
+		"secrets":    "Inrun provisions and rotates certs",
+		"namespaces": "labels inrun-system to activate the deletion-protection admission scope",
 	})
 }
 
@@ -333,7 +333,7 @@ type profileLine struct {
 
 // printCRDProfiles prints named profiles declared for a CRD under its header.
 // No-op when the CRD declares no profiles.
-func printCRDProfiles(entry orktypes.CRDEntry) {
+func printCRDProfiles(entry types.CRDEntry) {
 	lines := collectProfileLines(entry)
 	if len(lines) == 0 {
 		return
@@ -363,7 +363,7 @@ func printCRDProfiles(entry orktypes.CRDEntry) {
 	}
 }
 
-func collectProfileLines(entry orktypes.CRDEntry) []profileLine {
+func collectProfileLines(entry types.CRDEntry) []profileLine {
 	var lines []profileLine
 
 	for _, e := range entry.CollectSecurityProfileEntries() {

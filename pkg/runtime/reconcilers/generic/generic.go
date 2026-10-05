@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/event"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
-	"github.com/orkspace/orkestra/pkg/runtime/runners"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/event"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator/prepare"
+	"github.com/inrundev/inrun/pkg/runtime/runners"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
@@ -47,14 +47,14 @@ type Reconciler[PTR domain.Object] struct {
 	// When empty, all targets fall back to the CRD-level hooks field.
 	targetHooks map[string]domain.ObjectHooks
 
-	operatorBox *orktypes.OperatorBoxConfig
+	operatorBox *types.OperatorBoxConfig
 	newObj      func() PTR
-	crd         orktypes.CRDEntry
-	kat         *katalog.Katalog
+	crd         types.CRDEntry
+	kat         *catalog.Catalog
 }
 
 // discardRecorder is the package-private noop used when nil is passed for ev.
-// Used by ork simulate
+// Used by inrun simulate
 type discardRecorder struct{}
 
 func (discardRecorder) Eventf(_ runtime.Object, _, _, _ string, _ ...interface{}) {}
@@ -62,7 +62,7 @@ func (discardRecorder) Eventf(_ runtime.Object, _, _, _ string, _ ...interface{}
 // New constructs a Reconciler for the given CRD.
 //
 // PTR must be a pointer to the concrete CR type (e.g. *Database). When called
-// from the runtime registry path in runtime_konstructor.go, PTR is inferred as
+// from the runtime registry path in runtime_construct.go, PTR is inferred as
 // domain.Object (the interface) — this is also valid because the constraint
 // domain.Object is satisfied and the informer stores the correct concrete type.
 //
@@ -70,13 +70,13 @@ func (discardRecorder) Eventf(_ runtime.Object, _, _, _ string, _ ...interface{}
 // domain.ReconcileHooks[T] value satisfies HookBinder automatically via its
 // BindToObjectHooks() method. Passing any other type panics at startup.
 func New[PTR domain.Object](
-	crd orktypes.CRDEntry,
+	crd types.CRDEntry,
 	informer cache.SharedIndexInformer,
 	ev event.Recorder,
 	kube kubeclient.Interface,
 	anyHooks domain.AnyReconcileHooks,
 	newObj func() PTR,
-	kat *katalog.Katalog,
+	kat *catalog.Catalog,
 ) *Reconciler[PTR] {
 
 	// Adapt the user's strongly-typed ReconcileHooks[PTR] to the type-erased
@@ -118,7 +118,7 @@ func New[PTR domain.Object](
 	// cannot cascade through owner references.
 	if !slices.Contains(box.EffectiveFinalizers(), labels.CleanupFinalizer) {
 		if box.Runtime == nil {
-			box.Runtime = &orktypes.RuntimeConfig{}
+			box.Runtime = &types.RuntimeConfig{}
 		}
 		box.Runtime.Finalizers = append(box.Runtime.Finalizers, labels.CleanupFinalizer)
 	}
@@ -155,12 +155,12 @@ func (r *Reconciler[PTR]) Reconcile(ctx context.Context, req domain.Request) (do
 	ctx = logger.WithResource(ctx, req.Key)
 
 	if req.Prepared == nil {
-		return domain.Result{}, fmt.Errorf("req.Prepared is nil for %q — all reconciles must go through kordinator", req.Key)
+		return domain.Result{}, fmt.Errorf("req.Prepared is nil for %q — all reconciles must go through coordinator", req.Key)
 	}
 
 	box := prepare.BoxFrom(req.Prepared)
 	target := req.Prepared.Target
-	resolver := req.Prepared.Context.(*orktmpl.Resolver)
+	resolver := req.Prepared.Context.(*template.Resolver)
 	obj, err := domain.ToTypedWith(req.Prepared.Object, r.newObj)
 	if err != nil {
 		return domain.Result{}, err
@@ -190,17 +190,17 @@ func (r *Reconciler[PTR]) Reconcile(ctx context.Context, req domain.Request) (do
 
 // reconcileImpl dispatches to the correct reconcile implementation.
 // Priority: Go hooks → declarative templates → no-op.
-func (r *Reconciler[PTR]) reconcileImpl(ctx context.Context, resolver *orktmpl.Resolver, obj PTR, box orktypes.OperatorBoxConfig, hooks domain.ObjectHooks) error {
+func (r *Reconciler[PTR]) reconcileImpl(ctx context.Context, resolver *template.Resolver, obj PTR, box types.OperatorBoxConfig, hooks domain.ObjectHooks) error {
 	var err error
 
 	hasTemplates := box.EffectiveOnCreate() != nil || box.EffectiveOnReconcile() != nil
 	switch {
 	case hooks.OnReconcile != nil:
 		// Go hooks — user-provided, full type-safe access.
-		// Requires: ork generate registry to register in HookRegistry.
+		// Requires: inrun generate registry to register in HookRegistry.
 		//
 		// Order: by default declared templates run first (hybrid 90/10 pattern).
-		// Set hooks.runHooksFirst: true in the Katalog to run the hook first.
+		// Set hooks.runHooksFirst: true in the Catalog to run the hook first.
 		if !r.crd.RunHooksFirst() && hasTemplates {
 			resolver, err = r.runTemplateReconcile(ctx, resolver, obj, box)
 		}
@@ -213,7 +213,7 @@ func (r *Reconciler[PTR]) reconcileImpl(ctx context.Context, resolver *orktmpl.R
 
 	case box.EffectiveOnCreate() != nil || box.EffectiveOnReconcile() != nil:
 		// Declarative templates — interpreted at runtime.
-		// Requires: nothing. ork generate registry NOT needed.
+		// Requires: nothing. inrun generate registry NOT needed.
 		// The returned resolver carries cross/external data for status evaluation.
 		resolver, err = r.runTemplateReconcile(ctx, resolver, obj, box)
 
@@ -250,7 +250,7 @@ func (r *Reconciler[PTR]) reconcileImpl(ctx context.Context, resolver *orktmpl.R
 // handleDeletion runs cleanup then removes our finalizers.
 // Finalizers are never removed on error — object stays protected until
 // cleanup succeeds.
-func (r *Reconciler[PTR]) handleDeletion(ctx context.Context, resolver *orktmpl.Resolver, obj PTR, box orktypes.OperatorBoxConfig, hooks domain.ObjectHooks) error {
+func (r *Reconciler[PTR]) handleDeletion(ctx context.Context, resolver *template.Resolver, obj PTR, box types.OperatorBoxConfig, hooks domain.ObjectHooks) error {
 	switch {
 	case hooks.OnDelete != nil:
 		if err := hooks.OnDelete(ctx, obj); err != nil {

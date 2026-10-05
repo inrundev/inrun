@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	// "github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
+	// "github.com/inrundev/inrun/pkg/utils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -24,7 +24,7 @@ func IsRequest(raw map[string]interface{}) bool {
 // submitted in target mode.
 //
 // Field routing — determined by where each field name is declared in the
-// Katalog's serve config:
+// Catalog's serve config:
 //
 //	serve.fields                    → spec.<field>
 //	serve.labels       				→ metadata.labels[<field>]
@@ -45,8 +45,8 @@ func IsRequest(raw map[string]interface{}) bool {
 // so we surface the error here with a clearer message.
 func Build(
 	raw map[string]interface{},
-	crd *orktypes.CRDEntry,
-	notes orktypes.NoteRegistry,
+	crd *types.CRDEntry,
+	notes types.NoteRegistry,
 ) (*unstructured.Unstructured, error) {
 	// 1. Build the CR skeleton
 	obj := newCRSkeleton(crd)
@@ -66,7 +66,7 @@ func Build(
 
 // newCRSkeleton creates a blank CR with the correct apiVersion, kind,
 // and empty metadata/spec structures.
-func newCRSkeleton(crd *orktypes.CRDEntry) *unstructured.Unstructured {
+func newCRSkeleton(crd *types.CRDEntry) *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": crd.APIVersion(),
@@ -92,8 +92,8 @@ func newCRSkeleton(crd *orktypes.CRDEntry) *unstructured.Unstructured {
 // .request in value/values expressions for cross-field reads.
 func routeFields(
 	raw map[string]interface{},
-	crd *orktypes.CRDEntry,
-	notes orktypes.NoteRegistry,
+	crd *types.CRDEntry,
+	notes types.NoteRegistry,
 	obj *unstructured.Unstructured,
 ) error {
 	meta := obj.Object["metadata"].(map[string]interface{})
@@ -107,7 +107,7 @@ func routeFields(
 	// Base resolver for value/values expression evaluation.
 	// WithRequest injects the full intent as .request.<field> for cross-field reads.
 	// WithFieldValue is called per-field to inject .value for the current field.
-	baseResolver := orktmpl.NewResolverFromMap(raw).WithUserNotes(notes).WithRequest(raw)
+	baseResolver := template.NewResolverFromMap(raw).WithUserNotes(notes).WithRequest(raw)
 
 	var errs []string
 
@@ -191,8 +191,8 @@ func setSpecValue(spec map[string]interface{}, path string, value interface{}) e
 // Notes are available so expressions like `{{ repoSlug .repository }}` work.
 func resolveServeIdentity(
 	raw map[string]interface{},
-	crd *orktypes.CRDEntry,
-	notes orktypes.NoteRegistry,
+	crd *types.CRDEntry,
+	notes types.NoteRegistry,
 	obj *unstructured.Unstructured,
 ) error {
 	// Build a resolver data map that exposes both:
@@ -209,7 +209,7 @@ func resolveServeIdentity(
 		}
 	}
 
-	resolver := orktmpl.NewResolverFromMap(data).WithUserNotes(notes)
+	resolver := template.NewResolverFromMap(data).WithUserNotes(notes)
 
 	// Resolve serve.name and serve.namespace. Every field the expression
 	// references must be present — ResolveStrict reports a missing field

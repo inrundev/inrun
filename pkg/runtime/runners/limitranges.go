@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orklr "github.com/orkspace/orkestra/pkg/resources/limitranges"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/limitranges"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunLimitRanges resolves and applies LimitRange template declarations.
@@ -22,15 +22,15 @@ import (
 func RunLimitRanges(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.LimitRangeTemplateSource,
+	srcs []types.LimitRangeTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -42,7 +42,7 @@ func RunLimitRanges(
 	}
 
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 		ns, _ := resolver.Resolve(src.Namespace)
@@ -57,7 +57,7 @@ func RunLimitRanges(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orklr.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := limitranges.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("limitRanges[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -74,7 +74,7 @@ func RunLimitRanges(
 			return fmt.Errorf("limitRanges[%d]: %w", i, err)
 		}
 
-		spec := orklr.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
+		spec := limitranges.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
 
 		if len(resolved.ToNamespaces) > 0 {
 			namespaces, err := resolver.ResolveStringSlice(resolved.ToNamespaces)
@@ -90,11 +90,11 @@ func RunLimitRanges(
 				nsSpec := spec
 				nsSpec.Namespace = targetNs
 				if shouldSync {
-					if err := orklr.Update(ctx, kube, owner, nsSpec); err != nil {
+					if err := limitranges.Update(ctx, kube, owner, nsSpec); err != nil {
 						return fmt.Errorf("limitRanges[%d].update namespace=%s: %w", i, targetNs, err)
 					}
 				} else {
-					if err := orklr.Create(ctx, kube, owner, nsSpec); err != nil {
+					if err := limitranges.Create(ctx, kube, owner, nsSpec); err != nil {
 						return fmt.Errorf("limitRanges[%d].create namespace=%s: %w", i, targetNs, err)
 					}
 				}
@@ -103,15 +103,15 @@ func RunLimitRanges(
 		}
 
 		if update {
-			if err := orklr.Update(ctx, kube, owner, spec); err != nil {
+			if err := limitranges.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("limitRanges[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orklr.Create(ctx, kube, owner, spec); err != nil {
+			if err := limitranges.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("limitRanges[%d].create: %w", i, err)
 			}
 			if src.Reconcile {
-				if err := orklr.Update(ctx, kube, owner, spec); err != nil {
+				if err := limitranges.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("limitRanges[%d].reconcile: %w", i, err)
 				}
 			}

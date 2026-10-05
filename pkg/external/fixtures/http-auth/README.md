@@ -14,7 +14,7 @@ This proves that `auth.secretRef` is resolved on every reconcile — a rotated S
 ## Local run
 
 ```sh
-ork run -f pkg/external/fixtures/http-auth/katalog.yaml --dev-server
+inrun -f pkg/external/fixtures/http-auth/catalog.yaml --dev-server
 ```
 
 `setup` applies `secret.yaml` (the bearer token) before the CR is created.
@@ -28,5 +28,5 @@ kubectl get webapp my-app -oyaml
 ## E2e
 
 ```sh
-ork e2e pkg/external/fixtures/http-auth/e2e.yaml --dev-server
+inrun e2e pkg/external/fixtures/http-auth/e2e.yaml --dev-server
 ```

@@ -3,7 +3,7 @@
 # (never reconciled itself) — see resolveCRInputs in cmd/cli/simulate.go and
 # "Same-kind pre-existing instances" in ../../docs/04-internals.md.
 # Both share spec.domain, so validation.rules' operator: unique must deny.
-apiVersion: testground.orkestra.io/v1alpha1
+apiVersion: testground.inrun.dev/v1alpha1
 kind: Website
 metadata:
   name: site-b
@@ -11,7 +11,7 @@ metadata:
 spec:
   domain: shared.example.com
 ---
-apiVersion: testground.orkestra.io/v1alpha1
+apiVersion: testground.inrun.dev/v1alpha1
 kind: Website
 metadata:
   name: site-a

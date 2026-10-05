@@ -1,9 +1,9 @@
 # prometheus
 
-Verifies `protocol: prometheus` using Orkestra's own metrics server as the
+Verifies `protocol: prometheus` using Inrun's own metrics server as the
 Prometheus query target.
 
-Orkestra exposes `/api/v1/query` on the `orkestra-runtime` health server (`:8080`). The endpoint
+Inrun exposes `/api/v1/query` on the `inrun-runtime` health server (`:8080`). The endpoint
 gathers from `prometheus.DefaultGatherer` and answers simple metric-name
 lookups in the standard Prometheus instant query response format.
 
@@ -26,7 +26,7 @@ Status fields exercise:
 ## Run
 
 ```sh
-ork e2e pkg/external/fixtures/prometheus/e2e.yaml
+inrun e2e pkg/external/fixtures/prometheus/e2e.yaml
 ```
 
 No `--dev-server` needed — the fixture queries the operator's own health server.

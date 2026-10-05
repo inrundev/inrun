@@ -9,22 +9,22 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 var (
-	validServeOperations      = strings.Join(orktypes.ValidServeOperations(), ", ")
-	validServeEndpointClasses = strings.Join(orktypes.ValidServeEndpointClasses(), ", ")
+	validServeOperations      = strings.Join(types.ValidServeOperations(), ", ")
+	validServeEndpointClasses = strings.Join(types.ValidServeEndpointClasses(), ", ")
 )
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 // resolveCRD resolves a CRD by target, kind, or name.
-func resolveCRD(kat *katalog.Katalog, target, kind, name string) (*orktypes.CRDEntry, error) {
-	var crd *orktypes.CRDEntry
+func resolveCRD(kat *catalog.Catalog, target, kind, name string) (*types.CRDEntry, error) {
+	var crd *types.CRDEntry
 
 	switch {
 	case target != "":
@@ -52,7 +52,7 @@ func resolveCRD(kat *katalog.Katalog, target, kind, name string) (*orktypes.CRDE
 // resolveCRDByAnyTarget resolves a CRD by primary target or alias using
 // LookupByTargetOrAlias. Returns the CRD and the alias name (empty when the
 // primary target matched). Used by can-i so --target accepts alias names too.
-func resolveCRDByAnyTarget(kat *katalog.Katalog, target string) (*orktypes.CRDEntry, string, error) {
+func resolveCRDByAnyTarget(kat *catalog.Catalog, target string) (*types.CRDEntry, string, error) {
 	resolution := kat.LookupByTargetOrAlias(target)
 	if resolution == nil {
 		return nil, "", fmt.Errorf("%s target or alias %q not found", cmdutil.FailureMark(), target)
@@ -62,7 +62,7 @@ func resolveCRDByAnyTarget(kat *katalog.Katalog, target string) (*orktypes.CRDEn
 
 // printCanIResult prints the permission check result.
 // alias is the serve alias used for the check — empty when the primary target was used.
-func printCanIResult(allowed bool, token, op string, crd *orktypes.CRDEntry, namespace, alias, reason string, details []string) {
+func printCanIResult(allowed bool, token, op string, crd *types.CRDEntry, namespace, alias, reason string, details []string) {
 	if op == "*" {
 		op = "perform all operations"
 	}
@@ -100,14 +100,14 @@ func printCanIResult(allowed bool, token, op string, crd *orktypes.CRDEntry, nam
 
 type fieldEntry struct {
 	Name     string
-	Config   orktypes.ServeFieldConfig
+	Config   types.ServeFieldConfig
 	SpecPath string
 	Source   string
 }
 
 // sortedFieldEntries returns a sorted list of field entries for a CRD.
 // sortBy: "name" (default) or "order"
-func sortedFieldEntries(crd *orktypes.CRDEntry, sortBy string) []fieldEntry {
+func sortedFieldEntries(crd *types.CRDEntry, sortBy string) []fieldEntry {
 	fields := crd.AllServeFields()
 	entries := make([]fieldEntry, 0, len(fields))
 
@@ -158,7 +158,7 @@ func sortedFieldEntries(crd *orktypes.CRDEntry, sortBy string) []fieldEntry {
 // ── printAliasesForCRD ──────────────────────────────────────────────
 
 // printAliasesForCRD prints the alias table for one CRD.
-func printAliasesForCRD(crd *orktypes.CRDEntry) {
+func printAliasesForCRD(crd *types.CRDEntry) {
 	aliases := crd.ServeAliases()
 	if len(aliases) == 0 {
 		fmt.Printf("\nCRD: %s (target: %s) — no aliases\n", crd.Name, crd.ServeTargetOrEmpty())
@@ -193,7 +193,7 @@ func printAliasesForCRD(crd *orktypes.CRDEntry) {
 // ── printServeValidationSummary ──────────────────────────────────────────────
 
 // printServeValidationSummary prints a detailed breakdown of the Serve configuration.
-func printServeValidationSummary(kat *katalog.Katalog) {
+func printServeValidationSummary(kat *catalog.Catalog) {
 	enabledCRDs := kat.ServeEnabledCRDs()
 
 	if len(enabledCRDs) == 0 {

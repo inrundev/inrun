@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       repository:
-        description: 'GitHub repository (owner/name) for the main orkestra repo'
+        description: 'GitHub repository (owner/name) for the main inrun repo'
         required: false
         type: string
         default: ${{ github.repository }}
@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: ${{ inputs.tap_repository }}
-          token: ${{ secrets.ORK_PUBLISH_PAT }}
+          token: ${{ secrets.INRUN_PUBLISH_PAT }}
           path: homebrew-tap
 
       - name: Download checksums artifact
@@ -38,61 +38,61 @@ jobs:
       - name: Extract SHA256 values
         id: sha
         run: |
-          echo "ORK_DARWIN_AMD64=$(grep 'ork_darwin_amd64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-          echo "ORK_DARWIN_ARM64=$(grep 'ork_darwin_arm64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-          echo "ORK_LINUX_AMD64=$(grep 'ork_linux_amd64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-          echo "ORK_LINUX_ARM64=$(grep 'ork_linux_arm64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-          echo "CC_DARWIN_AMD64=$(grep 'orkcc_darwin_amd64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-          echo "CC_DARWIN_ARM64=$(grep 'orkcc_darwin_arm64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-          echo "CC_LINUX_AMD64=$(grep 'orkcc_linux_amd64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-          echo "CC_LINUX_ARM64=$(grep 'orkcc_linux_arm64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "INRUN_DARWIN_AMD64=$(grep 'inrun_darwin_amd64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "INRUN_DARWIN_ARM64=$(grep 'inrun_darwin_arm64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "INRUN_LINUX_AMD64=$(grep 'inrun_linux_amd64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "INRUN_LINUX_ARM64=$(grep 'inrun_linux_arm64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "CC_DARWIN_AMD64=$(grep 'inrun-console_darwin_amd64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "CC_DARWIN_ARM64=$(grep 'inrun-console_darwin_arm64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "CC_LINUX_AMD64=$(grep 'inrun-console_linux_amd64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "CC_LINUX_ARM64=$(grep 'inrun-console_linux_arm64' checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Update runtime formula
         env:
           TAG: ${{ github.ref_name }}
           REPO: ${{ inputs.repository }}
-          DARWIN_AMD64: ${{ steps.sha.outputs.ORK_DARWIN_AMD64 }}
-          DARWIN_ARM64: ${{ steps.sha.outputs.ORK_DARWIN_ARM64 }}
-          LINUX_AMD64:  ${{ steps.sha.outputs.ORK_LINUX_AMD64 }}
-          LINUX_ARM64:  ${{ steps.sha.outputs.ORK_LINUX_ARM64 }}
+          DARWIN_AMD64: ${{ steps.sha.outputs.INRUN_DARWIN_AMD64 }}
+          DARWIN_ARM64: ${{ steps.sha.outputs.INRUN_DARWIN_ARM64 }}
+          LINUX_AMD64:  ${{ steps.sha.outputs.INRUN_LINUX_AMD64 }}
+          LINUX_ARM64:  ${{ steps.sha.outputs.INRUN_LINUX_ARM64 }}
         run: |
           VERSION="${TAG#v}"
-          cat > homebrew-tap/Formula/ork.rb << EOF
-          class Ork < Formula
+          cat > homebrew-tap/Formula/inrun.rb << EOF
+          class Inrun < Formula
             desc "Declarative Runtime for Kubernetes Operators"
             homepage "https://github.com/${REPO}"
             version "${VERSION}"
             license "Apache 2.0"
             on_macos do
               on_arm do
-                url    "https://github.com/${REPO}/releases/download/${TAG}/ork_darwin_arm64.tar.gz"
+                url    "https://github.com/${REPO}/releases/download/${TAG}/inrun_darwin_arm64.tar.gz"
                 sha256 "${DARWIN_ARM64}"
               end
               on_intel do
-                url    "https://github.com/${REPO}/releases/download/${TAG}/ork_darwin_amd64.tar.gz"
+                url    "https://github.com/${REPO}/releases/download/${TAG}/inrun_darwin_amd64.tar.gz"
                 sha256 "${DARWIN_AMD64}"
               end
             end
             on_linux do
               on_arm do
-                url    "https://github.com/${REPO}/releases/download/${TAG}/ork_linux_arm64.tar.gz"
+                url    "https://github.com/${REPO}/releases/download/${TAG}/inrun_linux_arm64.tar.gz"
                 sha256 "${LINUX_ARM64}"
               end
               on_intel do
-                url    "https://github.com/${REPO}/releases/download/${TAG}/ork_linux_amd64.tar.gz"
+                url    "https://github.com/${REPO}/releases/download/${TAG}/inrun_linux_amd64.tar.gz"
                 sha256 "${LINUX_AMD64}"
               end
             end
             def install
-              bin.install "ork"
+              bin.install "inrun"
             end
             test do
-              system "#{bin}/ork", "version"
+              system "#{bin}/inrun", "version"
             end
           end
           EOF
 
-      - name: Update control center formula
+      - name: Update console formula
         env:
           TAG: ${{ github.ref_name }}
           REPO: ${{ inputs.repository }}
@@ -102,37 +102,37 @@ jobs:
           LINUX_ARM64:  ${{ steps.sha.outputs.CC_LINUX_ARM64 }}
         run: |
           VERSION="${TAG#v}"
-          cat > homebrew-tap/Formula/orkcc.rb << EOF
-          class Orkcc < Formula
-            desc "Web-based Control Center for Orkestra - visualize and manage your operators"
+          cat > homebrew-tap/Formula/inrun-console.rb << EOF
+          class InrunConsole < Formula
+            desc "Web-based Console for Inrun - visualize and manage your operators"
             homepage "https://github.com/${REPO}"
             version "${VERSION}"
             license "Apache 2.0"
             on_macos do
               on_arm do
-                url    "https://github.com/${REPO}/releases/download/${TAG}/orkcc_darwin_arm64.tar.gz"
+                url    "https://github.com/${REPO}/releases/download/${TAG}/inrun-console_darwin_arm64.tar.gz"
                 sha256 "${DARWIN_ARM64}"
               end
               on_intel do
-                url    "https://github.com/${REPO}/releases/download/${TAG}/orkcc_darwin_amd64.tar.gz"
+                url    "https://github.com/${REPO}/releases/download/${TAG}/inrun-console_darwin_amd64.tar.gz"
                 sha256 "${DARWIN_AMD64}"
               end
             end
             on_linux do
               on_arm do
-                url    "https://github.com/${REPO}/releases/download/${TAG}/orkcc_linux_arm64.tar.gz"
+                url    "https://github.com/${REPO}/releases/download/${TAG}/inrun-console_linux_arm64.tar.gz"
                 sha256 "${LINUX_ARM64}"
               end
               on_intel do
-                url    "https://github.com/${REPO}/releases/download/${TAG}/orkcc_linux_amd64.tar.gz"
+                url    "https://github.com/${REPO}/releases/download/${TAG}/inrun-console_linux_amd64.tar.gz"
                 sha256 "${LINUX_AMD64}"
               end
             end
             def install
-              bin.install "orkcc"
+              bin.install "inrun-console"
             end
             test do
-              system "#{bin}/orkcc", "--help"
+              system "#{bin}/inrun-console", "--help"
             end
           end
           EOF
@@ -142,6 +142,6 @@ jobs:
           cd homebrew-tap
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/ork.rb Formula/orkcc.rb
-          git commit -m "ork and orkcc ${GITHUB_REF_NAME}"
+          git add Formula/inrun.rb Formula/inrun-console.rb
+          git commit -m "inrun and inrun-console ${GITHUB_REF_NAME}"
           git push

@@ -7,12 +7,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/merger"
-	"github.com/orkspace/orkestra/pkg/registry"
-	"github.com/orkspace/orkestra/pkg/registry/motif"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/registry"
+	"github.com/inrundev/inrun/pkg/registry/module"
+	"github.com/inrundev/inrun/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -22,11 +22,11 @@ var pullCmd = &cobra.Command{
 	Use:   "pull [<name>:<version>]",
 	Short: "Pull a pattern to the local cache",
 	Args:  cobra.RangeArgs(0, 1),
-	Example: `  ork pull postgres:v14
-  ork pull oci://ghcr.io/myorg/patterns/redis:v7
-  ork pull -f katalog.yaml
-  ork pull -f komposer.yaml
-  ork pull postgres:v14 --refresh`,
+	Example: `  inrun pull postgres:v14
+  inrun pull oci://ghcr.io/myorg/patterns/redis:v7
+  inrun pull -f catalog.yaml
+  inrun pull -f stack.yaml
+  inrun pull postgres:v14 --refresh`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		refresh, _ := cmd.Flags().GetBool("refresh")
 		outDir, _ := cmd.Flags().GetString("out")
@@ -37,13 +37,13 @@ var pullCmd = &cobra.Command{
 		}
 
 		if len(args) == 0 {
-			return fmt.Errorf("provide a reference (e.g. postgres:v14) or --file <katalog.yaml>")
+			return fmt.Errorf("provide a reference (e.g. postgres:v14) or --file <catalog.yaml>")
 		}
 
-		isMotif, _ := cmd.Flags().GetBool("motif")
-		kind := registry.KatalogKind
-		if isMotif {
-			kind = registry.MotifKind
+		isModule, _ := cmd.Flags().GetBool("module")
+		kind := registry.CatalogKind
+		if isModule {
+			kind = registry.ModuleKind
 		}
 		ref, err := registry.ResolveForKind(args[0], kind)
 		if err != nil {
@@ -88,8 +88,8 @@ var pullCmd = &cobra.Command{
 		fmt.Printf("  %s Cached at %s\n", cmdutil.SuccessMark(), cacheDir)
 		printPullSuggestions(ref, cacheDir)
 
-		if !isMotif {
-			pullMotifDeps(cacheDir)
+		if !isModule {
+			pullModuleDeps(cacheDir)
 			notifyTypedPull(cacheDir)
 		}
 
@@ -106,11 +106,11 @@ var pullCmd = &cobra.Command{
 func init() {
 	pullCmd.Flags().Bool("refresh", false, "Bypass local cache and re-pull from registry")
 	pullCmd.Flags().StringP("out", "o", "", "Extract pulled pattern to this directory")
-	pullCmd.Flags().StringP("file", "f", "", "Pull all OCI imports from a katalog or komposer file")
-	pullCmd.Flags().BoolP("motif", "m", false, "Resolve as a motif (uses ORK_MOTIFS_REGISTRY)")
+	pullCmd.Flags().StringP("file", "f", "", "Pull all OCI imports from a catalog or stack file")
+	pullCmd.Flags().BoolP("module", "m", false, "Resolve as a module (uses INRUN_MODULES_REGISTRY)")
 	cmdutil.RootCmd.AddCommand(pullCmd)
 
-	// Shadow global flags so they don't appear under `ork pull`
+	// Shadow global flags so they don't appear under `inrun pull`
 	cmdutil.ShadowGlobalCommandFlags(pullCmd)
 }
 
@@ -124,16 +124,16 @@ func notifyTypedPull(cacheDir string) {
 	cmdutil.PrintTypedBuildSteps(hasMakefile == nil)
 }
 
-// pullMotifDeps reads the katalog.yaml in cacheDir and pulls any OCI motif
+// pullModuleDeps reads the catalog.yaml in cacheDir and pulls any OCI module
 // imports it declares. Warnings are printed but do not fail the main pull.
-func pullMotifDeps(katalogCacheDir string) {
-	katalogFile := cmdutil.JoinPath(katalogCacheDir, registry.FileKatalog)
-	if _, err := os.Stat(katalogFile); err != nil {
+func pullModuleDeps(catalogCacheDir string) {
+	catalogFile := cmdutil.JoinPath(catalogCacheDir, registry.FileCatalog)
+	if _, err := os.Stat(catalogFile); err != nil {
 		return
 	}
 
-	imports, err := registry.ExtractOCIImports(katalogFile)
-	if err != nil || len(imports.MotifImports) == 0 {
+	imports, err := registry.ExtractOCIImports(catalogFile)
+	if err != nil || len(imports.ModuleImports) == 0 {
 		return
 	}
 
@@ -141,21 +141,21 @@ func pullMotifDeps(katalogCacheDir string) {
 		return
 	}
 
-	fmt.Printf("\nPulling motif dependencies...\n")
-	for _, imp := range imports.MotifImports {
-		spin := cmdutil.StartSpinner(imp.Motif)
-		if motif.PullImport(&imp) == nil {
+	fmt.Printf("\nPulling module dependencies...\n")
+	for _, imp := range imports.ModuleImports {
+		spin := cmdutil.StartSpinner(imp.Module)
+		if module.PullImport(&imp) == nil {
 			spin.Stop()
-			fmt.Printf("  %s %s\n", cmdutil.SuccessMark(), imp.Motif)
+			fmt.Printf("  %s %s\n", cmdutil.SuccessMark(), imp.Module)
 		} else {
 			spin.Failure()
-			fmt.Printf("  %s %s (pull failed — will retry on next use)\n", cmdutil.WarningMark(), imp.Motif)
+			fmt.Printf("  %s %s (pull failed — will retry on next use)\n", cmdutil.WarningMark(), imp.Module)
 		}
 	}
 }
 
-// pullFromFile extracts all OCI refs from a katalog or komposer file and pulls
-// each one. Motif imports (Katalog) and registry imports (Komposer) are both
+// pullFromFile extracts all OCI refs from a catalog or stack file and pulls
+// each one. Module imports (Catalog) and registry imports (Stack) are both
 // handled, including bare-name shorthands without an oci:// prefix.
 func pullFromFile(cmd *cobra.Command, filePath string, refresh bool) error {
 	imports, err := registry.ExtractOCIImports(filePath)
@@ -174,13 +174,13 @@ func pullFromFile(cmd *cobra.Command, filePath string, refresh bool) error {
 
 	var errs []string
 
-	for _, imp := range imports.MotifImports {
-		fmt.Printf("Pulling motif %s...\n", imp.Motif)
-		if err := motif.PullImport(&imp); err != nil {
+	for _, imp := range imports.ModuleImports {
+		fmt.Printf("Pulling module %s...\n", imp.Module)
+		if err := module.PullImport(&imp); err != nil {
 			fmt.Printf("  %s %v\n", cmdutil.FailureMark(), err)
 			errs = append(errs, err.Error())
 		} else {
-			fmt.Printf("  %s %s\n", cmdutil.SuccessMark(), imp.Motif)
+			fmt.Printf("  %s %s\n", cmdutil.SuccessMark(), imp.Module)
 		}
 	}
 
@@ -196,7 +196,7 @@ func pullFromFile(cmd *cobra.Command, filePath string, refresh bool) error {
 		if ref.IsCached() && !refresh {
 			cacheDir, _ := ref.CachePath()
 			fmt.Printf("  %s Already cached: %s\n", cmdutil.SuccessMark(), ref.ShortName())
-			pullMotifDeps(cacheDir)
+			pullModuleDeps(cacheDir)
 			continue
 		}
 		fmt.Printf("Pulling %s\n  → %s\n", ref.ShortName(), ref.String())
@@ -208,7 +208,7 @@ func pullFromFile(cmd *cobra.Command, filePath string, refresh bool) error {
 		} else {
 			spinRef.Stop()
 			fmt.Printf("  %s %s\n", cmdutil.SuccessMark(), ref.ShortName())
-			pullMotifDeps(cacheDir)
+			pullModuleDeps(cacheDir)
 		}
 	}
 

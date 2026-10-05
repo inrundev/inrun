@@ -5,7 +5,7 @@ expect:
     commands:
       - run: |
           kubectl apply -f - <<'EOF'
-          apiVersion: gateway.fixture.orkestra.io/v1alpha1
+          apiVersion: gateway.fixture.inrun.dev/v1alpha1
           kind: PlatformResource
           metadata:
             name: no-team-resource
@@ -23,7 +23,7 @@ expect:
     commands:
       - run: |
           kubectl apply -f - <<'EOF'
-          apiVersion: gateway.fixture.orkestra.io/v1alpha1
+          apiVersion: gateway.fixture.inrun.dev/v1alpha1
           kind: PlatformResource
           metadata:
             name: invalid-type

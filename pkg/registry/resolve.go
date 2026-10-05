@@ -1,20 +1,20 @@
 // pkg/registry/resolve.go
 //
-// Reference resolution for ork push, ork pull, ork inspect, and ork patterns.
+// Reference resolution for inrun push, inrun pull, inrun inspect, and inrun patterns.
 //
 // A bare reference like "postgres:v14" is resolved to a full OCI reference
 // using the following priority:
 //
 //  1. Full OCI reference (starts with "oci://") — used as-is
-//  2. ORK_REGISTRY env var + "/name:version"
-//  3. Default: ghcr.io/orkspace/orkestra-registry/patterns/katalogs/name:version
+//  2. INRUN_REGISTRY env var + "/name:version"
+//  3. Default: ghcr.io/inrundev/registry/patterns/catalogs/name:version
 //
 // The "oci://" prefix is stripped before passing to ORAS — it is a user-facing
 // convention to signal "this is an OCI reference", not part of the actual URL.
 //
 // CachedDir provides the local cache lookup used by pkg/merger pull helpers.
-// Cache layout: ~/.orkestra/registry/<host>/<repo>/<version>/
-// A hit is declared when katalog.yaml or motif.yaml exists in that directory.
+// Cache layout: ~/.inrun/registry/<host>/<repo>/<version>/
+// A hit is declared when catalog.yaml or module.yaml exists in that directory.
 package registry
 
 import (
@@ -29,7 +29,7 @@ type Ref struct {
 	// Registry is the hostname (e.g. "ghcr.io").
 	Registry string
 	// Repository is the full repository path without the registry
-	// (e.g. "orkspace/orkestra-registry/postgres").
+	// (e.g. "inrundev/inrun-registry/postgres").
 	Repository string
 	// Tag is the version tag (e.g. "v14").
 	Tag string
@@ -39,9 +39,9 @@ type Ref struct {
 
 // Resolve converts a user-supplied reference to a fully qualified OCI Ref.
 //
-//	"postgres:v14"                                           → ghcr.io/orkspace/orkestra-registry/patterns/katalogs/postgres:v14
-//	"oci://ghcr.io/myorg/patterns/katalogs/redis:v7"        → ghcr.io/myorg/patterns/katalogs/redis:v7
-//	"myorg/redis:v7" (with ORK_REGISTRY set)           → resolved against env
+//	"postgres:v14"                                           → ghcr.io/inrundev/registry/patterns/catalogs/postgres:v14
+//	"oci://ghcr.io/myorg/patterns/catalogs/redis:v7"        → ghcr.io/myorg/patterns/catalogs/redis:v7
+//	"myorg/redis:v7" (with INRUN_REGISTRY set)           → resolved against env
 func Resolve(input string) (*Ref, error) {
 	input = strings.TrimSpace(input)
 	if input == "" {
@@ -56,7 +56,7 @@ func Resolve(input string) (*Ref, error) {
 		return parseRef(raw)
 	}
 
-	// Use ORK_REGISTRY env var or default
+	// Use INRUN_REGISTRY env var or default
 	base := os.Getenv(EnvRegistry)
 	if base == "" {
 		base = DefaultPatternRegistry
@@ -130,7 +130,7 @@ func parseRef(full string) (*Ref, error) {
 }
 
 // CachePath returns the local filesystem path for this ref.
-// Structure: ~/.orkestra/registry/<registry>/<repository>/<tag>/
+// Structure: ~/.inrun/registry/<registry>/<repository>/<tag>/
 func (r *Ref) CachePath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -143,13 +143,13 @@ func (r *Ref) CachePath() (string, error) {
 }
 
 // IsCached returns true when the pattern is already in the local cache.
-// Checks for either katalog.yaml (pattern) or motif.yaml (motif).
+// Checks for either catalog.yaml (pattern) or module.yaml (module).
 func (r *Ref) IsCached() bool {
 	path, err := r.CachePath()
 	if err != nil {
 		return false
 	}
-	for _, file := range []string{FileKatalog, FileMotif} {
+	for _, file := range []string{FileCatalog, FileModule} {
 		if _, err := os.Stat(filepath.Join(path, file)); err == nil {
 			return true
 		}
@@ -158,11 +158,11 @@ func (r *Ref) IsCached() bool {
 }
 
 // CachedDir returns the local cache directory for an OCI artifact if it has
-// been pulled previously. A hit requires katalog.yaml or motif.yaml to be
+// been pulled previously. A hit requires catalog.yaml or module.yaml to be
 // present — whichever file is found first counts as a complete pull.
 //
 // ociURL must be the bare host+path without the oci:// prefix or tag,
-// e.g. "ghcr.io/orkspace/orkestra-registry/patterns/motifs/postgres".
+// e.g. "ghcr.io/inrundev/registry/patterns/modules/postgres".
 // Returns ("", false) when not cached or on any error.
 func CachedDir(ociURL, version string) (string, bool) {
 	// Parse into registry + repository components.
@@ -178,7 +178,7 @@ func CachedDir(ociURL, version string) (string, bool) {
 	repo := filepath.FromSlash(ociURL[slashIdx+1:])
 	dir := filepath.Join(home, CacheDir, reg, repo, version)
 
-	for _, file := range []string{FileKatalog, FileMotif} {
+	for _, file := range []string{FileCatalog, FileModule} {
 		if _, err := os.Stat(filepath.Join(dir, file)); err == nil {
 			return dir, true
 		}
@@ -233,10 +233,10 @@ func ResolveForKind(input string, k PatternKind) (*Ref, error) {
 
 	var base string
 	switch k {
-	case MotifKind:
-		base = os.Getenv(EnvMotifRegistry)
+	case ModuleKind:
+		base = os.Getenv(EnvModuleRegistry)
 		if base == "" {
-			base = DefaultMotifRegistry
+			base = DefaultModuleRegistry
 		}
 	default:
 		base = os.Getenv(EnvPatternRegistry)

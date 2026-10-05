@@ -1,21 +1,21 @@
-# Schema reference: https://orkestra.sh/docs/reference/schema/e2e/
-apiVersion: orkestra.orkspace.io/v1
+# Schema reference: https://inrun.dev/docs/reference/schema/e2e/
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: webapp-remote-e2e
   description: >
     Verify the remote reconciler creates a Deployment and Service and writes status
     for a WebApp CR. The reconciler runs as a Deployment in the cluster, deployed
-    via setup before Orkestra starts.
+    via setup before Inrun starts.
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   crd: ../manifests/crd.yaml
   cr: ../manifests/cr.yaml
 
   cluster:
     provider: kind
-    name: ork-e2e
+    name: inrun-e2e
     reuse: false
 
   setup:

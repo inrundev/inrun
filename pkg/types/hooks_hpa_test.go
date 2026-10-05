@@ -3,16 +3,16 @@ package types_test
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func crdWithHPAOnCreate(hpas ...orktypes.HPATemplateSource) orktypes.CRDEntry {
-	return orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnCreate: &orktypes.HookTemplates{
+func crdWithHPAOnCreate(hpas ...types.HPATemplateSource) types.CRDEntry {
+	return types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnCreate: &types.HookTemplates{
 					HorizontalPodAutoscalers: hpas,
 				},
 			},
@@ -21,27 +21,27 @@ func crdWithHPAOnCreate(hpas ...orktypes.HPATemplateSource) orktypes.CRDEntry {
 }
 
 func TestCollectHPAProfileEntries_Empty(t *testing.T) {
-	c := orktypes.CRDEntry{}
+	c := types.CRDEntry{}
 	assert.Empty(t, c.CollectHPAProfileEntries())
 }
 
 func TestCollectHPAProfileEntries_NoBehavior(t *testing.T) {
-	c := crdWithHPAOnCreate(orktypes.HPATemplateSource{Name: "hpa"})
+	c := crdWithHPAOnCreate(types.HPATemplateSource{Name: "hpa"})
 	assert.Empty(t, c.CollectHPAProfileEntries())
 }
 
 func TestCollectHPAProfileEntries_BehaviorNoProfile(t *testing.T) {
-	c := crdWithHPAOnCreate(orktypes.HPATemplateSource{
+	c := crdWithHPAOnCreate(types.HPATemplateSource{
 		Name:     "hpa",
-		Behavior: &orktypes.HPABehavior{},
+		Behavior: &types.HPABehavior{},
 	})
 	assert.Empty(t, c.CollectHPAProfileEntries())
 }
 
 func TestCollectHPAProfileEntries_ProfileReturned(t *testing.T) {
-	c := crdWithHPAOnCreate(orktypes.HPATemplateSource{
+	c := crdWithHPAOnCreate(types.HPATemplateSource{
 		Name:     "my-hpa",
-		Behavior: &orktypes.HPABehavior{Profile: "web"},
+		Behavior: &types.HPABehavior{Profile: "web"},
 	})
 	entries := c.CollectHPAProfileEntries()
 	require.Len(t, entries, 1)
@@ -52,11 +52,11 @@ func TestCollectHPAProfileEntries_ProfileReturned(t *testing.T) {
 }
 
 func TestCollectHPAProfileEntries_Mixed_ScaleUp(t *testing.T) {
-	c := crdWithHPAOnCreate(orktypes.HPATemplateSource{
+	c := crdWithHPAOnCreate(types.HPATemplateSource{
 		Name: "hpa",
-		Behavior: &orktypes.HPABehavior{
+		Behavior: &types.HPABehavior{
 			Profile: "batch",
-			ScaleUp: &orktypes.HPAScalingRules{StabilizationWindowSeconds: 30},
+			ScaleUp: &types.HPAScalingRules{StabilizationWindowSeconds: 30},
 		},
 	})
 	entries := c.CollectHPAProfileEntries()
@@ -65,11 +65,11 @@ func TestCollectHPAProfileEntries_Mixed_ScaleUp(t *testing.T) {
 }
 
 func TestCollectHPAProfileEntries_Mixed_ScaleDown(t *testing.T) {
-	c := crdWithHPAOnCreate(orktypes.HPATemplateSource{
+	c := crdWithHPAOnCreate(types.HPATemplateSource{
 		Name: "hpa",
-		Behavior: &orktypes.HPABehavior{
+		Behavior: &types.HPABehavior{
 			Profile:   "cost-optimized",
-			ScaleDown: &orktypes.HPAScalingRules{StabilizationWindowSeconds: 300},
+			ScaleDown: &types.HPAScalingRules{StabilizationWindowSeconds: 300},
 		},
 	})
 	entries := c.CollectHPAProfileEntries()
@@ -78,8 +78,8 @@ func TestCollectHPAProfileEntries_Mixed_ScaleDown(t *testing.T) {
 }
 
 func TestCollectHPAProfileEntries_TemplateExpr(t *testing.T) {
-	c := crdWithHPAOnCreate(orktypes.HPATemplateSource{
-		Behavior: &orktypes.HPABehavior{Profile: "{{ .Spec.ScaleProfile }}"},
+	c := crdWithHPAOnCreate(types.HPATemplateSource{
+		Behavior: &types.HPABehavior{Profile: "{{ .Spec.ScaleProfile }}"},
 	})
 	entries := c.CollectHPAProfileEntries()
 	require.Len(t, entries, 1)
@@ -87,12 +87,12 @@ func TestCollectHPAProfileEntries_TemplateExpr(t *testing.T) {
 }
 
 func TestCollectHPAProfileEntries_OnReconcile(t *testing.T) {
-	c := orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnReconcile: &orktypes.HookTemplates{
-					HorizontalPodAutoscalers: []orktypes.HPATemplateSource{
-						{Name: "hpa", Behavior: &orktypes.HPABehavior{Profile: "api"}},
+	c := types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnReconcile: &types.HookTemplates{
+					HorizontalPodAutoscalers: []types.HPATemplateSource{
+						{Name: "hpa", Behavior: &types.HPABehavior{Profile: "api"}},
 					},
 				},
 			},

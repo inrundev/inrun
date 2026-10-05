@@ -3,16 +3,16 @@ package types
 
 // ── Status management ──────────────────────────────────────────────────────
 //
-// Orkestra writes status in two layers:
+// Inrun writes status in two layers:
 //
 // Layer 1 — automatic standard Kubernetes conditions.
-// After every reconcile, regardless of outcome, Orkestra patches the CR's
+// After every reconcile, regardless of outcome, Inrun patches the CR's
 // /status subresource with a standard Ready condition and observedGeneration.
-// No Katalog declaration required. Every managed CR gets this automatically,
+// No Catalog declaration required. Every managed CR gets this automatically,
 // the same way every CR gets the managed label and finalizers.
 //
 // Layer 2 — declarative status fields.
-// Optional. Declared in the Katalog under operatorBox.status.fields.
+// Optional. Declared in the Catalog under operatorBox.status.fields.
 // Resolved after reconcile templates complete, patched to /status.
 // Field values support the same Go template expressions as onCreate templates.
 //
@@ -149,9 +149,9 @@ type StatusFieldSpec struct {
 // or other typed fields to be updated correctly.
 
 // StatusConfig declares the declarative status behavior for a CRD.
-// Declared under spec.crds[].reconciler.status in the Katalog.
+// Declared under spec.crds[].reconciler.status in the Catalog.
 type StatusConfig struct {
-	// Include is a path (relative to the katalog file) to a YAML file whose
+	// Include is a path (relative to the catalog file) to a YAML file whose
 	// top-level value is a list of StatusFieldSpec entries under a "fields:" key.
 	// Expanded at load time — included fields come first, inline fields append after.
 	Include string `yaml:"include,omitempty" json:"include,omitempty"`
@@ -162,7 +162,7 @@ type StatusConfig struct {
 
 	// Conditions — whether to write the standard Ready condition automatically.
 	// Default: true. Set to false to opt out of automatic condition management.
-	// When true, Orkestra writes:
+	// When true, Inrun writes:
 	//   status.conditions[type=Ready]:
 	//     status: "True" | "False"
 	//     reason: ReconcileSucceeded | ReconcileError

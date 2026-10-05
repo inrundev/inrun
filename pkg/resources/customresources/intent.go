@@ -3,10 +3,10 @@ package customresources
 import (
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // BuildFromIntent converts a flat intent fields map into a full custom resource
@@ -37,7 +37,7 @@ func BuildFromIntent(fields map[string]interface{}, owner domain.Object) (map[st
 	spec := ResolvedCustomResourceSpec{
 		APIVersion: f.APIVersion,
 		Kind:       f.Kind,
-		Metadata:   orktypes.CustomResourceMetadata{Name: f.Name},
+		Metadata:   types.CustomResourceMetadata{Name: f.Name},
 		Spec:       f.Spec,
 	}
 

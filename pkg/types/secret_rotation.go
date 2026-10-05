@@ -11,10 +11,10 @@
 //
 //  First reconcile (Secret does not exist):
 //    → generate credentials, create Secret
-//    → annotate with orkestra.orkspace.io/generated-at: <RFC3339 timestamp>
+//    → annotate with inrun.dev/generated-at: <RFC3339 timestamp>
 //
 //  Subsequent reconciles (Secret exists):
-//    → read orkestra.orkspace.io/generated-at annotation
+//    → read inrun.dev/generated-at annotation
 //    → if age < rotateAfter: no-op (preserve credentials)
 //    → if age >= rotateAfter: delete Secret, recreate with new credentials
 //       then re-annotate with new timestamp
@@ -59,24 +59,24 @@
 //
 // ── Webhook certificate support ───────────────────────────────────────────
 //
-//  In the Katalog-level webhooks block:
+//  In the Catalog-level webhooks block:
 //
 //  webhooks:
-//    createCerts: true         # false by default — Orkestra generates certs
-//    certSecret: orkestra-tls  # default name
+//    createCerts: true         # false by default — Inrun generates certs
+//    certSecret: inrun-tls  # default name
 //    rotateAfter: 1y           # default: 1 year
 //
-//  When createCerts: true, Orkestra generates a self-signed CA, signs a
+//  When createCerts: true, Inrun generates a self-signed CA, signs a
 //  certificate for the webhook service, and stores both in the named Secret.
 //  The webhook configuration's caBundle is patched automatically.
-//  On each reconcile, Orkestra checks the rotation threshold and renews
+//  On each reconcile, Inrun checks the rotation threshold and renews
 //  if needed — the caBundle patch happens alongside renewal.
 //
 // ── Annotation ────────────────────────────────────────────────────────────
 //
-//  All Orkestra-generated secrets receive:
-//    orkestra.orkspace.io/generated-at: "2026-04-06T08:00:00Z"
-//    orkestra.orkspace.io/rotate-after: "90d"
+//  All Inrun-generated secrets receive:
+//    inrun.dev/generated-at: "2026-04-06T08:00:00Z"
+//    inrun.dev/rotate-after: "90d"
 //
 //  These annotations are the source of truth for rotation decisions.
 //  Do not remove them manually — doing so will cause regeneration on next reconcile.
@@ -86,15 +86,15 @@ package types
 import (
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 const (
 	// AnnotationGeneratedAt is the RFC3339 timestamp when the secret was last generated.
-	AnnotationGeneratedAt = "orkestra.orkspace.io/generated-at"
+	AnnotationGeneratedAt = "inrun.dev/generated-at"
 
 	// AnnotationRotateAfter stores the declared rotation duration.
-	AnnotationRotateAfter = "orkestra.orkspace.io/rotate-after"
+	AnnotationRotateAfter = "inrun.dev/rotate-after"
 )
 
 // TLSSpec declares TLS certificate generation for a secret.
@@ -114,7 +114,7 @@ type TLSSpec struct {
 	// Must be >= rotateAfter to avoid immediate expiry on rotation.
 	ValidFor string `yaml:"validFor,omitempty" json:"validFor,omitempty"`
 
-	// Organization is the cert's O field. Default: "orkestra"
+	// Organization is the cert's O field. Default: "inrun"
 	Organization string `yaml:"organization,omitempty" json:"organization,omitempty"`
 }
 

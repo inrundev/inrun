@@ -3,57 +3,57 @@ package internal
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/merger"
-	"github.com/orkspace/orkestra/pkg/runtime/konductor"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	"github.com/orkspace/orkestra/pkg/utils"
-	"github.com/orkspace/orkestra/pkg/version"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/runtime/leader"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/utils"
+	"github.com/inrundev/inrun/pkg/version"
 )
 
-func KonductRuntime(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) {
-	// Runtime facts, available to every template expression as .ork.*. Set on
-	// the context that construction, startup and the kordinator all share.
-	ctx = orktmpl.ContextWithOrkContext(ctx, orktmpl.NewOrkContext(
+func RunRuntime(kfg *config.Config, m *merger.Merger, ctx context.Context) {
+	// Runtime facts, available to every template expression as .inrun.*. Set on
+	// the context that construction, startup and the coordinator all share.
+	ctx = template.ContextWithInrunContext(ctx, template.NewInrunContext(
 		kfg.Cluster().Namespace(),
 		version.Version,
 	))
 
-	// create domain komponent and build orkestra
-	startup := konstructRuntime(kfg, m, ctx)
+	// create domain component and build inrun
+	startup := constructRuntime(kfg, m, ctx)
 
 	// ── Start ─────────────────────────────────────────────────────────────────
 	go func() {
-		if err := startup.orkestra.Start(ctx); err != nil {
-			logger.Fatal().AnErr("orkestra startup error", err)
+		if err := startup.inrun.Start(ctx); err != nil {
+			logger.Fatal().AnErr("inrun startup error", err)
 			utils.Exit(err)
 		}
 	}()
 
-	ko := konductor.NewKonductorElection(
+	ko := leader.NewLeaderElection(
 		startup.kube,
 		startup.event,
-		func(ctx context.Context) { startup.kord.Kordinate(ctx) },
-		func(konductor string) {
-			// Banner prints here — konductor is the actual winner
-			printBanner(startup, konductor)
+		func(ctx context.Context) { startup.kord.Coordinate(ctx) },
+		func(leader string) {
+			// Banner prints here — leader is the actual winner
+			printBanner(startup, leader)
 		},
-		konductor.Options{
-			Namespace:     kfg.Konductor().Namespace(),
-			LeaseDuration: kfg.Konductor().LeaseDuration(),
-			RenewDeadline: kfg.Konductor().RenewDeadline(),
-			RetryPeriod:   kfg.Konductor().RetryPeriod(),
+		leader.Options{
+			Namespace:     kfg.Leader().Namespace(),
+			LeaseDuration: kfg.Leader().LeaseDuration(),
+			RenewDeadline: kfg.Leader().RenewDeadline(),
+			RetryPeriod:   kfg.Leader().RetryPeriod(),
 			Labels:        labels.WithDeletionProtection(nil),
 		})
 
-	// start konductor election as postStartHook after  orkestra is ready
-	startup.orkestra.AddPostStartHook(ko, func(ctx context.Context) {
-		logger.Info().Msg("starting konductor election...")
+	// start leader election as postStartHook after  inrun is ready
+	startup.inrun.AddPostStartHook(ko, func(ctx context.Context) {
+		logger.Info().Msg("starting leader election...")
 		ko.Start(ctx)
 	})
 
 	// Keep running until cancelled
-	startup.orkestra.Wait()
+	startup.inrun.Wait()
 }

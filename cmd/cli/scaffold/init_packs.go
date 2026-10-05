@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/orkspace/orkestra/examples"
+	"github.com/inrundev/inrun/examples"
 )
 
-// Pack is an example directory that `ork init --pack` extracts.
+// Pack is an example directory that `inrun init --pack` extracts.
 type Pack struct {
 	Name        string
 	Description string
@@ -21,7 +21,7 @@ type Pack struct {
 var Packs = map[string]Pack{
 	"declarative": {
 		Name:        "declarative",
-		Description: "Start here. Operators declared in a Katalog, no code.",
+		Description: "Start here. Operators declared in a Catalog, no code.",
 		Path:        "reconcilers/declarative",
 		First:       "01-hello-website",
 		Order:       1,
@@ -52,7 +52,7 @@ func GetPack(name string) (Pack, bool) {
 		return p, true
 	}
 	// Sub-path fallback: any valid directory in the embedded FS works as a pack.
-	// ork init my-project --pack reconcilers/typed/hooks extracts into my-project/hooks.
+	// inrun init my-project --pack reconcilers/typed/hooks extracts into my-project/hooks.
 	if f, err := examples.FS.Open(name); err == nil {
 		f.Close()
 		return Pack{Name: filepath.Base(name), Path: name}, true

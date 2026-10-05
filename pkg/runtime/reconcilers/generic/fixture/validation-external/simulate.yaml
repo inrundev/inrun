@@ -1,10 +1,10 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: validation-external-simulate
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: webapp
   cr: ./cr-bad-health.yaml
   cycles: 3

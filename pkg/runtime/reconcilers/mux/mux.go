@@ -3,12 +3,12 @@ package mux
 import (
 	"context"
 	"fmt"
-	"github.com/orkspace/orkestra/pkg/intent"
+	"github.com/inrundev/inrun/pkg/intent"
 	"sync"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/runtime/autoscaler"
-	orkqueue "github.com/orkspace/orkestra/pkg/runtime/queue"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/runtime/autoscaler"
+	"github.com/inrundev/inrun/pkg/runtime/queue"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 )
@@ -105,8 +105,8 @@ func (m *Reconciler) reconcileNotFound(ctx context.Context, key string) (domain.
 // worker pool, not individual targets. Per-target reconcilers do not participate
 // in these infrastructure calls today. Might become per-target tomorrow.
 
-func (m *Reconciler) SetQueue(wq *orkqueue.Workqueue) {
-	if qi, ok := m.fallback.(interface{ SetQueue(*orkqueue.Workqueue) }); ok {
+func (m *Reconciler) SetQueue(wq *queue.Workqueue) {
+	if qi, ok := m.fallback.(interface{ SetQueue(*queue.Workqueue) }); ok {
 		qi.SetQueue(wq)
 	}
 }

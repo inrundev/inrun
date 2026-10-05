@@ -11,36 +11,36 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/tools/migrate"
-	"github.com/orkspace/orkestra/pkg/version"
+	"github.com/inrundev/inrun/pkg/tools/migrate"
+	"github.com/inrundev/inrun/pkg/version"
 	"github.com/spf13/cobra"
 )
 
 var migrateCmd = &cobra.Command{
 	Use:   "migrate <file>",
-	Short: "Migrate a controller-runtime operator to Orkestra",
-	Long: `Migrates a controller-runtime reconciler to Orkestra. Your Reconcile logic
-is untouched — Orkestra takes over the infrastructure.
+	Short: "Migrate a controller-runtime operator to Inrun",
+	Long: `Migrates a controller-runtime reconciler to Inrun. Your Reconcile logic
+is untouched — Inrun takes over the infrastructure.
 
 Default mode (--mode toclient): zero changes to your Reconcile signature or
 call sites. SetupWithManager is removed; a two-line constructor using
-orkadapter.ToClient and domain.ReconcilerFrom is injected. Your reconciler
-compiles and runs inside Orkestra with no other edits.
+adapter.ToClient and domain.ReconcilerFrom is injected. Your reconciler
+compiles and runs inside Inrun with no other edits.
 
-  ork migrate ./controller/webapp_controller.go -o ./my-operator
+  inrun migrate ./controller/webapp_controller.go -o ./my-operator
 
 The output directory receives the rewritten file plus scaffolding:
-katalog.yaml, simulate.yaml, e2e.yaml, go.mod, Makefile, Dockerfile.
+catalog.yaml, simulate.yaml, e2e.yaml, go.mod, Makefile, Dockerfile.
 
-For a full rewrite to idiomatic Orkestra style (new Reconcile signature,
+For a full rewrite to idiomatic Inrun style (new Reconcile signature,
 struct fields, call sites), use --mode native.
 
 Examples:
-  ork migrate ./controller/webapp_controller.go -o ./my-operator
-  ork migrate ./controller/webapp_controller.go --mode native -o ./out
-  ork migrate ./controller/webapp_controller.go  # prompts before replacing`,
+  inrun migrate ./controller/webapp_controller.go -o ./my-operator
+  inrun migrate ./controller/webapp_controller.go --mode native -o ./out
+  inrun migrate ./controller/webapp_controller.go  # prompts before replacing`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		inputPath := args[0]
@@ -80,7 +80,7 @@ Examples:
 		opts := migrate.Options{
 			ModulePath:   modulePath,
 			OperatorName: operatorName,
-			OrkVersion:   version.Short(),
+			InrunVersion: version.Short(),
 		}
 		files := migrate.Generate(res, opts)
 
@@ -108,7 +108,7 @@ func writeOutputDir(dir, inputPath string, res *migrate.Result, files migrate.Fi
 		content string
 	}
 	generated := []namedFile{
-		{"katalog.yaml", files.Katalog},
+		{"catalog.yaml", files.Catalog},
 		{"test/simulate.yaml", files.Simulate},
 		{"test/e2e.yaml", files.E2E},
 		{"go.mod", files.GoMod},
@@ -128,7 +128,7 @@ func writeOutputDir(dir, inputPath string, res *migrate.Result, files migrate.Fi
 	}
 
 	fmt.Printf("\n%s Search for %s in %s to see what needs attention.\n",
-		cmdutil.Green("✓ Done."), cmdutil.Bold("TODO(ork migrate)"), dir)
+		cmdutil.Green("✓ Done."), cmdutil.Bold("TODO(inrun migrate)"), dir)
 	return nil
 }
 
@@ -136,7 +136,7 @@ func replaceInPlace(inputPath string, res *migrate.Result, files migrate.Files) 
 	dir := filepath.Dir(inputPath)
 
 	fmt.Printf("This will replace %s and write %s alongside it.\n",
-		cmdutil.Bold(inputPath), cmdutil.Bold("katalog.yaml, test/simulate.yaml, test/e2e.yaml, go.mod, Makefile, Dockerfile"))
+		cmdutil.Bold(inputPath), cmdutil.Bold("catalog.yaml, test/simulate.yaml, test/e2e.yaml, go.mod, Makefile, Dockerfile"))
 	fmt.Printf("%s [y/N] ", cmdutil.Yellow("Continue?"))
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -157,7 +157,7 @@ func replaceInPlace(inputPath string, res *migrate.Result, files migrate.Files) 
 		content string
 	}
 	generated := []namedFile{
-		{"katalog.yaml", files.Katalog},
+		{"catalog.yaml", files.Catalog},
 		{"test/simulate.yaml", files.Simulate},
 		{"test/e2e.yaml", files.E2E},
 		{"go.mod", files.GoMod},
@@ -176,7 +176,7 @@ func replaceInPlace(inputPath string, res *migrate.Result, files migrate.Files) 
 	}
 
 	fmt.Printf("\n%s Search for %s to see what needs attention.\n",
-		cmdutil.Green("✓ Done."), cmdutil.Bold("TODO(ork migrate)"))
+		cmdutil.Green("✓ Done."), cmdutil.Bold("TODO(inrun migrate)"))
 	return nil
 }
 
@@ -188,6 +188,6 @@ func init() {
 	migrateCmd.Flags().String("name", "", "Operator name in kebab-case (e.g. my-operator); derived from receiver type if omitted")
 	migrateCmd.Flags().String("mode", "toclient", "Migration mode: toclient (default, zero Reconcile changes) or native (full rewrite)")
 
-	// Shadow global flags so they don't appear under `ork migrate`
+	// Shadow global flags so they don't appear under `inrun migrate`
 	cmdutil.ShadowGlobalCommandFlags(migrateCmd, "file")
 }

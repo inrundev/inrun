@@ -1,19 +1,19 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: external-mongo-e2e
   description: >
-    Verifies protocol: mongo by deploying MongoDB in orkestra-system and querying
-    the orkestra.test collection from the WebApp reconciler.
+    Verifies protocol: mongo by deploying MongoDB in inrun-system and querying
+    the inrun.test collection from the WebApp reconciler.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./e2e/cr-e2e.yaml
 
   cluster:
     provider: kind
-    name: ork-external-mongo
+    name: inrun-external-mongo
     reuse: false
 
   expect:
@@ -28,6 +28,6 @@ spec:
           namespace: default
       logs:
         - leaderElection:
-            lease: orkestra-konductor
-            namespace: orkestra-system
+            lease: inrun-leader
+            namespace: inrun-system
           since: 2m

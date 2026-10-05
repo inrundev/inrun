@@ -4,8 +4,8 @@ package observe
 import (
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/logger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
@@ -114,13 +114,13 @@ func splitWatchField(field string) []string {
 }
 
 // resolveGVR resolves a ManagedResource into a concrete GroupVersionResource
-// using the configured Katalog.
+// using the configured Catalog.
 func (o *Observer) resolveGVR(r domain.ManagedResource) (schema.GroupVersionResource, bool) {
-	return o.deps.Katalog.ResolveGVR(r)
+	return o.deps.Catalog.ResolveGVR(r)
 }
 
 // resolveGVK resolves a ManagedResource into a concrete GroupVersionKind
-// using the configured Katalog.
+// using the configured Catalog.
 func (o *Observer) resolveGVK(r domain.ManagedResource) (schema.GroupVersionKind, bool) {
-	return o.deps.Katalog.ResolveGVK(r)
+	return o.deps.Catalog.ResolveGVK(r)
 }

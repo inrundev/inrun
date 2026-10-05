@@ -4,7 +4,7 @@ package queue
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 	"github.com/stretchr/testify/assert"
 )
 

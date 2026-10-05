@@ -3,8 +3,8 @@ package profiles_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func TestContainerSecurityProfiles(t *testing.T) {
@@ -145,14 +145,14 @@ func TestPodSecurityProfiles(t *testing.T) {
 }
 
 func TestContainerSecurityProfileUserDefined(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		ContainerSecurity: []orktypes.ContainerSecurityProfileDef{
+	reg := types.ProfileRegistry{
+		ContainerSecurity: []types.ContainerSecurityProfileDef{
 			{
 				Name:                     "strict-readonly",
 				AllowPrivilegeEscalation: boolPtr(false),
 				ReadOnlyRootFilesystem:   boolPtr(true),
 				RunAsNonRoot:             boolPtr(true),
-				Capabilities:             &orktypes.CapabilitiesConfig{Drop: []string{"ALL"}},
+				Capabilities:             &types.CapabilitiesConfig{Drop: []string{"ALL"}},
 			},
 		},
 	}
@@ -171,8 +171,8 @@ func TestContainerSecurityProfileUserDefined(t *testing.T) {
 
 func TestPodSecurityProfileUserDefined(t *testing.T) {
 	uid := int64(2000)
-	reg := orktypes.ProfileRegistry{
-		PodSecurity: []orktypes.PodSecurityProfileDef{
+	reg := types.ProfileRegistry{
+		PodSecurity: []types.PodSecurityProfileDef{
 			{Name: "ci-runner", RunAsNonRoot: boolPtr(true), RunAsUser: &uid},
 		},
 	}

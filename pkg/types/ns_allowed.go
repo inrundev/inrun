@@ -1,19 +1,19 @@
 // pkg/types/ns_allowed.go
 package types
 
-// AllowedNamespaces declares namespaces where Orkestra *is permitted*
+// AllowedNamespaces declares namespaces where Inrun *is permitted*
 // to create child resources. If the list is empty, all namespaces are allowed.
 //
 // Applies before onCreate/onReconcile templates and before Go hooks run.
 // The restriction is on child resources only — not on the CR itself.
 //
 // Supported at all three levels:
-//   Komposer level — applies to all CRDs in the Komposer
-//   Katalog level  — applies to all CRDs in the Katalog
+//   Stack level — applies to all CRDs in the Stack
+//   Catalog level  — applies to all CRDs in the Catalog
 //   CRD level      — applies to this specific CRD
 //
 // Rules from all three levels are merged — more specific levels add to,
-// not replace, less specific levels. A namespace allowed at the Komposer
+// not replace, less specific levels. A namespace allowed at the Stack
 // level cannot be "disallowed" at the CRD level. This is intentional:
 // platform-wide allowances are non-negotiable.
 //
@@ -90,10 +90,10 @@ func (c *CRDEntry) SingleNamespace() string {
 // PinnedToNamespace reports whether this CRD's informer is scoped to watch
 // only one fixed namespace — either via IsSingleNamespace (AllowedNamespaces
 // with exactly one entry) or the legacy per-CRD Namespace field
-// (cmd/internal/runtime_konstructor.go's dynamic-CRD fallback). A CRD whose
+// (cmd/internal/runtime_construct.go's dynamic-CRD fallback). A CRD whose
 // serve.namespace resolves differently per submission (e.g. by team) can never
 // be watched this way — whatever it creates outside the pinned namespace
-// would sit unreconciled forever. See Katalog.validateServeNamespace.
+// would sit unreconciled forever. See Catalog.validateServeNamespace.
 func (c *CRDEntry) PinnedToNamespace() bool {
 	return c.IsSingleNamespace() || c.Namespace != ""
 }

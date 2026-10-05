@@ -33,7 +33,7 @@ type serveFieldRef struct {
 // which is what serveFieldRef.link is for — see ValidationRule.Link.
 //
 // Returned sorted by cfg.Order (0 = unset, sorts last),
-// then name — the same rule the Control Center uses to arrange
+// then name — the same rule the Console uses to arrange
 // the rendered form. Sorting to match the form means the
 // field a developer sees first is also the one whose violation wins.
 func (c *CRDEntry) allServeFieldRefs() []serveFieldRef {
@@ -117,7 +117,7 @@ func serveFieldLabel(cfg ServeFieldConfig, name string) string {
 // every serve.fields / serve.labels and serve.annotations entry marked required: true —
 // enforced server-side, for every Gateway API client, not just the Control
 // Center form. See "Required fields are enforced automatically" at
-// https://orkestra.sh/docs/reference/schema/katalog/validation#required-fields-are-enforced-automatically
+// https://inrun.dev/docs/reference/schema/catalog/validation#required-fields-are-enforced-automatically
 // for the full rationale, including why inheriting the field's own
 // When/Or matters for discriminator-routed CRDs.
 func (c *CRDEntry) RequiredServeFieldRules() []ValidationRule {
@@ -142,7 +142,7 @@ func (c *CRDEntry) RequiredServeFieldRules() []ValidationRule {
 // EnumServeFieldRules synthesizes an implicit `in` validation rule for every
 // serve.fields / serve.labels and serve.annotations entry declaring type: enum with a
 // non-empty enum list. See "Enum fields are validated automatically" at
-// https://orkestra.sh/docs/reference/schema/katalog/validation#enum-fields-are-validated-automatically for the full
+// https://inrun.dev/docs/reference/schema/catalog/validation#enum-fields-are-validated-automatically for the full
 // rationale.
 //
 // The exists gate is always added regardless of required: membership and
@@ -174,7 +174,7 @@ func (c *CRDEntry) EnumServeFieldRules() []ValidationRule {
 // ServeFieldMutationRules synthesizes an implicit mutation rule for every
 // serve.fields / serve.labels and serve.annotations entry declaring a default: or
 // override: value. See "Default and Override fields are enforced automatically" at
-// https://orkestra.sh/docs/reference/schema/katalog/mutation#default-and-override-fields-are-enforced-automatically
+// https://inrun.dev/docs/reference/schema/catalog/mutation#default-and-override-fields-are-enforced-automatically
 // for the full rationale.
 //
 // For serve.fields, only override: is honored — spec fields carry their defaults
@@ -263,7 +263,7 @@ type SynthDedup struct {
 
 // DeduplicateSynthesizedServeRules removes synthesized rules that are
 // already present — either because this is a bundle.yaml that baked them in at
-// generate time (ork generate bundle calls SerializeExpanded, which serializes
+// generate time (inrun generate bundle calls SerializeExpanded, which serializes
 // the post-synthesis state), or because a prior load pass already ran synthesis.
 // Synthesis is deterministic, so an exact match is always a safe duplicate to drop.
 func (c *CRDEntry) DeduplicateSynthesizedServeRules(synth SynthDedup) {

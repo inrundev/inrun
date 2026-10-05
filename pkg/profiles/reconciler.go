@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ReconcilerProfile is a named reconciler tuning preset.
@@ -37,7 +37,7 @@ type ReconcilerProfileResult struct {
 // ApplyReconcilerProfile expands a named reconciler profile into its tuning values.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyReconcilerProfile(name string, reg *orktypes.ProfileRegistry) (ReconcilerProfileResult, error) {
+func ApplyReconcilerProfile(name string, reg *types.ProfileRegistry) (ReconcilerProfileResult, error) {
 	if reg != nil {
 		if def, found := reg.LookupReconciler(name); found {
 			return ReconcilerProfileResult{

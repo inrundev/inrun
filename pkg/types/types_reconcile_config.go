@@ -1,7 +1,7 @@
 // pkg/types/types_reconcile_config.go
 package types
 
-import "github.com/orkspace/orkestra/domain"
+import "github.com/inrundev/inrun/domain"
 
 // RemoteReconcileProtocol is the wire protocol used for a remote reconciler call.
 type RemoteReconcileProtocol string
@@ -29,8 +29,8 @@ func IsValidRemoteReconcileProtocol(s string) bool {
 }
 
 // RemoteReconcilerDeclaration declares a remote HTTP reconciler.
-// The kordinator POSTs a PreparedRequest to Endpoint; the response is a RemoteReconcileResult.
-// Orkestra owns the queue, backoff, informer, health, and metrics. The remote service owns logic.
+// The coordinator POSTs a PreparedRequest to Endpoint; the response is a RemoteReconcileResult.
+// Inrun owns the queue, backoff, informer, health, and metrics. The remote service owns logic.
 type RemoteReconcilerDeclaration struct {
 	// Protocol is the wire protocol. Default http; grpc reserved.
 	Protocol RemoteReconcileProtocol `yaml:"protocol,omitempty" json:"protocol,omitempty"`
@@ -175,8 +175,8 @@ type ReconcileConfig struct {
 	// Normalize normalizes declared spec fields before template rendering.
 	Normalize *NormalizeConfig `yaml:"normalize,omitempty" json:"normalize,omitempty"`
 
-	// Imports declares Motif imports merged into onReconcile at load time.
-	Imports []MotifImport `yaml:"imports,omitempty" json:"imports,omitempty"`
+	// Imports declares Module imports merged into onReconcile at load time.
+	Imports []ModuleImport `yaml:"imports,omitempty" json:"imports,omitempty"`
 
 	// ForceConflict sets Force: true on server-side apply for child resources.
 	ForceConflict *bool `yaml:"forceConflict,omitempty" json:"forceConflict,omitempty"`

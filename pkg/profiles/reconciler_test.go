@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func TestReconcilerProfiles(t *testing.T) {
-	var empty *orktypes.ProfileRegistry
+	var empty *types.ProfileRegistry
 
 	tests := []struct {
 		name          string
@@ -53,13 +53,13 @@ func TestReconcilerProfiles(t *testing.T) {
 }
 
 func TestReconcilerProfileUserDefined(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		Reconciler: []orktypes.ReconcilerProfileDef{
+	reg := types.ProfileRegistry{
+		Reconciler: []types.ReconcilerProfileDef{
 			{
 				Name:    "fast-api",
 				Workers: 6,
-				Resync:  orktypes.Duration{Duration: 20 * time.Second},
-				Queue:   orktypes.Queue{MaxDepth: 300},
+				Resync:  types.Duration{Duration: 20 * time.Second},
+				Queue:   types.Queue{MaxDepth: 300},
 			},
 		},
 	}
@@ -81,13 +81,13 @@ func TestReconcilerProfileUserDefined(t *testing.T) {
 
 func TestReconcilerProfileUserDefinedTakesPrecedenceOverBuiltIn(t *testing.T) {
 	// A user-defined profile named "conservative" overrides the built-in.
-	reg := orktypes.ProfileRegistry{
-		Reconciler: []orktypes.ReconcilerProfileDef{
+	reg := types.ProfileRegistry{
+		Reconciler: []types.ReconcilerProfileDef{
 			{
 				Name:    "conservative",
 				Workers: 99,
-				Resync:  orktypes.Duration{Duration: 99 * time.Second},
-				Queue:   orktypes.Queue{MaxDepth: 999},
+				Resync:  types.Duration{Duration: 99 * time.Second},
+				Queue:   types.Queue{MaxDepth: 999},
 			},
 		},
 	}

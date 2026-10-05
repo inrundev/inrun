@@ -3,13 +3,13 @@ package children
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
-// ReadChildren reads all child resources declared in the Katalog's onCreate
+// ReadChildren reads all child resources declared in the Catalog's onCreate
 // templates and returns a structured map for use in status field expressions.
 //
 // The returned map is injected into the template resolver under the "children"
@@ -36,8 +36,8 @@ func ReadChildren(
 	ctx context.Context,
 	kube kubeclient.Interface,
 	obj domain.Object,
-	resolver *orktmpl.Resolver,
-	crd orktypes.CRDEntry,
+	resolver *template.Resolver,
+	crd types.CRDEntry,
 ) map[string]interface{} {
 	children := map[string]interface{}{}
 
@@ -69,7 +69,7 @@ func ReadChildren(
 		m := readResourceGroup(ctx, kube, obj, resolver, DeploymentGVR, dNames)
 		// Deployments do not directly own pods — their ReplicaSets do.
 		// Filtering by ownerKind=ReplicaSet excludes Job pods that share the
-		// same orkestra-owner label but have a different immediate controller.
+		// same inrun-owner label but have a different immediate controller.
 		enrichGroupWithPods(ctx, kube, m, crd, "ReplicaSet")
 		enrichGroupWithReplicaSets(ctx, kube, m, crd)
 		enrichGroupWithWarnings(ctx, kube, m, crd, "Deployment")
@@ -321,7 +321,7 @@ func applySecondPhaseEnrichments(
 	ctx context.Context,
 	kube kubeclient.Interface,
 	children map[string]interface{},
-	crd orktypes.CRDEntry,
+	crd types.CRDEntry,
 ) {
 	if m, ok := children["deployments"].(map[string]interface{}); ok {
 		enrichGroupWithPods(ctx, kube, m, crd, "ReplicaSet")

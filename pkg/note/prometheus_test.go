@@ -3,7 +3,7 @@ package note_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/note"
+	"github.com/inrundev/inrun/pkg/note"
 )
 
 func vectorData(series []map[string]interface{}) map[string]interface{} {

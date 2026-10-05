@@ -8,17 +8,17 @@ import (
 	"os"
 	"sort"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
 
-// templateRuntimeOutput is the serializable view of a fully-expanded Katalog.
-// It holds what the runtime receives after motif expansion and validation.
+// templateRuntimeOutput is the serializable view of a fully-expanded Catalog.
+// It holds what the runtime receives after module expansion and validation.
 type templateRuntimeOutput struct {
 	APIVersion string             `yaml:"apiVersion" json:"apiVersion"`
 	Kind       string             `yaml:"kind"       json:"kind"`
@@ -27,13 +27,13 @@ type templateRuntimeOutput struct {
 }
 
 type templateSpecOutput struct {
-	CRDs map[string]orktypes.CRDEntry `yaml:"crds" json:"crds"`
+	CRDs map[string]types.CRDEntry `yaml:"crds" json:"crds"`
 }
 
 var templateCmd = &cobra.Command{
 	Use:   "template",
-	Short: "Render and inspect the fully-expanded runtime Katalog",
-	Long: `Loads one or more Katalog or Komposer files, fully expands all motif imports,
+	Short: "Render and inspect the fully-expanded runtime Catalog",
+	Long: `Loads one or more Catalog or Stack files, fully expands all module imports,
 resolves all template inputs, validates the configuration, and shows exactly
 what the runtime will see — nothing more, nothing less.
 
@@ -41,13 +41,13 @@ By default prints a human-readable summary. Use flags to switch output format
 or drill into a specific CRD.
 
 Examples:
-  ork template -f katalog.yaml
-  ork template -f katalog.yaml --yaml
-  ork template -f katalog.yaml --json
-  ork template -f katalog.yaml --graph
-  ork template -f katalog.yaml --crd pipeline
-  ork template -f katalog.yaml --yaml -o runtime.yaml
-  ork template -f a.yaml -f b.yaml --graph`,
+  inrun template -f catalog.yaml
+  inrun template -f catalog.yaml --yaml
+  inrun template -f catalog.yaml --json
+  inrun template -f catalog.yaml --graph
+  inrun template -f catalog.yaml --crd pipeline
+  inrun template -f catalog.yaml --yaml -o runtime.yaml
+  inrun template -f a.yaml -f b.yaml --graph`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jsonOut, _ := cmd.Flags().GetBool("json")
 		yamlOut, _ := cmd.Flags().GetBool("yaml")
@@ -58,17 +58,17 @@ Examples:
 
 		// ── Load & expand ───────────────────────────────────────────────────────
 		spin := cmdutil.StartSpinner("Resolving imports...")
-		merged, err := cmdutil.GenerateKatalog(cmd)
+		merged, err := cmdutil.GenerateCatalog(cmd)
 		if err != nil {
 			spin.Failure()
 			return err
 		}
 		spin.Stop()
 
-		var k *katalog.Katalog
+		var k *catalog.Catalog
 		if noValidate {
-			var raw katalog.Katalog
-			if _, err = raw.KomposeRuntimeKatalog(cmdutil.Kfg, merged.Merger); err != nil {
+			var raw catalog.Catalog
+			if _, err = raw.BuildRuntimeCatalog(cmdutil.Kfg, merged.Merger); err != nil {
 				return err
 			}
 			k = &raw
@@ -80,7 +80,7 @@ Examples:
 		}
 
 		crds := k.Enabled()
-		depGraph := katalog.NewDependencyGraph(k)
+		depGraph := catalog.NewDependencyGraph(k)
 		startupOrder := depGraph.StartupOrder()
 
 		// ── Route to output mode ────────────────────────────────────────────────
@@ -117,7 +117,7 @@ Examples:
 			cmdutil.PrintDependencyGraph(crds, depGraph, startupOrder)
 			return nil
 
-		// ── --yaml / --json: full runtime Katalog ───────────────────────────────
+		// ── --yaml / --json: full runtime Catalog ───────────────────────────────
 		case yamlOut || jsonOut || defaultOut:
 			view := buildRuntimeView(k)
 			if jsonOut {
@@ -158,8 +158,8 @@ Examples:
 	},
 }
 
-// buildRuntimeView constructs the serializable runtime view from the expanded Katalog.
-func buildRuntimeView(k *katalog.Katalog) templateRuntimeOutput {
+// buildRuntimeView constructs the serializable runtime view from the expanded Catalog.
+func buildRuntimeView(k *catalog.Catalog) templateRuntimeOutput {
 	meta := k.Metadata()
 	metaFields := map[string]string{}
 	if meta.Name != "" {
@@ -203,13 +203,13 @@ func pruneYamlFile(view templateRuntimeOutput) ([]byte, error) {
 func init() {
 	cmdutil.RootCmd.AddCommand(templateCmd)
 
-	templateCmd.Flags().BoolP("yaml", "y", false, "Output full expanded runtime Katalog as YAML")
-	templateCmd.Flags().BoolP("json", "j", false, "Output full expanded runtime Katalog as JSON")
+	templateCmd.Flags().BoolP("yaml", "y", false, "Output full expanded runtime Catalog as YAML")
+	templateCmd.Flags().BoolP("json", "j", false, "Output full expanded runtime Catalog as JSON")
 	templateCmd.Flags().BoolP("graph", "g", false, "Show dependency graph with startup order")
 	templateCmd.Flags().StringP("crd", "c", "", "Drill into a specific CRD by name")
 	templateCmd.Flags().StringP("output", "o", "", "Write output to file instead of stdout")
 	templateCmd.Flags().Bool("no-validate", false, "Skip validation (show expanded state even if invalid)")
 
-	// Shadow global flags so they don't appear under `ork template`
+	// Shadow global flags so they don't appear under `inrun template`
 	cmdutil.ShadowGlobalCommandFlags(templateCmd)
 }

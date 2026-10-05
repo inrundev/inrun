@@ -1,4 +1,4 @@
-apiVersion: demo.orkestra.io/v1
+apiVersion: demo.inrun.dev/v1
 kind: WebApp
 metadata:
   name: my-app

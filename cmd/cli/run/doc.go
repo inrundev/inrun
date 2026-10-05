@@ -1,3 +1,4 @@
-// Package run implements the run command, which starts the runtime for one or
-// more Katalogs. The developer build can also start the gateway and console.
+// Package run makes the root inrun command run a Catalog: the runtime in the
+// runtime build, and in the developer build also a published pattern given as
+// <name>:<version>, with --dev to create a kind cluster.
 package run

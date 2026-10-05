@@ -1,8 +1,8 @@
 // webhook/conversion.go — /convert HTTP handler for CRD version conversion.
 //
 // The Kubernetes API server POSTs a ConversionReview to this endpoint when it
-// needs to convert a CR from one version to another. Orkestra applies the
-// conversion rules declared in the Katalog for the object's Kind.
+// needs to convert a CR from one version to another. Inrun applies the
+// conversion rules declared in the Catalog for the object's Kind.
 package webhook
 
 import (
@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/metrics"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/metrics"
 )
 
 // --- Kubernetes ConversionReview types ---
@@ -165,7 +165,7 @@ func (ws *WebhookServer) conversionHandler(w http.ResponseWriter, r *http.Reques
 }
 
 // processConversionForTest exposes the conversion logic for unit tests.
-func processConversionForTest(review ConversionReview, rulesRegistry katalog.ConversionRegistry) ConversionReview {
+func processConversionForTest(review ConversionReview, rulesRegistry catalog.ConversionRegistry) ConversionReview {
 	resp := &ConversionReviewResponse{
 		UID:              review.Request.UID,
 		ConvertedObjects: make([]json.RawMessage, len(review.Request.Objects)),

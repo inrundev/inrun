@@ -1,6 +1,6 @@
 # pkg/note/fixture
 
-Living integration fixture for the Orkestra note functions.
+Living integration fixture for the Inrun note functions.
 
 ## Why this exists
 
@@ -14,52 +14,52 @@ output is visible directly on the object — no log-diving required.
 
 ---
 
-## Katalogs
+## Catalogs
 
-All katalogs use the same `NoteProbe` CRD. A single CRD with a flexible spec
+All catalogs use the same `NoteProbe` CRD. A single CRD with a flexible spec
 is enough to probe every note family without registering separate CRD types per
 resource family.
 
 | File | Notes covered | Enrichment required |
 |---|---|---|
-| `katalog.yaml` | kubernetes, replica, container, service | none |
-| `katalog-pods.yaml` | pod enrichment on Deployment | `enrich: [pods]` |
-| `katalog-statefulset.yaml` | StatefulSet pod enrichment, `podByOrdinal` | `enrich: [pods]` |
-| `katalog-service.yaml` | endpoint enrichment on Service | `enrich: [endpoints]` |
-| `katalog-job.yaml` | job lifecycle + pod enrichment on Job | `enrich: [pods]` |
-| `katalog-warnings.yaml` | warning event enrichment on any resource | `enrich: [events]` |
-| `katalog-pvc.yaml` | PVC lifecycle notes + enriched PV notes | `enrich: [pvc]` |
-| `katalog-ingress.yaml` | Ingress notes — host, IP, rules, TLS | none |
-| `katalog-hpa.yaml` | HPA replica scaling notes | none |
+| `catalog.yaml` | kubernetes, replica, container, service | none |
+| `catalog-pods.yaml` | pod enrichment on Deployment | `enrich: [pods]` |
+| `catalog-statefulset.yaml` | StatefulSet pod enrichment, `podByOrdinal` | `enrich: [pods]` |
+| `catalog-service.yaml` | endpoint enrichment on Service | `enrich: [endpoints]` |
+| `catalog-job.yaml` | job lifecycle + pod enrichment on Job | `enrich: [pods]` |
+| `catalog-warnings.yaml` | warning event enrichment on any resource | `enrich: [events]` |
+| `catalog-pvc.yaml` | PVC lifecycle notes + enriched PV notes | `enrich: [pvc]` |
+| `catalog-ingress.yaml` | Ingress notes — host, IP, rules, TLS | none |
+| `catalog-hpa.yaml` | HPA replica scaling notes | none |
 
-### `katalog.yaml`
+### `catalog.yaml`
 
 Covers the general kubernetes-family notes that work on any child resource:
 `resourceExists`, `allReplicasReady`, `containerImage`, `serviceClusterIP`,
 `endpointsReady`, and the full replica + kubernetes note set.
 
-### `katalog-pods.yaml`
+### `catalog-pods.yaml`
 
 Covers the pod note family: `podNames`, `podIPs`, `podPhases`, `podNodes`,
 `podCount`, `readyPodCount`, `podMaxRestarts`, `hasCrashingPod`.
 
-### `katalog-statefulset.yaml`
+### `catalog-statefulset.yaml`
 
 Covers StatefulSet-specific patterns: ordered membership (`podNames`, `podIPs`),
 and `podByOrdinal` for surfacing the primary member's name and IP.
 
-### `katalog-service.yaml`
+### `catalog-service.yaml`
 
 Covers enriched endpoint notes: `hasEndpoints`, `serviceEndpoints`,
 `serviceEndpointCount`, `serviceFirstEndpoint`.
 
-### `katalog-job.yaml`
+### `catalog-job.yaml`
 
 Covers job lifecycle notes (`jobSucceeded`, `jobFailed`, `jobActive`) and
 enriched pod notes on jobs: `jobFirstExitCode`, `jobActivePodNames`,
 `jobSucceededPodNames`, `jobFailedPodNames`.
 
-### `katalog-warnings.yaml`
+### `catalog-warnings.yaml`
 
 Covers warning event notes: `hasWarnings`, `warningCount`, `firstWarningReason`,
 `firstWarning`. Events recorded on pods owned by a workload are also
@@ -72,9 +72,9 @@ aggregated — container failures (ImagePullBackOff, OOMKilled) show up here.
 ```bash
 cd pkg/note/fixture
 
-# Run the katalog for the probe family you want to test.
-# crdFile and crFiles are embedded — Orkestra applies the CRD and CR automatically:
-ork run -f katalog-<resource_type>.yaml
+# Run the catalog for the probe family you want to test.
+# crdFile and crFiles are embedded — Inrun applies the CRD and CR automatically:
+inrun -f catalog-<resource_type>.yaml
 
 # Watch status populate:
 kubectl get noteprobe my-probe -o yaml -w
@@ -87,7 +87,7 @@ bash cleanup.sh
 
 ## Adding a note
 
-When you add a note to any `kube_*.go` or `kubernetes.go` file, pick the katalog
+When you add a note to any `kube_*.go` or `kubernetes.go` file, pick the catalog
 that matches the note's resource family and add a `status.fields` entry:
 
 ```yaml
@@ -97,20 +97,20 @@ that matches the note's resource family and add a `status.fields` entry:
 
 Routing rule by resource family:
 
-- Pod notes → `katalog-pods.yaml`
-- StatefulSet ordinal notes → `katalog-statefulset.yaml`
-- Endpoint notes → `katalog-service.yaml`
-- Job lifecycle / pod notes → `katalog-job.yaml`
-- Warning event notes → `katalog-warnings.yaml`
-- PVC/PV notes → `katalog-pvc.yaml`
-- Ingress notes → `katalog-ingress.yaml`
-- HPA notes → `katalog-hpa.yaml`
-- Everything else → `katalog.yaml`
+- Pod notes → `catalog-pods.yaml`
+- StatefulSet ordinal notes → `catalog-statefulset.yaml`
+- Endpoint notes → `catalog-service.yaml`
+- Job lifecycle / pod notes → `catalog-job.yaml`
+- Warning event notes → `catalog-warnings.yaml`
+- PVC/PV notes → `catalog-pvc.yaml`
+- Ingress notes → `catalog-ingress.yaml`
+- HPA notes → `catalog-hpa.yaml`
+- Everything else → `catalog.yaml`
 
 ---
 
 ## CI
 
 The `fixture-note` job in `.github/workflows/validate-pr.yml` runs the fixture on
-every PR touching `pkg/note/`. It spins up a kind cluster, runs `ork run -f katalog.yaml`,
+every PR touching `pkg/note/`. It spins up a kind cluster, runs `inrun -f catalog.yaml`,
 and asserts `status.phase` is set.

@@ -3,16 +3,16 @@ package types_test
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func crdWithResourceQuotaOnCreate(rqs ...orktypes.ResourceQuotaTemplateSource) orktypes.CRDEntry {
-	return orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnCreate: &orktypes.HookTemplates{
+func crdWithResourceQuotaOnCreate(rqs ...types.ResourceQuotaTemplateSource) types.CRDEntry {
+	return types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnCreate: &types.HookTemplates{
 					ResourceQuotas: rqs,
 				},
 			},
@@ -21,17 +21,17 @@ func crdWithResourceQuotaOnCreate(rqs ...orktypes.ResourceQuotaTemplateSource) o
 }
 
 func TestCollectResourceQuotaProfileEntries_Empty(t *testing.T) {
-	c := orktypes.CRDEntry{}
+	c := types.CRDEntry{}
 	assert.Empty(t, c.CollectResourceQuotaProfileEntries())
 }
 
 func TestCollectResourceQuotaProfileEntries_NoProfile(t *testing.T) {
-	c := crdWithResourceQuotaOnCreate(orktypes.ResourceQuotaTemplateSource{Name: "quota"})
+	c := crdWithResourceQuotaOnCreate(types.ResourceQuotaTemplateSource{Name: "quota"})
 	assert.Empty(t, c.CollectResourceQuotaProfileEntries())
 }
 
 func TestCollectResourceQuotaProfileEntries_ProfileReturned(t *testing.T) {
-	c := crdWithResourceQuotaOnCreate(orktypes.ResourceQuotaTemplateSource{
+	c := crdWithResourceQuotaOnCreate(types.ResourceQuotaTemplateSource{
 		Name:    "default-quota",
 		Profile: "small",
 	})
@@ -44,7 +44,7 @@ func TestCollectResourceQuotaProfileEntries_ProfileReturned(t *testing.T) {
 }
 
 func TestCollectResourceQuotaProfileEntries_Mixed(t *testing.T) {
-	c := crdWithResourceQuotaOnCreate(orktypes.ResourceQuotaTemplateSource{
+	c := crdWithResourceQuotaOnCreate(types.ResourceQuotaTemplateSource{
 		Name:    "quota",
 		Profile: "medium",
 		Hard:    map[string]string{"pods": "5"},
@@ -55,7 +55,7 @@ func TestCollectResourceQuotaProfileEntries_Mixed(t *testing.T) {
 }
 
 func TestCollectResourceQuotaProfileEntries_TemplateExpr(t *testing.T) {
-	c := crdWithResourceQuotaOnCreate(orktypes.ResourceQuotaTemplateSource{
+	c := crdWithResourceQuotaOnCreate(types.ResourceQuotaTemplateSource{
 		Profile: "{{ .Spec.QuotaProfile }}",
 	})
 	entries := c.CollectResourceQuotaProfileEntries()
@@ -64,11 +64,11 @@ func TestCollectResourceQuotaProfileEntries_TemplateExpr(t *testing.T) {
 }
 
 func TestCollectResourceQuotaProfileEntries_MultipleProfiles(t *testing.T) {
-	c := orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnCreate: &orktypes.HookTemplates{
-					ResourceQuotas: []orktypes.ResourceQuotaTemplateSource{
+	c := types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnCreate: &types.HookTemplates{
+					ResourceQuotas: []types.ResourceQuotaTemplateSource{
 						{Name: "rq-small", Profile: "small"},
 						{Name: "rq-no-profile"},
 						{Name: "rq-large", Profile: "large"},
@@ -84,11 +84,11 @@ func TestCollectResourceQuotaProfileEntries_MultipleProfiles(t *testing.T) {
 }
 
 func TestCollectResourceQuotaProfileEntries_OnReconcile(t *testing.T) {
-	c := orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnReconcile: &orktypes.HookTemplates{
-					ResourceQuotas: []orktypes.ResourceQuotaTemplateSource{
+	c := types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnReconcile: &types.HookTemplates{
+					ResourceQuotas: []types.ResourceQuotaTemplateSource{
 						{Name: "quota", Profile: "xlarge"},
 					},
 				},

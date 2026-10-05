@@ -3,10 +3,10 @@ package generic
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/pkg/intent"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/runtime/runners"
+	"github.com/inrundev/inrun/pkg/intent"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/runtime/runners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

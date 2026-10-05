@@ -5,13 +5,13 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/orkspace/orkestra/pkg/tools/cluster"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/tools/cluster"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ensureTools checks which external tools are required by the E2E spec and
 // installs any that are missing. Called once at runner start before assertions run.
-func ensureTools(e2e orktypes.E2E) error {
+func ensureTools(e2e types.E2E) error {
 	needCurl, needJQ, needYQ, needMetrics := scanToolRequirements(e2e)
 	if needCurl {
 		if err := ensureTool("curl"); err != nil {
@@ -37,7 +37,7 @@ func ensureTools(e2e orktypes.E2E) error {
 }
 
 // scanToolRequirements walks the full E2E spec and reports which tools are needed.
-func scanToolRequirements(e2e orktypes.E2E) (needCurl, needJQ, needYQ, needMetrics bool) {
+func scanToolRequirements(e2e types.E2E) (needCurl, needJQ, needYQ, needMetrics bool) {
 	for _, exp := range e2e.Spec.Expect {
 		if exp.Kubectl == nil {
 			continue

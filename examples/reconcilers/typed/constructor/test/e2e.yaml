@@ -1,17 +1,17 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: constructor-e2e
   description: Verify the constructor pattern — operator builds pipeline jobs from a typed Go constructor and they run to completion
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   crd: ../manifests/crd.yaml
   cr: ../manifests/cr.yaml
 
   cluster:
     provider: kind
-    name: ork-e2e
+    name: inrun-e2e
     reuse: false
 
   expect:

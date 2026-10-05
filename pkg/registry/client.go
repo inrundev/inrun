@@ -1,6 +1,6 @@
 // pkg/registry/client.go
 //
-// ORAS-based OCI client for pushing and pulling Orkestra artifacts.
+// ORAS-based OCI client for pushing and pulling Inrun artifacts.
 //
 // Authentication uses ~/.docker/config.json via oras.land/oras-go/v2.
 // No separate login step — docker login ghcr.io is sufficient.
@@ -10,10 +10,10 @@
 // Info: fetches the manifest only, reads annotations.
 // List: fetches the index pattern from the registry root.
 //
-// Authoring-time only: every caller (ork push/pull/inspect/patterns and the
+// Authoring-time only: every caller (inrun push/pull/inspect/patterns and the
 // e2e/validate/simulate commands) is already !runtime && !gateway tagged.
-// The runtime and gateway only ever read an already-merged katalog.yaml key
-// from a ConfigMap — motif/registry/helm imports are expanded before that
+// The runtime and gateway only ever read an already-merged catalog.yaml key
+// from a ConfigMap — module/registry/helm imports are expanded before that
 // point, not by either binary. No stub needed here: nothing in the
 // runtime/gateway build graph calls into this file.
 
@@ -46,7 +46,7 @@ import (
 	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
-// Client wraps ORAS for Orkestra pattern operations.
+// Client wraps ORAS for Inrun pattern operations.
 type Client struct {
 	credStore credentials.Store
 }
@@ -308,7 +308,7 @@ func (c *Client) fetchIndex(ctx context.Context, idxRef *Ref) (*PatternIndex, er
 		return nil, err
 	}
 
-	tmp, err := os.MkdirTemp("", "ork-index-*")
+	tmp, err := os.MkdirTemp("", "inrun-index-*")
 	if err != nil {
 		return nil, err
 	}
@@ -500,80 +500,80 @@ func artifactMetaToAnnotations(meta *PatternMeta, ref *Ref) map[string]string {
 		"org.opencontainers.image.title":       meta.Name,
 		"org.opencontainers.image.version":     meta.Version,
 		"org.opencontainers.image.description": meta.Description,
-		"io.orkestra.pattern.kind":             string(meta.Kind),
-		"io.orkestra.pattern.name":             meta.Name,
-		"io.orkestra.pattern.version":          meta.Version,
-		"io.orkestra.pattern.author":           meta.Author,
-		"io.orkestra.pattern.license":          meta.License,
-		"io.orkestra.pattern.tags":             strings.Join(meta.Tags, ","),
+		"io.inrun.pattern.kind":                string(meta.Kind),
+		"io.inrun.pattern.name":                meta.Name,
+		"io.inrun.pattern.version":             meta.Version,
+		"io.inrun.pattern.author":              meta.Author,
+		"io.inrun.pattern.license":             meta.License,
+		"io.inrun.pattern.tags":                strings.Join(meta.Tags, ","),
 	}
 	if meta.Author != "" {
 		ann["org.opencontainers.image.authors"] = meta.Author
 	}
 	if meta.E2E != nil {
-		ann["io.orkestra.e2e.status"] = meta.E2E.Status
+		ann["io.inrun.e2e.status"] = meta.E2E.Status
 		if meta.E2E.Duration != "" {
-			ann["io.orkestra.e2e.duration"] = meta.E2E.Duration
+			ann["io.inrun.e2e.duration"] = meta.E2E.Duration
 		}
 		if meta.E2E.TestedAt != "" {
-			ann["io.orkestra.e2e.tested_at"] = meta.E2E.TestedAt
+			ann["io.inrun.e2e.tested_at"] = meta.E2E.TestedAt
 		}
 		if meta.E2E.Runner != "" {
-			ann["io.orkestra.e2e.runner"] = meta.E2E.Runner
+			ann["io.inrun.e2e.runner"] = meta.E2E.Runner
 		}
 		if meta.E2E.Assertions > 0 {
-			ann["io.orkestra.e2e.assertions"] = strconv.Itoa(meta.E2E.Assertions)
+			ann["io.inrun.e2e.assertions"] = strconv.Itoa(meta.E2E.Assertions)
 		}
 	}
 	if meta.Simulate != nil {
-		ann["io.orkestra.simulate.status"] = meta.Simulate.Status
+		ann["io.inrun.simulate.status"] = meta.Simulate.Status
 		if meta.Simulate.Duration != "" {
-			ann["io.orkestra.simulate.duration"] = meta.Simulate.Duration
+			ann["io.inrun.simulate.duration"] = meta.Simulate.Duration
 		}
 		if meta.Simulate.TestedAt != "" {
-			ann["io.orkestra.simulate.tested_at"] = meta.Simulate.TestedAt
+			ann["io.inrun.simulate.tested_at"] = meta.Simulate.TestedAt
 		}
 		if meta.Simulate.Assertions > 0 {
-			ann["io.orkestra.simulate.assertions"] = strconv.Itoa(meta.Simulate.Assertions)
+			ann["io.inrun.simulate.assertions"] = strconv.Itoa(meta.Simulate.Assertions)
 		}
 	}
 	if meta.Intent != nil {
-		ann["io.orkestra.intent.status"] = meta.Intent.Status
+		ann["io.inrun.intent.status"] = meta.Intent.Status
 		if meta.Intent.Target != "" {
-			ann["io.orkestra.intent.target"] = meta.Intent.Target
+			ann["io.inrun.intent.target"] = meta.Intent.Target
 		}
 		if meta.Intent.TestedAt != "" {
-			ann["io.orkestra.intent.tested_at"] = meta.Intent.TestedAt
+			ann["io.inrun.intent.tested_at"] = meta.Intent.TestedAt
 		}
 	}
 	if meta.Typed != nil {
 		if meta.Typed.HasHooks {
-			ann["io.orkestra.katalog.has_hooks"] = "true"
+			ann["io.inrun.catalog.has_hooks"] = "true"
 		}
 		if meta.Typed.HasConstructor {
-			ann["io.orkestra.katalog.has_constructor"] = "true"
+			ann["io.inrun.catalog.has_constructor"] = "true"
 		}
 		if meta.Typed.HasHooks || meta.Typed.HasConstructor {
-			ann["io.orkestra.katalog.typed"] = "true"
+			ann["io.inrun.catalog.typed"] = "true"
 		}
 	}
 	if meta.Deprecated != nil {
-		ann["io.orkestra.katalog.deprecated"] = "true"
+		ann["io.inrun.catalog.deprecated"] = "true"
 		if meta.Deprecated.MigratedTo != "" {
-			ann["io.orkestra.katalog.deprecated.migrated_to"] = meta.Deprecated.MigratedTo
+			ann["io.inrun.catalog.deprecated.migrated_to"] = meta.Deprecated.MigratedTo
 		}
 		if meta.Deprecated.Message != "" {
-			ann["io.orkestra.katalog.deprecated.message"] = meta.Deprecated.Message
+			ann["io.inrun.catalog.deprecated.message"] = meta.Deprecated.Message
 		}
 		if meta.Deprecated.TimelineFrom != "" {
-			ann["io.orkestra.katalog.deprecated.timeline_from"] = meta.Deprecated.TimelineFrom
+			ann["io.inrun.catalog.deprecated.timeline_from"] = meta.Deprecated.TimelineFrom
 		}
 		if meta.Deprecated.TimelineTo != "" {
-			ann["io.orkestra.katalog.deprecated.timeline_to"] = meta.Deprecated.TimelineTo
+			ann["io.inrun.catalog.deprecated.timeline_to"] = meta.Deprecated.TimelineTo
 		}
 	}
 	if meta.RuntimeVersion != "" {
-		ann["io.orkestra.katalog.runtime_version"] = meta.RuntimeVersion
+		ann["io.inrun.catalog.runtime_version"] = meta.RuntimeVersion
 	}
 	return ann
 }
@@ -581,26 +581,26 @@ func artifactMetaToAnnotations(meta *PatternMeta, ref *Ref) map[string]string {
 // annotationsToMeta reconstructs PatternMeta from OCI manifest annotations.
 func annotationsToMeta(ann map[string]string) *PatternMeta {
 	tags := []string{}
-	name := ann["io.orkestra.pattern.name"]
+	name := ann["io.inrun.pattern.name"]
 	if name == "" {
-		name = ann["io.orkestra.pattern.name"]
+		name = ann["io.inrun.pattern.name"]
 	}
-	version := ann["io.orkestra.pattern.version"]
+	version := ann["io.inrun.pattern.version"]
 	if version == "" {
-		version = ann["io.orkestra.pattern.version"]
+		version = ann["io.inrun.pattern.version"]
 	}
-	author := ann["io.orkestra.pattern.author"]
+	author := ann["io.inrun.pattern.author"]
 	if author == "" {
-		author = ann["io.orkestra.pattern.author"]
+		author = ann["io.inrun.pattern.author"]
 	}
-	license := ann["io.orkestra.pattern.license"]
+	license := ann["io.inrun.pattern.license"]
 	if license == "" {
-		license = ann["io.orkestra.pattern.license"]
+		license = ann["io.inrun.pattern.license"]
 	}
-	kindStr := ann["io.orkestra.pattern.kind"]
-	if t := ann["io.orkestra.pattern.tags"]; t != "" {
+	kindStr := ann["io.inrun.pattern.kind"]
+	if t := ann["io.inrun.pattern.tags"]; t != "" {
 		tags = strings.Split(t, ",")
-	} else if t := ann["io.orkestra.pattern.tags"]; t != "" {
+	} else if t := ann["io.inrun.pattern.tags"]; t != "" {
 		tags = strings.Split(t, ",")
 	}
 	meta := &PatternMeta{
@@ -612,46 +612,46 @@ func annotationsToMeta(ann map[string]string) *PatternMeta {
 		License:     license,
 		Tags:        tags,
 	}
-	if status := ann["io.orkestra.e2e.status"]; status != "" {
-		n, _ := strconv.Atoi(ann["io.orkestra.e2e.assertions"])
+	if status := ann["io.inrun.e2e.status"]; status != "" {
+		n, _ := strconv.Atoi(ann["io.inrun.e2e.assertions"])
 		meta.E2E = &PatternE2E{
 			Status:     status,
-			Duration:   ann["io.orkestra.e2e.duration"],
-			TestedAt:   ann["io.orkestra.e2e.tested_at"],
-			Runner:     ann["io.orkestra.e2e.runner"],
+			Duration:   ann["io.inrun.e2e.duration"],
+			TestedAt:   ann["io.inrun.e2e.tested_at"],
+			Runner:     ann["io.inrun.e2e.runner"],
 			Assertions: n,
 		}
 	}
-	if status := ann["io.orkestra.simulate.status"]; status != "" {
-		n, _ := strconv.Atoi(ann["io.orkestra.simulate.assertions"])
+	if status := ann["io.inrun.simulate.status"]; status != "" {
+		n, _ := strconv.Atoi(ann["io.inrun.simulate.assertions"])
 		meta.Simulate = &PatternSimulate{
 			Status:     status,
-			Duration:   ann["io.orkestra.simulate.duration"],
-			TestedAt:   ann["io.orkestra.simulate.tested_at"],
+			Duration:   ann["io.inrun.simulate.duration"],
+			TestedAt:   ann["io.inrun.simulate.tested_at"],
 			Assertions: n,
 		}
 	}
-	if status := ann["io.orkestra.intent.status"]; status != "" {
+	if status := ann["io.inrun.intent.status"]; status != "" {
 		meta.Intent = &PatternIntent{
 			Status:   status,
-			Target:   ann["io.orkestra.intent.target"],
-			TestedAt: ann["io.orkestra.intent.tested_at"],
+			Target:   ann["io.inrun.intent.target"],
+			TestedAt: ann["io.inrun.intent.tested_at"],
 		}
 	}
-	if ann["io.orkestra.katalog.typed"] == "true" {
+	if ann["io.inrun.catalog.typed"] == "true" {
 		meta.Typed = &PatternTyped{
-			HasHooks:       ann["io.orkestra.katalog.has_hooks"] == "true",
-			HasConstructor: ann["io.orkestra.katalog.has_constructor"] == "true",
+			HasHooks:       ann["io.inrun.catalog.has_hooks"] == "true",
+			HasConstructor: ann["io.inrun.catalog.has_constructor"] == "true",
 		}
 	}
-	if ann["io.orkestra.katalog.deprecated"] == "true" {
+	if ann["io.inrun.catalog.deprecated"] == "true" {
 		meta.Deprecated = &PatternDeprecated{
-			MigratedTo:   ann["io.orkestra.katalog.deprecated.migrated_to"],
-			Message:      ann["io.orkestra.katalog.deprecated.message"],
-			TimelineFrom: ann["io.orkestra.katalog.deprecated.timeline_from"],
-			TimelineTo:   ann["io.orkestra.katalog.deprecated.timeline_to"],
+			MigratedTo:   ann["io.inrun.catalog.deprecated.migrated_to"],
+			Message:      ann["io.inrun.catalog.deprecated.message"],
+			TimelineFrom: ann["io.inrun.catalog.deprecated.timeline_from"],
+			TimelineTo:   ann["io.inrun.catalog.deprecated.timeline_to"],
 		}
 	}
-	meta.RuntimeVersion = ann["io.orkestra.katalog.runtime_version"]
+	meta.RuntimeVersion = ann["io.inrun.catalog.runtime_version"]
 	return meta
 }

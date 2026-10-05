@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/gateway/webhook"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/gateway/webhook"
+	"github.com/inrundev/inrun/pkg/types"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -40,20 +40,20 @@ func TestWebhookRegistration_Integration(t *testing.T) {
 	}
 	certFile.Close()
 
-	gvr := katalog.GVREntry{
-		Key:        "demo.orkestra.io/v1alpha1/websites",
-		Group:      "demo.orkestra.io",
+	gvr := catalog.GVREntry{
+		Key:        "demo.inrun.dev/v1alpha1/websites",
+		Group:      "demo.inrun.dev",
 		Version:    "v1alpha1",
 		Resource:   "websites",
 		Operations: []string{"CREATE", "UPDATE"},
 	}
 
-	reg := katalog.NewInMemoryAdmissionRegistry()
-	reg.AddValidationGVR(gvr, &orktypes.ValidationConfig{})
-	reg.AddMutationGVR(gvr, &orktypes.MutationConfig{})
+	reg := catalog.NewInMemoryAdmissionRegistry()
+	reg.AddValidationGVR(gvr, &types.ValidationConfig{})
+	reg.AddMutationGVR(gvr, &types.MutationConfig{})
 
 	opts := webhook.WebhookRegistrationOptions{
-		ServiceName:      "orkestra",
+		ServiceName:      "inrun",
 		ServiceNamespace: "default",
 		Port:             8443,
 		FailurePolicy:    admissionv1.Ignore,
@@ -66,7 +66,7 @@ func TestWebhookRegistration_Integration(t *testing.T) {
 
 	vwc, err := client.AdmissionregistrationV1().
 		ValidatingWebhookConfigurations().
-		Get(ctx, "orkestra-admission-validation", metav1.GetOptions{})
+		Get(ctx, "inrun-admission-validation", metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("validating webhook missing: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestWebhookRegistration_Integration(t *testing.T) {
 
 	mwc, err := client.AdmissionregistrationV1().
 		MutatingWebhookConfigurations().
-		Get(ctx, "orkestra-admission-mutation", metav1.GetOptions{})
+		Get(ctx, "inrun-admission-mutation", metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("mutating webhook missing: %v", err)
 	}

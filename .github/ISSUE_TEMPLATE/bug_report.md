@@ -1,5 +1,5 @@
 name: Bug report
-about: Report a bug in Orkestra
+about: Report a bug in Inrun
 labels: bug
 
 ---
@@ -24,11 +24,11 @@ What actually happened.
 
 ## Environment
 
-- Orkestra version:
+- Inrun version:
 - Kubernetes version:
 - Install method (brew/curl):
 - OS:
 
 ## Additional Context
 
-Logs, Katalog snippets, CRDs, etc.
+Logs, Catalog snippets, CRDs, etc.

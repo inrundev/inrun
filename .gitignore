@@ -3,16 +3,16 @@ extensions/
 unknown/
 _runtime_*/
 example-crds/
-ork-amd64
-orkcc-amd64
-orkcc
-/ork
-orkestra-demo
-orkestra-action
-ork.md
-ork.yaml
+inrun-amd64
+inrun-console-amd64
+inrun-console
+/inrun
+inrun-demo
+inrun-action
+inrun.md
+inrun.yaml
 reviews/
-orkestra-certs/
+inrun-certs/
 coverage.out
 coverage
 # Docusaurus (legacy)
@@ -38,14 +38,11 @@ configmap.yaml
 DEPLOY.md
 node_modules/
 
-# Local ork-registry (published as OCI artifacts)
-ork-registry/
+# Local inrun-registry (published as OCI artifacts)
+inrun-registry/
 
-# Loacl ork-action (for Github Actions)
-ork-action/
+# Loacl inrun-action (for Github Actions)
+inrun-action/
 
-ork-docs/
-ork-marketplace
+inrun-docs/
 
-# ork-doctor — developer tooling extracted from the main repo
-ork-doctor/

@@ -3,7 +3,7 @@ package types
 
 // ── Deployment ────────────────────────────────────────────────────────────────
 
-// DeploymentTemplateSource declares one Deployment to be managed by Orkestra.
+// DeploymentTemplateSource declares one Deployment to be managed by Inrun.
 //
 // Minimal example — static values only:
 //
@@ -13,7 +13,7 @@ package types
 //	      replicas: "3"
 //	      port: "8080"
 //	      resources:
-//	        profile: burst      # Use orkestra's burst resource configuration
+//	        profile: burst      # Use inrun's burst resource configuration
 //
 // Full example — dynamic values from the CR:
 //
@@ -26,7 +26,7 @@ package types
 //	      namespace: "{{ .metadata.namespace }}"
 //	      labels:
 //	        app: "{{ .metadata.name }}"
-//	        managed-by: orkestra
+//	        managed-by: inrun
 //	      resources:
 //	        requests:
 //	          cpu: 100m
@@ -68,7 +68,7 @@ type DeploymentTemplateSource struct {
 
 	// Labels — applied to the Deployment ObjectMeta and the pod template.
 	// Label values support template expressions.
-	// Orkestra always adds: managed-by=orkestra, orkestra-owner=<cr-name>
+	// Inrun always adds: managed-by=inrun, inrun-owner=<cr-name>
 	Labels Labels `yaml:"labels,omitempty" json:"labels,omitempty" validate:"omitempty"`
 
 	// Annotations — applied to the Deployment ObjectMeta only.

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	"github.com/jackc/pgx/v5"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
 )
 
 // postgresClient executes a SQL query via the query: field.
@@ -23,7 +23,7 @@ import (
 //	called    — "true"
 type postgresClient struct{}
 
-func (c *postgresClient) Fetch(ctx context.Context, spec orktypes.ExternalCallSpec, resolvedURL, resolvedQuery, _, credential string) (map[string]interface{}, error) {
+func (c *postgresClient) Fetch(ctx context.Context, spec types.ExternalCallSpec, resolvedURL, resolvedQuery, _, credential string) (map[string]interface{}, error) {
 	if resolvedQuery == "" {
 		return errorResult("postgres: query: is required"), nil
 	}

@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 )
 
 var (
 	setFieldPath   = utils.SetNestedPath
-	convertToType  = orktypes.ConvertToType
+	convertToType  = types.ConvertToType
 	readLocal      = utils.ReadLocal
-	scalarToString = orktypes.ScalarToString
-	resolveScalar  = orktypes.ResolveScalarField
+	scalarToString = types.ScalarToString
+	resolveScalar  = types.ResolveScalarField
 )
 
 // ── Pointer helpers ───────────────────────────────────────────────────────────
@@ -39,15 +39,15 @@ func admissionv1FailurePolicyType(policy string) admissionv1.FailurePolicyType {
 	}
 }
 
-// runtimeEndpoint builds the in-cluster URL for this Orkestra instance's own
+// runtimeEndpoint builds the in-cluster URL for this Inrun instance's own
 // runtime — the same service the gateway is deployed alongside, not an
-// operator-declared cross: endpoint. Port comes from konfig's ORK_PORT
+// operator-declared cross: endpoint. Port comes from config's INRUN_PORT
 // (default "8080") — the runtime and gateway both read the same env var
-// convention for their own /katalog server, so the gateway's own configured
+// convention for their own /catalog server, so the gateway's own configured
 // value is the runtime's too.
 func (ws *WebhookServer) runtimeEndpoint() string {
-	svc := ws.katalog.RuntimeServiceName()
-	ns := ws.konfig.Cluster().Namespace()
-	port := ws.konfig.Health().Port()
+	svc := ws.catalog.RuntimeServiceName()
+	ns := ws.config.Cluster().Namespace()
+	port := ws.config.Health().Port()
 	return fmt.Sprintf("http://%s.%s.svc:%s", svc, ns, port)
 }

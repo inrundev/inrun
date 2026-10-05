@@ -5,7 +5,7 @@ package testsuite
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 )
 
 const twoWebsitesOneCert = `

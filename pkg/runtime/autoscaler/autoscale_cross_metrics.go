@@ -4,7 +4,7 @@
 // operatorbox. Enables autoscale conditions to reference another operatorbox's
 // live metrics via the cross.metrics.* namespace.
 //
-// Usage in Katalog:
+// Usage in Catalog:
 //
 //	# The database-backed-app operatorbox scales based on the database
 //	# operatorbox's queue depth — if the DB is overwhelmed, slow down.
@@ -26,7 +26,7 @@
 // modify them. The same principle as cross-CRD CR state observation.
 //
 // Thread safety: Register is called once at startup per operatorbox (under
-// Kordinator init). Get is called on every autoscale tick (concurrent reads).
+// Coordinator init). Get is called on every autoscale tick (concurrent reads).
 // sync.Map provides safe concurrent access with no lock contention on reads.
 package autoscaler
 
@@ -37,8 +37,8 @@ import (
 	"strings"
 	"sync"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils/common"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils/common"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -49,11 +49,11 @@ type CrossMetricsRegistry struct {
 }
 
 // GlobalCrossMetricsRegistry is the process-wide registry.
-// Populated during Kordinator startup, read by autoscalers at runtime.
+// Populated during Coordinator startup, read by autoscalers at runtime.
 var GlobalCrossMetricsRegistry = &CrossMetricsRegistry{}
 
 // Register registers an operatorbox's AutoMetrics under its crd name.
-// Called once per operatorbox during Kordinator startup.
+// Called once per operatorbox during Coordinator startup.
 // crd is normalized to lowercase for consistent lookup.
 func (r *CrossMetricsRegistry) Register(crd string, metrics *AutoMetrics) {
 	if crd == "" || metrics == nil {
@@ -79,7 +79,7 @@ func (r *CrossMetricsRegistry) Get(crd string) *AutoMetrics {
 // Resolution order:
 //  1. GlobalCrossMetricsRegistry — zero hops, same-binary CRDs
 //  2. source.Endpoint HTTP call  — one hop, cross-binary CRDs
-//     The endpoint must be the remote operator's /katalog/{crd} URL.
+//     The endpoint must be the remote operator's /catalog/{crd} URL.
 //     The response is expected to carry a "metrics" object with the same
 //     field names as AutoMetrics.AsMap().
 //
@@ -88,13 +88,13 @@ func ResolveCrossMetric(
 	cs kubernetes.Interface,
 	registry *CrossMetricsRegistry,
 	field string,
-	source *orktypes.CrossSource,
+	source *types.CrossSource,
 ) string {
 	// Expected: cross.<crd>.metrics.<metric>
 	// e.g.     cross.managed-database.metrics.queueDepth
 	// Parse the cross.<crd>.metrics.<field> structure
-	cf := orktypes.ParseCrossField(field)
-	metricsType := orktypes.MetricsProtocol().String()
+	cf := types.ParseCrossField(field)
+	metricsType := types.MetricsProtocol().String()
 	if cf == nil || cf.Category != metricsType {
 		return ""
 	}
@@ -117,10 +117,10 @@ func ResolveCrossMetric(
 
 		// ONCOP host-based URL inference
 		if source.Host != "" {
-			url := orktypes.BuildONCOPURL(orktypes.CrossCRDDeclaration{
+			url := types.BuildONCOPURL(types.CrossCRDDeclaration{
 				Source:   source,
 				CRD:      cf.CRD,
-				Selector: orktypes.CrossSelector{Namespace: cf.Namespace},
+				Selector: types.CrossSelector{Namespace: cf.Namespace},
 			})
 			source.Endpoint = url
 			return fetchCrossMetricHTTP(cs, source, cf.Field)
@@ -130,17 +130,17 @@ func ResolveCrossMetric(
 	return ""
 }
 
-// fetchCrossMetricHTTP calls the remote operator's /katalog/{crd} endpoint and
+// fetchCrossMetricHTTP calls the remote operator's /catalog/{crd} endpoint and
 // extracts the named metric from the "metrics" key in the JSON response.
 // This mirrors how readCross uses source.endpoint for CR observation.
-func fetchCrossMetricHTTP(cs kubernetes.Interface, source *orktypes.CrossSource, metricName string) string {
+func fetchCrossMetricHTTP(cs kubernetes.Interface, source *types.CrossSource, metricName string) string {
 	body, _ := common.FetchCrossViaHTTP(context.TODO(), cs, source)
 
 	if body == nil {
 		return ""
 	}
 
-	// Parse top-level "metrics" key from the /katalog/{crd} response.
+	// Parse top-level "metrics" key from the /catalog/{crd} response.
 	var response struct {
 		Metrics map[string]interface{} `json:"metrics"`
 	}

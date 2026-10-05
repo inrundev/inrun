@@ -1,4 +1,4 @@
-apiVersion: watch.orkestra.io/v1alpha1
+apiVersion: watch.inrun.dev/v1alpha1
 kind: WatchProbe
 metadata:
   name: probe-alpha

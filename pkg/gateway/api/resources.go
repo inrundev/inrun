@@ -5,8 +5,8 @@
 // DELETE /api/v1/resources/{kind}/{namespace}/{name} — delete a CR
 //
 // These endpoints are for external callers (CI, Terraform, Slack bots) that
-// need raw Kubernetes CR state without kubeconfig. The Control Center uses the
-// runtime's /katalog/{crd}/cr/... endpoints (richer, informer-cached); these
+// need raw Kubernetes CR state without kubeconfig. The Console uses the
+// runtime's /catalog/{crd}/cr/... endpoints (richer, informer-cached); these
 // endpoints call the Kubernetes API directly via the dynamic client.
 //
 // Deletion protection is enforced by the admission webhook when enabled.
@@ -24,12 +24,12 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // resourcesHandler returns the http.HandlerFunc for /api/v1/resources/... routes.
@@ -42,9 +42,9 @@ import (
 func resourcesHandler(
 	kube kubeclient.Interface,
 	clusters *ClusterRegistry,
-	kat *katalog.Katalog,
+	kat *catalog.Catalog,
 ) http.HandlerFunc {
-	var notes orktypes.NoteRegistry
+	var notes types.NoteRegistry
 	if !kat.Empty() {
 		notes = kat.UserNotes()
 	}
@@ -133,13 +133,13 @@ func getResource(
 	r *http.Request,
 	kube kubeclient.Interface,
 	ns, name string,
-	crd *orktypes.CRDEntry,
+	crd *types.CRDEntry,
 	alias string,
-	notes orktypes.NoteRegistry,
+	notes types.NoteRegistry,
 ) {
 	// When the CRD declares serve.tokens, the authenticated token must
 	// have permission to perform the operation it is attempting.
-	if !checkServePermission(w, r, crd, orktypes.ServeClassResources, orktypes.ServeOpGet, ns, alias) {
+	if !checkServePermission(w, r, crd, types.ServeClassResources, types.ServeOpGet, ns, alias) {
 		return
 	}
 
@@ -209,11 +209,11 @@ func listResources(
 	r *http.Request,
 	kube kubeclient.Interface,
 	ns string,
-	crd *orktypes.CRDEntry,
+	crd *types.CRDEntry,
 	alias string,
-	notes orktypes.NoteRegistry,
+	notes types.NoteRegistry,
 ) {
-	if !checkServePermission(w, r, crd, orktypes.ServeClassResources, orktypes.ServeOpList, ns, alias) {
+	if !checkServePermission(w, r, crd, types.ServeClassResources, types.ServeOpList, ns, alias) {
 		return
 	}
 
@@ -301,7 +301,7 @@ func deleteResource(
 	r *http.Request,
 	kube kubeclient.Interface,
 	ns, name string,
-	crd *orktypes.CRDEntry,
+	crd *types.CRDEntry,
 	alias string,
 ) {
 	if name == "" {
@@ -311,7 +311,7 @@ func deleteResource(
 		return
 	}
 
-	if !checkServePermission(w, r, crd, orktypes.ServeClassResources, orktypes.ServeOpDelete, ns, alias) {
+	if !checkServePermission(w, r, crd, types.ServeClassResources, types.ServeOpDelete, ns, alias) {
 		return
 	}
 
@@ -336,8 +336,8 @@ func deleteResource(
 func checkServePermission(
 	w http.ResponseWriter,
 	r *http.Request,
-	crd *orktypes.CRDEntry,
-	class orktypes.ServeEndpointClass,
+	crd *types.CRDEntry,
+	class types.ServeEndpointClass,
 	op, ns, alias string,
 ) bool {
 	if crd == nil {

@@ -1,27 +1,27 @@
 package cluster
 
 const (
-	// Orkestra is the Helm release name and the prefix for all Orkestra resources.
-	Orkestra = "orkestra"
+	// Inrun is the Helm release name and the prefix for all Inrun resources.
+	Inrun = "inrun"
 
-	// OrkestraRuntime is the name of the runtime Deployment.
-	OrkestraRuntime = "orkestra-runtime"
+	// InrunRuntime is the name of the runtime Deployment.
+	InrunRuntime = "inrun-runtime"
 
-	// OrkestraGateway is the name of the gateway Deployment.
-	OrkestraGateway = "orkestra-gateway"
+	// InrunGateway is the name of the gateway Deployment.
+	InrunGateway = "inrun-gateway"
 
-	// OrkestraNamespace is the Kubernetes namespace Orkestra deploys into.
-	OrkestraNamespace = "orkestra-system"
+	// InrunNamespace is the Kubernetes namespace Inrun deploys into.
+	InrunNamespace = "inrun-system"
 
-	// OrkestraChartRepo is the Helm repository URL for the Orkestra chart.
-	OrkestraChartRepo = "https://orkspace.github.io/orkestra"
+	// InrunChartRepo is the Helm repository URL for the Inrun chart.
+	InrunChartRepo = "https://inrundev.github.io/inrun"
 
-	// OrkestraChartName is the chart name within the repository.
-	OrkestraChartName = "orkestra"
+	// InrunChartName is the chart name within the repository.
+	InrunChartName = "inrun"
 
-	// OrkestraControlCenter is the name of the Control Center Deployment.
-	OrkestraControlCenter = "orkestra-cc"
+	// InrunConsole is the name of the Console Deployment.
+	InrunConsole = "inrun-console"
 
-	// OrkestraControlCenterPort is the default Control Center HTTP port.
-	OrkestraControlCenterPort = "8081"
+	// InrunConsolePort is the default Console HTTP port.
+	InrunConsolePort = "8081"
 )

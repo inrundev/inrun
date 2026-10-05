@@ -6,13 +6,13 @@ import (
 	"context"
 	"fmt"
 
-	apiv1 "github.com/orkspace/orkestra-hooks-demo/api/v1alpha1"
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orkcron "github.com/orkspace/orkestra/pkg/resources/cronjobs"
-	orksvc "github.com/orkspace/orkestra/pkg/resources/services"
-	orkstatefulset "github.com/orkspace/orkestra/pkg/resources/statefulsets"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	apiv1 "github.com/inrundev/inrun-hooks-demo/api/v1alpha1"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/resources/cronjobs"
+	"github.com/inrundev/inrun/pkg/resources/services"
+	"github.com/inrundev/inrun/pkg/resources/statefulsets"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 const (
@@ -22,8 +22,8 @@ const (
 	defaultReplicas  = "1"
 )
 
-// DatabaseHooks returns the Database CRD's hooks, registered in the Katalog
-// under hooks.function. They run inside the generic reconciler, so Orkestra
+// DatabaseHooks returns the Database CRD's hooks, registered in the Catalog
+// under hooks.function. They run inside the generic reconciler, so Inrun
 // still handles the informer, queue, finalizer, events, Ready status and
 // metrics; the hooks add typed spec access and the children the templates
 // cannot express.
@@ -53,19 +53,19 @@ func onDatabaseReconcile(ctx context.Context, obj *apiv1.Database) error {
 	// ── Create the StatefulSet via pkg/resources ───────────────────────────
 	// The resource package handles owner references, idempotency and system
 	// labels; the hook only provides the resolved spec.
-	spec := orkstatefulset.Resolve(
-		orktypes.StatefulSetTemplateSource{
+	spec := statefulsets.Resolve(
+		types.StatefulSetTemplateSource{
 			Name:               obj.Name,
 			Namespace:          obj.Namespace,
 			Image:              image,
 			Replicas:           defaultReplicas,
 			Port:               dbPort(engine),
-			ServiceAccountName: obj.Name + "-sa", // declared in the Katalog onCreate
-			Env: []orktypes.EnvVar{
+			ServiceAccountName: obj.Name + "-sa", // declared in the Catalog onCreate
+			Env: []types.EnvVar{
 				{Name: "POSTGRES_USER", Value: postgresUser},
 				{Name: "POSTGRES_PASSWORD", Value: postgresPassword},
 			},
-			Labels: orktypes.Labels{
+			Labels: types.Labels{
 				"db-engine":    engine,
 				"db-version":   version,
 				"storage-size": storage,
@@ -74,13 +74,13 @@ func onDatabaseReconcile(ctx context.Context, obj *apiv1.Database) error {
 		obj.Name,
 		nil,
 	)
-	if err := orkstatefulset.Update(ctx, kube, obj, spec); err != nil {
+	if err := statefulsets.Update(ctx, kube, obj, spec); err != nil {
 		return fmt.Errorf("database statefulSet: %w", err)
 	}
 
 	// ── Create the Service ─────────────────────────────────────────────────
-	svcSpec := orksvc.Resolve(
-		orktypes.ServiceTemplateSource{
+	svcSpec := services.Resolve(
+		types.ServiceTemplateSource{
 			Name:       obj.Name + "-svc",
 			Namespace:  obj.Namespace,
 			Port:       dbPort(engine),
@@ -89,14 +89,14 @@ func onDatabaseReconcile(ctx context.Context, obj *apiv1.Database) error {
 		},
 		obj.Name,
 	)
-	if err := orksvc.Update(ctx, kube, obj, svcSpec); err != nil {
+	if err := services.Update(ctx, kube, obj, svcSpec); err != nil {
 		return fmt.Errorf("database service: %w", err)
 	}
 
 	// ── Conditional: backup CronJob ────────────────────────────────────────
 	if obj.Spec.Backup {
-		cronSpec := orkcron.Resolve(
-			orktypes.CronJobTemplateSource{
+		cronSpec := cronjobs.Resolve(
+			types.CronJobTemplateSource{
 				Name:      obj.Name + "-backup",
 				Namespace: obj.Namespace,
 				Schedule:  "0 2 * * *", // daily at 2am
@@ -107,7 +107,7 @@ func onDatabaseReconcile(ctx context.Context, obj *apiv1.Database) error {
 			obj.Name,
 			nil,
 		)
-		if err := orkcron.Update(ctx, kube, obj, cronSpec); err != nil {
+		if err := cronjobs.Update(ctx, kube, obj, cronSpec); err != nil {
 			return fmt.Errorf("database backup cronjob: %w", err)
 		}
 	}

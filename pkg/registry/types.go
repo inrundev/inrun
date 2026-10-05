@@ -2,7 +2,7 @@ package registry
 
 import "time"
 
-// PatternKind is the Orkestra pattern type, read from the kind: field.
+// PatternKind is the Inrun pattern type, read from the kind: field.
 type PatternKind string
 
 // PatternSpec describes the conventions for one pattern kind.
@@ -24,15 +24,15 @@ type PatternMeta struct {
 	Author         string
 	License        string
 	Tags           []string
-	RuntimeVersion string             // ork version (declarative) or go.mod orkestra version (typed)
-	E2E            *PatternE2E        // populated at push time from running ork e2e; nil when absent
+	RuntimeVersion string             // inrun version (declarative) or go.mod inrun version (typed)
+	E2E            *PatternE2E        // populated at push time from running inrun e2e; nil when absent
 	Simulate       *PatternSimulate   // populated at push time from running simulate gate; nil when absent
-	Intent         *PatternIntent     // populated at push time from running ork serve play; nil when absent
-	Typed          *PatternTyped      // populated at push time from inspecting katalog CRDs; nil for motifs or non-typed katalogs
+	Intent         *PatternIntent     // populated at push time from running inrun serve play; nil when absent
+	Typed          *PatternTyped      // populated at push time from inspecting catalog CRDs; nil for modules or non-typed catalogs
 	Deprecated     *PatternDeprecated // populated from metadata.deprecation in the source YAML; nil when absent
 }
 
-// PatternTyped carries the typed-operator annotation flags for a katalog.
+// PatternTyped carries the typed-operator annotation flags for a catalog.
 type PatternTyped struct {
 	HasHooks       bool // one or more CRDs declare customHooks
 	HasConstructor bool // one or more CRDs declare customConstructor
@@ -81,7 +81,7 @@ type PatternEntry struct {
 	Description    string   `json:"description"`
 	Tags           []string `json:"tags"`
 	Author         string   `json:"author,omitempty"`
-	Kind           string   `json:"kind,omitempty"`           // "Katalog" or "Motif"
+	Kind           string   `json:"kind,omitempty"`           // "Catalog" or "Module"
 	E2EStatus      string   `json:"e2eStatus,omitempty"`      // "passed", "skipped", or ""
 	SimulateStatus string   `json:"simulateStatus,omitempty"` // "passed", "skipped", "no-assertion", or ""
 	Deprecated     bool     `json:"deprecated,omitempty"`

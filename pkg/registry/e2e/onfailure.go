@@ -6,14 +6,14 @@ import (
 	"os/exec"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
 // runOnFailure runs all onFailure commands and kubectl operations, printing
 // their output to the terminal. Never fails — diagnostics must not interrupt
 // the teardown path.
-func runOnFailure(ctx context.Context, f *orktypes.E2EOnFailure, workDir string, cs kubernetes.Interface) {
+func runOnFailure(ctx context.Context, f *types.E2EOnFailure, workDir string, cs kubernetes.Interface) {
 	if f == nil {
 		return
 	}
@@ -33,7 +33,7 @@ func runOnFailure(ctx context.Context, f *orktypes.E2EOnFailure, workDir string,
 
 // printOnFailureKubectl prints diagnostic output for each supported kubectl subcommand.
 // Assertion fields on the DSL structs are ignored — output is always printed.
-func printOnFailureKubectl(ctx context.Context, k *orktypes.E2EKubectl, workDir string, cs kubernetes.Interface) {
+func printOnFailureKubectl(ctx context.Context, k *types.E2EKubectl, workDir string, cs kubernetes.Interface) {
 	// kubectl get
 	for _, e := range k.Get {
 		ns := e.Namespace

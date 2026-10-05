@@ -33,7 +33,7 @@ func main() {
 	}
 }
 
-// handle reads a PreparedRequest from Orkestra and returns a RemoteReconcileResult.
+// handle reads a PreparedRequest from Inrun and returns a RemoteReconcileResult.
 func handle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.NotFound(w, r)

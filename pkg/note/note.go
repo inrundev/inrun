@@ -7,7 +7,7 @@ import "text/template"
 // Referenced by Map() which is called by the resolver.
 var notes = buildNotes()
 
-// Map returns the complete Orkestra note library as a template.FuncMap.
+// Map returns the complete Inrun note library as a template.FuncMap.
 // The map is built once and returned on every call — no allocation overhead.
 //
 // Integrate into the resolver:

@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ── ExpandExpectIncludes ──────────────────────────────────────────────────────
 
 func TestExpandExpectIncludes_NoIncludes(t *testing.T) {
-	expects := []orktypes.E2EExpectation{
+	expects := []types.E2EExpectation{
 		{Name: "a"},
 		{Name: "b"},
 	}
@@ -33,7 +33,7 @@ expect:
   - name: x
   - name: y
 `)
-	expects := []orktypes.E2EExpectation{
+	expects := []types.E2EExpectation{
 		{Name: "before"},
 		{Include: "./extra.yaml"},
 		{Name: "after"},
@@ -65,7 +65,7 @@ expect:
 expect:
   - name: b1
 `)
-	expects := []orktypes.E2EExpectation{
+	expects := []types.E2EExpectation{
 		{Include: "./a.yaml"},
 		{Name: "mid"},
 		{Include: "./b.yaml"},
@@ -88,7 +88,7 @@ func TestExpandExpectIncludes_MissingExpectKeyYieldsEmpty(t *testing.T) {
 metadata:
   name: something
 `)
-	expects := []orktypes.E2EExpectation{{Include: "./empty.yaml"}}
+	expects := []types.E2EExpectation{{Include: "./empty.yaml"}}
 	got, err := ExpandExpectIncludes(expects, dir)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -100,7 +100,7 @@ metadata:
 
 func TestExpandExpectIncludes_MissingFile(t *testing.T) {
 	dir := t.TempDir()
-	expects := []orktypes.E2EExpectation{{Include: "./nonexistent.yaml"}}
+	expects := []types.E2EExpectation{{Include: "./nonexistent.yaml"}}
 	_, err := ExpandExpectIncludes(expects, dir)
 	if err == nil {
 		t.Fatal("expected error for missing include file, got nil")
@@ -113,7 +113,7 @@ func TestExpandExpectIncludes_MissingFile(t *testing.T) {
 func TestExpandExpectIncludes_InvalidYAML(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, "bad.yaml"), `{{{not yaml`)
-	expects := []orktypes.E2EExpectation{{Include: "./bad.yaml"}}
+	expects := []types.E2EExpectation{{Include: "./bad.yaml"}}
 	_, err := ExpandExpectIncludes(expects, dir)
 	if err == nil {
 		t.Fatal("expected error for invalid YAML, got nil")
@@ -127,7 +127,7 @@ func TestExpandExpectIncludes_AbsoluteIncludePath(t *testing.T) {
 expect:
   - name: abs-entry
 `)
-	expects := []orktypes.E2EExpectation{{Include: absFile}}
+	expects := []types.E2EExpectation{{Include: absFile}}
 	got, err := ExpandExpectIncludes(expects, "/unrelated/dir")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -148,7 +148,7 @@ expect:
   - name: step-a
   - name: step-b
 `)
-	expects := []orktypes.E2EExpectation{{Include: filepath.Join(sub, "steps.yaml")}}
+	expects := []types.E2EExpectation{{Include: filepath.Join(sub, "steps.yaml")}}
 	got, err := ExpandExpectIncludes(expects, dir)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -166,7 +166,7 @@ expect:
 // ── ValidateKubectl ───────────────────────────────────────────────────────────
 
 func TestValidateKubectl_NoKubectlBlock(t *testing.T) {
-	expects := []orktypes.E2EExpectation{{Name: "plain"}}
+	expects := []types.E2EExpectation{{Name: "plain"}}
 	errs := ValidateKubectl(expects)
 	if len(errs) != 0 {
 		t.Errorf("expected no errors, got: %v", errs)
@@ -176,7 +176,7 @@ func TestValidateKubectl_NoKubectlBlock(t *testing.T) {
 // get ─────────────────────────────────────────────────────────────────────────
 
 func TestValidateKubectl_GetMissingKind(t *testing.T) {
-	errs := validateKubectlGet("loc", orktypes.E2EKubectlGet{
+	errs := validateKubectlGet("loc", types.E2EKubectlGet{
 		Name:   "foo",
 		Field:  ".status",
 		Equals: "ok",
@@ -185,7 +185,7 @@ func TestValidateKubectl_GetMissingKind(t *testing.T) {
 }
 
 func TestValidateKubectl_GetMissingName(t *testing.T) {
-	errs := validateKubectlGet("loc", orktypes.E2EKubectlGet{
+	errs := validateKubectlGet("loc", types.E2EKubectlGet{
 		Kind:   "Deployment",
 		Field:  ".status",
 		Equals: "ok",
@@ -194,7 +194,7 @@ func TestValidateKubectl_GetMissingName(t *testing.T) {
 }
 
 func TestValidateKubectl_GetMissingFieldAndFormat(t *testing.T) {
-	errs := validateKubectlGet("loc", orktypes.E2EKubectlGet{
+	errs := validateKubectlGet("loc", types.E2EKubectlGet{
 		Kind:   "Deployment",
 		Name:   "app",
 		Equals: "ok",
@@ -203,7 +203,7 @@ func TestValidateKubectl_GetMissingFieldAndFormat(t *testing.T) {
 }
 
 func TestValidateKubectl_GetNoAssertion(t *testing.T) {
-	errs := validateKubectlGet("loc", orktypes.E2EKubectlGet{
+	errs := validateKubectlGet("loc", types.E2EKubectlGet{
 		Kind:  "Deployment",
 		Name:  "app",
 		Field: ".status",
@@ -212,7 +212,7 @@ func TestValidateKubectl_GetNoAssertion(t *testing.T) {
 }
 
 func TestValidateKubectl_GetInvalidFormat(t *testing.T) {
-	errs := validateKubectlGet("loc", orktypes.E2EKubectlGet{
+	errs := validateKubectlGet("loc", types.E2EKubectlGet{
 		Kind:   "Deployment",
 		Name:   "app",
 		Format: "xml",
@@ -222,7 +222,7 @@ func TestValidateKubectl_GetInvalidFormat(t *testing.T) {
 }
 
 func TestValidateKubectl_GetJQWithoutJSON(t *testing.T) {
-	errs := validateKubectlGet("loc", orktypes.E2EKubectlGet{
+	errs := validateKubectlGet("loc", types.E2EKubectlGet{
 		Kind:   "Deployment",
 		Name:   "app",
 		Format: "yaml",
@@ -233,7 +233,7 @@ func TestValidateKubectl_GetJQWithoutJSON(t *testing.T) {
 }
 
 func TestValidateKubectl_GetYQWithoutYAML(t *testing.T) {
-	errs := validateKubectlGet("loc", orktypes.E2EKubectlGet{
+	errs := validateKubectlGet("loc", types.E2EKubectlGet{
 		Kind:   "Deployment",
 		Name:   "app",
 		Format: "json",
@@ -244,7 +244,7 @@ func TestValidateKubectl_GetYQWithoutYAML(t *testing.T) {
 }
 
 func TestValidateKubectl_GetValid(t *testing.T) {
-	errs := validateKubectlGet("loc", orktypes.E2EKubectlGet{
+	errs := validateKubectlGet("loc", types.E2EKubectlGet{
 		Kind:   "Deployment",
 		Name:   "app",
 		Field:  ".status.phase",
@@ -258,31 +258,31 @@ func TestValidateKubectl_GetValid(t *testing.T) {
 // logs ────────────────────────────────────────────────────────────────────────
 
 func TestValidateKubectl_LogsMissingSelector(t *testing.T) {
-	errs := validateKubectlLogs("loc", orktypes.E2EKubectlLogs{
+	errs := validateKubectlLogs("loc", types.E2EKubectlLogs{
 		OutputContains: "started",
 	})
 	requireErr(t, errs, "name, labelSelector, or leaderElection")
 }
 
 func TestValidateKubectl_LogsNoAssertion(t *testing.T) {
-	errs := validateKubectlLogs("loc", orktypes.E2EKubectlLogs{
+	errs := validateKubectlLogs("loc", types.E2EKubectlLogs{
 		Name: "my-pod",
 	})
 	requireErr(t, errs, "assertion")
 }
 
 func TestValidateKubectl_LogsLeaderElectionMissingLease(t *testing.T) {
-	errs := validateKubectlLogs("loc", orktypes.E2EKubectlLogs{
-		LeaderElection: &orktypes.E2EKubectlLeaderElection{},
+	errs := validateKubectlLogs("loc", types.E2EKubectlLogs{
+		LeaderElection: &types.E2EKubectlLeaderElection{},
 		OutputContains: "started",
 	})
 	requireErr(t, errs, "leaderElection.lease")
 }
 
 func TestValidateKubectl_LogsLeaderElectionMutuallyExclusiveWithName(t *testing.T) {
-	errs := validateKubectlLogs("loc", orktypes.E2EKubectlLogs{
+	errs := validateKubectlLogs("loc", types.E2EKubectlLogs{
 		Name: "my-pod",
-		LeaderElection: &orktypes.E2EKubectlLeaderElection{
+		LeaderElection: &types.E2EKubectlLeaderElection{
 			Lease: "my-lease",
 		},
 		OutputContains: "started",
@@ -291,9 +291,9 @@ func TestValidateKubectl_LogsLeaderElectionMutuallyExclusiveWithName(t *testing.
 }
 
 func TestValidateKubectl_LogsLeaderElectionMutuallyExclusiveWithSelector(t *testing.T) {
-	errs := validateKubectlLogs("loc", orktypes.E2EKubectlLogs{
+	errs := validateKubectlLogs("loc", types.E2EKubectlLogs{
 		LabelSelector: "app=foo",
-		LeaderElection: &orktypes.E2EKubectlLeaderElection{
+		LeaderElection: &types.E2EKubectlLeaderElection{
 			Lease: "my-lease",
 		},
 		OutputContains: "started",
@@ -302,8 +302,8 @@ func TestValidateKubectl_LogsLeaderElectionMutuallyExclusiveWithSelector(t *test
 }
 
 func TestValidateKubectl_LogsLeaderElectionValid(t *testing.T) {
-	errs := validateKubectlLogs("loc", orktypes.E2EKubectlLogs{
-		LeaderElection: &orktypes.E2EKubectlLeaderElection{
+	errs := validateKubectlLogs("loc", types.E2EKubectlLogs{
+		LeaderElection: &types.E2EKubectlLeaderElection{
 			Lease: "my-lease",
 		},
 		OutputContains: "started",
@@ -316,17 +316,17 @@ func TestValidateKubectl_LogsLeaderElectionValid(t *testing.T) {
 // delete ──────────────────────────────────────────────────────────────────────
 
 func TestValidateKubectl_DeleteNeitherFileNorKind(t *testing.T) {
-	errs := validateKubectlDelete("loc", orktypes.E2EKubectlDelete{})
+	errs := validateKubectlDelete("loc", types.E2EKubectlDelete{})
 	requireErr(t, errs, "file or (kind + name)")
 }
 
 func TestValidateKubectl_DeleteKindWithoutName(t *testing.T) {
-	errs := validateKubectlDelete("loc", orktypes.E2EKubectlDelete{Kind: "Deployment"})
+	errs := validateKubectlDelete("loc", types.E2EKubectlDelete{Kind: "Deployment"})
 	requireErr(t, errs, "file or (kind + name)")
 }
 
 func TestValidateKubectl_DeleteMutuallyExclusive(t *testing.T) {
-	errs := validateKubectlDelete("loc", orktypes.E2EKubectlDelete{
+	errs := validateKubectlDelete("loc", types.E2EKubectlDelete{
 		File: "./foo.yaml",
 		Kind: "Deployment",
 		Name: "app",
@@ -335,14 +335,14 @@ func TestValidateKubectl_DeleteMutuallyExclusive(t *testing.T) {
 }
 
 func TestValidateKubectl_DeleteByFile(t *testing.T) {
-	errs := validateKubectlDelete("loc", orktypes.E2EKubectlDelete{File: "./foo.yaml"})
+	errs := validateKubectlDelete("loc", types.E2EKubectlDelete{File: "./foo.yaml"})
 	if len(errs) != 0 {
 		t.Errorf("expected no errors, got: %v", errs)
 	}
 }
 
 func TestValidateKubectl_DeleteByKindAndName(t *testing.T) {
-	errs := validateKubectlDelete("loc", orktypes.E2EKubectlDelete{Kind: "Deployment", Name: "app"})
+	errs := validateKubectlDelete("loc", types.E2EKubectlDelete{Kind: "Deployment", Name: "app"})
 	if len(errs) != 0 {
 		t.Errorf("expected no errors, got: %v", errs)
 	}
@@ -351,7 +351,7 @@ func TestValidateKubectl_DeleteByKindAndName(t *testing.T) {
 // port-forward ────────────────────────────────────────────────────────────────
 
 func TestValidateKubectl_PortForwardAssertionWithoutPath(t *testing.T) {
-	errs := validateKubectlPortForward("loc", orktypes.E2EKubectlPortForward{
+	errs := validateKubectlPortForward("loc", types.E2EKubectlPortForward{
 		Service: "my-svc",
 		Port:    8080,
 		Equals:  "ok",
@@ -360,14 +360,14 @@ func TestValidateKubectl_PortForwardAssertionWithoutPath(t *testing.T) {
 }
 
 func TestValidateKubectl_PortForwardNoServiceOrPod(t *testing.T) {
-	errs := validateKubectlPortForward("loc", orktypes.E2EKubectlPortForward{
+	errs := validateKubectlPortForward("loc", types.E2EKubectlPortForward{
 		Port: 8080,
 	})
 	requireErr(t, errs, "service, pod, or leaderElection")
 }
 
 func TestValidateKubectl_PortForwardZeroPort(t *testing.T) {
-	errs := validateKubectlPortForward("loc", orktypes.E2EKubectlPortForward{
+	errs := validateKubectlPortForward("loc", types.E2EKubectlPortForward{
 		Service: "my-svc",
 		Port:    0,
 	})
@@ -375,7 +375,7 @@ func TestValidateKubectl_PortForwardZeroPort(t *testing.T) {
 }
 
 func TestValidateKubectl_PortForwardValidNoAssertion(t *testing.T) {
-	errs := validateKubectlPortForward("loc", orktypes.E2EKubectlPortForward{
+	errs := validateKubectlPortForward("loc", types.E2EKubectlPortForward{
 		Service: "my-svc",
 		Port:    8080,
 	})
@@ -385,9 +385,9 @@ func TestValidateKubectl_PortForwardValidNoAssertion(t *testing.T) {
 }
 
 func TestValidateKubectl_PortForwardLeaderElectionMissingLease(t *testing.T) {
-	errs := validateKubectlPortForward("loc", orktypes.E2EKubectlPortForward{
+	errs := validateKubectlPortForward("loc", types.E2EKubectlPortForward{
 		Port:           8080,
-		LeaderElection: &orktypes.E2EKubectlLeaderElection{},
+		LeaderElection: &types.E2EKubectlLeaderElection{},
 	})
 	requireErr(t, errs, "leaderElection.lease")
 }
@@ -395,12 +395,12 @@ func TestValidateKubectl_PortForwardLeaderElectionMissingLease(t *testing.T) {
 // apply ───────────────────────────────────────────────────────────────────────
 
 func TestValidateKubectl_ApplyNeitherFileNorInline(t *testing.T) {
-	errs := validateKubectlApply("loc", orktypes.E2EKubectlApply{})
+	errs := validateKubectlApply("loc", types.E2EKubectlApply{})
 	requireErr(t, errs, "file or inline")
 }
 
 func TestValidateKubectl_ApplyMutuallyExclusive(t *testing.T) {
-	errs := validateKubectlApply("loc", orktypes.E2EKubectlApply{
+	errs := validateKubectlApply("loc", types.E2EKubectlApply{
 		File:   "./foo.yaml",
 		Inline: "apiVersion: v1",
 	})
@@ -408,7 +408,7 @@ func TestValidateKubectl_ApplyMutuallyExclusive(t *testing.T) {
 }
 
 func TestValidateKubectl_ApplyByFile(t *testing.T) {
-	errs := validateKubectlApply("loc", orktypes.E2EKubectlApply{File: "./foo.yaml"})
+	errs := validateKubectlApply("loc", types.E2EKubectlApply{File: "./foo.yaml"})
 	if len(errs) != 0 {
 		t.Errorf("expected no errors, got: %v", errs)
 	}
@@ -417,7 +417,7 @@ func TestValidateKubectl_ApplyByFile(t *testing.T) {
 // patch ───────────────────────────────────────────────────────────────────────
 
 func TestValidateKubectl_PatchInvalidType(t *testing.T) {
-	errs := validateKubectlPatch("loc", orktypes.E2EKubectlPatch{
+	errs := validateKubectlPatch("loc", types.E2EKubectlPatch{
 		Kind:  "Deployment",
 		Name:  "app",
 		Patch: `{"spec":{}}`,
@@ -427,7 +427,7 @@ func TestValidateKubectl_PatchInvalidType(t *testing.T) {
 }
 
 func TestValidateKubectl_PatchMissingPatch(t *testing.T) {
-	errs := validateKubectlPatch("loc", orktypes.E2EKubectlPatch{
+	errs := validateKubectlPatch("loc", types.E2EKubectlPatch{
 		Kind: "Deployment",
 		Name: "app",
 	})
@@ -435,7 +435,7 @@ func TestValidateKubectl_PatchMissingPatch(t *testing.T) {
 }
 
 func TestValidateKubectl_PatchValid(t *testing.T) {
-	errs := validateKubectlPatch("loc", orktypes.E2EKubectlPatch{
+	errs := validateKubectlPatch("loc", types.E2EKubectlPatch{
 		Kind:  "Deployment",
 		Name:  "app",
 		Patch: `{"spec":{}}`,
@@ -448,7 +448,7 @@ func TestValidateKubectl_PatchValid(t *testing.T) {
 // top ─────────────────────────────────────────────────────────────────────────
 
 func TestValidateKubectl_TopInvalidKind(t *testing.T) {
-	errs := validateKubectlTop("loc", orktypes.E2EKubectlTop{
+	errs := validateKubectlTop("loc", types.E2EKubectlTop{
 		Kind:           "deployment",
 		OutputContains: "cpu",
 	})
@@ -456,12 +456,12 @@ func TestValidateKubectl_TopInvalidKind(t *testing.T) {
 }
 
 func TestValidateKubectl_TopMissingKind(t *testing.T) {
-	errs := validateKubectlTop("loc", orktypes.E2EKubectlTop{OutputContains: "cpu"})
+	errs := validateKubectlTop("loc", types.E2EKubectlTop{OutputContains: "cpu"})
 	requireErr(t, errs, "kind is required")
 }
 
 func TestValidateKubectl_TopValidPod(t *testing.T) {
-	errs := validateKubectlTop("loc", orktypes.E2EKubectlTop{
+	errs := validateKubectlTop("loc", types.E2EKubectlTop{
 		Kind:           "pod",
 		OutputContains: "cpu",
 	})
@@ -493,7 +493,7 @@ func writeFile(t *testing.T, path, content string) {
 	}
 }
 
-func names(expects []orktypes.E2EExpectation) []string {
+func names(expects []types.E2EExpectation) []string {
 	out := make([]string, len(expects))
 	for i, e := range expects {
 		out[i] = e.Name

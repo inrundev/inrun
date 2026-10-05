@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
-	informerpkg "github.com/orkspace/orkestra/pkg/runtime/informer"
-	"github.com/orkspace/orkestra/pkg/runtime/queue"
+	"github.com/inrundev/inrun/pkg/config"
+	informerpkg "github.com/inrundev/inrun/pkg/runtime/informer"
+	"github.com/inrundev/inrun/pkg/runtime/queue"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,12 +20,12 @@ import (
 
 var (
 	probeGVR = schema.GroupVersionResource{
-		Group:    "integration.orkestra.io",
+		Group:    "integration.inrun.dev",
 		Version:  "v1",
 		Resource: "probes",
 	}
 	probeGVK = schema.GroupVersionKind{
-		Group:   "integration.orkestra.io",
+		Group:   "integration.inrun.dev",
 		Version: "v1",
 		Kind:    "Probe",
 	}
@@ -41,7 +41,7 @@ func newTestFactory(reg *queue.QueueRegistry, defaultWq *queue.Workqueue) *infor
 		QueueRegistry: reg,
 		DefaultWq:     defaultWq,
 		Scheme:        runtime.NewScheme(),
-		Konfig:        konfig.NewDefaultKonfig(),
+		Config:        config.NewDefaultConfig(),
 	})
 }
 
@@ -72,7 +72,7 @@ func createNamespace(t *testing.T, ctx context.Context, name string) {
 func createProbeInNs(t *testing.T, ctx context.Context, name, namespace string) {
 	t.Helper()
 	obj := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": "integration.orkestra.io/v1",
+		"apiVersion": "integration.inrun.dev/v1",
 		"kind":       "Probe",
 		"metadata":   map[string]interface{}{"name": name, "namespace": namespace},
 		"spec":       map[string]interface{}{"image": "nginx:1.25", "replicas": int64(1)},

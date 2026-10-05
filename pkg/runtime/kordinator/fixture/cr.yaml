@@ -1,6 +1,0 @@
-apiVersion: seed.kordinator.orkestra.io/v1alpha1
-kind: KordinatorSeed
-metadata:
-  name: kordinator-seed
-  namespace: default
-spec: {}

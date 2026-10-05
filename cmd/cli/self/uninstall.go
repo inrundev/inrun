@@ -8,15 +8,15 @@ import (
 	"os/user"
 	"path/filepath"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
 	"github.com/spf13/cobra"
 )
 
 //
 // ──────────────────────────────────────────────────────────────────────────────
-//  Command: ork uninstall
-//  Removes Orkestra binaries, completions, and local cache.
+//  Command: inrun uninstall
+//  Removes Inrun binaries, completions, and local cache.
 // ──────────────────────────────────────────────────────────────────────────────
 //
 
@@ -26,7 +26,7 @@ func newUninstallCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "uninstall",
-		Short: "Uninstall Orkestra CLI and remove all related files",
+		Short: "Uninstall Inrun CLI and remove all related files",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runUninstall(yes, dryRun)
 		},
@@ -46,23 +46,23 @@ func runUninstall(yes, dryRun bool) error {
 	home := usr.HomeDir
 
 	// Resolve install directory — matches what install.sh uses by default.
-	installDir := filepath.Join(home, ".orkestra", "bin")
-	if v := os.Getenv("ORK_INSTALL_DIR"); v != "" {
+	installDir := filepath.Join(home, ".inrun", "bin")
+	if v := os.Getenv("INRUN_INSTALL_DIR"); v != "" {
 		installDir = v
 	}
 
 	// All paths that may be removed
 	paths := []string{
-		// ~/.orkestra covers the binaries, config, cache, and plugins.
+		// ~/.inrun covers the binaries, config, cache, and plugins.
 		// Listed explicitly so dry-run shows what will go.
-		filepath.Join(installDir, "ork"),
-		filepath.Join(installDir, "orkcc"),
+		filepath.Join(installDir, "inrun"),
+		filepath.Join(installDir, "inrun-console"),
 
-		filepath.Join(home, ".bash_completion.d/ork"),
+		filepath.Join(home, ".bash_completion.d/inrun"),
 		filepath.Join(home, ".zsh/completions/_ork"),
-		filepath.Join(home, ".config/fish/completions/ork.fish"),
+		filepath.Join(home, ".config/fish/completions/inrun.fish"),
 
-		filepath.Join(home, ".orkestra"),
+		filepath.Join(home, ".inrun"),
 	}
 
 	// Dry-run: show what would be removed
@@ -80,7 +80,7 @@ func runUninstall(yes, dryRun bool) error {
 
 	// Confirmation prompt (unless --yes)
 	if !yes {
-		fmt.Print("This will remove Orkestra, Orkestra Control Center, cache, and completions. Continue? [y/N]: ")
+		fmt.Print("This will remove Inrun, Inrun Console, cache, and completions. Continue? [y/N]: ")
 		var resp string
 		fmt.Scanln(&resp)
 		if resp != "y" && resp != "Y" {
@@ -89,7 +89,7 @@ func runUninstall(yes, dryRun bool) error {
 		}
 	}
 
-	fmt.Println("\nUninstalling Orkestra...")
+	fmt.Println("\nUninstalling Inrun...")
 
 	// Remove all known paths
 	for _, p := range paths {
@@ -99,7 +99,7 @@ func runUninstall(yes, dryRun bool) error {
 		}
 	}
 
-	fmt.Println("\n✓ Orkestra uninstalled successfully")
+	fmt.Println("\n✓ Inrun uninstalled successfully")
 	return nil
 }
 
@@ -108,6 +108,6 @@ func init() {
 	uninstallCmd := newUninstallCmd()
 	cmdutil.RootCmd.AddCommand(uninstallCmd)
 
-	// Shadow global flags (so they don't show under `ork uninstall`)
+	// Shadow global flags (so they don't show under `inrun uninstall`)
 	cmdutil.ShadowGlobalCommandFlags(uninstallCmd, "file")
 }

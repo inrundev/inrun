@@ -11,16 +11,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
-	"github.com/orkspace/orkestra/cmd/cli/serve"
-	"github.com/orkspace/orkestra/cmd/cli/testsuite"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/serve"
+	"github.com/inrundev/inrun/cmd/cli/testsuite"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	"github.com/orkspace/orkestra/pkg/merger"
-	"github.com/orkspace/orkestra/pkg/registry"
-	"github.com/orkspace/orkestra/pkg/registry/e2e"
-	"github.com/orkspace/orkestra/pkg/version"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/registry"
+	"github.com/inrundev/inrun/pkg/registry/e2e"
+	"github.com/inrundev/inrun/pkg/version"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -41,12 +41,12 @@ var (
 
 var pushCmd = &cobra.Command{
 	Use:   "push <name>:<version> <dir>  OR  push <dir>",
-	Short: "Push a pattern or motif directory to the registry",
+	Short: "Push a pattern or module directory to the registry",
 	Args:  cobra.RangeArgs(1, 2),
-	Example: `  ork push postgres:v14 ./patterns/postgres/
-  ork push redis:v7 ./motifs/redis/
-  ORK_REGISTRY=oci://myregistry.io/patterns ork push payments:v1.0 ./payments/
-  ork push .   # use metadata.name:metadata.version from the pattern`,
+	Example: `  inrun push postgres:v14 ./patterns/postgres/
+  inrun push redis:v7 ./modules/redis/
+  INRUN_REGISTRY=oci://myregistry.io/patterns inrun push payments:v1.0 ./payments/
+  inrun push .   # use metadata.name:metadata.version from the pattern`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (
 			refArg string
@@ -119,8 +119,8 @@ var pushCmd = &cobra.Command{
 		cmdutil.PrintBanner()
 		fmt.Printf("Pushing %s (%s) to %s...\n", refArg, patternKind, ref.Registry)
 
-		if patternKind == registry.KatalogKind {
-			localImports, err := registry.ExtractLocalMotifImports(filepath.Join(dir, registry.FileKatalog))
+		if patternKind == registry.CatalogKind {
+			localImports, err := registry.ExtractLocalModuleImports(filepath.Join(dir, registry.FileCatalog))
 			if err == nil && len(localImports) > 0 {
 				var lines []string
 				for _, li := range localImports {
@@ -128,30 +128,30 @@ var pushCmd = &cobra.Command{
 				}
 				return fmt.Errorf(
 					"✗ Push blocked: local file imports in %s\n\n%s\n\n"+
-						"  Local imports work for ork simulate and ork template, but cannot\n"+
-						"  be resolved by consumers after the katalog is published.\n\n"+
+						"  Local imports work for inrun simulate and inrun template, but cannot\n"+
+						"  be resolved by consumers after the catalog is published.\n\n"+
 						"  Before publishing:\n"+
-						"    1. Push the motif:  ork push <motif-dir>/\n"+
+						"    1. Push the module:  inrun push <module-dir>/\n"+
 						"    2. Replace the local path with the OCI ref:\n"+
-						"       motif: oci://<your-registry>/motifs/<name>:<version>",
-					registry.FileKatalog,
+						"       module: oci://<your-registry>/modules/<name>:<version>",
+					registry.FileCatalog,
 					strings.Join(lines, "\n"),
 				)
 			}
 		}
 
-		if patternKind == registry.KatalogKind {
-			m := merger.New(filepath.Join(dir, registry.FileKatalog))
+		if patternKind == registry.CatalogKind {
+			m := merger.New(filepath.Join(dir, registry.FileCatalog))
 			if err := m.Merge(); err != nil {
-				return fmt.Errorf("  ✗ %s: %w", registry.FileKatalog, err)
+				return fmt.Errorf("  ✗ %s: %w", registry.FileCatalog, err)
 			}
 			k, err := pipeline.BuildExpanded(cmdutil.Kfg, m)
 			if err != nil {
-				return fmt.Errorf("  ✗ %s: %w", registry.FileKatalog, err)
+				return fmt.Errorf("  ✗ %s: %w", registry.FileCatalog, err)
 			}
-			fmt.Printf("  %s %-20s valid\n", cmdutil.SuccessMark(), registry.FileKatalog)
+			fmt.Printf("  %s %-20s valid\n", cmdutil.SuccessMark(), registry.FileCatalog)
 			if d := k.Deprecation(); d != nil {
-				cmdutil.PrintKatalogDeprecation(d)
+				cmdutil.PrintCatalogDeprecation(d)
 			}
 
 			if crd := registry.FindPatternFile(dir, registry.FileCRD); crd != "" && slices.Contains(files, crd) {
@@ -163,7 +163,7 @@ var pushCmd = &cobra.Command{
 		}
 
 		for _, f := range files {
-			if f == registry.FileKatalog || filepath.Base(f) == registry.FileCRD {
+			if f == registry.FileCatalog || filepath.Base(f) == registry.FileCRD {
 				continue
 			}
 			info, _ := os.Stat(filepath.Join(dir, f))
@@ -171,7 +171,7 @@ var pushCmd = &cobra.Command{
 		}
 
 		var simulateMeta *registry.PatternSimulate
-		if patternKind == registry.KatalogKind {
+		if patternKind == registry.CatalogKind {
 			if rel := registry.FindPatternFile(dir, registry.FileSimulate); rel != "" {
 				simFile := filepath.Join(dir, rel)
 				if pushForce || pushNoSimulate {
@@ -192,7 +192,7 @@ var pushCmd = &cobra.Command{
 						fmt.Printf("\nRunning simulate gate (%s)...\n", registry.FileSimulate)
 						start := time.Now()
 						if err := testsuite.RunSimulateFromSpec(cmd.Context(), simFile, testsuite.CliSimulateOptions{MaxCycles: 10}); err != nil {
-							return fmt.Errorf("✗ Simulate gate failed — push blocked\n  Run 'ork simulate' to see the failures\n  Use --force to override (recorded in the artifact)\n\n%w", err)
+							return fmt.Errorf("✗ Simulate gate failed — push blocked\n  Run 'inrun simulate' to see the failures\n  Use --force to override (recorded in the artifact)\n\n%w", err)
 						}
 						dur := time.Since(start).Round(time.Millisecond).String()
 						fmt.Printf("  %s Simulate passed (%s)\n", cmdutil.SuccessMark(), dur)
@@ -208,7 +208,7 @@ var pushCmd = &cobra.Command{
 		}
 
 		var e2eMeta *registry.PatternE2E
-		if patternKind == registry.KatalogKind {
+		if patternKind == registry.CatalogKind {
 			e2eFile := pushE2EFile
 			if e2eFile == "" {
 				if rel := registry.FindPatternFile(dir, registry.FileE2E); rel != "" {
@@ -233,7 +233,7 @@ var pushCmd = &cobra.Command{
 					}
 					result, err := runner.Run(cmd.Context())
 					if err != nil {
-						return fmt.Errorf("✗ E2E gate failed — push blocked\n  Run 'ork e2e' to see the failures\n  Use --force to override (recorded in the artifact)\n\n%w", err)
+						return fmt.Errorf("✗ E2E gate failed — push blocked\n  Run 'inrun e2e' to see the failures\n  Use --force to override (recorded in the artifact)\n\n%w", err)
 					}
 					fmt.Printf("  %s E2E passed (%s)\n", cmdutil.SuccessMark(), result.Duration())
 					e2eMeta = &registry.PatternE2E{
@@ -246,7 +246,7 @@ var pushCmd = &cobra.Command{
 				}
 			}
 			// --no-e2e was explicitly passed but no e2e.yaml exists; record as skipped
-			// so ork inspect shows ⊘ Skipped rather than - Not verified.
+			// so inrun inspect shows ⊘ Skipped rather than - Not verified.
 			if pushNoE2E && e2eMeta == nil {
 				fmt.Printf("  ~ E2E skipped\n")
 				e2eMeta = &registry.PatternE2E{
@@ -258,13 +258,13 @@ var pushCmd = &cobra.Command{
 		}
 
 		var intentMeta *registry.PatternIntent
-		if patternKind == registry.KatalogKind && pushAddIntent != "" {
+		if patternKind == registry.CatalogKind && pushAddIntent != "" {
 			intentFile := pushAddIntent
 			if !filepath.IsAbs(intentFile) {
 				intentFile = filepath.Join(dir, intentFile)
 			}
 			fmt.Printf("\nRunning intent play (%s)...\n", pushAddIntent)
-			target, perr := serve.RunIntentPlay(filepath.Join(dir, registry.FileKatalog), intentFile)
+			target, perr := serve.RunIntentPlay(filepath.Join(dir, registry.FileCatalog), intentFile)
 			status := "passed"
 			if perr != nil {
 				status = "failed"
@@ -280,8 +280,8 @@ var pushCmd = &cobra.Command{
 		}
 
 		var typedMeta *registry.PatternTyped
-		if patternKind == registry.KatalogKind {
-			typedMeta = detectTypedKatalog(filepath.Join(dir, registry.FileKatalog))
+		if patternKind == registry.CatalogKind {
+			typedMeta = detectTypedCatalog(filepath.Join(dir, registry.FileCatalog))
 		}
 
 		runtimeVersion := version.Short()
@@ -318,29 +318,29 @@ var pushCmd = &cobra.Command{
 		fmt.Printf("\n%s Pushed: %s\n", cmdutil.SuccessMark(), ref.String())
 		fmt.Printf("  Digest: %s\n", digest)
 
-		if patternKind == registry.KatalogKind {
-			motifYAML := filepath.Join(dir, registry.FileMotif)
-			if _, err := os.Stat(motifYAML); err == nil {
-				motifRef, err := registry.ResolveForKind(fmt.Sprintf("%s:%s", meta.Name, meta.Version), registry.MotifKind)
+		if patternKind == registry.CatalogKind {
+			moduleYAML := filepath.Join(dir, registry.FileModule)
+			if _, err := os.Stat(moduleYAML); err == nil {
+				moduleRef, err := registry.ResolveForKind(fmt.Sprintf("%s:%s", meta.Name, meta.Version), registry.ModuleKind)
 				if err == nil {
-					fmt.Printf("\nAlso pushing %s to %s...\n", registry.FileMotif, motifRef.Registry)
-					spinMotif := cmdutil.StartSpinner(fmt.Sprintf("Pushing %s...", registry.FileMotif))
-					if mDigest, err := client.Push(cmd.Context(), motifRef, dir, registry.PushOptions{RuntimeVersion: version.Short()}, nil); err != nil {
-						spinMotif.Failure()
-						fmt.Fprintf(os.Stderr, "warning: motif push failed: %v\n", err)
+					fmt.Printf("\nAlso pushing %s to %s...\n", registry.FileModule, moduleRef.Registry)
+					spinModule := cmdutil.StartSpinner(fmt.Sprintf("Pushing %s...", registry.FileModule))
+					if mDigest, err := client.Push(cmd.Context(), moduleRef, dir, registry.PushOptions{RuntimeVersion: version.Short()}, nil); err != nil {
+						spinModule.Failure()
+						fmt.Fprintf(os.Stderr, "warning: module push failed: %v\n", err)
 					} else {
-						spinMotif.Stop()
-						fmt.Printf("%s Pushed motif: %s\n", cmdutil.SuccessMark(), motifRef.String())
+						spinModule.Stop()
+						fmt.Printf("%s Pushed module: %s\n", cmdutil.SuccessMark(), moduleRef.String())
 						fmt.Printf("  Digest: %s\n", mDigest[:19]+"...")
 					}
 				}
 			}
 		}
 
-		fmt.Printf("\nTo import in a Katalog:\n")
-		if patternKind == registry.MotifKind {
+		fmt.Printf("\nTo import in a Catalog:\n")
+		if patternKind == registry.ModuleKind {
 			fmt.Printf("  imports:\n")
-			fmt.Printf("    - motif: %s\n", ref.String())
+			fmt.Printf("    - module: %s\n", ref.String())
 		} else {
 			fmt.Printf("  imports:\n")
 			fmt.Printf("    registry:\n")
@@ -361,16 +361,16 @@ func init() {
 	pushCmd.Flags().StringVar(&pushE2ECluster, "cluster", "", "Reuse an existing kind cluster context for the e2e gate (skips cluster creation)")
 	pushCmd.Flags().BoolVar(&pushE2EUseCurrent, "use-current", false, "Use the current kubeconfig context for the e2e gate (skips cluster creation)")
 	pushCmd.Flags().IntVar(&pushE2EWorkers, "workers", 0, "Number of kind worker nodes for the e2e gate cluster (0 = control-plane only)")
-	pushCmd.Flags().StringVar(&pushAddIntent, "add-intent", "", "Run ork serve play against this intent file (YAML or JSON) and bake the result into the artifact")
+	pushCmd.Flags().StringVar(&pushAddIntent, "add-intent", "", "Run inrun serve play against this intent file (YAML or JSON) and bake the result into the artifact")
 	cmdutil.RootCmd.AddCommand(pushCmd)
 
-	// Shadow global flags so they don't appear under `ork push`
+	// Shadow global flags so they don't appear under `inrun push`
 	cmdutil.ShadowGlobalCommandFlags(pushCmd, "file")
 }
 
-// detectTypedKatalog parses a katalog.yaml and returns a PatternTyped if any
+// detectTypedCatalog parses a catalog.yaml and returns a PatternTyped if any
 // CRD declares customHooks or customConstructor. Returns nil on parse error.
-// extractRuntimeVersionFromGoMod scans go.mod for the orkestra runtime dependency
+// extractRuntimeVersionFromGoMod scans go.mod for the inrun runtime dependency
 // and returns its version (e.g. "v0.7.6"). Returns "" if go.mod is absent or the
 // dependency is not declared.
 func extractRuntimeVersionFromGoMod(dir string) string {
@@ -382,15 +382,15 @@ func extractRuntimeVersionFromGoMod(dir string) string {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		// inline form:  require github.com/orkspace/orkestra vX.Y.Z
-		if strings.HasPrefix(line, "require github.com/orkspace/orkestra ") {
+		// inline form:  require github.com/inrundev/inrun vX.Y.Z
+		if strings.HasPrefix(line, "require github.com/inrundev/inrun ") {
 			parts := strings.Fields(line)
 			if len(parts) >= 3 {
 				return parts[2]
 			}
 		}
-		// block form (inside require (...)):  github.com/orkspace/orkestra vX.Y.Z
-		if strings.HasPrefix(line, "github.com/orkspace/orkestra ") {
+		// block form (inside require (...)):  github.com/inrundev/inrun vX.Y.Z
+		if strings.HasPrefix(line, "github.com/inrundev/inrun ") {
 			parts := strings.Fields(line)
 			if len(parts) >= 2 {
 				return parts[1]
@@ -403,8 +403,8 @@ func extractRuntimeVersionFromGoMod(dir string) string {
 	return ""
 }
 
-func detectTypedKatalog(katalogPath string) *registry.PatternTyped {
-	k, err := katalog.ParseFile(katalogPath)
+func detectTypedCatalog(catalogPath string) *registry.PatternTyped {
+	k, err := catalog.ParseFile(catalogPath)
 	if err != nil {
 		return nil
 	}

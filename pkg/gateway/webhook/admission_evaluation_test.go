@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,8 +18,8 @@ import (
 func TestSetFieldPath(t *testing.T) {
 	t.Run("top-level field", func(t *testing.T) {
 		obj := map[string]interface{}{}
-		setFieldPath(obj, "name", "orkestra")
-		assert.Equal(t, "orkestra", obj["name"])
+		setFieldPath(obj, "name", "inrun")
+		assert.Equal(t, "inrun", obj["name"])
 	})
 
 	t.Run("nested field creates intermediate map", func(t *testing.T) {
@@ -74,11 +74,11 @@ func TestEvaluateValidationRules_MixedDenyAndWarn(t *testing.T) {
 		},
 		// metadata.labels.team absent → violates warn rule
 	}
-	cfg := &orktypes.ValidationConfig{
-		Rules: []orktypes.ValidationRule{
-			{Field: "spec.image", Prefix: "myorg/", Message: "wrong registry", Action: orktypes.ValidationActionDeny},
-			{Field: "spec.replicas", Max: "10", Message: "too many replicas", Action: orktypes.ValidationActionDeny},
-			{Field: "metadata.labels.team", Operator: orktypes.ConditionExists, Message: "team label required", Action: orktypes.ValidationActionWarn},
+	cfg := &types.ValidationConfig{
+		Rules: []types.ValidationRule{
+			{Field: "spec.image", Prefix: "myorg/", Message: "wrong registry", Action: types.ValidationActionDeny},
+			{Field: "spec.replicas", Max: "10", Message: "too many replicas", Action: types.ValidationActionDeny},
+			{Field: "metadata.labels.team", Operator: types.ConditionExists, Message: "team label required", Action: types.ValidationActionWarn},
 		},
 	}
 
@@ -103,11 +103,11 @@ func TestEvaluateValidationRules_AllPass(t *testing.T) {
 			"labels": map[string]interface{}{"team": "platform"},
 		},
 	}
-	cfg := &orktypes.ValidationConfig{
-		Rules: []orktypes.ValidationRule{
-			{Field: "spec.image", Prefix: "myorg/", Message: "wrong registry", Action: orktypes.ValidationActionDeny},
-			{Field: "spec.replicas", Max: "10", Message: "too many", Action: orktypes.ValidationActionDeny},
-			{Field: "metadata.labels.team", Operator: orktypes.ConditionExists, Message: "team required", Action: orktypes.ValidationActionWarn},
+	cfg := &types.ValidationConfig{
+		Rules: []types.ValidationRule{
+			{Field: "spec.image", Prefix: "myorg/", Message: "wrong registry", Action: types.ValidationActionDeny},
+			{Field: "spec.replicas", Max: "10", Message: "too many", Action: types.ValidationActionDeny},
+			{Field: "metadata.labels.team", Operator: types.ConditionExists, Message: "team required", Action: types.ValidationActionWarn},
 		},
 	}
 
@@ -121,8 +121,8 @@ func TestEvaluateValidationRules_EmptyActionDefaultsToDeny(t *testing.T) {
 	h := &WebhookServer{}
 
 	obj := specObj(map[string]interface{}{"image": "bad-registry/nginx"})
-	cfg := &orktypes.ValidationConfig{
-		Rules: []orktypes.ValidationRule{
+	cfg := &types.ValidationConfig{
+		Rules: []types.ValidationRule{
 			// Action field not set — should default to deny
 			{Field: "spec.image", Prefix: "myorg/", Message: "wrong registry"},
 		},
@@ -149,7 +149,7 @@ func TestApplyMutationRules_NilConfig(t *testing.T) {
 func TestApplyMutationRules_EmptyRules(t *testing.T) {
 	h := &WebhookServer{}
 	obj := specObj(map[string]interface{}{})
-	cfg := &orktypes.MutationConfig{Rules: []orktypes.MutationRule{}}
+	cfg := &types.MutationConfig{Rules: []types.MutationRule{}}
 
 	changes, err := h.applyMutationRules(context.Background(), obj, cfg, "Website")
 
@@ -163,8 +163,8 @@ func TestApplyMutationRules_DefaultAppliedWhenAbsent(t *testing.T) {
 		"metadata": map[string]interface{}{"name": "my-site"},
 		"spec":     map[string]interface{}{},
 	}
-	cfg := &orktypes.MutationConfig{
-		Rules: []orktypes.MutationRule{
+	cfg := &types.MutationConfig{
+		Rules: []types.MutationRule{
 			{Field: "spec.replicas", Default: "2"},
 		},
 	}
@@ -189,8 +189,8 @@ func TestApplyMutationRules_DefaultSkippedWhenPresent(t *testing.T) {
 		"metadata": map[string]interface{}{"name": "my-site"},
 		"spec":     map[string]interface{}{"replicas": "5"},
 	}
-	cfg := &orktypes.MutationConfig{
-		Rules: []orktypes.MutationRule{
+	cfg := &types.MutationConfig{
+		Rules: []types.MutationRule{
 			{Field: "spec.replicas", Default: "2"},
 		},
 	}
@@ -210,8 +210,8 @@ func TestApplyMutationRules_DefaultSkippedWhenValueAlreadyMatches(t *testing.T) 
 		"metadata": map[string]interface{}{"name": "my-site"},
 		"spec":     map[string]interface{}{"logLevel": "info"},
 	}
-	cfg := &orktypes.MutationConfig{
-		Rules: []orktypes.MutationRule{
+	cfg := &types.MutationConfig{
+		Rules: []types.MutationRule{
 			{Field: "spec.logLevel", Default: "info"},
 		},
 	}
@@ -228,9 +228,9 @@ func TestApplyMutationRules_OverrideAlwaysApplies(t *testing.T) {
 		"metadata": map[string]interface{}{"name": "my-site"},
 		"spec":     map[string]interface{}{},
 	}
-	cfg := &orktypes.MutationConfig{
-		Rules: []orktypes.MutationRule{
-			{Field: "metadata.labels.managed-by", Override: "orkestra"},
+	cfg := &types.MutationConfig{
+		Rules: []types.MutationRule{
+			{Field: "metadata.labels.managed-by", Override: "inrun"},
 		},
 	}
 
@@ -239,7 +239,7 @@ func TestApplyMutationRules_OverrideAlwaysApplies(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, changes, 1)
 	assert.Equal(t, "metadata.labels.managed-by", changes[0].Field)
-	assert.Equal(t, "orkestra", changes[0].NewValue)
+	assert.Equal(t, "inrun", changes[0].NewValue)
 	assert.Equal(t, "override", changes[0].ChangeType)
 }
 
@@ -254,9 +254,9 @@ func TestApplyMutationRules_OverrideReplacesExistingValue(t *testing.T) {
 		},
 		"spec": map[string]interface{}{},
 	}
-	cfg := &orktypes.MutationConfig{
-		Rules: []orktypes.MutationRule{
-			{Field: "metadata.labels.managed-by", Override: "orkestra"},
+	cfg := &types.MutationConfig{
+		Rules: []types.MutationRule{
+			{Field: "metadata.labels.managed-by", Override: "inrun"},
 		},
 	}
 
@@ -265,7 +265,7 @@ func TestApplyMutationRules_OverrideReplacesExistingValue(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, changes, 1)
 	assert.Equal(t, "helm", changes[0].OldValue)
-	assert.Equal(t, "orkestra", changes[0].NewValue)
+	assert.Equal(t, "inrun", changes[0].NewValue)
 	assert.Equal(t, "override", changes[0].ChangeType)
 }
 
@@ -275,11 +275,11 @@ func TestApplyMutationRules_MultipleRules(t *testing.T) {
 		"metadata": map[string]interface{}{"name": "my-site"},
 		"spec":     map[string]interface{}{},
 	}
-	cfg := &orktypes.MutationConfig{
-		Rules: []orktypes.MutationRule{
+	cfg := &types.MutationConfig{
+		Rules: []types.MutationRule{
 			{Field: "spec.replicas", Default: "2"},
 			{Field: "spec.logLevel", Default: "info"},
-			{Field: "metadata.labels.managed-by", Override: "orkestra"},
+			{Field: "metadata.labels.managed-by", Override: "inrun"},
 		},
 	}
 
@@ -299,8 +299,8 @@ func TestApplyMutationRules_NestedFieldCreated(t *testing.T) {
 		"metadata": map[string]interface{}{"name": "my-site"},
 		"spec":     map[string]interface{}{},
 	}
-	cfg := &orktypes.MutationConfig{
-		Rules: []orktypes.MutationRule{
+	cfg := &types.MutationConfig{
+		Rules: []types.MutationRule{
 			{Field: "spec.db.engine", Default: "postgres"},
 		},
 	}
@@ -375,7 +375,7 @@ func TestBuildJSONPatch_AddForAbsentField(t *testing.T) {
 
 func TestBuildJSONPatch_ReplaceForExistingField(t *testing.T) {
 	changes := []fieldChange{
-		{Field: "metadata.labels.managed-by", OldValue: "helm", NewValue: "orkestra", ChangeType: "override"},
+		{Field: "metadata.labels.managed-by", OldValue: "helm", NewValue: "inrun", ChangeType: "override"},
 	}
 
 	raw, err := buildJSONPatch(changes)
@@ -392,7 +392,7 @@ func TestBuildJSONPatch_MultipleChanges(t *testing.T) {
 	changes := []fieldChange{
 		{Field: "spec.replicas", OldValue: "", NewValue: "2", ChangeType: "default"},
 		{Field: "spec.logLevel", OldValue: "", NewValue: "info", ChangeType: "default"},
-		{Field: "metadata.labels.managed-by", OldValue: "helm", NewValue: "orkestra", ChangeType: "override"},
+		{Field: "metadata.labels.managed-by", OldValue: "helm", NewValue: "inrun", ChangeType: "override"},
 	}
 
 	raw, err := buildJSONPatch(changes)
@@ -422,8 +422,8 @@ func TestGVRToKey(t *testing.T) {
 	}{
 		{
 			name: "group resource",
-			gvr:  metav1.GroupVersionResource{Group: "demo.orkestra.io", Version: "v1alpha1", Resource: "websites"},
-			want: "demo.orkestra.io/v1alpha1/websites",
+			gvr:  metav1.GroupVersionResource{Group: "demo.inrun.dev", Version: "v1alpha1", Resource: "websites"},
+			want: "demo.inrun.dev/v1alpha1/websites",
 		},
 		{
 			name: "core group (empty group)",

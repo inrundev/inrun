@@ -4,12 +4,12 @@ package gate
 
 // gate_dev.go — Local admission evaluator for dev builds.
 //
-// In a gateway build (//go:build gateway), ork gate starts the full gateway
+// In a gateway build (//go:build gateway), inrun gate starts the full gateway
 // server (TLS, webhooks, cluster-required). In dev builds there is no gateway
 // process to start, but operators still need to validate admission rules before
 // deploying. This command fills that gap:
 //
-//	ork gate -f katalog.yaml --cr cr.yaml
+//	inrun gate -f catalog.yaml --cr cr.yaml
 //
 // It evaluates validation.rules and previews mutation.rules in-process, using
 // the same EvaluateConditions + EvaluateValidationRule logic as the webhook and
@@ -24,14 +24,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/cmd/internal"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	"github.com/orkspace/orkestra/pkg/merger"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/cmd/internal"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +40,7 @@ var gatewayCmd = &cobra.Command{
 	Short: "Evaluate admission rules locally against a CR (no cluster required)",
 	Long: `Evaluate admission rules locally against a CR.
 
-Reads the validation.rules declared in the Katalog and runs them against the
+Reads the validation.rules declared in the Catalog and runs them against the
 provided CR using the same evaluation logic as the admission webhook and the
 reconciler. No cluster, no TLS, no webhook server required.
 
@@ -50,7 +50,7 @@ Limitations:
 Both are noted in the output.
 
 Example:
-  ork gate -f katalog.yaml --cr cr.yaml`,
+  inrun gate -f catalog.yaml --cr cr.yaml`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		crFile, _ := cmd.Flags().GetString("cr")
 		if crFile == "" {
@@ -62,16 +62,16 @@ Example:
 			paths = cmdutil.DefaultFilePaths()
 		}
 		if len(paths) == 0 {
-			return fmt.Errorf(cmdutil.ErrNoKatalog)
+			return fmt.Errorf(cmdutil.ErrNoCatalog)
 		}
 
 		m := merger.New(paths...)
 		if err := m.Merge(); err != nil {
-			return fmt.Errorf("merging Katalog: %w", err)
+			return fmt.Errorf("merging Catalog: %w", err)
 		}
 		kat, err := pipeline.BuildExpanded(cmdutil.Kfg, m)
 		if err != nil {
-			return fmt.Errorf("parsing Katalog: %w", err)
+			return fmt.Errorf("parsing Catalog: %w", err)
 		}
 
 		crData, err := cmdutil.ReadLocal(crFile)
@@ -84,9 +84,9 @@ Example:
 		}
 
 		fmt.Println()
-		fmt.Printf("%s  ork gate\n", cmdutil.Bold("▶"))
+		fmt.Printf("%s  inrun gate\n", cmdutil.Bold("▶"))
 		fmt.Printf("  %s %s\n", cmdutil.Gray("cr:     "), cmdutil.Cyan(crFile))
-		fmt.Printf("  %s %s\n", cmdutil.Gray("katalog:"), cmdutil.Cyan(strings.Join(paths, ", ")))
+		fmt.Printf("  %s %s\n", cmdutil.Gray("catalog:"), cmdutil.Cyan(strings.Join(paths, ", ")))
 		fmt.Println()
 
 		var anyDenied bool
@@ -111,7 +111,7 @@ Example:
 
 // gateEvalCRD evaluates validation rules and previews mutation rules for one
 // CRD+CR pair. Returns true if any deny-action validation rule fired.
-func gateEvalCRD(kat *katalog.Katalog, crd *orktypes.CRDEntry, obj map[string]interface{}) bool {
+func gateEvalCRD(kat *catalog.Catalog, crd *types.CRDEntry, obj map[string]interface{}) bool {
 	fmt.Printf("%s  %s  %s\n", cmdutil.Cyan("◆"), cmdutil.Bold(crd.Kind()), cmdutil.Gray(fmt.Sprintf("(%s)", crd.ServeTarget())))
 
 	if !crd.HasValidationRules() && !crd.HasMutationRules() {
@@ -130,7 +130,7 @@ func gateEvalCRD(kat *katalog.Katalog, crd *orktypes.CRDEntry, obj map[string]in
 		fmt.Printf("  %s external: calls — skipped (no endpoint)\n", cmdutil.Dim("note:"))
 	}
 
-	resolver := orktmpl.NewResolverFromMap(obj).WithUserNotes(kat.Notes)
+	resolver := template.NewResolverFromMap(obj).WithUserNotes(kat.Notes)
 	eval := resolver.TemplateEvaluator()
 
 	// When mutateFirst is set the real webhook applies mutations before
@@ -141,7 +141,7 @@ func gateEvalCRD(kat *katalog.Katalog, crd *orktypes.CRDEntry, obj map[string]in
 		mutResult = EvalAdmissionMutation(obj, crd, resolver, eval)
 		if len(mutResult.Previews) > 0 {
 			validationObj = applyMutationPreviews(obj, mutResult.Previews)
-			validationResolver := orktmpl.NewResolverFromMap(validationObj).WithUserNotes(kat.Notes)
+			validationResolver := template.NewResolverFromMap(validationObj).WithUserNotes(kat.Notes)
 			resolver = validationResolver
 			eval = resolver.TemplateEvaluator()
 		}
@@ -163,7 +163,7 @@ func gateEvalCRD(kat *katalog.Katalog, crd *orktypes.CRDEntry, obj map[string]in
 	return denied
 }
 
-func gateValidate(obj map[string]interface{}, crd *orktypes.CRDEntry, resolver *orktmpl.Resolver, eval orktypes.TemplateEvaluator) bool {
+func gateValidate(obj map[string]interface{}, crd *types.CRDEntry, resolver *template.Resolver, eval types.TemplateEvaluator) bool {
 	if !crd.HasValidationRules() {
 		return false
 	}
@@ -197,7 +197,7 @@ func gateValidate(obj map[string]interface{}, crd *orktypes.CRDEntry, resolver *
 	return false
 }
 
-func gateMutate(obj map[string]interface{}, crd *orktypes.CRDEntry, resolver *orktmpl.Resolver, eval orktypes.TemplateEvaluator) {
+func gateMutate(obj map[string]interface{}, crd *types.CRDEntry, resolver *template.Resolver, eval types.TemplateEvaluator) {
 	if !crd.HasMutationRules() {
 		return
 	}
@@ -224,13 +224,13 @@ func printGateMutateResult(r AdmissionMutationResult) {
 	}
 }
 
-func hasUniqueRule(crd *orktypes.CRDEntry) bool {
+func hasUniqueRule(crd *types.CRDEntry) bool {
 	v := crd.EffectiveValidation()
 	if v == nil {
 		return false
 	}
 	for _, r := range v.Rules {
-		if r.Operator == orktypes.ConditionUnique {
+		if r.Operator == types.ConditionUnique {
 			return true
 		}
 	}
@@ -240,7 +240,7 @@ func hasUniqueRule(crd *orktypes.CRDEntry) bool {
 var gateRunCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Start the gateway locally (HTTP only, no TLS, no admission webhooks)",
-	Long: `Start the Orkestra Gateway in local HTTP mode.
+	Long: `Start the Inrun Gateway in local HTTP mode.
 
 The Gateway API (POST /api/v1/apply, GET /api/v1/resources/, intake webhooks)
 runs on the health port (default :8080). Admission and conversion webhooks are
@@ -250,22 +250,22 @@ Use this to test serve routing, apply flows, and intake payloads without a
 Helm deployment.
 
 Example:
-  ork gate run -f katalog.yaml`,
+  inrun gate run -f catalog.yaml`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		paths, _ := cmd.Flags().GetStringSlice("file")
 		if len(paths) == 0 {
 			paths = cmdutil.DefaultFilePaths()
 		}
 		if len(paths) == 0 {
-			return fmt.Errorf(cmdutil.ErrNoKatalog)
+			return fmt.Errorf(cmdutil.ErrNoCatalog)
 		}
 
 		m := merger.New(paths...)
 		if err := m.Merge(); err != nil {
-			return fmt.Errorf("merging katalogs: %w", err)
+			return fmt.Errorf("merging catalogs: %w", err)
 		}
 
-		internal.KonductGatewayDev(cmdutil.Kfg, m, cmdutil.Ctx)
+		internal.RunGatewayDev(cmdutil.Kfg, m, cmdutil.Ctx)
 		return nil
 	},
 }
@@ -273,9 +273,9 @@ Example:
 func init() {
 	cmdutil.RootCmd.AddCommand(gatewayCmd)
 	gatewayCmd.AddCommand(gateRunCmd)
-	gatewayCmd.Flags().StringSliceP("file", "f", nil, "Path(s) to katalog.yaml (repeatable)")
+	gatewayCmd.Flags().StringSliceP("file", "f", nil, "Path(s) to catalog.yaml (repeatable)")
 	gatewayCmd.Flags().String("cr", "", "CR file to evaluate (default: cr.yaml)")
-	gateRunCmd.Flags().StringSliceP("file", "f", nil, "Path(s) to katalog.yaml (repeatable)")
+	gateRunCmd.Flags().StringSliceP("file", "f", nil, "Path(s) to catalog.yaml (repeatable)")
 	cmdutil.ShadowGlobalCommandFlags(gatewayCmd)
 	cmdutil.ShadowGlobalCommandFlags(gateRunCmd)
 }

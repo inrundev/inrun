@@ -1,13 +1,13 @@
 # Typed
 
-Go reconcilers compiled into your own `ork` binary. Each example is its own Go
+Go reconcilers compiled into your own `inrun` binary. Each example is its own Go
 module.
 
 | Example | Shows |
 |---------|-------|
-| [hooks](hooks/) | Go hooks alongside a Katalog: YAML for what it covers, Go for the rest |
+| [hooks](hooks/) | Go hooks alongside a Catalog: YAML for what it covers, Go for the rest |
 | [constructor](constructor/) | A full `domain.Reconciler` that owns the loop (a Job state machine) |
-| [controller-runtime](controller-runtime/) | An unchanged controller-runtime `Reconcile` running inside Orkestra |
+| [controller-runtime](controller-runtime/) | An unchanged controller-runtime `Reconcile` running inside Inrun |
 
 Every example builds the same way. First generate the type registry:
 
@@ -15,11 +15,11 @@ Every example builds the same way. First generate the type registry:
 make registry
 ```
 
-Then build an `ork` with the types compiled in:
+Then build an `inrun` with the types compiled in:
 
 ```bash
 make build
 ```
 
-The stock `ork` fails validation for these Katalogs because it has no Go type
+The stock `inrun` fails validation for these Catalogs because it has no Go type
 for the CRD; that is the reason for `make build`.

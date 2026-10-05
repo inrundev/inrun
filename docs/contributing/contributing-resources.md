@@ -1,6 +1,6 @@
 # Contributing to pkg/resources
 
-The registry is the library of built-in Kubernetes resource handlers Orkestra knows how to create, apply (SSA), and delete on behalf of an operator. Each resource type lives in its own subdirectory.
+The registry is the library of built-in Kubernetes resource handlers Inrun knows how to create, apply (SSA), and delete on behalf of an operator. Each resource type lives in its own subdirectory.
 
 ---
 
@@ -87,7 +87,7 @@ func Create(ctx context.Context, kube kubeclient.KubeClient, owner domain.Object
 func Apply(ctx context.Context, kube kubeclient.KubeClient, owner domain.Object, spec ResolvedSpec) error
 func Update(ctx context.Context, kube kubeclient.KubeClient, owner domain.Object, spec ResolvedSpec) error
 func Delete(ctx context.Context, kube kubeclient.KubeClient, owner domain.Object, spec ResolvedSpec) error
-func Resolve(src orktypes.MyResourceSource, ownerName string) ResolvedSpec
+func Resolve(src types.MyResourceSource, ownerName string) ResolvedSpec
 ```
 
 **`Create`** — checks existence, calls the k8s Create API if absent. No-op if the resource already exists. Used for `onCreate:` hooks.
@@ -99,7 +99,7 @@ obj.TypeMeta = metav1.TypeMeta{APIVersion: "apps/v1", Kind: "Deployment"}
 body, _ := json.Marshal(obj)
 kube.Clientset().AppsV1().Deployments(ns).Patch(
     ctx, spec.Name, k8stypes.ApplyPatchType, body,
-    metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: utils.BoolPtr(true)},
+    metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: utils.BoolPtr(true)},
 )
 ```
 
@@ -112,16 +112,16 @@ If the resource has immutable fields (pods, pdbs), catch `errors.IsInvalid` and 
 ### 3. Add a resolver in `template/resolver.go`
 
 ```go
-func (r *Resolver) ResolveMyResourceTemplate(src *orktypes.MyResourceSource) (*myresource.ResolvedSpec, error)
+func (r *Resolver) ResolveMyResourceTemplate(src *types.MyResourceSource) (*myresource.ResolvedSpec, error)
 ```
 
 Use `r.Resolve(expr)` for any field that may contain a `{{ .spec.something }}` expression.
 
 ### 4. Write the runner in `pkg/runtime/runners/`
 
-Create `pkg/runtime/runners/myresources.go` — see [pkg/runners/docs/01-runner-contract.md](https://github.com/orkspace/orkestra/blob/main/pkg/runtime/runners/docs/01-runner-contract.md) for the canonical shape. Then wire it into `pkg/runtime/reconciler/run_template_reconcile.go` via `runners.RunMyResources(...)` and add `expandForEachMyResources` to `run_foreach.go`.
+Create `pkg/runtime/runners/myresources.go` — see [pkg/runners/docs/01-runner-contract.md](https://github.com/inrundev/inrun/blob/main/pkg/runtime/runners/docs/01-runner-contract.md) for the canonical shape. Then wire it into `pkg/runtime/reconciler/run_template_reconcile.go` via `runners.RunMyResources(...)` and add `expandForEachMyResources` to `run_foreach.go`.
 
-The full end-to-end walkthrough is in [pkg/reconciler/docs/07-adding-a-resource.md](https://github.com/orkspace/orkestra/blob/main/pkg/runtime/reconciler/docs/07-adding-a-resource.md).
+The full end-to-end walkthrough is in [pkg/reconciler/docs/07-adding-a-resource.md](https://github.com/inrundev/inrun/blob/main/pkg/runtime/reconciler/docs/07-adding-a-resource.md).
 
 ### 5. Write tests
 

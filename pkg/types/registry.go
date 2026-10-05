@@ -8,20 +8,20 @@ import "strings"
 // A registry source can be Git-based or OCI-based. The source type is
 // determined by the oci field (false by default — git pull).
 //
-// After pulling, Orkestra validates the five required files exist and are
-// non-empty. It then loads either katalog.yaml (default) or komposer.yaml
-// based on useKomposer. Exactly one is loaded — not both.
+// After pulling, Inrun validates the five required files exist and are
+// non-empty. It then loads either catalog.yaml (default) or stack.yaml
+// based on useStack. Exactly one is loaded — not both.
 //
 // Plain string — URL is the entire entry, OCI scheme detected from prefix:
 //
-//   - oci://ghcr.io/orkspace/orkestra-registry/postgres@v14
+//   - oci://ghcr.io/inrundev/registry/postgres@v14
 //   - https://github.com/myorg/registry@main
 //
 // Struct with url field — same URL forms, required when auth or other fields are set:
 //
-//   - url: oci://ghcr.io/orkspace/orkestra-registry/postgres@v14
+//   - url: oci://ghcr.io/inrundev/registry/postgres@v14
 //
-//   - url: ghcr.io/orkspace/orkestra-registry/postgres@v14
+//   - url: ghcr.io/inrundev/registry/postgres@v14
 //     oci: true                                              # equivalent to oci:// prefix
 //
 // Git form:
@@ -29,7 +29,7 @@ import "strings"
 //   - url: https://github.com/myorg/registry
 //     version: main
 //     oci: false      # default
-//     useKomposer: true
+//     useStack: true
 //     auth:
 //       type: github
 //       fromEnv: GITHUB_TOKEN
@@ -47,11 +47,11 @@ import "strings"
 type RegistrySource struct {
 	// URL — the registry URL.
 	//
-	// Git:  https://github.com/myorg/orkestra-registry
-	// OCI:  ghcr.io/orkspace/orkestra-registry/postgres
+	// Git:  https://github.com/myorg/inrun-registry
+	// OCI:  ghcr.io/inrundev/registry/postgres
 	//
 	// Shorthand — embed version with @:
-	//   ghcr.io/orkspace/orkestra-registry/postgres@v14
+	//   ghcr.io/inrundev/registry/postgres@v14
 	//   https://github.com/myorg/registry@main
 	//
 	// When @ is present, Version field is ignored.
@@ -74,36 +74,36 @@ type RegistrySource struct {
 	// Other Git URLs with oci: false use git clone.
 	OCI bool `yaml:"oci,omitempty" json:"oci,omitempty"`
 
-	// UseKomposer — when true, load komposer.yaml from the pulled pattern.
-	// When false (default), load katalog.yaml.
+	// UseStack — when true, load stack.yaml from the pulled pattern.
+	// When false (default), load catalog.yaml.
 	//
 	// Exactly one file is loaded — not both.
 	//
-	// UseKomposer: false (default)
+	// UseStack: false (default)
 	//   Use this when you want the CRD definitions and will override them
-	//   inline in your own Komposer. This is the common case.
+	//   inline in your own Stack. This is the common case.
 	//
-	// UseKomposer: true
+	// UseStack: true
 	//   Use this when you want to accept the upstream operator's full
 	//   source tree as-is — their sources, their defaults, everything.
 	//   Useful for internal teams with a canonical registry where the
-	//   upstream Komposer is exactly what you want to run.
+	//   upstream Stack is exactly what you want to run.
 	//
-	// Warning: loading a Komposer from a registry source means that
-	// Komposer's own sources are also resolved. A Komposer that sources
-	// other Katalogs will pull those too. Understand the upstream
+	// Warning: loading a Stack from a registry source means that
+	// Stack's own sources are also resolved. A Stack that sources
+	// other Catalogs will pull those too. Understand the upstream
 	// dependency tree before enabling this.
-	UseKomposer bool `yaml:"useKomposer,omitempty" json:"useKomposer,omitempty"`
+	UseStack bool `yaml:"useStack,omitempty" json:"useStack,omitempty"`
 
 	// Auth — optional authentication for the registry.
 	// When empty, requests are unauthenticated.
 	// Auth credentials are resolved from environment variables — never literals.
 	Auth *FileSourceAuth `yaml:"auth,omitempty" json:"auth,omitempty"`
 
-	// Katalog — map of katalog names to their version references.
-	// Key: katalog name (directory name under registry/katalogs/).
+	// Catalog — map of catalog names to their version references.
+	// Key: catalog name (directory name under registry/catalogs/).
 	// Value: version reference (branch, sha, or version tag).
-	Katalog map[string]RegistryRef `yaml:"katalog,omitempty" json:"katalog,omitempty"`
+	Catalog map[string]RegistryRef `yaml:"catalog,omitempty" json:"catalog,omitempty"`
 
 	// Future source types (not yet implemented):
 	// Hooks map[string]RegistryRef `yaml:"hooks,omitempty"`
@@ -166,7 +166,7 @@ func (r RegistryRef) IsDefault() bool {
 //	  - oci://ghcr.io/myorg/postgres@v14
 //	  - https://github.com/myorg/registry@main
 //
-// Struct — when auth, useKomposer, or other fields are needed:
+// Struct — when auth, useStack, or other fields are needed:
 //
 //	registry:
 //	  - url: registry.myorg.com/operators/postgres@v14
@@ -246,11 +246,11 @@ func (r RegistrySource) defaultVersion() string {
 	return "main"
 }
 
-// SourceFile returns the filename Orkestra should load after pulling the pattern.
-// Either "katalog.yaml" or "komposer.yaml" — never both.
+// SourceFile returns the filename Inrun should load after pulling the pattern.
+// Either "catalog.yaml" or "stack.yaml" — never both.
 func (r RegistrySource) SourceFile() string {
-	if r.UseKomposer {
-		return "komposer.yaml"
+	if r.UseStack {
+		return "stack.yaml"
 	}
-	return "katalog.yaml"
+	return "catalog.yaml"
 }

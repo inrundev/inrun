@@ -1,11 +1,11 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: envtest-suite
   description: >
     envtest suite — the same scenarios covered by tests/integration/kubeclient and
     tests/integration/informer, expressed as simulate.yaml files.
-    Run with: ork simulate -f simulate.yaml --envtest
+    Run with: inrun simulate -f simulate.yaml --envtest
 
 imports:
   - 01-probe-reconcile/simulate.yaml

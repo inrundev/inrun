@@ -16,12 +16,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/runtime/runners"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/runtime/runners"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -41,9 +41,9 @@ type orderedDeleteEntry struct {
 func (r *Reconciler[PTR]) runOrderedDelete(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	obj domain.Object,
-	t *orktypes.HookTemplates,
+	t *types.HookTemplates,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	log := logger.FromContext(ctx)
@@ -58,7 +58,7 @@ func (r *Reconciler[PTR]) runOrderedDelete(
 	// treat the flat resource fields as a single implicit group.
 	stages := t.Groups
 	if len(stages) == 0 {
-		stages = []orktypes.HookTemplates{*t}
+		stages = []types.HookTemplates{*t}
 	}
 
 	// deadline is shared across all stages — timeout applies to the entire sequence.
@@ -72,7 +72,7 @@ func (r *Reconciler[PTR]) runOrderedDelete(
 		stageLog := sl.Logger()
 		stageLog.Info().Msg("ordered delete: processing stage")
 
-		if !orktypes.EvaluateConditions(resolver.Data(), stage.When, stage.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), stage.When, stage.Or, resolver.TemplateEvaluator()) {
 			stageLog.Debug().Msg("ordered delete: stage conditions not met — skipping")
 			continue
 		}
@@ -103,9 +103,9 @@ func (r *Reconciler[PTR]) runOrderedDelete(
 func (r *Reconciler[PTR]) submitGroupDeletion(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	obj domain.Object,
-	t *orktypes.HookTemplates,
+	t *types.HookTemplates,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) ([]orderedDeleteEntry, error) {
 	ns := obj.GetNamespace()
@@ -168,34 +168,34 @@ type expandedResourceDef struct {
 // expandAllForDelete resolves template source names for every resource type
 // in the HookTemplates block. Only types with entries are included.
 func (r *Reconciler[PTR]) expandAllForDelete(
-	resolver *orktmpl.Resolver,
-	t *orktypes.HookTemplates,
+	resolver *template.Resolver,
+	t *types.HookTemplates,
 ) []expandedResourceDef {
 	var out []expandedResourceDef
 
-	out = append(out, resolveNames(resolver, deploymentGVR, true, t.Deployments, func(s orktypes.DeploymentTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, statefulSetGVR, true, t.StatefulSets, func(s orktypes.StatefulSetTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, replicaSetGVR, true, t.ReplicaSets, func(s orktypes.ReplicaSetTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, podGVR, true, t.Pods, func(s orktypes.PodTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, serviceGVR, true, t.Services, func(s orktypes.ServiceTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, secretGVR, true, t.Secrets, func(s orktypes.SecretTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, configMapGVR, true, t.ConfigMaps, func(s orktypes.ConfigMapTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, serviceAccountGVR, true, t.ServiceAccounts, func(s orktypes.ServiceAccountTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, roleGVR, true, t.Roles, func(s orktypes.RoleTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, roleBindingGVR, true, t.RoleBindings, func(s orktypes.RoleBindingTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, clusterRoleGVR, false, t.ClusterRoles, func(s orktypes.ClusterRoleTemplateSource) (string, string) { return s.Name, "" })...)
-	out = append(out, resolveNames(resolver, clusterRoleBindingGVR, false, t.ClusterRoleBindings, func(s orktypes.ClusterRoleBindingTemplateSource) (string, string) { return s.Name, "" })...)
-	out = append(out, resolveNames(resolver, networkPolicyGVR, true, t.NetworkPolicies, func(s orktypes.NetworkPolicyTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, limitRangeGVR, true, t.LimitRanges, func(s orktypes.LimitRangeTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, resourceQuotaGVR, true, t.ResourceQuotas, func(s orktypes.ResourceQuotaTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, jobGVR, true, t.Jobs, func(s orktypes.JobTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, cronJobGVR, true, t.CronJobs, func(s orktypes.CronJobTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, ingressGVR, true, t.Ingresses, func(s orktypes.IngressTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, pvcGVR, true, t.PersistentVolumeClaims, func(s orktypes.PVCTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, pvGVR, false, t.PersistentVolumes, func(s orktypes.PVTemplateSource) (string, string) { return s.Name, "" })...)
-	out = append(out, resolveNames(resolver, hpaGVR, true, t.HorizontalPodAutoscalers, func(s orktypes.HPATemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, pdbGVR, true, t.PodDisruptionBudgets, func(s orktypes.PDBTemplateSource) (string, string) { return s.Name, s.Namespace })...)
-	out = append(out, resolveNames(resolver, namespaceGVR, false, t.Namespaces, func(s orktypes.NamespaceTemplateSource) (string, string) { return s.Name, "" })...)
+	out = append(out, resolveNames(resolver, deploymentGVR, true, t.Deployments, func(s types.DeploymentTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, statefulSetGVR, true, t.StatefulSets, func(s types.StatefulSetTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, replicaSetGVR, true, t.ReplicaSets, func(s types.ReplicaSetTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, podGVR, true, t.Pods, func(s types.PodTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, serviceGVR, true, t.Services, func(s types.ServiceTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, secretGVR, true, t.Secrets, func(s types.SecretTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, configMapGVR, true, t.ConfigMaps, func(s types.ConfigMapTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, serviceAccountGVR, true, t.ServiceAccounts, func(s types.ServiceAccountTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, roleGVR, true, t.Roles, func(s types.RoleTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, roleBindingGVR, true, t.RoleBindings, func(s types.RoleBindingTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, clusterRoleGVR, false, t.ClusterRoles, func(s types.ClusterRoleTemplateSource) (string, string) { return s.Name, "" })...)
+	out = append(out, resolveNames(resolver, clusterRoleBindingGVR, false, t.ClusterRoleBindings, func(s types.ClusterRoleBindingTemplateSource) (string, string) { return s.Name, "" })...)
+	out = append(out, resolveNames(resolver, networkPolicyGVR, true, t.NetworkPolicies, func(s types.NetworkPolicyTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, limitRangeGVR, true, t.LimitRanges, func(s types.LimitRangeTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, resourceQuotaGVR, true, t.ResourceQuotas, func(s types.ResourceQuotaTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, jobGVR, true, t.Jobs, func(s types.JobTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, cronJobGVR, true, t.CronJobs, func(s types.CronJobTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, ingressGVR, true, t.Ingresses, func(s types.IngressTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, pvcGVR, true, t.PersistentVolumeClaims, func(s types.PVCTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, pvGVR, false, t.PersistentVolumes, func(s types.PVTemplateSource) (string, string) { return s.Name, "" })...)
+	out = append(out, resolveNames(resolver, hpaGVR, true, t.HorizontalPodAutoscalers, func(s types.HPATemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, pdbGVR, true, t.PodDisruptionBudgets, func(s types.PDBTemplateSource) (string, string) { return s.Name, s.Namespace })...)
+	out = append(out, resolveNames(resolver, namespaceGVR, false, t.Namespaces, func(s types.NamespaceTemplateSource) (string, string) { return s.Name, "" })...)
 
 	return out
 }
@@ -203,7 +203,7 @@ func (r *Reconciler[PTR]) expandAllForDelete(
 // resolveNames is a generic helper that resolves template source names via
 // the resolver and returns an expandedResourceDef when any names are found.
 func resolveNames[S any](
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	gvr schema.GroupVersionResource,
 	namespaced bool,
 	sources []S,

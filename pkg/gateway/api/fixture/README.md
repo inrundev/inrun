@@ -17,8 +17,8 @@ conditional admission rules, type-specific child resources, and status projectio
 
 | Feature | Where |
 |---------|-------|
-| Gateway API (`POST /api/v1/apply`) | `katalog.yaml` → `gateway.api` |
-| Schema catalog endpoint (`GET /api/v1/schema/`) | `katalog.yaml` → `serve.category` / `serve.description` |
+| Gateway API (`POST /api/v1/apply`) | `catalog.yaml` → `gateway.api` |
+| Schema catalog endpoint (`GET /api/v1/schema/`) | `catalog.yaml` → `serve.category` / `serve.description` |
 | Admission webhook — unconditional deny | `admission/platformresource.yaml` rules 1–3 |
 | Admission webhook — `deny when:` | `admission/platformresource.yaml` rule 4 (domain for cert) |
 | Admission webhook — `deny or:` | `admission/platformresource.yaml` rule 5 (repoURL for app/monitoring) |
@@ -28,10 +28,10 @@ conditional admission rules, type-specific child resources, and status projectio
 | Conditional field visibility (`serve.fields.when`) | `serve/platformresource.yaml` |
 | Conditional field visibility (`serve.fields.or`) | `serve/platformresource.yaml` |
 | Disabled/locked fields (`serve.fields.disabled`) | `serve/platformresource.yaml` |
-| `ignore` — hide system fields from form | `katalog.yaml` → `serve.ignore` |
+| `ignore` — hide system fields from form | `catalog.yaml` → `serve.ignore` |
 | CRD schema defaults pre-populating form inputs | `crd.yaml` |
 | `dryRun=true` — violation preview without admission | `e2e.yaml` |
-| Conditional child resource (`when:`) | `katalog.yaml` → `onReconcile.custom` |
+| Conditional child resource (`when:`) | `catalog.yaml` → `onReconcile.custom` |
 | Status field projection | `status/platformresource.yaml` |
 
 ## Running
@@ -39,13 +39,13 @@ conditional admission rules, type-specific child resources, and status projectio
 ### Step 1 — build
 
 ```bash
-make ork
+make inrun
 ```
 
 ### Step 2 — validate
 
 ```bash
-ork validate -f pkg/gateway/fixture/katalog.yaml
+inrun validate -f pkg/gateway/fixture/catalog.yaml
 ```
 
 This exercises `StrictUnmarshal` on all included sub-files — typos in field names
@@ -54,7 +54,7 @@ surface here, before any cluster is involved.
 ### Step 3 — simulate
 
 ```bash
-ork simulate -f pkg/gateway/fixture/simulate.yaml
+inrun simulate -f pkg/gateway/fixture/simulate.yaml
 ```
 
 Simulate runs the reconciler in-memory against a fake API server — no cluster needed.
@@ -65,11 +65,11 @@ Simulate runs the reconciler in-memory against a fake API server — no cluster 
 ### Step 4 — full cluster e2e
 
 ```bash
-ork e2e -f pkg/gateway/fixture/e2e.yaml
+inrun e2e -f pkg/gateway/fixture/e2e.yaml
 ```
 
-`ork e2e` provisions a kind cluster, installs Orkestra via `helm upgrade --install`
-with `charts/orkestra`, applies `setup.yaml` (namespaces), installs ArgoCD,
+`inrun e2e` provisions a kind cluster, installs Inrun via `helm upgrade --install`
+with `charts/inrun`, applies `setup.yaml` (namespaces), installs ArgoCD,
 applies the CRD and CR, runs all assertions, and tears down. Assertions include:
 
 - `PlatformResource` accepted and reaches `Ready`
@@ -80,7 +80,7 @@ applies the CRD and CR, runs all assertions, and tears down. Assertions include:
 To iterate against an existing cluster without reprovisioning:
 
 ```bash
-ork e2e -f pkg/gateway/fixture/e2e.yaml --use-current
+inrun e2e -f pkg/gateway/fixture/e2e.yaml --use-current
 ```
 
 For manual runs against an existing cluster, apply the namespaces first:
@@ -102,14 +102,14 @@ Verify the housekeeper detects and recreates a deleted Gateway API token secret.
 Deploy the fixture against a running cluster first:
 
 ```bash
-ork generate bundle | kubectl apply -f -
+inrun generate bundle | kubectl apply -f -
 
-helm upgrade --install orkestra ~/orkestra/charts/orkestra \
-  --values ~/orkestra/unknown/values.yaml \
-  --namespace orkestra-system \
+helm upgrade --install inrun ~/inrun/charts/inrun \
+  --values ~/inrun/unknown/values.yaml \
+  --namespace inrun-system \
   --create-namespace \
   --set gateway.enabled=true \
-  --set controlCenter.gatewayToken.secretRef.name=ork-apply-token \
+  --set console.gatewayToken.secretRef.name=inrun-apply-token \
   --wait --timeout 120s
 ```
 
@@ -117,12 +117,12 @@ Then delete the token secret — the housekeeper should recreate it within one s
 ticker interval (default 30 s) with a fresh token value:
 
 ```bash
-kubectl get secret ork-apply-token -n orkestra-system \
+kubectl get secret inrun-apply-token -n inrun-system \
   -o jsonpath='{.data.token}' | base64 -d && echo
 
-kubectl delete secret ork-apply-token -n orkestra-system
+kubectl delete secret inrun-apply-token -n inrun-system
 
-kubectl get secret ork-apply-token -n orkestra-system
+kubectl get secret inrun-apply-token -n inrun-system
 ```
 
 The gateway logs will show:
@@ -135,7 +135,7 @@ housekeeper: gateway API tokens reloaded
 After recreation the token value is new — compare it against the one captured above:
 
 ```bash
-kubectl get secret ork-apply-token -n orkestra-system \
+kubectl get secret inrun-apply-token -n inrun-system \
   -o jsonpath='{.data.token}' | base64 -d
 ```
 
@@ -176,7 +176,7 @@ See [crs/README.md](./crs/README.md) for the full rule matrix.
 
 ```text
 pkg/gateway/fixture/
-  katalog.yaml                 — entry point: gateway + CRD + operator config
+  catalog.yaml                 — entry point: gateway + CRD + operator config
   crd.yaml                     — PlatformResource CRD (schema + defaults)
   cr-default.yaml              — default happy-path CR (payments-api, app workload)
   cr-rejected.yaml             — CR that should be blocked by admission
@@ -192,9 +192,9 @@ pkg/gateway/fixture/
 ## Adding a new feature
 
 1. Add the feature to the appropriate sub-file (`serve/`, `admission/`, `status/`),
-   or extend `katalog.yaml` directly for gateway-level config.
+   or extend `catalog.yaml` directly for gateway-level config.
 2. Add a row to the table above.
 3. If it is an admission rule, add a CR to `crs/` and a row to `crs/README.md`.
 4. If it changes reconciler behaviour, add a `simulate` op to `simulate.yaml`.
 5. Add an e2e assertion to `e2e.yaml`.
-6. Run `ork validate` then `ork simulate` locally before opening the PR.
+6. Run `inrun validate` then `inrun simulate` locally before opening the PR.

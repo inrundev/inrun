@@ -4,7 +4,7 @@ package statefulsets
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ResolvedVolumeClaimTemplate is one resolved PVC template for a StatefulSet.
@@ -33,9 +33,9 @@ type ResolvedStatefulSetSpec struct {
 	Labels      map[string]string
 	Annotations map[string]string
 
-	Env       []orktypes.EnvVar
-	EnvFrom   *orktypes.EnvFrom
-	Resources *orktypes.ResourceRequirements
+	Env       []types.EnvVar
+	EnvFrom   *types.EnvFrom
+	Resources *types.ResourceRequirements
 
 	// NodeSelector is a selector which must be true for the pod to fit on a node.
 	// Selector which must match a node's labels for the pod to be scheduled on that node.
@@ -57,23 +57,23 @@ type ResolvedStatefulSetSpec struct {
 	VolumeClaimRetentionPolicy VolumeClaimRetentionPolicy
 
 	// Probes — startup, liveness, and readiness probe configuration.
-	Probes *orktypes.ProbesConfig
+	Probes *types.ProbesConfig
 
 	// SecurityContext — container-level security settings.
-	SecurityContext *orktypes.ContainerSecurityContext
+	SecurityContext *types.ContainerSecurityContext
 
 	// PodSecurity — pod-level security settings.
-	PodSecurity *orktypes.PodSecurityContext
+	PodSecurity *types.PodSecurityContext
 
 	// Profiles — user-defined profile registry for runtime profile resolution.
-	Profiles *orktypes.ProfileRegistry
+	Profiles *types.ProfileRegistry
 
-	// RollingUpdate — resolved rolling update strategy. nil uses OnDelete (Orkestra default).
-	RollingUpdate *orktypes.RollingUpdateBehavior
+	// RollingUpdate — resolved rolling update strategy. nil uses OnDelete (Inrun default).
+	RollingUpdate *types.RollingUpdateBehavior
 
 	// Volumes / VolumeMounts — pod volumes and container mounts.
-	Volumes      []orktypes.VolumeSource
-	VolumeMounts []orktypes.VolumeMount
+	Volumes      []types.VolumeSource
+	VolumeMounts []types.VolumeMount
 
 	// Sleep injects an artificial delay into the reconcile of this resource.
 	// Useful for autoscale testing, latency simulation, and chaos engineering.

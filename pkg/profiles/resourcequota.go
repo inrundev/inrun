@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ResourceQuotaProfile is a named namespace resource quota preset.
@@ -25,7 +25,7 @@ type ResourceQuotaLimits struct {
 // ApplyResourceQuotaProfile expands a named quota profile into a hard limits map.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyResourceQuotaProfile(name string, reg *orktypes.ProfileRegistry) (*ResourceQuotaLimits, error) {
+func ApplyResourceQuotaProfile(name string, reg *types.ProfileRegistry) (*ResourceQuotaLimits, error) {
 	if reg != nil {
 		if def, found := reg.LookupResourceQuota(name); found {
 			return &ResourceQuotaLimits{Hard: def.Hard}, nil

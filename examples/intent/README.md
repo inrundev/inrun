@@ -9,10 +9,10 @@ or `spec`.
 
 ### List the tokens
 
-The tokens the gateway accepts, declared in `katalog.yaml`.
+The tokens the gateway accepts, declared in `catalog.yaml`.
 
 ```bash
-ork token list
+inrun token list
 ```
 
 ### Play the intent
@@ -21,7 +21,7 @@ Runs the intent through the gateway's stages (target, token, CR construction,
 admission, response) and prints the CR it becomes.
 
 ```bash
-ork serve play -i intent.json --token dev
+inrun serve play -i intent.json --token dev
 ```
 
 ### Hand off to simulate
@@ -30,7 +30,7 @@ Builds the CR the same way, then reconciles it against an in-memory cluster
 and checks the result against `test/simulate.yaml`.
 
 ```bash
-ork serve play -i intent.json --token dev --simulate=test/simulate.yaml
+inrun serve play -i intent.json --token dev --simulate=test/simulate.yaml
 ```
 
 ## On a cluster
@@ -48,7 +48,7 @@ export INTENT_TOKEN=dev-token
 Applies the CRD and reconciles.
 
 ```bash
-ork run -f katalog.yaml
+inrun -f catalog.yaml
 ```
 
 ### 3. Start the gateway
@@ -57,7 +57,7 @@ In a second terminal, with the same `INTENT_TOKEN`. The runtime uses :8080 and
 the console :8081.
 
 ```bash
-ORK_PORT=8082 ork gate run -f katalog.yaml
+INRUN_PORT=8082 inrun gate run -f catalog.yaml
 ```
 
 ### 4. Send the intent
@@ -75,7 +75,7 @@ curl -s -X POST localhost:8082/api/v1/apply \
 The CLI can send the same intent:
 
 ```bash
-ork serve apply -f intent.json -a http://localhost:8082 -t $INTENT_TOKEN
+inrun serve apply -f intent.json -a http://localhost:8082 -t $INTENT_TOKEN
 ```
 
 ### 5. Read the view
@@ -101,5 +101,5 @@ chmod +x cleanup.sh && ./cleanup.sh
 Runs the whole loop in a kind cluster: sends the intent to the in-cluster gateway, reads the view back, and deletes through the gateway.
 
 ```bash
-ork e2e
+inrun e2e
 ```

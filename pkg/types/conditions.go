@@ -141,19 +141,19 @@ type Condition struct {
 	// Source is the HTTP fallback for cross-binary metric observation.
 	// Only used when field is a cross.<crd>.metrics.* field and the CRD
 	// is not registered in GlobalCrossMetricsRegistry (different binary).
-	// The endpoint must be the remote operator's /katalog/{crd} URL.
+	// The endpoint must be the remote operator's /catalog/{crd} URL.
 	//
 	//   when:
 	//     - field: cross.managed-database.metrics.queueDepth
 	//       greaterThan: "500"
 	//       source:
-	//         host: "http://orkestra-database-operator:8080"
+	//         host: "http://inrun-database-operator:8080"
 	// 		   crd: managed-database
 	//   when:
 	//     - field: cross.managed-database.metrics.queueDepth
 	//       greaterThan: "500"
 	//       source:
-	//         endpoint: "http://non-orkestra-database-operator:8080/api/managed-database/metrics"
+	//         endpoint: "http://non-inrun-database-operator:8080/api/managed-database/metrics"
 	Source *CrossSource `yaml:"source,omitempty" json:"source,omitempty"`
 }
 
@@ -326,7 +326,7 @@ var knownConditionOperators = map[ConditionOperator]bool{
 // IsValidConditionOperator reports whether op is one of the known operators
 // evaluated by EvaluateValidationRule / EvaluateOneCond. An unrecognized
 // operator string is silently skipped by both evaluators (the rule always
-// passes) rather than erroring — this is what katalog-load-time validation
+// passes) rather than erroring — this is what catalog-load-time validation
 // should reject instead of letting through. Empty is not valid here; check
 // for that separately since it means "no explicit operator", not "unknown
 // operator" (a shorthand field or the exists-default may still apply).

@@ -7,17 +7,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	apigateway "github.com/orkspace/orkestra/pkg/gateway/api"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/validate"
-	"github.com/orkspace/orkestra/pkg/tools/cluster"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/validate"
+	apigateway "github.com/inrundev/inrun/pkg/gateway/api"
+	"github.com/inrundev/inrun/pkg/tools/cluster"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/spf13/cobra"
 )
 
-// ── ork clusters ──────────────────────────────────────────────────────────────
+// ── inrun clusters ──────────────────────────────────────────────────────────────
 
 var clustersCmd = &cobra.Command{
 	Use:   "clusters",
@@ -25,9 +25,9 @@ var clustersCmd = &cobra.Command{
 	Long: `List all clusters registered in gateway.clusters.
 
 Shows the name, endpoint, and credential form for each cluster.
-Reads the katalog from the current directory or --file.`,
+Reads the catalog from the current directory or --file.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
@@ -35,7 +35,7 @@ Reads the katalog from the current directory or --file.`,
 	},
 }
 
-func runClustersList(k *katalog.Katalog) error {
+func runClustersList(k *catalog.Catalog) error {
 	fmt.Println()
 
 	if !k.IsGatewayEnabled() {
@@ -64,14 +64,14 @@ func runClustersList(k *katalog.Katalog) error {
 	return nil
 }
 
-// ── ork clusters validate ─────────────────────────────────────────────────────
+// ── inrun clusters validate ─────────────────────────────────────────────────────
 
 var clustersValidateCmd = &cobra.Command{
 	Use:   "validate",
 	Short: "Validate gateway.clusters configuration offline",
-	Long: `Validate the gateway.clusters block in the katalog.
+	Long: `Validate the gateway.clusters block in the catalog.
 
-Reads the katalog and checks each cluster entry for structural validity:
+Reads the catalog and checks each cluster entry for structural validity:
 endpoint required, exactly one credential form, required secret refs present.
 
 Also verifies that every static serve.cluster and target.cluster reference
@@ -82,7 +82,7 @@ With --full, also reports which CRDs route to each cluster.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		full, _ := cmd.Flags().GetBool("full")
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
@@ -91,9 +91,9 @@ With --full, also reports which CRDs route to each cluster.`,
 	},
 }
 
-func runClustersValidate(k *katalog.Katalog, full bool) error {
+func runClustersValidate(k *catalog.Catalog, full bool) error {
 	fmt.Println()
-	fmt.Printf("%s  ork clusters validate\n", cmdutil.Bold("⎈"))
+	fmt.Printf("%s  inrun clusters validate\n", cmdutil.Bold("⎈"))
 	fmt.Println()
 
 	if !k.IsGatewayEnabled() {
@@ -139,19 +139,19 @@ func runClustersValidate(k *katalog.Katalog, full bool) error {
 	return nil
 }
 
-// ── ork clusters check ────────────────────────────────────────────────────────
+// ── inrun clusters check ────────────────────────────────────────────────────────
 
 var clustersCheckCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Connect to each registered cluster and verify CRD presence",
 	Long: `Go online: read each cluster's credential secret from the management
-cluster, connect to the remote cluster, verify the katalog's CRDs are installed,
+cluster, connect to the remote cluster, verify the catalog's CRDs are installed,
 and report pass / unreachable / missing-CRD per cluster.
 
 Uses the current kubectl context to reach the management cluster.
 Pass --context <ctx> to use a specific context instead.
 
-With --config <file>, skips the katalog entirely and checks connectivity only
+With --config <file>, skips the catalog entirely and checks connectivity only
 for each cluster listed in the bootstrap config file. Use this to verify
 contexts are reachable before bootstrapping them.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -167,7 +167,7 @@ contexts are reachable before bootstrapping them.`,
 			return runClustersCheck(cmd.Context(), nil, clusters, clusterCtx)
 		}
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
@@ -181,7 +181,7 @@ contexts are reachable before bootstrapping them.`,
 		// Filter to requested subset when --clusters is set.
 		clusters := all
 		if clustersRaw != "" {
-			selected := map[string]orktypes.GatewayClusterConfig{}
+			selected := map[string]types.GatewayClusterConfig{}
 			for _, name := range strings.Split(clustersRaw, ",") {
 				name = strings.TrimSpace(name)
 				cfg, ok := all[name]
@@ -197,9 +197,9 @@ contexts are reachable before bootstrapping them.`,
 	},
 }
 
-func runClustersCheck(ctx context.Context, k *katalog.Katalog, clusters map[string]orktypes.GatewayClusterConfig, clusterCtx string) error {
+func runClustersCheck(ctx context.Context, k *catalog.Catalog, clusters map[string]types.GatewayClusterConfig, clusterCtx string) error {
 	fmt.Println()
-	fmt.Printf("%s  ork clusters check\n", cmdutil.Bold("⎈"))
+	fmt.Printf("%s  inrun clusters check\n", cmdutil.Bold("⎈"))
 	fmt.Println()
 
 	localKube, err := cluster.LocalClient(ctx, clusterCtx)
@@ -252,7 +252,7 @@ func runClustersCheck(ctx context.Context, k *katalog.Katalog, clusters map[stri
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-func printClusterValidation(name string, cfg orktypes.GatewayClusterConfig, refs []string, full bool) bool {
+func printClusterValidation(name string, cfg types.GatewayClusterConfig, refs []string, full bool) bool {
 	fmt.Printf("  %s  %s\n", cmdutil.Cyan("→"), cmdutil.Bold(name))
 	ok := true
 
@@ -294,7 +294,7 @@ func printClusterValidation(name string, cfg orktypes.GatewayClusterConfig, refs
 	return ok
 }
 
-func credentialSummary(cfg orktypes.GatewayClusterConfig) string {
+func credentialSummary(cfg types.GatewayClusterConfig) string {
 	switch cfg.CredentialForm() {
 	case "kubeconfig":
 		return fmt.Sprintf("kubeconfig  secretRef: %s[%s]", cfg.SecretRef.SecretName(), cfg.SecretRef.SecretKey())
@@ -308,20 +308,20 @@ func credentialSummary(cfg orktypes.GatewayClusterConfig) string {
 	}
 }
 
-func buildClusterRefIndex(k *katalog.Katalog) map[string][]string {
+func buildClusterRefIndex(k *catalog.Catalog) map[string][]string {
 	idx := map[string][]string{}
 	for crdName, entry := range k.EnabledCRDs() {
 		if entry.Serve == nil {
 			continue
 		}
 		for _, v := range entry.Serve.Clusters {
-			if !orktypes.IsTemplate(v) {
+			if !types.IsTemplate(v) {
 				idx[v] = append(idx[v], crdName+".serve.clusters")
 			}
 		}
 		for targetName, target := range entry.Serve.Target.Entries {
 			for _, v := range target.TargetClusters() {
-				if !orktypes.IsTemplate(v) {
+				if !types.IsTemplate(v) {
 					idx[v] = append(idx[v], fmt.Sprintf("%s.serve.target.%s.clusters", crdName, targetName))
 				}
 			}
@@ -334,7 +334,7 @@ func init() {
 	clustersValidateCmd.Flags().Bool("full", false, "Show CRD routing references per cluster")
 	clustersCheckCmd.Flags().String("context", "", "kubectl context for reading credential secrets (defaults to current context)")
 	clustersCheckCmd.Flags().String("clusters", "", "comma-separated list of cluster names to check (default: all registered clusters)")
-	clustersCheckCmd.Flags().String("config", "", "path to a cluster-config.yaml to check connectivity without a katalog")
+	clustersCheckCmd.Flags().String("config", "", "path to a cluster-config.yaml to check connectivity without a catalog")
 
 	clustersCmd.AddCommand(clustersValidateCmd)
 	clustersCmd.AddCommand(clustersCheckCmd)

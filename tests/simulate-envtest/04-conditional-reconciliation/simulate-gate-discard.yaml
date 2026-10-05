@@ -1,13 +1,13 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: gate-discard
   description: >
-    spec.enabled: false — kordinator discards the item, reconciler never called.
+    spec.enabled: false — coordinator discards the item, reconciler never called.
     No Deployment is created. Loop reaches steady state cleanly.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./cr-disabled.yaml
   cycles: 5

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/intent"
-	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/intent"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
 )
@@ -19,7 +19,7 @@ import (
 const outsidePodNamespace = "default"
 
 // effectiveOperatorBox returns the effective operatorBox for a given CR.
-func effectiveOperatorBox(entry orktypes.CRDEntry, cr *unstructured.Unstructured, target string) *orktypes.OperatorBoxConfig {
+func effectiveOperatorBox(entry types.CRDEntry, cr *unstructured.Unstructured, target string) *types.OperatorBoxConfig {
 	if target != "" {
 		return entry.EffectiveOperatorBox(target)
 	}
@@ -89,21 +89,21 @@ func extractMetaName(body []byte) string {
 
 // seedManagedMeta pre-populates managed labels and annotations on the CR so the
 // reconciler's idempotency guards skip those patches in every cycle.
-func seedManagedMeta(cr *unstructured.Unstructured, katalogName string) {
-	labels := cr.GetLabels()
-	if labels == nil {
-		labels = map[string]string{}
+func seedManagedMeta(cr *unstructured.Unstructured, catalogName string) {
+	lbls := cr.GetLabels()
+	if lbls == nil {
+		lbls = map[string]string{}
 	}
-	labels[orklabels.ManagedKey] = orklabels.ManagedValue
-	labels[orklabels.DeletionProtectionLabel] = orklabels.DeletionProtectionValue
-	cr.SetLabels(labels)
+	lbls[labels.ManagedKey] = labels.ManagedValue
+	lbls[labels.DeletionProtectionLabel] = labels.DeletionProtectionValue
+	cr.SetLabels(lbls)
 
 	ann := cr.GetAnnotations()
 	if ann == nil {
 		ann = map[string]string{}
 	}
-	ann[orklabels.AnnotationManagedBy] = katalogName
-	ann[orklabels.AnnotationManagedSince] = time.Now().UTC().Format(time.RFC3339)
+	ann[labels.AnnotationManagedBy] = catalogName
+	ann[labels.AnnotationManagedSince] = time.Now().UTC().Format(time.RFC3339)
 	cr.SetAnnotations(ann)
 }
 

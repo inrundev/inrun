@@ -35,24 +35,24 @@ func ExpandExternalCalls(calls []ExternalCallSpec, baseDir string) ([]ExternalCa
 	return expanded, nil
 }
 
-func PopulateExternalCallsFromInclude(entry *CRDEntry, katalogDir string) error {
+func PopulateExternalCallsFromInclude(entry *CRDEntry, catalogDir string) error {
 	var err error
 	box := entry.OperatorBox
 
 	if box.PreReconcile != nil {
 		pr := box.PreReconcile
-		pr.External, err = ExpandExternalCalls(box.PreReconcile.External, katalogDir)
+		pr.External, err = ExpandExternalCalls(box.PreReconcile.External, catalogDir)
 		if err != nil {
 			return fmt.Errorf("preReconcile.external: %w", err)
 		}
 		if pr.HasEnqueueGate() {
-			pr.EnqueueGate.External, err = ExpandExternalCalls(pr.EnqueueGate.External, katalogDir)
+			pr.EnqueueGate.External, err = ExpandExternalCalls(pr.EnqueueGate.External, catalogDir)
 			if err != nil {
 				return fmt.Errorf("preReconcile.enqueueGate.external: %w", err)
 			}
 		}
 		if pr.HasReconcileGate() {
-			pr.ReconcileGate.External, err = ExpandExternalCalls(pr.ReconcileGate.External, katalogDir)
+			pr.ReconcileGate.External, err = ExpandExternalCalls(pr.ReconcileGate.External, catalogDir)
 			if err != nil {
 				return fmt.Errorf("preReconcile.reconcileGate.external: %w", err)
 			}
@@ -60,31 +60,31 @@ func PopulateExternalCallsFromInclude(entry *CRDEntry, katalogDir string) error 
 	}
 
 	if box.EffectiveOnReconcile() != nil {
-		box.EffectiveOnReconcile().External, err = ExpandExternalCalls(box.EffectiveOnReconcile().External, katalogDir)
+		box.EffectiveOnReconcile().External, err = ExpandExternalCalls(box.EffectiveOnReconcile().External, catalogDir)
 		if err != nil {
 			return fmt.Errorf("onReconcile.external: %w", err)
 		}
 	}
 	if box.EffectiveOnCreate() != nil {
-		box.EffectiveOnCreate().External, err = ExpandExternalCalls(box.EffectiveOnCreate().External, katalogDir)
+		box.EffectiveOnCreate().External, err = ExpandExternalCalls(box.EffectiveOnCreate().External, catalogDir)
 		if err != nil {
 			return fmt.Errorf("onCreate.external: %w", err)
 		}
 	}
 	if r := box.Reconcile; r != nil && r.Hooks != nil {
-		r.Hooks.External, err = ExpandExternalCalls(r.Hooks.External, katalogDir)
+		r.Hooks.External, err = ExpandExternalCalls(r.Hooks.External, catalogDir)
 		if err != nil {
 			return fmt.Errorf("hooks.external: %w", err)
 		}
 	}
 	if entry.Admission != nil && entry.Admission.Validation != nil {
-		entry.Admission.Validation.External, err = ExpandExternalCalls(entry.Admission.Validation.External, katalogDir)
+		entry.Admission.Validation.External, err = ExpandExternalCalls(entry.Admission.Validation.External, catalogDir)
 		if err != nil {
 			return fmt.Errorf("validation.external: %w", err)
 		}
 	}
 	if entry.Admission != nil && entry.Admission.Mutation != nil {
-		entry.Admission.Mutation.External, err = ExpandExternalCalls(entry.Admission.Mutation.External, katalogDir)
+		entry.Admission.Mutation.External, err = ExpandExternalCalls(entry.Admission.Mutation.External, catalogDir)
 		if err != nil {
 			return fmt.Errorf("mutation.external: %w", err)
 		}

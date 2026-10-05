@@ -2,33 +2,28 @@ package cmdutil
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 var (
-	Kfg *konfig.Konfig
+	Kfg *config.Config
 	Ctx context.Context
 )
 
 var RootCmd = &cobra.Command{
-	Use:   "ork",
-	Short: "Orkestra — Kubernetes for Everyone",
-	Long: fmt.Sprintf(`
-%s
-Orkestra — Kubernetes for Everyone
-Kompose. Konduct. OrKestrate.
-`, utils.OrkestraLogoCLI),
+	Use:   "inrun",
+	Short: "Inrun runs intents on Kubernetes",
+	Long:  "Inrun runs intents on Kubernetes: callers send intents through the gateway,\nreconcilers turn them into resources, and the result comes back as a view.",
 }
 
-func Execute(k *konfig.Konfig, c context.Context) {
+func Execute(k *config.Config, c context.Context) {
 	Kfg = k
 	Ctx = c
 
@@ -48,7 +43,7 @@ func init() {
 
 	// Global flags — always present in both runtime and dev builds
 	RootCmd.PersistentFlags().Bool("debug", false, "Enable debug logging")
-	RootCmd.PersistentFlags().StringSliceP("file", "f", nil, "Path(s) or URL(s) to katalog.yaml (repeatable)")
+	RootCmd.PersistentFlags().StringSliceP("file", "f", nil, "Path(s) or URL(s) to catalog.yaml (repeatable)")
 	// Dev-only flags (--kubeconfig, --verbose) and required-flag marking for
 	// dev commands are registered in root_dev.go (//go:build !runtime).
 }
@@ -61,9 +56,9 @@ func initConfig() {
 	// Resolve kubeconfig path (flag > env > ~/.kube/config > in‑cluster)
 	kubeconfig := resolveKubeconfig(RootCmd)
 
-	// Persist resolved values into global Konfig
+	// Persist resolved values into global Config
 	if Kfg != nil {
-		Kfg.Cluster().SetKubekonfigPath(kubeconfig)
+		Kfg.Cluster().SetKubeconfigPath(kubeconfig)
 	}
 }
 
@@ -74,7 +69,7 @@ func resolveKubeconfig(cmd *cobra.Command) string {
 		return flagVal
 	}
 
-	if envVal := Kfg.Cluster().KubekonfigPath(); envVal != "" {
+	if envVal := Kfg.Cluster().KubeconfigPath(); envVal != "" {
 		return envVal
 	}
 	if home, err := os.UserHomeDir(); err == nil {
@@ -94,7 +89,7 @@ func resolveLogLevel(cmd *cobra.Command) string {
 		return "debug"
 	}
 
-	if envVal := Kfg.Ork().LogLevel(); envVal != "" {
+	if envVal := Kfg.Inrun().LogLevel(); envVal != "" {
 		return envVal
 	}
 

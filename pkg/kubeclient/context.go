@@ -15,7 +15,7 @@ type contextKey string
 // Usage — retrieve in hook/registry functions:
 //
 //	kube, ok := kubeclient.FromContext(ctx)
-const ContextKey contextKey = "orkestra-kubeclient"
+const ContextKey contextKey = "inrun-kubeclient"
 
 // WithKubeclient returns a new context with the Interface stored under ContextKey.
 // Called in generic.Reconciler.Reconcile before invoking hook and registry functions.

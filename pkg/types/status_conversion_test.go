@@ -4,49 +4,49 @@ package types_test
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
 // ── StatusConfig.ConditionsEnabled ───────────────────────────────────────────
 
 func TestStatusConfig_ConditionsEnabled_Nil(t *testing.T) {
-	var s *orktypes.StatusConfig
+	var s *types.StatusConfig
 	assert.True(t, s.ConditionsEnabled())
 }
 
 func TestStatusConfig_ConditionsEnabled_NilField(t *testing.T) {
-	s := &orktypes.StatusConfig{}
+	s := &types.StatusConfig{}
 	assert.True(t, s.ConditionsEnabled())
 }
 
 func TestStatusConfig_ConditionsEnabled_ExplicitTrue(t *testing.T) {
 	t_ := true
-	s := &orktypes.StatusConfig{Conditions: &t_}
+	s := &types.StatusConfig{Conditions: &t_}
 	assert.True(t, s.ConditionsEnabled())
 }
 
 func TestStatusConfig_ConditionsEnabled_ExplicitFalse(t *testing.T) {
 	f := false
-	s := &orktypes.StatusConfig{Conditions: &f}
+	s := &types.StatusConfig{Conditions: &f}
 	assert.False(t, s.ConditionsEnabled())
 }
 
 // ── StatusConfig.HasFields ────────────────────────────────────────────────────
 
 func TestStatusConfig_HasFields_Nil(t *testing.T) {
-	var s *orktypes.StatusConfig
+	var s *types.StatusConfig
 	assert.False(t, s.HasFields())
 }
 
 func TestStatusConfig_HasFields_Empty(t *testing.T) {
-	s := &orktypes.StatusConfig{}
+	s := &types.StatusConfig{}
 	assert.False(t, s.HasFields())
 }
 
 func TestStatusConfig_HasFields_WithFields(t *testing.T) {
-	s := &orktypes.StatusConfig{
-		Fields: []orktypes.StatusFieldSpec{{Path: "phase", Value: "Running"}},
+	s := &types.StatusConfig{
+		Fields: []types.StatusFieldSpec{{Path: "phase", Value: "Running"}},
 	}
 	assert.True(t, s.HasFields())
 }
@@ -54,8 +54,8 @@ func TestStatusConfig_HasFields_WithFields(t *testing.T) {
 // ── ConversionRules.FindPath ──────────────────────────────────────────────────
 
 func TestConversionRules_FindPath_Found(t *testing.T) {
-	rules := orktypes.ConversionRules{
-		Paths: []orktypes.ConversionPath{
+	rules := types.ConversionRules{
+		Paths: []types.ConversionPath{
 			{From: "v1", To: "v2"},
 			{From: "v2", To: "v3"},
 		},
@@ -67,8 +67,8 @@ func TestConversionRules_FindPath_Found(t *testing.T) {
 }
 
 func TestConversionRules_FindPath_NotFound(t *testing.T) {
-	rules := orktypes.ConversionRules{
-		Paths: []orktypes.ConversionPath{
+	rules := types.ConversionRules{
+		Paths: []types.ConversionPath{
 			{From: "v1", To: "v2"},
 		},
 	}
@@ -77,13 +77,13 @@ func TestConversionRules_FindPath_NotFound(t *testing.T) {
 }
 
 func TestConversionRules_FindPath_Empty(t *testing.T) {
-	rules := orktypes.ConversionRules{}
+	rules := types.ConversionRules{}
 	assert.Nil(t, rules.FindPath("v1", "v2"))
 }
 
 func TestConversionRules_FindPath_ReturnsPointerToSliceElement(t *testing.T) {
-	rules := orktypes.ConversionRules{
-		Paths: []orktypes.ConversionPath{
+	rules := types.ConversionRules{
+		Paths: []types.ConversionPath{
 			{From: "v1", To: "v2"},
 		},
 	}

@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/registry/simulate"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/registry/simulate"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -21,40 +21,40 @@ import (
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-// newKat builds a minimal *katalog.Katalog with one serve-enabled CRD
+// newKat builds a minimal *catalog.Catalog with one serve-enabled CRD
 // so handler tests have a real lookup target without a cluster.
-func newKat(entries map[string]*orktypes.CRDEntry) *katalog.Katalog {
-	return katalog.NewFromEntryPointers(entries)
+func newKat(entries map[string]*types.CRDEntry) *catalog.Catalog {
+	return catalog.NewFromEntryPointers(entries)
 }
 
 // appCRD is a reusable serve-enabled CRD entry for tests.
-func appCRD() *orktypes.CRDEntry {
-	return &orktypes.CRDEntry{
-		APITypes: orktypes.APITypes{
+func appCRD() *types.CRDEntry {
+	return &types.CRDEntry{
+		APITypes: types.APITypes{
 			Group:   "platform.myorg.io",
 			Version: "v1",
 			Kind:    "App",
 			Plural:  "apps",
 		},
-		Serve: &orktypes.ServeConfig{
+		Serve: &types.ServeConfig{
 			Enabled: true,
-			Target: orktypes.ServeTargetValue{Entries: map[string]*orktypes.ServeTargetConfig{
+			Target: types.ServeTargetValue{Entries: map[string]*types.ServeTargetConfig{
 				"app": {Primary: true},
 			}},
 			Title:       "Application",
 			Description: "Deploy an application",
 			Name:        `{{ .name }}`,
 			Namespace:   `{{ .team }}-{{ .environment }}`,
-			Fields: map[string]orktypes.ServeFieldConfig{
+			Fields: map[string]types.ServeFieldConfig{
 				"name":        {Label: "Name", Type: "string", Required: true, Order: 1},
 				"image":       {Label: "Image", Type: "string", Required: true, Order: 2},
 				"environment": {Label: "Environment", Type: "string", Required: true, Order: 3},
 				"replicas":    {Label: "Replicas", Type: "integer", Order: 4},
 			},
-			Labels: map[string]orktypes.ServeFieldConfig{
+			Labels: map[string]types.ServeFieldConfig{
 				"team": {Label: "Team", Type: "string", Required: true, Order: 0},
 			},
-			Annotations: map[string]orktypes.ServeFieldConfig{
+			Annotations: map[string]types.ServeFieldConfig{
 				"jira-ticket": {Label: "Jira Ticket", Type: "string", Order: 5},
 			},
 		},
@@ -62,17 +62,17 @@ func appCRD() *orktypes.CRDEntry {
 }
 
 // restrictedCRD returns a CRD with tokens configured.
-func restrictedCRD() *orktypes.CRDEntry {
+func restrictedCRD() *types.CRDEntry {
 	crd := appCRD()
-	crd.Serve.Tokens = map[string]orktypes.ServeTokenPermissions{
+	crd.Serve.Tokens = map[string]types.ServeTokenPermissions{
 		"ci-pipeline": {
-			Permissions: orktypes.ServePermissionSet{
+			Permissions: types.ServePermissionSet{
 				Resources: []string{"create", "update", "get", "list"},
 				Schema:    []string{"get"},
 			},
 		},
 		"read-only": {
-			Permissions: orktypes.ServePermissionSet{
+			Permissions: types.ServePermissionSet{
 				Global: []string{"get", "list"},
 			},
 		},
@@ -98,14 +98,14 @@ func postJSON(t *testing.T, path string, body interface{}) *http.Request {
 }
 
 // noopNotes
-func noopNotes() orktypes.NoteRegistry { return orktypes.NoteRegistry{} }
+func noopNotes() types.NoteRegistry { return types.NoteRegistry{} }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // schemaHandler
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 func TestSchemaHandler(t *testing.T) {
-	kat := newKat(map[string]*orktypes.CRDEntry{"app": appCRD()})
+	kat := newKat(map[string]*types.CRDEntry{"app": appCRD()})
 	handler := ExportedSchemaHandler(kat)
 
 	t.Run("method not allowed", func(t *testing.T) {
@@ -116,14 +116,14 @@ func TestSchemaHandler(t *testing.T) {
 		assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
 	})
 
-	t.Run("catalog returned when no target", func(t *testing.T) {
+	t.Run("service list returned when no target", func(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/api/v1/schema/", nil)
 		r = requestWithToken(r, "ci-pipeline")
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, r)
 		assert.Equal(t, http.StatusOK, rr.Code)
 
-		var resp utils.PaginatedResponse[CatalogEntry]
+		var resp utils.PaginatedResponse[ServiceEntry]
 		require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
 		assert.NotNil(t, resp.Items)
 	})
@@ -156,7 +156,7 @@ func TestSchemaHandler(t *testing.T) {
 	})
 
 	t.Run("permission denied on restricted CRD", func(t *testing.T) {
-		kat2 := newKat(map[string]*orktypes.CRDEntry{"app": restrictedCRD()})
+		kat2 := newKat(map[string]*types.CRDEntry{"app": restrictedCRD()})
 		h2 := ExportedSchemaHandler(kat2)
 
 		// ci-pipeline has schema:get — allowed
@@ -174,7 +174,7 @@ func TestSchemaHandler(t *testing.T) {
 		assert.Equal(t, http.StatusForbidden, rr2.Code)
 	})
 
-	t.Run("pagination params accepted on catalog", func(t *testing.T) {
+	t.Run("pagination params accepted on service list", func(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/api/v1/schema/?limit=1&offset=0", nil)
 		r = requestWithToken(r, "ci-pipeline")
 		rr := httptest.NewRecorder()
@@ -188,10 +188,10 @@ func TestSchemaHandler(t *testing.T) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 func TestResourcesHandler_Routing(t *testing.T) {
-	kat := newKat(map[string]*orktypes.CRDEntry{"app": appCRD()})
+	kat := newKat(map[string]*types.CRDEntry{"app": appCRD()})
 
 	t.Run("method not allowed", func(t *testing.T) {
-		h := ExportedResourcesHandler(nil, kat, orktypes.NoteRegistry{})
+		h := ExportedResourcesHandler(nil, kat, types.NoteRegistry{})
 		r := httptest.NewRequest(http.MethodPut, "/api/v1/resources/app/default/x", nil)
 		r = requestWithToken(r, "ci-pipeline")
 		rr := httptest.NewRecorder()
@@ -200,7 +200,7 @@ func TestResourcesHandler_Routing(t *testing.T) {
 	})
 
 	t.Run("bad path — only one segment", func(t *testing.T) {
-		h := ExportedResourcesHandler(nil, kat, orktypes.NoteRegistry{})
+		h := ExportedResourcesHandler(nil, kat, types.NoteRegistry{})
 		r := httptest.NewRequest(http.MethodGet, "/api/v1/resources/onlyone", nil)
 		r = requestWithToken(r, "ci-pipeline")
 		rr := httptest.NewRecorder()
@@ -209,7 +209,7 @@ func TestResourcesHandler_Routing(t *testing.T) {
 	})
 
 	t.Run("unknown kind returns 404", func(t *testing.T) {
-		h := ExportedResourcesHandler(nil, kat, orktypes.NoteRegistry{})
+		h := ExportedResourcesHandler(nil, kat, types.NoteRegistry{})
 		r := httptest.NewRequest(http.MethodGet, "/api/v1/resources/unknown/default", nil)
 		r = requestWithToken(r, "ci-pipeline")
 		rr := httptest.NewRecorder()
@@ -218,7 +218,7 @@ func TestResourcesHandler_Routing(t *testing.T) {
 	})
 
 	t.Run("DELETE without name returns 400", func(t *testing.T) {
-		h := ExportedResourcesHandler(nil, kat, orktypes.NoteRegistry{})
+		h := ExportedResourcesHandler(nil, kat, types.NoteRegistry{})
 		r := httptest.NewRequest(http.MethodDelete, "/api/v1/resources/app/default", nil)
 		r = requestWithToken(r, "ci-pipeline")
 		rr := httptest.NewRecorder()
@@ -228,7 +228,7 @@ func TestResourcesHandler_Routing(t *testing.T) {
 }
 
 func TestResourcesHandler_Permissions(t *testing.T) {
-	kat := newKat(map[string]*orktypes.CRDEntry{"app": restrictedCRD()})
+	kat := newKat(map[string]*types.CRDEntry{"app": restrictedCRD()})
 
 	// The fake dynamic client needs its List kind registered for any GVR it
 	// will List() — "coding error" panic otherwise, not a graceful error.
@@ -238,7 +238,7 @@ func TestResourcesHandler_Permissions(t *testing.T) {
 	scheme.AddKnownTypeWithName(appGVK.GroupVersion().WithKind("AppList"), &unstructured.UnstructuredList{})
 
 	kube := simulate.NewFakeKubeclient(scheme)
-	h := ExportedResourcesHandler(kube, kat, orktypes.NoteRegistry{})
+	h := ExportedResourcesHandler(kube, kat, types.NoteRegistry{})
 
 	cases := []struct {
 		name     string
@@ -283,8 +283,8 @@ func TestResourcesHandler_Permissions(t *testing.T) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 func TestApplyHandler_Format(t *testing.T) {
-	kat := newKat(map[string]*orktypes.CRDEntry{"app": appCRD()})
-	h := ExportedApplyHandler(nil, kat, orktypes.NoteRegistry{})
+	kat := newKat(map[string]*types.CRDEntry{"app": appCRD()})
+	h := ExportedApplyHandler(nil, kat, types.NoteRegistry{})
 
 	t.Run("method not allowed", func(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/api/v1/apply", nil)
@@ -361,13 +361,13 @@ func TestApplyHandler_Format(t *testing.T) {
 }
 
 func TestApplyHandler_Permissions(t *testing.T) {
-	kat := newKat(map[string]*orktypes.CRDEntry{"app": restrictedCRD()})
+	kat := newKat(map[string]*types.CRDEntry{"app": restrictedCRD()})
 	// Real fake client, not nil — the permission check probes
 	// kube.DynamicClient() to distinguish create vs update before deciding
 	// whether the token is allowed, even for a token that will be denied
 	// outright regardless of operation.
 	kube := simulate.NewFakeKubeclient(runtime.NewScheme())
-	h := ExportedApplyHandler(kube, kat, orktypes.NoteRegistry{})
+	h := ExportedApplyHandler(kube, kat, types.NoteRegistry{})
 
 	t.Run("unknown token denied before SSA", func(t *testing.T) {
 		r := postJSON(t, "/api/v1/apply", map[string]interface{}{
@@ -390,7 +390,7 @@ func TestApplyHandler_Permissions(t *testing.T) {
 func TestCheckServePermission(t *testing.T) {
 	crd := restrictedCRD()
 
-	check := func(token, op, ns string, class orktypes.ServeEndpointClass) int {
+	check := func(token, op, ns string, class types.ServeEndpointClass) int {
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
 		r = requestWithToken(r, token)
 		rr := httptest.NewRecorder()
@@ -402,18 +402,18 @@ func TestCheckServePermission(t *testing.T) {
 	}
 
 	// ci-pipeline: resources=[create update get list], schema=[get]
-	assert.Equal(t, http.StatusOK, check("ci-pipeline", "get", "default", orktypes.ServeClassResources))
-	assert.Equal(t, http.StatusOK, check("ci-pipeline", "list", "default", orktypes.ServeClassResources))
-	assert.Equal(t, http.StatusOK, check("ci-pipeline", "get", "default", orktypes.ServeClassSchema))
-	assert.Equal(t, http.StatusForbidden, check("ci-pipeline", "delete", "default", orktypes.ServeClassResources))
+	assert.Equal(t, http.StatusOK, check("ci-pipeline", "get", "default", types.ServeClassResources))
+	assert.Equal(t, http.StatusOK, check("ci-pipeline", "list", "default", types.ServeClassResources))
+	assert.Equal(t, http.StatusOK, check("ci-pipeline", "get", "default", types.ServeClassSchema))
+	assert.Equal(t, http.StatusForbidden, check("ci-pipeline", "delete", "default", types.ServeClassResources))
 
 	// read-only: global=[get list] — applies to all classes
-	assert.Equal(t, http.StatusOK, check("read-only", "get", "default", orktypes.ServeClassResources))
-	assert.Equal(t, http.StatusOK, check("read-only", "get", "default", orktypes.ServeClassSchema))
-	assert.Equal(t, http.StatusForbidden, check("read-only", "delete", "default", orktypes.ServeClassResources))
+	assert.Equal(t, http.StatusOK, check("read-only", "get", "default", types.ServeClassResources))
+	assert.Equal(t, http.StatusOK, check("read-only", "get", "default", types.ServeClassSchema))
+	assert.Equal(t, http.StatusForbidden, check("read-only", "delete", "default", types.ServeClassResources))
 
 	// unknown token
-	assert.Equal(t, http.StatusForbidden, check("rogue", "get", "default", orktypes.ServeClassResources))
+	assert.Equal(t, http.StatusForbidden, check("rogue", "get", "default", types.ServeClassResources))
 
 	// no restrictions — nil serve
 	openCRD := appCRD()
@@ -422,7 +422,7 @@ func TestCheckServePermission(t *testing.T) {
 	rOpen = requestWithToken(rOpen, "anyone")
 	rrOpen := httptest.NewRecorder()
 	assert.True(t, checkServePermission(rrOpen, rOpen, openCRD,
-		orktypes.ServeClassResources, "delete", "default", ""))
+		types.ServeClassResources, "delete", "default", ""))
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -497,8 +497,8 @@ func TestParsePagination(t *testing.T) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 func TestTokenAllowed(t *testing.T) {
-	cfg := func(tokens map[string]orktypes.ServeTokenPermissions) *orktypes.ServeConfig {
-		return &orktypes.ServeConfig{
+	cfg := func(tokens map[string]types.ServeTokenPermissions) *types.ServeConfig {
+		return &types.ServeConfig{
 			Enabled: true,
 			Tokens:  tokens,
 		}
@@ -506,99 +506,99 @@ func TestTokenAllowed(t *testing.T) {
 
 	cases := []struct {
 		name       string
-		serve      *orktypes.ServeConfig
+		serve      *types.ServeConfig
 		token      string
 		op         string
 		ns         string
-		class      orktypes.ServeEndpointClass
+		class      types.ServeEndpointClass
 		wantOK     bool
-		wantReason orktypes.ServeDenyReason
+		wantReason types.ServeDenyReason
 	}{
 		{
 			name:  "no restrictions — any token allowed",
 			serve: cfg(nil),
 			token: "anyone", op: "delete", ns: "prod",
-			class:  orktypes.ServeClassResources,
+			class:  types.ServeClassResources,
 			wantOK: true,
 		},
 		{
 			name: "global wildcard allows all",
-			serve: cfg(map[string]orktypes.ServeTokenPermissions{
-				"cc": {Permissions: orktypes.ServePermissionSet{Global: []string{"*"}}},
+			serve: cfg(map[string]types.ServeTokenPermissions{
+				"cc": {Permissions: types.ServePermissionSet{Global: []string{"*"}}},
 			}),
 			token: "cc", op: "delete", ns: "prod",
-			class:  orktypes.ServeClassResources,
+			class:  types.ServeClassResources,
 			wantOK: true,
 		},
 		{
 			name: "class-specific list takes precedence over global",
-			serve: cfg(map[string]orktypes.ServeTokenPermissions{
-				"ci": {Permissions: orktypes.ServePermissionSet{
+			serve: cfg(map[string]types.ServeTokenPermissions{
+				"ci": {Permissions: types.ServePermissionSet{
 					Global:    []string{"get", "list"},
 					Resources: []string{"create", "update"},
 				}},
 			}),
 			token: "ci", op: "create", ns: "staging",
-			class:  orktypes.ServeClassResources,
+			class:  types.ServeClassResources,
 			wantOK: true,
 		},
 		{
 			name: "global not used when class-specific is set",
-			serve: cfg(map[string]orktypes.ServeTokenPermissions{
-				"ci": {Permissions: orktypes.ServePermissionSet{
+			serve: cfg(map[string]types.ServeTokenPermissions{
+				"ci": {Permissions: types.ServePermissionSet{
 					Global:    []string{"get", "list"},
 					Resources: []string{"create", "update"},
 				}},
 			}),
 			// get IS in global but resources list is [create update] — get not present
 			token: "ci", op: "get", ns: "staging",
-			class:      orktypes.ServeClassResources,
+			class:      types.ServeClassResources,
 			wantOK:     false,
-			wantReason: orktypes.ServeDenyReasonOperation,
+			wantReason: types.ServeDenyReasonOperation,
 		},
 		{
 			name: "falls back to global when class list empty",
-			serve: cfg(map[string]orktypes.ServeTokenPermissions{
-				"audit": {Permissions: orktypes.ServePermissionSet{
+			serve: cfg(map[string]types.ServeTokenPermissions{
+				"audit": {Permissions: types.ServePermissionSet{
 					Global: []string{"get", "list"},
 				}},
 			}),
 			token: "audit", op: "get", ns: "prod",
-			class:  orktypes.ServeClassSchema,
+			class:  types.ServeClassSchema,
 			wantOK: true,
 		},
 		{
 			name: "unknown token denied",
-			serve: cfg(map[string]orktypes.ServeTokenPermissions{
-				"ci": {Permissions: orktypes.ServePermissionSet{Global: []string{"*"}}},
+			serve: cfg(map[string]types.ServeTokenPermissions{
+				"ci": {Permissions: types.ServePermissionSet{Global: []string{"*"}}},
 			}),
 			token: "rogue", op: "get", ns: "default",
-			class:      orktypes.ServeClassResources,
+			class:      types.ServeClassResources,
 			wantOK:     false,
-			wantReason: orktypes.ServeDenyReasonUnknownToken,
+			wantReason: types.ServeDenyReasonUnknownToken,
 		},
 		{
 			name: "namespace restriction denied",
-			serve: cfg(map[string]orktypes.ServeTokenPermissions{
+			serve: cfg(map[string]types.ServeTokenPermissions{
 				"ci": {
 					Namespaces:  []string{"staging"},
-					Permissions: orktypes.ServePermissionSet{Global: []string{"*"}},
+					Permissions: types.ServePermissionSet{Global: []string{"*"}},
 				},
 			}),
 			token: "ci", op: "create", ns: "production",
-			class:      orktypes.ServeClassResources,
+			class:      types.ServeClassResources,
 			wantOK:     false,
-			wantReason: orktypes.ServeDenyReasonNamespace,
+			wantReason: types.ServeDenyReasonNamespace,
 		},
 		{
 			name: "empty permissions denies",
-			serve: cfg(map[string]orktypes.ServeTokenPermissions{
-				"empty": {Permissions: orktypes.ServePermissionSet{}},
+			serve: cfg(map[string]types.ServeTokenPermissions{
+				"empty": {Permissions: types.ServePermissionSet{}},
 			}),
 			token: "empty", op: "get", ns: "default",
-			class:      orktypes.ServeClassResources,
+			class:      types.ServeClassResources,
 			wantOK:     false,
-			wantReason: orktypes.ServeDenyReasonOperation,
+			wantReason: types.ServeDenyReasonOperation,
 		},
 	}
 

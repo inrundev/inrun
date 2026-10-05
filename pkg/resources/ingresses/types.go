@@ -30,7 +30,7 @@ type ResolvedIngressSpec struct {
 	IngressClass string
 
 	// Labels applied to Ingress metadata.
-	// Orkestra always adds: managed-by=orkestra, orkestra-owner=<cr-name>
+	// Inrun always adds: managed-by=inrun, inrun-owner=<cr-name>
 	Labels map[string]string
 
 	// Annotations applied to Ingress metadata.

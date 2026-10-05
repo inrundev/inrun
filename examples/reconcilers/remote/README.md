@@ -1,6 +1,6 @@
 # Remote
 
-A `WebApp` operator whose reconciler is a bash script behind HTTP. Orkestra
+A `WebApp` operator whose reconciler is a bash script behind HTTP. Inrun
 owns the informer, queue, backoff, owner references, server-side apply and
 health; the script only returns what should exist.
 
@@ -9,7 +9,7 @@ health; the script only returns what should exist.
 Needs `socat` and `jq`. Listens on :8025.
 
 ```bash
-RECONCILER_TOKEN=orkestra-demo-token ./reconciler/reconciler.sh
+RECONCILER_TOKEN=inrun-demo-token ./reconciler/reconciler.sh
 ```
 
 ### 2. Simulate
@@ -19,7 +19,7 @@ reconciler and applies what it returns to an in-memory cluster. Add
 `--envtest` to run against a real API server instead.
 
 ```bash
-ork simulate
+inrun simulate
 ```
 
 ### 3. Run
@@ -27,7 +27,7 @@ ork simulate
 Applies `manifests/secret.yaml`, which holds the same token.
 
 ```bash
-ork run
+inrun
 ```
 
 ### 4. Check the result
@@ -46,20 +46,20 @@ kubectl get service my-webapp-svc
 
 ### 4b. Another language
 
-Stop the bash reconciler and start one of these instead. The Katalog does not
+Stop the bash reconciler and start one of these instead. The Catalog does not
 change.
 
 ```bash
-RECONCILER_TOKEN=orkestra-demo-token python3 reconciler/main.py
+RECONCILER_TOKEN=inrun-demo-token python3 reconciler/main.py
 ```
 
 ```bash
-RECONCILER_TOKEN=orkestra-demo-token go run reconciler/main.go
+RECONCILER_TOKEN=inrun-demo-token go run reconciler/main.go
 ```
 
 ## The contract
 
-Orkestra POSTs the CR (with `managedFields` stripped) and the evaluated `args`:
+Inrun POSTs the CR (with `managedFields` stripped) and the evaluated `args`:
 
 ```json
 { "key": "default/my-webapp", "gvk": {...}, "object": {...},
@@ -67,7 +67,7 @@ Orkestra POSTs the CR (with `managedFields` stripped) and the evaluated `args`:
 ```
 
 The reconciler returns status and resources in intent form: a built-in `type`
-and flat `fields`. Orkestra builds the objects, sets owner references and
+and flat `fields`. Inrun builds the objects, sets owner references and
 applies them.
 
 ```json
@@ -78,12 +78,12 @@ applies them.
     { "type": "service",    "fields": { "name": "my-webapp-svc", "port": 80, "targetPort": 80 } } ] }
 ```
 
-The `reconcilerEndpoint` note uses `.ork.inPod` to pick localhost or the
-in-cluster Service, so one Katalog serves both (see [`reconciler/deploy.yaml`](./reconciler/deploy.yaml)).
+The `reconcilerEndpoint` note uses `.inrun.inPod` to pick localhost or the
+in-cluster Service, so one Catalog serves both (see [`reconciler/deploy.yaml`](./reconciler/deploy.yaml)).
 
 ### 5. Clean up
 
-Run it while `ork run` is still up, so the runtime can remove the CR's finalizer.
+Run it while `inrun` is still up, so the runtime can remove the CR's finalizer.
 
 ```bash
 chmod +x cleanup.sh && ./cleanup.sh
@@ -94,5 +94,5 @@ chmod +x cleanup.sh && ./cleanup.sh
 Deploys the reconciler image ([`reconciler/deploy.yaml`](./reconciler/deploy.yaml)) into a kind cluster and checks status, children, drift correction and cleanup. No local reconciler needed.
 
 ```bash
-ork e2e
+inrun e2e
 ```

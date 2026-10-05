@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: webapps.migration.demo.orkestra.io
+  name: webapps.migration.demo.inrun.dev
 spec:
-  group: migration.demo.orkestra.io
+  group: migration.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true

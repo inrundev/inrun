@@ -10,33 +10,33 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 const (
-	labelKomponent = "orkestra.orkspace.io/komponent"
+	labelComponent = "inrun.dev/component"
 
-	KomponentRuntime = "runtime"
-	KomponentCC      = "control-center"
-	KomponentGateway = "gateway"
+	ComponentRuntime = "runtime"
+	ComponentConsole = "console"
+	ComponentGateway = "gateway"
 
 	// Local development only
 	DevServer            = "devserver"
-	DevServerServiceName = "orkestra-dev-server"
+	DevServerServiceName = "inrun-dev-server"
 
-	runtimeLeaseName = orktypes.KonductorLeaseName
+	runtimeLeaseName = types.LeaderLeaseName
 )
 
-// FoundService is a discovered Orkestra service and its port.
+// FoundService is a discovered Inrun service and its port.
 type FoundService struct {
 	Name string
 	Port int32
 }
 
-// FindService lists Services with the given komponent label in ns.
+// FindService lists Services with the given component label in ns.
 // Returns nil, nil when no matching service is found (component not deployed).
-func FindService(ctx context.Context, cs kubernetes.Interface, ns, komponent string) (*FoundService, error) {
-	sel := labelKomponent + "=" + komponent
+func FindService(ctx context.Context, cs kubernetes.Interface, ns, component string) (*FoundService, error) {
+	sel := labelComponent + "=" + component
 	list, err := cs.CoreV1().Services(ns).List(ctx, metav1.ListOptions{LabelSelector: sel})
 	if err != nil {
 		return nil, fmt.Errorf("list services (%s): %w", sel, err)
@@ -49,7 +49,7 @@ func FindService(ctx context.Context, cs kubernetes.Interface, ns, komponent str
 }
 
 // FindServiceByName looks up a Service by its exact name in ns, bypassing the
-// komponent label — for services that aren't Orkestra komponents (e.g. the
+// component label — for services that aren't Inrun components (e.g. the
 // devserver fixture deployed ad hoc by examples). Returns nil, nil when the
 // service doesn't exist (component not deployed), matching FindService.
 func FindServiceByName(ctx context.Context, cs kubernetes.Interface, ns, name string) (*FoundService, error) {

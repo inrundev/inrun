@@ -1,4 +1,4 @@
-# Cloudflare Worker — get.orkestra.sh
+# Cloudflare Worker — get.inrun.dev
 #
 # Required placeholders — replace before first deploy:
 #   <CLOUDFLARE_ACCOUNT_ID>  Your Cloudflare account ID
@@ -8,7 +8,7 @@
 # passed to wrangler-action. You can leave the placeholder here and let CI
 # inject it, or set it directly if this is a private repo.
 
-name            = "orkestra-installer"
+name            = "inrun-installer"
 main            = "index.js"
 compatibility_date = "2025-01-01"
 
@@ -20,9 +20,9 @@ compatibility_date = "2025-01-01"
 CACHE_TTL = 300
 
 # ── Routes ───────────────────────────────────────────────────────────────────
-# Uncomment and fill in after adding get.orkestra.sh as a custom domain
+# Uncomment and fill in after adding get.inrun.dev as a custom domain
 # on your Cloudflare account. The zone must be managed by Cloudflare.
 #
 [[routes]]
-pattern = "get.orkestra.sh/*"
-zone_name = "orkestra.sh"
+pattern = "get.inrun.dev/*"
+zone_name = "inrun.dev"

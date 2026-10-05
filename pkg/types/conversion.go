@@ -2,10 +2,10 @@
 package types
 
 // CRDConversion declares declarative version conversion rules for a CRD.
-// When enabled, Orkestra serves the /convert endpoint and translates
+// When enabled, Inrun serves the /convert endpoint and translates
 // ConversionReview requests using these rules and the template resolver.
 //
-// Example Katalog declaration:
+// Example Catalog declaration:
 //
 //	conversion:
 //	  storageVersion: v1
@@ -24,7 +24,7 @@ package types
 //	        replicas: "{{ .spec.replicas }}"
 //	        theme: "default"   # default — v1 has no theme field
 type CRDConversion struct {
-	// Include is a path (relative to the katalog file) to a YAML file whose
+	// Include is a path (relative to the catalog file) to a YAML file whose
 	// top-level value is a list of ConversionPath entries under a "paths:" key.
 	// Expanded at load time — included paths come first, inline paths append after.
 	Include string `yaml:"include,omitempty" json:"include,omitempty"`
@@ -33,7 +33,7 @@ type CRDConversion struct {
 	// conversion paths. Use this on the stable/storage-version CRD when the
 	// conversion paths are declared on the other version. Both CRDs need to
 	// be marked (one with paths, one with participant: true) for conversion
-	// stats to appear for each in the Control Center.
+	// stats to appear for each in the Console.
 	Participant bool `yaml:"participant,omitempty" json:"participant,omitempty"`
 
 	// StorageVersion — the version all objects are stored as internally.
@@ -46,10 +46,10 @@ type CRDConversion struct {
 	//   - storage → old  (down-conversion)
 	Paths []ConversionPath `yaml:"paths,omitempty" json:"paths,omitempty"`
 
-	// UpdateCRD — when true, Orkestra patches the CRD's
+	// UpdateCRD — when true, Inrun patches the CRD's
 	// spec.conversion.webhook.clientConfig.caBundle with the CA bundle
 	// from the generated (or configured) TLS certificate at startup.
-	// Set this to true when you let Orkestra manage TLS; set it to false
+	// Set this to true when you let Inrun manage TLS; set it to false
 	// when you manage caBundle injection yourself (e.g. cert-manager).
 	// Default: false.
 	UpdateCRD bool `yaml:"updateCRD,omitempty" json:"updateCRD,omitempty"`
@@ -58,7 +58,7 @@ type CRDConversion struct {
 // ConversionPath declares one explicit conversion mapping.
 // Both From and To are bare version strings — not full apiVersion strings.
 //
-//	from: v1alpha1   ← bare version, not "demo.orkestra.io/v1alpha1"
+//	from: v1alpha1   ← bare version, not "demo.inrun.dev/v1alpha1"
 //	to: v1
 //	spec:
 //	  image: "{{ .spec.image }}"
@@ -78,7 +78,7 @@ type ConversionPath struct {
 }
 
 // ConversionRules is the runtime form of CRDConversion, keyed by Kind.
-// Registered in the InMemoryConversionRegistry at Katalog load time.
+// Registered in the InMemoryConversionRegistry at Catalog load time.
 type ConversionRules struct {
 	Kind           string           `json:"kind" yaml:"kind"`
 	StorageVersion string           `json:"storageVersion" yaml:"storageVersion"`

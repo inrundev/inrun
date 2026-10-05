@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/event"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/event"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -19,14 +19,14 @@ const defaultRemoteTimeout = 30 * time.Second
 
 // Reconciler implements domain.Reconciler by POSTing a PreparedRequest
 // to a remote HTTP endpoint. The remote service owns the reconcile logic;
-// Orkestra owns the queue, backoff, informer, health, and metrics.
+// Inrun owns the queue, backoff, informer, health, and metrics.
 type Reconciler struct {
-	decl             *orktypes.RemoteReconcilerDeclaration
+	decl             *types.RemoteReconcilerDeclaration
 	gvk              schema.GroupVersionKind
 	kube             kubeclient.Interface
 	event            event.Recorder
 	managedResources []domain.ManagedResource
-	namespace        string // orkestra namespace, used as default when secretRef.namespace is empty
+	namespace        string // inrun namespace, used as default when secretRef.namespace is empty
 	client           httpDoer
 }
 
@@ -34,9 +34,9 @@ type Reconciler struct {
 // kube is used for credential resolution and SSA-applying resources returned by the remote reconciler.
 // ev is used to emit Kubernetes events on reconcile success or failure.
 // managedResources is the set of types the remote reconciler is permitted to create.
-// ownNamespace is the Orkestra namespace (used when secretRef.namespace is empty).
+// ownNamespace is the Inrun namespace (used when secretRef.namespace is empty).
 func New(
-	decl *orktypes.RemoteReconcilerDeclaration,
+	decl *types.RemoteReconcilerDeclaration,
 	gvk schema.GroupVersionKind,
 	kube kubeclient.Interface,
 	ev event.Recorder,

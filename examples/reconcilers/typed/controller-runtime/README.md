@@ -1,35 +1,35 @@
 # controller-runtime
 
-A controller-runtime `WebApp` reconciler running inside Orkestra with its
+A controller-runtime `WebApp` reconciler running inside Inrun with its
 `Reconcile` method unchanged. Three things differ from a controller-runtime
 project:
 
-1. No `SetupWithManager`: Orkestra provides the informer, queue, workers,
+1. No `SetupWithManager`: Inrun provides the informer, queue, workers,
    leader election and metrics.
-2. No scheme setup: Orkestra registers the types at startup.
+2. No scheme setup: Inrun registers the types at startup.
 3. A constructor wires the reconciler in:
 
 ```go
 func NewWebAppReconciler(kube kubeclient.Interface) domain.Reconciler {
     return domain.ReconcilerFrom(&WebAppReconciler{
-        Client: orkadapter.ToClient(kube),
+        Client: adapter.ToClient(kube),
     })
 }
 ```
 
-`orkadapter.ToClient` gives the struct the `client.Client` it already expects.
+`adapter.ToClient` gives the struct the `client.Client` it already expects.
 
 ### 1. Generate the registry
 
-Writes the type registry and `cmd/orkestra/main.go`.
+Writes the type registry and `cmd/inrun/main.go`.
 
 ```bash
 make registry
 ```
 
-### 2. Build your ork
+### 2. Build your inrun
 
-Installs an `ork` with the WebApp type compiled in at `~/.orkestra/bin/ork`.
+Installs an `inrun` with the WebApp type compiled in at `~/.inrun/bin/inrun`.
 
 ```bash
 make build
@@ -38,13 +38,13 @@ make build
 ### 3. Validate
 
 ```bash
-ork validate
+inrun validate
 ```
 
 ### 4. Simulate
 
 ```bash
-ork simulate
+inrun simulate
 ```
 
 ### 5. Run
@@ -52,7 +52,7 @@ ork simulate
 Applies `manifests/crd.yaml` and `manifests/cr.yaml`, then reconciles.
 
 ```bash
-ork run
+inrun
 ```
 
 ### 6. Check the result
@@ -72,11 +72,11 @@ IMAGE_REPO=<registry>/<image> IMAGE_TAG=<tag> make release
 ```
 
 Set the same image under `runtime.image` in `test/values.yaml`, then install
-Orkestra with it:
+Inrun with it:
 
 ```bash
-helm upgrade --install orkestra orkestra/orkestra -f test/values.yaml \
-  --namespace orkestra-system --wait
+helm upgrade --install inrun inrun/inrun -f test/values.yaml \
+  --namespace inrun-system --wait
 ```
 
 ### 8. Clean up
@@ -90,5 +90,5 @@ chmod +x cleanup.sh && ./cleanup.sh
 Runs the example in a kind cluster with your image from the deploy step, since only it has the Go types compiled in.
 
 ```bash
-ork e2e --set runtime.image.repository=<registry>/<image> --set runtime.image.tag=<tag>
+inrun e2e --set runtime.image.repository=<registry>/<image> --set runtime.image.tag=<tag>
 ```

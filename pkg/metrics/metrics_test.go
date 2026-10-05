@@ -8,13 +8,13 @@
 // These tests are intentionally not verifying counter values — Prometheus
 // counter state is global and shared across the test binary. Functional
 // correctness of metric recording is covered by integration tests that inspect
-// the /metrics endpoint with a live Orkestra instance.
+// the /metrics endpoint with a live Inrun instance.
 package metrics_test
 
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/metrics"
+	"github.com/inrundev/inrun/pkg/metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,27 +22,27 @@ import (
 
 func TestRecordReconcile_DoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
-		metrics.RecordReconcile("demo.orkestra.io/v1alpha1, Kind=Website", "success")
-		metrics.RecordReconcile("demo.orkestra.io/v1alpha1, Kind=Website", "failure")
+		metrics.RecordReconcile("demo.inrun.dev/v1alpha1, Kind=Website", "success")
+		metrics.RecordReconcile("demo.inrun.dev/v1alpha1, Kind=Website", "failure")
 	})
 }
 
 func TestObserveReconcileDuration_DoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
-		metrics.ObserveReconcileDuration("demo.orkestra.io/v1alpha1, Kind=Website", 0.042)
+		metrics.ObserveReconcileDuration("demo.inrun.dev/v1alpha1, Kind=Website", 0.042)
 	})
 }
 
 func TestSetResourceCount_DoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
-		metrics.SetResourceCount("demo.orkestra.io/v1alpha1, Kind=Website", 10)
-		metrics.SetResourceCount("demo.orkestra.io/v1alpha1, Kind=Website", 0)
+		metrics.SetResourceCount("demo.inrun.dev/v1alpha1, Kind=Website", 10)
+		metrics.SetResourceCount("demo.inrun.dev/v1alpha1, Kind=Website", 0)
 	})
 }
 
 func TestSetQueueDepth_DoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
-		metrics.SetQueueDepth("demo.orkestra.io/v1alpha1, Kind=Website", 5)
+		metrics.SetQueueDepth("demo.inrun.dev/v1alpha1, Kind=Website", 5)
 	})
 }
 
@@ -50,14 +50,14 @@ func TestSetQueueDepth_DoesNotPanic(t *testing.T) {
 
 func TestObserveCRDActivationLatency_DoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
-		metrics.ObserveCRDActivationLatency("websites.demo.orkestra.io", 1.5)
+		metrics.ObserveCRDActivationLatency("websites.demo.inrun.dev", 1.5)
 	})
 }
 
 func TestRecordCRDActivation_DoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
-		metrics.RecordCRDActivation("websites.demo.orkestra.io", "success")
-		metrics.RecordCRDActivation("websites.demo.orkestra.io", "failure")
+		metrics.RecordCRDActivation("websites.demo.inrun.dev", "success")
+		metrics.RecordCRDActivation("websites.demo.inrun.dev", "failure")
 	})
 }
 
@@ -94,19 +94,19 @@ func TestIncDecConversionRequests_DoesNotPanic(t *testing.T) {
 
 func TestRecordMutationTotal_DoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
-		metrics.RecordMutationTotal("demo.orkestra.io/v1alpha1, Kind=Website")
+		metrics.RecordMutationTotal("demo.inrun.dev/v1alpha1, Kind=Website")
 	})
 }
 
 func TestRecordMutationFieldDetail_DoesNotPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
 		metrics.RecordMutationFieldDetail(
-			"demo.orkestra.io/v1alpha1, Kind=Website",
+			"demo.inrun.dev/v1alpha1, Kind=Website",
 			"spec.replicas",
 			"default",
 		)
 		metrics.RecordMutationFieldDetail(
-			"demo.orkestra.io/v1alpha1, Kind=Website",
+			"demo.inrun.dev/v1alpha1, Kind=Website",
 			"metadata.labels.managed-by",
 			"override",
 		)

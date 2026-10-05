@@ -12,17 +12,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
-	"github.com/orkspace/orkestra/cmd/cli/validate"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/validate"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/merger"
-	orke2e "github.com/orkspace/orkestra/pkg/registry/e2e"
-	"github.com/orkspace/orkestra/pkg/registry/simulate"
-	"github.com/orkspace/orkestra/pkg/tools/devserver"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/registry/e2e"
+	"github.com/inrundev/inrun/pkg/registry/simulate"
+	"github.com/inrundev/inrun/pkg/tools/devserver"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -48,10 +48,10 @@ Shows resource creation and state transitions across reconcile cycles.
 The recommended entry point is simulate.yaml — it records what your operator
 should produce so the run is repeatable and verifiable:
 
-  ork simulate                              # simulate.yaml auto-detected
-  ork simulate -f simulate.yaml             # explicit — assert mode when expect: is set
-  ork simulate -f katalog.yaml --cr cr.yaml # direct flags; op-print only
-  ork simulate ./...                        # discovers all simulate.yaml files recursively`,
+  inrun simulate                              # simulate.yaml auto-detected
+  inrun simulate -f simulate.yaml             # explicit — assert mode when expect: is set
+  inrun simulate -f catalog.yaml --cr cr.yaml # direct flags; op-print only
+  inrun simulate ./...                        # discovers all simulate.yaml files recursively`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cliOpts := CliSimulateOptions{}
 		cliOpts.CRDName, _ = cmd.Flags().GetString("crd")
@@ -69,36 +69,36 @@ should produce so the run is repeatable and verifiable:
 			}
 		}
 
-		// Discovery mode: ork simulate ./...
+		// Discovery mode: inrun simulate ./...
 		if len(args) > 0 && args[0] == "./..." {
 			skipRaw, _ := cmd.Flags().GetStringSlice("skip")
 			return runSimulateDiscovery(cmd.Context(), ".", skipRaw, cliOpts)
 		}
 
-		katalogFile, _ := cmd.Flags().GetString("file")
-		if katalogFile == "" {
-			// Auto-detect: simulate.yaml (here, then test/) → katalog.yaml/komposer.yaml
+		catalogFile, _ := cmd.Flags().GetString("file")
+		if catalogFile == "" {
+			// Auto-detect: simulate.yaml (here, then test/) → catalog.yaml/stack.yaml
 			switch sim := cmdutil.FindFile(cmdutil.FileSimulate, cmdutil.DirTest); {
 			case sim != "":
-				katalogFile = sim
+				catalogFile = sim
 			default:
 				if d := cmdutil.DefaultFilePaths(); len(d) > 0 {
-					katalogFile = d[0]
+					catalogFile = d[0]
 				}
 			}
 		}
-		if katalogFile == "" {
-			return fmt.Errorf(cmdutil.ErrNoKatalog)
+		if catalogFile == "" {
+			return fmt.Errorf(cmdutil.ErrNoCatalog)
 		}
 
 		// Simulate kind: assert mode
-		if isSimulateDoc(katalogFile) {
-			return RunSimulateFromSpec(cmd.Context(), katalogFile, cliOpts)
+		if isSimulateDoc(catalogFile) {
+			return RunSimulateFromSpec(cmd.Context(), catalogFile, cliOpts)
 		}
 
 		// Reject E2E files with a clear message
-		if isE2EDoc(katalogFile) {
-			return fmt.Errorf("%s is an E2E file — use 'ork e2e' for cluster testing, or run 'ork simulate init' to generate a simulate.yaml", katalogFile)
+		if isE2EDoc(catalogFile) {
+			return fmt.Errorf("%s is an E2E file — use 'inrun e2e' for cluster testing, or run 'inrun simulate init' to generate a simulate.yaml", catalogFile)
 		}
 
 		crFile, _ := cmd.Flags().GetString("cr")
@@ -109,27 +109,27 @@ should produce so the run is repeatable and verifiable:
 			return fmt.Errorf("--cr is required")
 		}
 
-		return RunSimulate(cmd.Context(), katalogFile, crFile, cliOpts)
+		return RunSimulate(cmd.Context(), catalogFile, crFile, cliOpts)
 	},
 }
 
-func RunSimulate(ctx context.Context, katalogFile, crFile string, cliOpts CliSimulateOptions) error {
+func RunSimulate(ctx context.Context, catalogFile, crFile string, cliOpts CliSimulateOptions) error {
 	maxCycles := cliOpts.MaxCycles
 	if maxCycles <= 0 {
 		maxCycles = 10
 	}
 
-	m := merger.New(katalogFile)
+	m := merger.New(catalogFile)
 	if err := m.Merge(); err != nil {
-		return fmt.Errorf("merging Katalog: %w", err)
+		return fmt.Errorf("merging Catalog: %w", err)
 	}
 	kat, err := pipeline.BuildExpanded(cmdutil.Kfg, m)
 	if err != nil {
-		var typedErr *katalog.TypedOperatorError
+		var typedErr *catalog.TypedOperatorError
 		if errors.As(err, &typedErr) {
-			cmdutil.PrintTypedOperatorHint(typedErr, "ork simulate")
+			cmdutil.PrintTypedOperatorHint(typedErr, "inrun simulate")
 		}
-		return fmt.Errorf("parsing Katalog: %w", err)
+		return fmt.Errorf("parsing Catalog: %w", err)
 	}
 
 	crData, err := cmdutil.ReadLocal(crFile)
@@ -176,7 +176,7 @@ func RunSimulate(ctx context.Context, katalogFile, crFile string, cliOpts CliSim
 	return nil
 }
 
-func SimulateOne(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstructured.Unstructured, maxCycles int, opts simulate.RunOptions, cliOpts CliSimulateOptions, crdPaths []string, expect *orktypes.SimulateExpect) error {
+func SimulateOne(ctx context.Context, kat *catalog.Catalog, crdName string, cr *unstructured.Unstructured, maxCycles int, opts simulate.RunOptions, cliOpts CliSimulateOptions, crdPaths []string, expect *types.SimulateExpect) error {
 	fmt.Printf("Simulating %s/%s\n", crdName, cr.GetName())
 
 	// Emit notes for operatorBox blocks that cannot execute in the fake cluster.
@@ -292,7 +292,7 @@ func boolInt(b bool) int {
 	return 0
 }
 
-func printAssertions(errs []simulate.AssertionError, expect *orktypes.SimulateExpect) {
+func printAssertions(errs []simulate.AssertionError, expect *types.SimulateExpect) {
 	failSet := map[string]bool{}
 	for _, e := range errs {
 		failSet[e.Field] = true
@@ -364,13 +364,13 @@ func printAssertions(errs []simulate.AssertionError, expect *orktypes.SimulateEx
 
 // printSimulateAutoscaleSummary prints a one-line autoscale marker for each workload
 // that declares autoscale:, so the policy is visible in simulate output.
-func printSimulateAutoscaleSummary(entry orktypes.CRDEntry) {
+func printSimulateAutoscaleSummary(entry types.CRDEntry) {
 	type workload struct {
 		name      string
-		autoscale *orktypes.WorkloadAutoscale
+		autoscale *types.WorkloadAutoscale
 	}
 	var workloads []workload
-	for _, ht := range []*orktypes.HookTemplates{entry.Box().EffectiveOnCreate(), entry.Box().EffectiveOnReconcile()} {
+	for _, ht := range []*types.HookTemplates{entry.Box().EffectiveOnCreate(), entry.Box().EffectiveOnReconcile()} {
 		if ht == nil {
 			continue
 		}
@@ -498,7 +498,7 @@ func RunSimulateFromSpec(ctx context.Context, path string, cliOpts CliSimulateOp
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", path, err)
 	}
-	var doc orktypes.Simulate
+	var doc types.Simulate
 	if err := cmdutil.StrictUnmarshal(data, &doc); err != nil {
 		return fmt.Errorf("parsing %s:\n%s", path, err)
 	}
@@ -527,7 +527,7 @@ func RunSimulateFromSpec(ctx context.Context, path string, cliOpts CliSimulateOp
 		return err
 	}
 
-	if err := orktypes.ExpandSimulateOpsIncludes(doc.Spec.Expect, dir); err != nil {
+	if err := types.ExpandSimulateOpsIncludes(doc.Spec.Expect, dir); err != nil {
 		return fmt.Errorf("expanding simulate ops includes in %s: %w", path, err)
 	}
 
@@ -546,7 +546,7 @@ func RunSimulateFromSpec(ctx context.Context, path string, cliOpts CliSimulateOp
 		Target:       effectiveTarget,
 	}
 
-	katalogPath := filepath.Join(dir, doc.Spec.Katalog)
+	catalogPath := filepath.Join(dir, doc.Spec.Catalog)
 
 	// Resolve CRD paths (for --envtest) relative to the simulate.yaml directory.
 	crdPaths := make([]string, 0, len(doc.Spec.AllCRDPaths()))
@@ -558,18 +558,18 @@ func RunSimulateFromSpec(ctx context.Context, path string, cliOpts CliSimulateOp
 		crdPaths = append(crdPaths, abs)
 	}
 
-	m := merger.New(katalogPath)
+	m := merger.New(catalogPath)
 	if err := m.Merge(); err != nil {
-		return fmt.Errorf("merging Katalog: %w", err)
+		return fmt.Errorf("merging Catalog: %w", err)
 	}
 
 	kat, err := pipeline.BuildExpanded(cmdutil.Kfg, m)
 	if err != nil {
-		var typedErr *katalog.TypedOperatorError
+		var typedErr *catalog.TypedOperatorError
 		if errors.As(err, &typedErr) {
-			cmdutil.PrintTypedOperatorHint(typedErr, "ork simulate")
+			cmdutil.PrintTypedOperatorHint(typedErr, "inrun simulate")
 		}
-		return fmt.Errorf("parsing Katalog: %w", err)
+		return fmt.Errorf("parsing Catalog: %w", err)
 	}
 
 	// Read all CR files (cr: + crFiles:) and concatenate for multi-doc parsing.
@@ -640,7 +640,7 @@ func isE2EDoc(path string) bool {
 		Kind string `yaml:"kind"`
 	}
 	_ = yaml.Unmarshal(data, &head)
-	return konfig.IsE2EKind(head.Kind)
+	return config.IsE2EKind(head.Kind)
 }
 
 // ── Discovery mode ─────────────────────────────────────────────────────────────
@@ -662,7 +662,7 @@ func runSimulateDiscovery(ctx context.Context, root string, skip []string, cliOp
 	for _, s := range skip {
 		patterns = append(patterns, s)
 	}
-	paths, err := orke2e.DiscoverSimulateFiles(root, patterns)
+	paths, err := e2e.DiscoverSimulateFiles(root, patterns)
 	if err != nil {
 		return fmt.Errorf("discovering simulate files: %w", err)
 	}
@@ -728,7 +728,7 @@ func runSimulateDiscovery(ctx context.Context, root string, skip []string, cliOp
 	if len(errFiles) > 0 {
 		fmt.Printf("\n  %s — run directly for full output:\n", cmdutil.Yellow("Files with errors"))
 		for _, r := range errFiles {
-			fmt.Printf("    ork simulate -f %s\n", r.path)
+			fmt.Printf("    inrun simulate -f %s\n", r.path)
 		}
 		return fmt.Errorf("simulation failed in %d file(s)", len(errFiles))
 	}
@@ -736,7 +736,7 @@ func runSimulateDiscovery(ctx context.Context, root string, skip []string, cliOp
 	return nil
 }
 
-// ── ork simulate init ──────────────────────────────────────────────────────────
+// ── inrun simulate init ──────────────────────────────────────────────────────────
 
 type crdOps struct {
 	name string
@@ -749,35 +749,35 @@ var simulateInitCmd = &cobra.Command{
 	Long: `Runs the reconciler once and generates a simulate.yaml with the
 observed cycle-1 create operations as expect: rules. Edit and refine from there.
 
-  ork simulate init
-  ork simulate init -f katalog.yaml --cr cr.yaml
-  ork simulate init --force              # overwrite existing simulate.yaml
-  ork simulate init --suite              # aggregate all simulate.yaml files under .
-  ork simulate init --suite ./examples/  # aggregate under a specific dir`,
+  inrun simulate init
+  inrun simulate init -f catalog.yaml --cr cr.yaml
+  inrun simulate init --force              # overwrite existing simulate.yaml
+  inrun simulate init --suite              # aggregate all simulate.yaml files under .
+  inrun simulate init --suite ./examples/  # aggregate under a specific dir`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if suite, _ := cmd.Flags().GetBool("suite"); suite {
 			return simulateInitSuite(cmd, args)
 		}
 
-		katalogFile, _ := cmd.Flags().GetString("file")
+		catalogFile, _ := cmd.Flags().GetString("file")
 		crFile, _ := cmd.Flags().GetString("cr")
 		force, _ := cmd.Flags().GetBool("force")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 		var err error
-		katalogFile, err = cmdutil.ResolveKatalogFile(katalogFile)
+		catalogFile, err = cmdutil.ResolveCatalogFile(catalogFile)
 		if err != nil {
 			return err
 		}
 		if crFile == "" {
-			crFile = projectFile(katalogFile, cmdutil.FileCr, cmdutil.DirManifests)
+			crFile = projectFile(catalogFile, cmdutil.FileCr, cmdutil.DirManifests)
 		} else if abs, err := filepath.Abs(crFile); err == nil {
 			crFile = abs
 		}
 
-		kat, err := katalog.ParseFile(katalogFile)
+		kat, err := catalog.ParseFile(catalogFile)
 		if err != nil {
-			return fmt.Errorf("parsing Katalog: %w", err)
+			return fmt.Errorf("parsing Catalog: %w", err)
 		}
 		crData, err := cmdutil.ReadLocal(crFile)
 		if err != nil {
@@ -830,10 +830,10 @@ observed cycle-1 create operations as expect: rules. Edit and refine from there.
 		}
 
 		// Paths in the spec are relative to the spec file, so the file is portable.
-		relKatalog := relFromDir(cmdutil.DirTest, katalogFile)
+		relCatalog := relFromDir(cmdutil.DirTest, catalogFile)
 		relCR := relFromDir(cmdutil.DirTest, crFile)
 
-		doc := generateSimulateDoc(relKatalog, relCR, kat.Metadata().Name, results)
+		doc := generateSimulateDoc(relCatalog, relCR, kat.Metadata().Name, results)
 
 		var buf bytes.Buffer
 		enc := yaml.NewEncoder(&buf)
@@ -859,7 +859,7 @@ observed cycle-1 create operations as expect: rules. Edit and refine from there.
 
 		fmt.Printf("%s Generated %s\n", cmdutil.SuccessMark(), outPath)
 		fmt.Printf("  %d CRD(s), %d op rule(s)\n", len(results), countRules(results))
-		fmt.Printf("\n  Run %s to verify.\n", cmdutil.Bold("ork simulate"))
+		fmt.Printf("\n  Run %s to verify.\n", cmdutil.Bold("inrun simulate"))
 		return nil
 	},
 }
@@ -885,7 +885,7 @@ func simulateInitSuite(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	paths, err := orke2e.DiscoverSimulateFiles(root, patterns)
+	paths, err := e2e.DiscoverSimulateFiles(root, patterns)
 	if err != nil {
 		return fmt.Errorf("discovery: %w", err)
 	}
@@ -923,11 +923,11 @@ func simulateInitSuite(cmd *cobra.Command, args []string) error {
 	}
 
 	doc := suiteDoc{
-		APIVersion: "orkestra.orkspace.io/v1",
+		APIVersion: "inrun.dev/v1",
 		Kind:       "Simulate",
 		Metadata: suiteMeta{
 			Name:        "suite",
-			Description: fmt.Sprintf("Generated by ork simulate init --suite — %d file(s) discovered", len(relPaths)),
+			Description: fmt.Sprintf("Generated by inrun simulate init --suite — %d file(s) discovered", len(relPaths)),
 		},
 		Imports: relPaths,
 	}
@@ -961,12 +961,12 @@ func simulateInitSuite(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Printf("    %s\n", cmdutil.Dim(p))
 	}
-	fmt.Printf("\n  Run %s to verify.\n", cmdutil.Bold("ork simulate"))
+	fmt.Printf("\n  Run %s to verify.\n", cmdutil.Bold("inrun simulate"))
 	return nil
 }
 
 // generateSimulateDoc builds a Simulate document from observed cycle-1 creates.
-func generateSimulateDoc(katalogPath, crPath, katalogName string, results []crdOps) map[string]interface{} {
+func generateSimulateDoc(catalogPath, crPath, catalogName string, results []crdOps) map[string]interface{} {
 	trueVal := true
 
 	makeOps := func(ops []simulate.Op) []map[string]interface{} {
@@ -986,7 +986,7 @@ func generateSimulateDoc(katalogPath, crPath, katalogName string, results []crdO
 	}
 
 	spec := map[string]interface{}{
-		"katalog": katalogPath,
+		"catalog": catalogPath,
 		"cr":      crPath,
 		"cycles":  5,
 	}
@@ -1019,11 +1019,11 @@ func generateSimulateDoc(katalogPath, crPath, katalogName string, results []crdO
 	}
 
 	return map[string]interface{}{
-		"apiVersion": "orkestra.orkspace.io/v1",
+		"apiVersion": "inrun.dev/v1",
 		"kind":       "Simulate",
 		"metadata": map[string]interface{}{
-			"name":        katalogName + "-sim",
-			"description": "Generated by ork simulate init — edit to refine",
+			"name":        catalogName + "-sim",
+			"description": "Generated by inrun simulate init — edit to refine",
 		},
 		"spec": spec,
 	}
@@ -1087,16 +1087,16 @@ func init() {
 	cmdutil.RootCmd.AddCommand(simulateCmd)
 	simulateCmd.AddCommand(simulateInitCmd)
 
-	simulateInitCmd.Flags().StringP("file", "f", "", "Path to katalog.yaml or komposer.yaml")
+	simulateInitCmd.Flags().StringP("file", "f", "", "Path to catalog.yaml or stack.yaml")
 	simulateInitCmd.Flags().String("cr", "", "Path to the CR YAML file")
 	simulateInitCmd.Flags().Bool("force", false, "Overwrite existing simulate.yaml")
 	simulateInitCmd.Flags().Bool("dry-run", false, "Print the generated simulate.yaml to stdout instead of writing the file")
 	simulateInitCmd.Flags().Bool("suite", false, "Aggregate all simulate.yaml leaf files found under the given dir (default: .)")
 	simulateInitCmd.Flags().StringSlice("skip", []string{}, "Comma-separated path patterns to exclude from suite discovery")
 
-	simulateCmd.Flags().StringP("file", "f", "", "Path to katalog.yaml")
+	simulateCmd.Flags().StringP("file", "f", "", "Path to catalog.yaml")
 	simulateCmd.Flags().String("cr", "", "Path to the CR YAML file to simulate")
-	simulateCmd.Flags().String("crd", "", "CRD name to simulate (default: all CRDs in Katalog)")
+	simulateCmd.Flags().String("crd", "", "CRD name to simulate (default: all CRDs in Catalog)")
 	simulateCmd.Flags().Int("cycles", 10, "Maximum number of reconcile cycles")
 	simulateCmd.Flags().StringP("target", "t", "", "Target that provides the operatorbox for simulate")
 	simulateCmd.Flags().StringSlice("skip", []string{}, "Comma-separated path patterns to skip during ./... discovery (e.g. vendor,cr-e2e.yaml)")
@@ -1104,17 +1104,17 @@ func init() {
 	simulateCmd.Flags().Bool("debug-ops", false, "Print every recorded op with its cycle number (diagnostic)")
 	simulateCmd.Flags().Bool("dev-server", false, "Start the mock dev server for external: examples")
 	simulateCmd.Flags().Int("dev-server-port", devserver.Port, "Port for the mock dev server")
-	simulateCmd.Flags().Bool("envtest", false, "Run against a local kube-apiserver + etcd instead of fake clients (binaries auto-downloaded to ~/.ork/envtest-bins on first use)")
+	simulateCmd.Flags().Bool("envtest", false, "Run against a local kube-apiserver + etcd instead of fake clients (binaries auto-downloaded to ~/.inrun/envtest-bins on first use)")
 	simulateCmd.Flags().String("k8s-version", simulate.DefaultEnvtestK8sVersion, "Kubernetes version for envtest binaries (e.g. 1.31, 1.32); only used with --envtest")
 
-	// Shadow global flags so they don't appear under `ork simulate`
+	// Shadow global flags so they don't appear under `inrun simulate`
 	cmdutil.ShadowGlobalCommandFlags(simulateCmd)
 }
 
-// projectFile returns name next to the Katalog, or in its sub directory dir
-// when only that exists. The path next to the Katalog is the fallback.
-func projectFile(katalogFile, name, dir string) string {
-	base := filepath.Dir(katalogFile)
+// projectFile returns name next to the Catalog, or in its sub directory dir
+// when only that exists. The path next to the Catalog is the fallback.
+func projectFile(catalogFile, name, dir string) string {
+	base := filepath.Dir(catalogFile)
 	if p := filepath.Join(base, dir, name); cmdutil.FileExists(p) && !cmdutil.FileExists(filepath.Join(base, name)) {
 		return p
 	}

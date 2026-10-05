@@ -1,6 +1,6 @@
 # NetworkPolicy
 
-This declares one NetworkPolicy to be managed by Orkestra.
+This declares one NetworkPolicy to be managed by Inrun.
 
 Usage patterns:
 
@@ -54,7 +54,7 @@ onCreate:
 
 ## Lifecycle
 
-Declare this resource under `onCreate` for an idempotent, one-time create: Orkestra creates it on the first reconcile and leaves it untouched afterward. Set `reconcile: true` on the same entry to also apply it as drift correction on every subsequent reconcile. This is a shorthand for declaring the identical entry under `onReconcile` as well — there's no need to do both.
+Declare this resource under `onCreate` for an idempotent, one-time create: Inrun creates it on the first reconcile and leaves it untouched afterward. Set `reconcile: true` on the same entry to also apply it as drift correction on every subsequent reconcile. This is a shorthand for declaring the identical entry under `onReconcile` as well — there's no need to do both.
 
 Declare a resource under `onDelete` to run explicit cleanup before the CR's finalizer is removed. Most resources need no `onDelete` entry — they are garbage-collected automatically through owner references when the CR itself is deleted.
 
@@ -90,7 +90,7 @@ ToNamespaces — create one copy in each listed namespace. Each element supports
 
 Type: string
 
-FromNetworkPolicy — name of an existing NetworkPolicy to copy spec from. When set, Orkestra reads this NetworkPolicy at reconcile time and copies its spec.
+FromNetworkPolicy — name of an existing NetworkPolicy to copy spec from. When set, Inrun reads this NetworkPolicy at reconcile time and copies its spec.
 
 ---
 

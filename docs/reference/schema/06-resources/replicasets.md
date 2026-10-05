@@ -1,6 +1,6 @@
 # ReplicaSet
 
-This declares one ReplicaSet to be managed by Orkestra.
+This declares one ReplicaSet to be managed by Inrun.
 
 Minimal example — static values only:
 
@@ -26,7 +26,7 @@ onCreate:
         - key: app
           value: "{{ .metadata.name }}"
         - key: managed-by
-          value: orkestra
+          value: inrun
       resources:
         requests:
           cpu: 100m
@@ -40,7 +40,7 @@ onCreate:
 
 ## Lifecycle
 
-Declare this resource under `onCreate` for an idempotent, one-time create: Orkestra creates it on the first reconcile and leaves it untouched afterward. Set `reconcile: true` on the same entry to also apply it as drift correction on every subsequent reconcile. This is a shorthand for declaring the identical entry under `onReconcile` as well — there's no need to do both.
+Declare this resource under `onCreate` for an idempotent, one-time create: Inrun creates it on the first reconcile and leaves it untouched afterward. Set `reconcile: true` on the same entry to also apply it as drift correction on every subsequent reconcile. This is a shorthand for declaring the identical entry under `onReconcile` as well — there's no need to do both.
 
 Declare a resource under `onDelete` to run explicit cleanup before the CR's finalizer is removed. Most resources need no `onDelete` entry — they are garbage-collected automatically through owner references when the CR itself is deleted.
 
@@ -108,7 +108,7 @@ Namespace — target namespace for the ReplicaSet. Default when omitted: "{{ .me
 
 Type: map
 
-Labels — applied to the ReplicaSet ObjectMeta and the pod template. Label values support template expressions. Orkestra always adds: managed-by=orkestra, orkestra-owner=\<cr-name>
+Labels — applied to the ReplicaSet ObjectMeta and the pod template. Label values support template expressions. Inrun always adds: managed-by=inrun, inrun-owner=\<cr-name>
 
 ---
 

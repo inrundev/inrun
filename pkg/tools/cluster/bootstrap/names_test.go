@@ -10,9 +10,9 @@ func TestSAName_Default(t *testing.T) {
 }
 
 func TestSAName_Override(t *testing.T) {
-	e := ClusterEntry{Name: "staging", Context: "kind-staging", SAName: "argocd-ork-generated"}
-	if got := SAName(e); got != "argocd-ork-generated" {
-		t.Errorf("expected %q, got %q", "argocd-ork-generated", got)
+	e := ClusterEntry{Name: "staging", Context: "kind-staging", SAName: "argocd-inrun-generated"}
+	if got := SAName(e); got != "argocd-inrun-generated" {
+		t.Errorf("expected %q, got %q", "argocd-inrun-generated", got)
 	}
 }
 
@@ -38,22 +38,22 @@ func TestTokenSecretName(t *testing.T) {
 }
 
 func TestTokenSecretName_Override(t *testing.T) {
-	e := ClusterEntry{Name: "staging", Context: "kind-staging", SAName: "argocd-ork-generated"}
-	if got := TokenSecretName(e); got != "argocd-ork-generated-token" {
-		t.Errorf("expected %q, got %q", "argocd-ork-generated-token", got)
+	e := ClusterEntry{Name: "staging", Context: "kind-staging", SAName: "argocd-inrun-generated"}
+	if got := TokenSecretName(e); got != "argocd-inrun-generated-token" {
+		t.Errorf("expected %q, got %q", "argocd-inrun-generated-token", got)
 	}
 }
 
 func TestGatewaySecretName(t *testing.T) {
 	e := ClusterEntry{Name: "staging"}
-	if got := GatewaySecretName(e); got != "orkestra-staging" {
-		t.Errorf("expected %q, got %q", "orkestra-staging", got)
+	if got := GatewaySecretName(e); got != "inrun-staging" {
+		t.Errorf("expected %q, got %q", "inrun-staging", got)
 	}
 }
 
 func TestGatewaySecretName_Prod(t *testing.T) {
 	e := ClusterEntry{Name: "prod"}
-	if got := GatewaySecretName(e); got != "orkestra-prod" {
-		t.Errorf("expected %q, got %q", "orkestra-prod", got)
+	if got := GatewaySecretName(e); got != "inrun-prod" {
+		t.Errorf("expected %q, got %q", "inrun-prod", got)
 	}
 }

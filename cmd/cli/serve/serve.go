@@ -9,10 +9,10 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/katalog/validate"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog/validate"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/spf13/cobra"
 )
 
@@ -32,12 +32,12 @@ what fields developers can submit, what the gateway builds, and what
 callers see.
 
 Subcommands:
-  validate    Validate Serve configuration in a Katalog
+  validate    Validate Serve configuration in a Catalog
   schema      Show the flat schema for a Serve target
   fields      List all Serve fields with their paths and types
   tokens      Show token permissions for a CRD
-  targets     List all Serve targets in a Katalog
-  aliases     List serve aliases in a Katalog
+  targets     List all Serve targets in a Catalog
+  aliases     List serve aliases in a Catalog
   can-i       Check if a token can perform an operation
   response    Show the Serve response configuration`,
 }
@@ -47,16 +47,16 @@ Subcommands:
 var serveValidateCmd = &cobra.Command{
 	Use:   "validate",
 	Short: "Validate Serve configuration",
-	Long: `Validate Serve configuration in a Katalog.
+	Long: `Validate Serve configuration in a Catalog.
 
-This runs the same Serve-specific validations as ork validate, but only for
+This runs the same Serve-specific validations as inrun validate, but only for
 Serve concerns: fields, paths, tokens, response config, and namespace rules.
 
-It does not check the full Katalog schema — only the Serve portions.
+It does not check the full Catalog schema — only the Serve portions.
 
 With --full, shows a detailed breakdown of the Serve configuration.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
@@ -99,12 +99,12 @@ GET /api/v1/schema?target=<t> endpoint.`,
 			return errRequiresCRDSelector
 		}
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
 
-		var crd *orktypes.CRDEntry
+		var crd *types.CRDEntry
 		header := ""
 
 		if alias != "" && target == "" && kind == "" && name == "" {
@@ -166,7 +166,7 @@ GET /api/v1/schema?target=<t> endpoint.`,
 var serveFieldsCmd = &cobra.Command{
 	Use:   "fields",
 	Short: "List Serve fields with their paths and types",
-	Long: `List Serve fields in a Katalog with their paths and types.
+	Long: `List Serve fields in a Catalog with their paths and types.
 
 This shows fields declared in serve.fields, serve.labels and serve.annotations
 across all Serve-enabled CRDs.
@@ -187,14 +187,14 @@ With --target, --kind, or --name, shows fields for a specific CRD.`,
 			sortBy = "name"
 		}
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
 
 		// ── If a specific CRD is requested ──────────────────────────────────
 		if target != "" || kind != "" || name != "" || alias != "" {
-			var crd *orktypes.CRDEntry
+			var crd *types.CRDEntry
 			header := ""
 
 			if alias != "" && target == "" && kind == "" && name == "" {
@@ -321,12 +321,12 @@ When it inherits from the CRD, the CRD-level tokens are shown with a note.`,
 			return errRequiresCRDSelector
 		}
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
 
-		var crd *orktypes.CRDEntry
+		var crd *types.CRDEntry
 		if alias != "" && target == "" && kind == "" && name == "" {
 			// --alias alone: resolve CRD from alias name
 			var resolvedAlias string
@@ -407,12 +407,12 @@ When it inherits from the CRD, the CRD-level tokens are shown with a note.`,
 
 var serveTargetsCmd = &cobra.Command{
 	Use:   "targets",
-	Short: "List all Serve targets in a Katalog",
-	Long: `List all Serve-enabled targets in a Katalog.
+	Short: "List all Serve targets in a Catalog",
+	Long: `List all Serve-enabled targets in a Catalog.
 
 This shows each target, its CRD kind, and whether it has fields defined.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
@@ -497,9 +497,9 @@ incoming Gateway API requests. It considers:
 Useful for debugging permission issues and auditing token capabilities.
 
 Examples:
-  ork serve can-i --token control-center --target smartapp --operation create
-  ork serve can-i --token ci-pipeline --target smartapp --operation delete --namespace staging
-  ork serve can-i --token monitoring --target smartapp --operation list`,
+  inrun serve can-i --token console --target smartapp --operation create
+  inrun serve can-i --token ci-pipeline --target smartapp --operation delete --namespace staging
+  inrun serve can-i --token monitoring --target smartapp --operation list`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		token, _ := cmd.Flags().GetString("token")
 		op, _ := cmd.Flags().GetString("operation")
@@ -516,17 +516,17 @@ Examples:
 		if op == "" {
 			return fmt.Errorf("%s --operation is required (%s)", cmdutil.FailureMark(), validServeOperations)
 		}
-		if !orktypes.IsValidServeOperation(op) {
+		if !types.IsValidServeOperation(op) {
 			return fmt.Errorf("%s --operation must be one of %s", cmdutil.FailureMark(), validServeOperations)
 		}
-		if classFlag != "" && !orktypes.IsValidServeEndpointClass(classFlag) {
+		if classFlag != "" && !types.IsValidServeEndpointClass(classFlag) {
 			return fmt.Errorf("%s --class must be one of %s", cmdutil.FailureMark(), validServeEndpointClasses)
 		}
 		if target == "" && kind == "" && name == "" && aliasFlag == "" {
 			return errRequiresCRDSelector
 		}
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
@@ -535,7 +535,7 @@ Examples:
 		// as targets. For --kind / --name, alias is supplied separately via --alias.
 		// When --alias alone is given, resolve via alias directly.
 		var (
-			crd   *orktypes.CRDEntry
+			crd   *types.CRDEntry
 			alias string
 		)
 		if target != "" {
@@ -587,9 +587,9 @@ Examples:
 		}
 
 		// Determine endpoint class.
-		class := orktypes.ServeClassResources
+		class := types.ServeClassResources
 		if strings.EqualFold(classFlag, "schema") {
-			class = orktypes.ServeClassSchema
+			class = types.ServeClassSchema
 		}
 
 		// CRD-level namespace guard (independent of token restrictions).
@@ -629,11 +629,11 @@ serve.config.response. It shows:
   - Excluded paths
   - Poll URL configuration
 
-No cluster access is required — this reads the Katalog directly.
+No cluster access is required — this reads the Catalog directly.
 
 Examples:
-  ork serve response --target smartapp
-  ork serve response --target app --preview`,
+  inrun serve response --target smartapp
+  inrun serve response --target app --preview`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		preview, _ := cmd.Flags().GetBool("preview")
 		target, _ := cmd.Flags().GetString("target")
@@ -645,12 +645,12 @@ Examples:
 			return errRequiresCRDSelector
 		}
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
 
-		var crd *orktypes.CRDEntry
+		var crd *types.CRDEntry
 		if alias != "" && target == "" && kind == "" && name == "" {
 			var resolvedAlias string
 			crd, resolvedAlias, err = resolveCRDByAnyTarget(k, alias)
@@ -782,7 +782,7 @@ Examples:
 
 var serveAliasesCmd = &cobra.Command{
 	Use:   "aliases",
-	Short: "List serve aliases in a Katalog",
+	Short: "List serve aliases in a Catalog",
 	Long: `List serve aliases across all serve-enabled CRDs, or for a specific CRD.
 
 Aliases are additional named entry points for a CRD. Each alias can independently
@@ -792,22 +792,22 @@ defaults when not set.
 With --target, --kind, or --name, shows aliases for that specific CRD only.
 
 Examples:
-  ork serve aliases
-  ork serve aliases --target smartapp`,
+  inrun serve aliases
+  inrun serve aliases --target smartapp`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		target, _ := cmd.Flags().GetString("target")
 		kind, _ := cmd.Flags().GetString("kind")
 		name, _ := cmd.Flags().GetString("name")
 		alias, _ := cmd.Flags().GetString("alias")
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
 
 		// ── Specific CRD ────────────────────────────────────────────────────
 		if target != "" || kind != "" || name != "" || alias != "" {
-			var crd *orktypes.CRDEntry
+			var crd *types.CRDEntry
 
 			if alias != "" && target == "" && kind == "" && name == "" {
 				// Resolve by alias — show all aliases for the same CRD.

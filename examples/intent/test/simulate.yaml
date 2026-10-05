@@ -1,13 +1,13 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: website-intent-sim
   description: >
     Reconcile the CR the gateway builds from intent.json. There is no cr.yaml:
-    run ork serve play -i intent.json --token dev --simulate=simulate.yaml.
+    run inrun serve play -i intent.json --token dev --simulate=simulate.yaml.
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   cycles: 5
 
   expect:

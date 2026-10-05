@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // prometheusClient executes Prometheus instant queries via the HTTP API.
@@ -30,7 +30,7 @@ type promData struct {
 	Result     []interface{} `json:"result"`
 }
 
-func (c *prometheusClient) Fetch(ctx context.Context, spec orktypes.ExternalCallSpec, resolvedURL, resolvedQuery, _, credential string) (map[string]interface{}, error) {
+func (c *prometheusClient) Fetch(ctx context.Context, spec types.ExternalCallSpec, resolvedURL, resolvedQuery, _, credential string) (map[string]interface{}, error) {
 	if resolvedQuery == "" {
 		return errorResult("prometheus: query: is required"), nil
 	}
@@ -114,7 +114,7 @@ func (c *prometheusClient) Fetch(ctx context.Context, spec orktypes.ExternalCall
 // extractPromResult pulls the canonical scalar string from the Prometheus response.
 // scalar: result[1]
 // vector: first series value[1] (use promSum/promMax FuncMap funcs for aggregation)
-// matrix: not supported for instant queries — ork validate rejects these.
+// matrix: not supported for instant queries — inrun validate rejects these.
 func extractPromResult(data promData) (result, callErr string) {
 	switch data.ResultType {
 	case "scalar":

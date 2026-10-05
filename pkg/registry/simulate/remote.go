@@ -9,12 +9,12 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/event"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/remote"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/event"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/runtime/reconcilers/remote"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // remoteNote tells the user the run depends on their reconciler process.
@@ -22,7 +22,7 @@ const remoteNote = "remote reconciler: each cycle calls the endpoint in reconcil
 
 // newRemoteReconciler builds the remote reconciler the runtime would use, over
 // kube. Its HTTP calls go to the real endpoint; what it applies lands in kube.
-func newRemoteReconciler(crd *orktypes.CRDEntry, kube kubeclient.Interface, ownNamespace string) (domain.Reconciler, error) {
+func newRemoteReconciler(crd *types.CRDEntry, kube kubeclient.Interface, ownNamespace string) (domain.Reconciler, error) {
 	return remote.New(
 		crd.Box().Reconcile.Remote,
 		crd.GVK(),
@@ -33,10 +33,10 @@ func newRemoteReconciler(crd *orktypes.CRDEntry, kube kubeclient.Interface, ownN
 	)
 }
 
-// setupObjects reads the CRD's setup.apply files: the objects ork run applies
+// setupObjects reads the CRD's setup.apply files: the objects inrun applies
 // before the operator starts, such as a remote reconciler's token Secret.
 // The merger has already made the paths absolute.
-func setupObjects(crd *orktypes.CRDEntry) ([]*unstructured.Unstructured, error) {
+func setupObjects(crd *types.CRDEntry) ([]*unstructured.Unstructured, error) {
 	if crd.Setup == nil {
 		return nil, nil
 	}

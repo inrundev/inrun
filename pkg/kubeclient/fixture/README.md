@@ -1,6 +1,6 @@
 # Args — Access to External Systems for Typed Operators
 
-Declarative operators in Orkestra have always had access to `external:`,
+Declarative operators in Inrun have always had access to `external:`,
 `cross:`, notes, and the full resolver context. Typed operators — hooks and
 constructors — run Go code but were isolated from that context.
 
@@ -17,7 +17,7 @@ hooks:
 ```
 
 The hook reads `kube.Args().String("featureEnabled")` — no HTTP client,
-no flag service SDK, no environment wiring. The Katalog handles the IO.
+no flag service SDK, no environment wiring. The Catalog handles the IO.
 
 This fixture composes two self-contained examples showing the same access
 story with the two typed operator patterns:
@@ -28,7 +28,7 @@ story with the two typed operator patterns:
 | [`02-constructor/`](02-constructor/README.md) | `BlockchainNode` | constructor | constructor checks clock using window from args | constructor calls flag service when in business hours |
 | [`03-hooks-targets/`](03-hooks-targets/README.md) | `BlockchainAppWithTargets` | hooks + per-target operatorBox | same hook binary; `featureEnabled` and gate vary by target surface | no HTTP call — flag value resolved from target args |
 
-**Requirement:** `ork` CLI — install from [orkestra-install](https://github.com/orkspace/orkestra#getting-started)
+**Requirement:** `inrun` CLI — install from [inrun-install](https://github.com/inrundev/inrun#getting-started)
 
 ---
 
@@ -42,15 +42,15 @@ make registry
 
 ```bash
 make clean && make build
-ork validate 01-hooks/katalog.yaml
-ork validate 02-constructor/katalog.yaml
-ork simulate
+inrun validate 01-hooks/catalog.yaml
+inrun validate 02-constructor/catalog.yaml
+inrun simulate
 ```
 
 ## Step 3 — Run
 
 ```bash
-ork run --dev-server
+inrun --dev-server
 ```
 
 The dev server returns `"true"` for all flag requests. Both operators stamp the
@@ -93,7 +93,7 @@ kubectl get blockchainnode 02-constructor-my-node \
 ```bash
 make docker push IMAGE_REPO=yourregistry/blockchain-operator IMAGE_TAG=latest
 
-ork e2e --dev-server \
+inrun e2e --dev-server \
   --set runtime.image.repository=yourregistry/blockchain-operator \
   --set runtime.image.tag=latest
 ```

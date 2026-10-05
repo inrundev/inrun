@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
 	"gopkg.in/yaml.v3"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -14,8 +14,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/tools/cluster/bootstrap"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/tools/cluster/bootstrap"
 )
 
 var clustersBootstrapCmd = &cobra.Command{
@@ -26,15 +26,15 @@ cluster, then store the credentials in the gateway cluster so the gateway
 can route applies to it.
 
 The ClusterRole is scoped to exactly the serve-enabled CRDs declared in the
-katalog — no wildcard resources, no cluster-admin.
+catalog — no wildcard resources, no cluster-admin.
 
 Examples:
-  ork clusters bootstrap --context kind-prod --name prod
-  ork clusters bootstrap --context kind-staging --name staging --namespace orkestra
-  ork clusters bootstrap --context kind-prod --name prod --dry-run
-  ork clusters bootstrap --context kind-prod --name prod --emit-rbac
-  ork clusters bootstrap --config cluster-config.yaml
-  ork clusters bootstrap --validate cluster-config.yaml`,
+  inrun clusters bootstrap --context kind-prod --name prod
+  inrun clusters bootstrap --context kind-staging --name staging --namespace inrun
+  inrun clusters bootstrap --context kind-prod --name prod --dry-run
+  inrun clusters bootstrap --context kind-prod --name prod --emit-rbac
+  inrun clusters bootstrap --config cluster-config.yaml
+  inrun clusters bootstrap --validate cluster-config.yaml`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		validatePath, _ := cmd.Flags().GetString("validate")
 		configPath, _ := cmd.Flags().GetString("config")
@@ -68,7 +68,7 @@ Examples:
 			SANamespace: saNamespace,
 		}
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
@@ -94,9 +94,9 @@ func runBootstrapValidate(path string) error {
 }
 
 // runBootstrapConfig bootstraps all clusters listed in the config file.
-// No katalog is required — rules come from each entry's rules: field (if any).
+// No catalog is required — rules come from each entry's rules: field (if any).
 // When outPath is non-empty, the bootstrap results are written to a
-// gateway.clusters-shaped YAML file suitable for `ork clusters check --config`.
+// gateway.clusters-shaped YAML file suitable for `inrun clusters check --config`.
 func runBootstrapConfig(cmd *cobra.Command, path, outPath string, opts bootstrap.RunOptions) error {
 	cfg, err := bootstrap.LoadConfig(path)
 	if err != nil {
@@ -122,15 +122,15 @@ func runBootstrapConfig(cmd *cobra.Command, path, outPath string, opts bootstrap
 			return err
 		}
 		fmt.Printf("\n%s cluster credentials → %s\n", cmdutil.SuccessMark(), outPath)
-		fmt.Printf("  %s ork clusters check --config %s\n", cmdutil.Gray("→"), outPath)
+		fmt.Printf("  %s inrun clusters check --config %s\n", cmdutil.Gray("→"), outPath)
 	}
 	return nil
 }
 
 // runBootstrapSingleResult is the result-returning variant used by runBootstrapConfig.
-func runBootstrapSingleResult(ctx context.Context, k *katalog.Katalog, entry bootstrap.ClusterEntry, opts bootstrap.RunOptions) (*bootstrap.Result, error) {
+func runBootstrapSingleResult(ctx context.Context, k *catalog.Catalog, entry bootstrap.ClusterEntry, opts bootstrap.RunOptions) (*bootstrap.Result, error) {
 	fmt.Println()
-	fmt.Printf("%s  ork clusters bootstrap\n", cmdutil.Bold("⎈"))
+	fmt.Printf("%s  inrun clusters bootstrap\n", cmdutil.Bold("⎈"))
 	fmt.Printf("  %s cluster name:   %s\n", cmdutil.Gray("→"), cmdutil.Bold(entry.Name))
 	fmt.Printf("  %s target context: %s\n", cmdutil.Gray("→"), cmdutil.Bold(entry.Context))
 	fmt.Printf("  %s namespace:      %s\n", cmdutil.Gray("→"), cmdutil.Gray(opts.Namespace))
@@ -158,14 +158,14 @@ func runBootstrapSingleResult(ctx context.Context, k *katalog.Katalog, entry boo
 	}
 
 	fmt.Println()
-	bootstrapPrintKatalogSnippet(entry.Name, result.Endpoint, result.SecretName, result.SecretNamespace, !result.HasCA)
+	bootstrapPrintCatalogSnippet(entry.Name, result.Endpoint, result.SecretName, result.SecretNamespace, !result.HasCA)
 	return result, nil
 }
 
 // runBootstrapSingle bootstraps one cluster entry and prints the appropriate output.
-func runBootstrapSingle(ctx context.Context, k *katalog.Katalog, entry bootstrap.ClusterEntry, opts bootstrap.RunOptions) error {
+func runBootstrapSingle(ctx context.Context, k *catalog.Catalog, entry bootstrap.ClusterEntry, opts bootstrap.RunOptions) error {
 	fmt.Println()
-	fmt.Printf("%s  ork clusters bootstrap\n", cmdutil.Bold("⎈"))
+	fmt.Printf("%s  inrun clusters bootstrap\n", cmdutil.Bold("⎈"))
 	fmt.Printf("  %s cluster name:   %s\n", cmdutil.Gray("→"), cmdutil.Bold(entry.Name))
 	fmt.Printf("  %s target context: %s\n", cmdutil.Gray("→"), cmdutil.Bold(entry.Context))
 	fmt.Printf("  %s namespace:      %s\n", cmdutil.Gray("→"), cmdutil.Gray(opts.Namespace))
@@ -193,14 +193,14 @@ func runBootstrapSingle(ctx context.Context, k *katalog.Katalog, entry bootstrap
 	}
 
 	fmt.Println()
-	bootstrapPrintKatalogSnippet(entry.Name, result.Endpoint, result.SecretName, result.SecretNamespace, !result.HasCA)
+	bootstrapPrintCatalogSnippet(entry.Name, result.Endpoint, result.SecretName, result.SecretNamespace, !result.HasCA)
 	return nil
 }
 
 // ── output helpers ────────────────────────────────────────────────────────────
 
-func bootstrapPrintKatalogSnippet(name, endpoint, secretName, namespace string, insecure bool) {
-	fmt.Printf("%s  Add to your katalog:\n\n", cmdutil.Bold("⎈"))
+func bootstrapPrintCatalogSnippet(name, endpoint, secretName, namespace string, insecure bool) {
+	fmt.Printf("%s  Add to your catalog:\n\n", cmdutil.Bold("⎈"))
 	if insecure {
 		fmt.Printf(`gateway:
   clusters:

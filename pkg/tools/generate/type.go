@@ -7,16 +7,16 @@ import "time"
 // ClusterRole, and ClusterRoleBinding from the output.
 // IncludeConfigMap follows: included when IncludeRuntime || IncludeGateway.
 type BundleOptions struct {
-	IncludeRuntime       bool
-	IncludeGateway       bool
-	IncludeControlCenter bool
+	IncludeRuntime bool
+	IncludeGateway bool
+	IncludeConsole bool
 }
 
 func DefaultBundleOptions() BundleOptions {
 	return BundleOptions{
-		IncludeRuntime:       true,
-		IncludeGateway:       true,
-		IncludeControlCenter: true,
+		IncludeRuntime: true,
+		IncludeGateway: true,
+		IncludeConsole: true,
 	}
 }
 

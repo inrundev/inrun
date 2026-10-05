@@ -122,7 +122,7 @@ func TestPruneJSONValue_SliceAllNil(t *testing.T) {
 func TestWriteJSONPruned_BasicResponse(t *testing.T) {
 	w := httptest.NewRecorder()
 	payload := map[string]interface{}{
-		"name":    "orkestra",
+		"name":    "inrun",
 		"version": nil,
 	}
 	WriteJSONPruned(w, 200, payload)
@@ -135,8 +135,8 @@ func TestWriteJSONPruned_BasicResponse(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(&got); err != nil {
 		t.Fatalf("response is not valid JSON: %v", err)
 	}
-	if got["name"] != "orkestra" {
-		t.Errorf("expected name=orkestra, got %v", got["name"])
+	if got["name"] != "inrun" {
+		t.Errorf("expected name=inrun, got %v", got["name"])
 	}
 	if _, hasVersion := got["version"]; hasVersion {
 		t.Error("nil version must be pruned from response")

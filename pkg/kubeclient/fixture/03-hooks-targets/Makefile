@@ -1,8 +1,8 @@
-# ── Typed Orkestra Operator — Hooks with Targets ──────────────────────────────
-BINARY_NAME ?= ork
-DEV_OUTPUT_DIR  ?= $(HOME)/.orkestra/bin
-PROD_OUTPUT_DIR ?= $(HOME)/.orkestra/bin/runtime
-KATALOG     ?= katalog.yaml
+# ── Typed Inrun Operator — Hooks with Targets ──────────────────────────────
+BINARY_NAME ?= inrun
+DEV_OUTPUT_DIR  ?= $(HOME)/.inrun/bin
+PROD_OUTPUT_DIR ?= $(HOME)/.inrun/bin/runtime
+CATALOG     ?= catalog.yaml
 
 IMAGE_REPO  ?= myorg/my-operator
 IMAGE_TAG   ?= latest
@@ -13,16 +13,16 @@ GOOS        ?= linux
 GOARCH      ?= amd64
 CGO_ENABLED  = 0
 
-ORK_LDFLAGS := -X github.com/orkspace/orkestra/pkg/version.Version=$(GIT_VERSION) \
-               -X github.com/orkspace/orkestra/pkg/version.Commit=$(GIT_COMMIT) \
-               -X github.com/orkspace/orkestra/pkg/version.Date=$(GIT_DATE)
+INRUN_LDFLAGS := -X github.com/inrundev/inrun/pkg/version.Version=$(GIT_VERSION) \
+               -X github.com/inrundev/inrun/pkg/version.Commit=$(GIT_COMMIT) \
+               -X github.com/inrundev/inrun/pkg/version.Date=$(GIT_DATE)
 
 .PHONY: registry
 registry:
 	@[ -f go.mod.txt ] && mv go.mod.txt go.mod || true
 	@[ -f go.sum.txt ] && mv go.sum.txt go.sum || true
 	@find . -name "*.go" | xargs grep -l "^//go:build ignore$$" 2>/dev/null | while read f; do tail -n +3 "$$f" > "$$f.tmp" && mv "$$f.tmp" "$$f"; done || true
-	ork generate registry --file $(KATALOG)
+	inrun generate registry --file $(CATALOG)
 
 .PHONY: build
 build:
@@ -33,8 +33,8 @@ build:
 	go mod tidy
 	gofmt -w .
 	go build \
-		-ldflags "$(ORK_LDFLAGS)" \
-		-o $(DEV_OUTPUT_DIR)/$(BINARY_NAME) ./cmd/orkestra
+		-ldflags "$(INRUN_LDFLAGS)" \
+		-o $(DEV_OUTPUT_DIR)/$(BINARY_NAME) ./cmd/inrun
 	@echo "✅ Development build: $(DEV_OUTPUT_DIR)/$(BINARY_NAME)"
 
 .PHONY: build-runtime
@@ -47,13 +47,13 @@ build-runtime:
 	gofmt -w .
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
 		-tags "runtime" \
-		-ldflags "$(ORK_LDFLAGS)" \
-		-o $(PROD_OUTPUT_DIR)/$(BINARY_NAME) ./cmd/orkestra
+		-ldflags "$(INRUN_LDFLAGS)" \
+		-o $(PROD_OUTPUT_DIR)/$(BINARY_NAME) ./cmd/inrun
 	@echo "✅ Production runtime build: $(PROD_OUTPUT_DIR)/$(BINARY_NAME)"
 
 .PHONY: validate
 validate:
-	$(DEV_OUTPUT_DIR)/$(BINARY_NAME) validate -f $(KATALOG)
+	$(DEV_OUTPUT_DIR)/$(BINARY_NAME) validate -f $(CATALOG)
 
 .PHONY: simulate
 simulate:
@@ -85,10 +85,10 @@ clean:
 
 .PHONY: help
 help:
-	@echo "  registry       generate type registry from Katalog"
+	@echo "  registry       generate type registry from Catalog"
 	@echo "  build          compile full development CLI (all commands)"
-	@echo "  build-runtime  compile production binary (only 'ork run')"
-	@echo "  validate       run katalog validation (using development binary)"
+	@echo "  build-runtime  compile production binary (runtime only)"
+	@echo "  validate       run catalog validation (using development binary)"
 	@echo "  e2e            run end‑to‑end tests (using development binary)"
 	@echo "  simulate       run simulation tests (using development binary)"
 	@echo "  docker         build-runtime + copy into Docker image"

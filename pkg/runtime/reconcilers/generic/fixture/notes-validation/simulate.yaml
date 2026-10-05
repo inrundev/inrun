@@ -1,4 +1,4 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: notes-validation-sim
@@ -8,7 +8,7 @@ metadata:
     the error appears in the simulate output.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   cr: ./cr-bad-image.yaml
   cycles: 3
 

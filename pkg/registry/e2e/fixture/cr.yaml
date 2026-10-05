@@ -1,15 +1,15 @@
-apiVersion: e2e.orkestra.io/v1alpha1
+apiVersion: e2e.inrun.dev/v1alpha1
 kind: E2EProbe
 metadata:
   name: my-probe-server
   namespace: default
 spec:
-  image: ghcr.io/orkspace/orkestra-dev-server:latest
+  image: ghcr.io/inrundev/inrun-dev-server:latest
   replicas: 1
   port: 9999
   message: "e2e-ready"
 ---
-apiVersion: e2e.orkestra.io/v1alpha1
+apiVersion: e2e.inrun.dev/v1alpha1
 kind: E2EProbe
 metadata:
   name: my-probe-exec

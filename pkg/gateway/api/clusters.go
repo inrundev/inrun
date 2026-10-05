@@ -8,16 +8,16 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/secrets"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/secrets"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ClusterRegistry maps gateway.clusters names to their ready kubeclient.Interface.
-// Built at gateway startup from the katalog config; never mutated after construction.
+// Built at gateway startup from the catalog config; never mutated after construction.
 type ClusterRegistry struct {
 	clients map[string]kubeclient.Interface
 }
@@ -45,7 +45,7 @@ func (r *ClusterRegistry) Len() int {
 // Returns an empty (non-nil) registry when no clusters are declared.
 func BuildClusterRegistry(
 	ctx context.Context,
-	kat *katalog.Katalog,
+	kat *catalog.Catalog,
 	kube kubeclient.Interface,
 	ownNS string,
 ) (*ClusterRegistry, error) {
@@ -78,7 +78,7 @@ func BuildClusterRegistry(
 // It reads credential secrets from kube using ownNS as the fallback namespace.
 func BuildClusterRestConfig(
 	ctx context.Context,
-	cfg orktypes.GatewayClusterConfig,
+	cfg types.GatewayClusterConfig,
 	kube kubeclient.Interface,
 	ownNS string,
 ) (*rest.Config, error) {
@@ -96,7 +96,7 @@ func BuildClusterRestConfig(
 // parses it into a *rest.Config.
 func buildKubeconfigRestConfig(
 	ctx context.Context,
-	cfg orktypes.GatewayClusterConfig,
+	cfg types.GatewayClusterConfig,
 	kube kubeclient.Interface,
 	ownNS string,
 ) (*rest.Config, error) {
@@ -119,7 +119,7 @@ func buildKubeconfigRestConfig(
 // buildTokenRestConfig builds a *rest.Config using a bearer token and optional CA cert.
 func buildTokenRestConfig(
 	ctx context.Context,
-	cfg orktypes.GatewayClusterConfig,
+	cfg types.GatewayClusterConfig,
 	kube kubeclient.Interface,
 	ownNS string,
 ) (*rest.Config, error) {
@@ -174,10 +174,10 @@ type clusterTarget struct {
 // via the full template engine (WithRequest). When fields is nil (read path),
 // templates resolve to "" and the local cluster is used instead.
 func resolveClusterTargets(
-	crd *orktypes.CRDEntry,
+	crd *types.CRDEntry,
 	alias string,
 	fields map[string]interface{},
-	notes orktypes.NoteRegistry,
+	notes types.NoteRegistry,
 	registry *ClusterRegistry,
 	localKube kubeclient.Interface,
 ) ([]clusterTarget, error) {
@@ -198,11 +198,11 @@ func resolveClusterTargets(
 	var targets []clusterTarget
 	for _, expr := range names {
 		name := expr
-		if orktypes.IsTemplate(expr) {
+		if types.IsTemplate(expr) {
 			if fields == nil {
 				return []clusterTarget{{name: "", kube: localKube}}, nil
 			}
-			resolver := orktmpl.NewResolverFromMap(fields).WithUserNotes(notes).WithRequest(fields)
+			resolver := template.NewResolverFromMap(fields).WithUserNotes(notes).WithRequest(fields)
 			resolved, err := resolver.Resolve(expr)
 			if err != nil {
 				return nil, fmt.Errorf("resolving cluster expression %q: %w", expr, err)
@@ -229,9 +229,9 @@ func resolveClusterTargets(
 // (GET, LIST, DELETE). When serve.clusters has static names, the first is used.
 // Empty templates (after resolution) and the local fallback return localKube.
 func resolveReadCluster(
-	crd *orktypes.CRDEntry,
+	crd *types.CRDEntry,
 	alias string,
-	notes orktypes.NoteRegistry,
+	notes types.NoteRegistry,
 	registry *ClusterRegistry,
 	localKube kubeclient.Interface,
 ) (kubeclient.Interface, error) {

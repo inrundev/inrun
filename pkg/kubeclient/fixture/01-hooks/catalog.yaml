@@ -1,0 +1,67 @@
+apiVersion: inrun.dev/v1
+kind: Catalog
+metadata:
+  name: blockchainapp-hooks
+  author: inrundev
+  version: 0.1.0
+  description: >
+    BlockchainApp operator — the runtime makes the feature-flag HTTP call before
+    invoking the hook, but only during business hours. Both the business-hours
+    window and the flag URL are Catalog configuration; the hook binary is identical
+    across environments and schedules.
+
+notes:
+  functions:
+    - name: inBusinessHours
+      description: True on weekdays between 09:00–18:00 UTC
+      expression: '{{ and weekday (timeInWindow "09:00" "18:00") }}'
+
+spec:
+  crds:
+    blockchainapp:
+      crdFile: ./crd.yaml
+      crFiles:
+        - ./cr.yaml
+      apiTypes:
+        group: demo.inrun.dev
+        version: v1alpha1
+        kind: BlockchainApp
+        plural: blockchainapps
+        object: BlockchainApp
+        objectList: BlockchainAppList
+        location: github.com/inrundev/inrun-args-hooks/api/v1alpha1
+        alias: bcappv1
+      operatorBox:
+        reconcile:
+          default: true
+          hooks:
+            location: github.com/inrundev/inrun-args-hooks/hooks
+            function: BlockchainAppHooks
+            alias: bchooks
+            managedResources:
+              - kind: Deployment
+            external:
+              - name: flags
+                url: "{{ .spec.serviceUrl }}/flags/{{ .metadata.name }}/v2Enabled"
+                method: GET
+                continueOnError: true
+                timeout: 5s
+                when:
+                  - field: '{{ inBusinessHours }}'
+                    equals: "true"
+            args:
+              featureEnabled: '{{ .external.flags.body }}'
+              inBusinessHours: '{{ inBusinessHours }}'
+          workers: 2
+          resync: 30s
+        emit:
+          status:
+            fields:
+              - path: phase
+                value: "Running"
+              - path: featureEnabled
+                value: "{{ .external.flags.body }}"
+                when:
+                  - field: external.flags.called
+                    equals: "true"
+

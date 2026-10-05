@@ -6,22 +6,22 @@ import (
 	"os/exec"
 )
 
-// InstallOrUpgradeOrkestra installs or upgrades the Orkestra Helm chart
+// InstallOrUpgradeInrun installs or upgrades the Inrun Helm chart
 // idempotently. It always runs `helm upgrade --install` so the call is
-// safe whether Orkestra is already present or not.
+// safe whether Inrun is already present or not.
 //
 // The repo is added and updated before every call to ensure the index is
 // current. Version may be empty to use the latest chart. Additional Helm
 // flags (e.g. --set, --atomic) are passed through args.
-func InstallOrUpgradeOrkestra(version string, valueFiles []string, args ...string) error {
-	_ = exec.Command("helm", "repo", "add", Orkestra, OrkestraChartRepo).Run()
-	_ = exec.Command("helm", "repo", "update", Orkestra).Run()
+func InstallOrUpgradeInrun(version string, valueFiles []string, args ...string) error {
+	_ = exec.Command("helm", "repo", "add", Inrun, InrunChartRepo).Run()
+	_ = exec.Command("helm", "repo", "update", Inrun).Run()
 
 	helmArgs := []string{
 		"upgrade", "--install",
-		Orkestra,
-		fmt.Sprintf("%s/%s", Orkestra, OrkestraChartName),
-		"--namespace", OrkestraNamespace,
+		Inrun,
+		fmt.Sprintf("%s/%s", Inrun, InrunChartName),
+		"--namespace", InrunNamespace,
 		"--create-namespace",
 	}
 	if version != "" {
@@ -36,16 +36,16 @@ func InstallOrUpgradeOrkestra(version string, valueFiles []string, args ...strin
 
 	cmd := exec.Command("helm", helmArgs...)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("installing/upgrading Orkestra: %w\n%s", err, out)
+		return fmt.Errorf("installing/upgrading Inrun: %w\n%s", err, out)
 	}
 	return nil
 }
 
-// BuildControlCenterValues generates a temporary Helm values file that enables
-// the Control Center ingress for the given hostname.
+// BuildConsoleValues generates a temporary Helm values file that enables
+// the Console ingress for the given hostname.
 // The caller is responsible for removing the file when done.
-func BuildControlCenterValues(host string) (string, error) {
-	content := fmt.Sprintf(`controlCenter:
+func BuildConsoleValues(host string) (string, error) {
+	content := fmt.Sprintf(`console:
   ingress:
     enabled: true
     hosts:
@@ -54,7 +54,7 @@ func BuildControlCenterValues(host string) (string, error) {
           - path: /
             pathType: Prefix
 `, host)
-	tmp, err := os.CreateTemp("", "orkestra-cc-values-*.yaml")
+	tmp, err := os.CreateTemp("", "inrun-console-values-*.yaml")
 	if err != nil {
 		return "", err
 	}

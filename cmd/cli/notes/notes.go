@@ -1,7 +1,7 @@
 //go:build !runtime && !gateway
 
 // Package notes implements the notes command for browsing and searching the
-// template functions available in Katalog expressions.
+// template functions available in Catalog expressions.
 package notes
 
 import (
@@ -11,39 +11,39 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/merger"
-	"github.com/orkspace/orkestra/pkg/note"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/note"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/spf13/cobra"
 )
 
 var notesCmd = &cobra.Command{
 	Use:   "notes",
-	Short: "Browse and search Orkestra note functions",
-	Long: `List, search, and inspect Orkestra notes — the template functions available
-in every Katalog expression.
+	Short: "Browse and search Inrun note functions",
+	Long: `List, search, and inspect Inrun notes — the template functions available
+in every Catalog expression.
 
-  ork notes                    list all notes
-  ork notes --domain strings   filter by domain
-  ork notes search <term>      full-text search
-  ork notes show <name>        show full detail for one note`,
+  inrun notes                    list all notes
+  inrun notes --domain strings   filter by domain
+  inrun notes search <term>      full-text search
+  inrun notes show <name>        show full detail for one note`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		domain, _ := cmd.Flags().GetString("domain")
 		noPager, _ := cmd.Flags().GetBool("no-pager")
 		files, _ := cmd.Flags().GetStringSlice("file")
 		expanded := cmdutil.ParseFilePaths(files)
 
-		// When -f is provided, show user-defined notes from the Katalog.
+		// When -f is provided, show user-defined notes from the Catalog.
 		if len(expanded) > 0 {
 			m := merger.New(expanded...)
 			if err := m.Merge(); err != nil {
-				return fmt.Errorf("loading katalog: %w", err)
+				return fmt.Errorf("loading catalog: %w", err)
 			}
 			reg := m.ToNotes()
 			if reg.Empty() {
-				fmt.Println("No user-defined notes declared in this Katalog.")
+				fmt.Println("No user-defined notes declared in this Catalog.")
 				return nil
 			}
 			return printUserNoteTable(reg, noPager)
@@ -53,7 +53,7 @@ in every Katalog expression.
 		if domain != "" {
 			notes = note.ListByDomain(domain)
 			if len(notes) == 0 {
-				return fmt.Errorf("no notes found for domain %q — run `ork notes` to see available domains", domain)
+				return fmt.Errorf("no notes found for domain %q — run `inrun notes` to see available domains", domain)
 			}
 		} else {
 			notes = note.ListNotes()
@@ -86,7 +86,7 @@ var notesShowCmd = &cobra.Command{
 		noPager, _ := cmd.Flags().GetBool("no-pager")
 		n, ok := note.GetNote(args[0])
 		if !ok {
-			return fmt.Errorf("note %q not found — run `ork notes search %s` to find similar notes", args[0], args[0])
+			return fmt.Errorf("note %q not found — run `inrun notes search %s` to find similar notes", args[0], args[0])
 		}
 		return printNoteDetail(n, noPager)
 	},
@@ -183,7 +183,7 @@ func page(content string, noPager bool) error {
 	return nil
 }
 
-func printUserNoteTable(reg orktypes.NoteRegistry, noPager bool) error {
+func printUserNoteTable(reg types.NoteRegistry, noPager bool) error {
 	var sb strings.Builder
 	w := tabwriter.NewWriter(&sb, 0, 0, 3, ' ', 0)
 	fmt.Fprintln(w, "NAME\tEXPRESSION\tDESCRIPTION")

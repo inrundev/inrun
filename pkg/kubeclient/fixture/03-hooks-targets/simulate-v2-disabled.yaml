@@ -1,9 +1,9 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: blockchainappwithtargets-v2-disabled
   description: >
-    Run with: ork simulate --dev-server
+    Run with: inrun simulate --dev-server
 
     Routes through the "v2-disabled" target. featureEnabled is forced to "false"
     via args — the hook sees the flag as off regardless of the flag service.
@@ -11,7 +11,7 @@ metadata:
     hook behaves as if the feature is disabled.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   cr: ./cr.yaml
   target: v2-disabled
   cycles: 3

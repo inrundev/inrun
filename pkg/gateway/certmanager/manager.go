@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
-	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,12 +19,12 @@ const (
 	DefaultCertValidFor = "1y"
 )
 
-// DefaultTLSSecretName is the Secret name used for Orkestra's auto-generated TLS bundle.
-var DefaultTLSSecretName = konfig.DefaultInternalTLSName()
+// DefaultTLSSecretName is the Secret name used for Inrun's auto-generated TLS bundle.
+var DefaultTLSSecretName = config.DefaultInternalTLSName()
 
-// CertificateSpec describes the TLS certificate Orkestra should generate and store.
+// CertificateSpec describes the TLS certificate Inrun should generate and store.
 type CertificateSpec struct {
-	// ServiceName is the Kubernetes Service that will serve the certificate (e.g. "orkestra").
+	// ServiceName is the Kubernetes Service that will serve the certificate (e.g. "inrun").
 	ServiceName string
 	// Namespace is the namespace where the Service and Secret live.
 	Namespace string
@@ -88,7 +88,7 @@ func (m *k8sManager) EnsureCertificate(ctx context.Context, spec CertificateSpec
 	}
 
 	// 3. Prepare the secret object
-	secretLabels := orklabels.WithDeletionProtection(spec.BaseLabels)
+	secretLabels := labels.WithDeletionProtection(spec.BaseLabels)
 	secretLabels["app.kubernetes.io/component"] = "tls"
 
 	secret := &corev1.Secret{
@@ -97,7 +97,7 @@ func (m *k8sManager) EnsureCertificate(ctx context.Context, spec CertificateSpec
 			Namespace: spec.Namespace,
 			Labels:    secretLabels,
 			Annotations: map[string]string{
-				"orkestra.orkspace.io/generated-at": time.Now().UTC().Format(time.RFC3339),
+				"inrun.dev/generated-at": time.Now().UTC().Format(time.RFC3339),
 			},
 		},
 		Type: corev1.SecretTypeTLS,

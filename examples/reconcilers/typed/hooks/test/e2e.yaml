@@ -1,17 +1,17 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: hooks-e2e
   description: Exercise typed Go hooks — verify pre/post reconcile hooks fire and the operator deployment comes up
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   crd: ../manifests/crd.yaml
   cr: ../manifests/cr.yaml
 
   cluster:
     provider: kind
-    name: ork-e2e
+    name: inrun-e2e
     reuse: false
 
   expect:

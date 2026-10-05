@@ -1,17 +1,17 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: with-serviceaccount-e2e
   description: Deploy a website operator with a ServiceAccount and verify the Deployment, Service, and ServiceAccount come up and are cleaned up on delete
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   crd: ../manifests/crd.yaml
   cr: ../manifests/cr.yaml
 
   cluster:
     provider: kind
-    name: ork-e2e
+    name: inrun-e2e
     reuse: false
 
   expect:

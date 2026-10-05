@@ -22,7 +22,7 @@ is skipped there.
 ## Run
 
 ```sh
-ork e2e pkg/gateway/webhook/fixture/validation-external/e2e.yaml --dev-server
+inrun e2e pkg/gateway/webhook/fixture/validation-external/e2e.yaml --dev-server
 ```
 
 The [`reconciler fixture`](../../../../runtime/reconciler/fixture/validation-external/README.md)

@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: watchprobes.watch.orkestra.io
+  name: watchprobes.watch.inrun.dev
 spec:
-  group: watch.orkestra.io
+  group: watch.inrun.dev
   names:
     kind: WatchProbe
     plural: watchprobes

@@ -9,10 +9,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -38,7 +38,7 @@ Files ending in .json are parsed as JSON. Everything else is parsed as YAML.
 No cluster connection is required. No CR is applied or fetched.
 
 Stages (create/update):
-  1. Target resolution    — resolve target/alias from katalog
+  1. Target resolution    — resolve target/alias from catalog
   2. Token check          — verify the named token can perform the operation
   3. CR construction      — build the full CR from field declarations
   4. Provenance           — stamp serve-target and serve-alias annotations
@@ -46,7 +46,7 @@ Stages (create/update):
   6. Response payload     — evaluate serve.config.response.payload expressions
 
 Stages (get/list/delete):
-  1. Target resolution  — resolve target/alias from katalog
+  1. Target resolution  — resolve target/alias from catalog
   2. Token check        — verify the named token can perform the operation
   3. Response config    — show what the caller would receive
 
@@ -88,30 +88,30 @@ Example intent.json:
 			return fmt.Errorf("%s --token is required", cmdutil.FailureMark())
 		}
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return err
 		}
 
-		op := orktypes.ServeOperation(operation)
+		op := types.ServeOperation(operation)
 
-		if simulateFlag && op != orktypes.ServeOpCreate && op != orktypes.ServeOpUpdate {
+		if simulateFlag && op != types.ServeOpCreate && op != types.ServeOpUpdate {
 			return fmt.Errorf("%s --simulate is only valid for create and update operations", cmdutil.FailureMark())
 		}
 
-		if op == orktypes.ServeOpCreate || op == orktypes.ServeOpUpdate {
-			// Resolve first katalog path for simulate handoff (--file is a StringSlice on serve commands)
-			katalogFile := ""
+		if op == types.ServeOpCreate || op == types.ServeOpUpdate {
+			// Resolve first catalog path for simulate handoff (--file is a StringSlice on serve commands)
+			catalogFile := ""
 			paths, _ := cmd.Flags().GetStringSlice("file")
 			if len(paths) == 0 {
 				paths = cmdutil.DefaultFilePaths()
 			}
 			if len(paths) == 0 {
-				return fmt.Errorf(cmdutil.ErrNoKatalog)
+				return fmt.Errorf(cmdutil.ErrNoCatalog)
 			}
-			katalogFile = paths[0]
+			catalogFile = paths[0]
 
-			return playWrite(cmd.Context(), k, katalogFile, intentFile, targetOverride, tokenName, op, simulateFlag, simulateConfig)
+			return playWrite(cmd.Context(), k, catalogFile, intentFile, targetOverride, tokenName, op, simulateFlag, simulateConfig)
 		}
 		return playRead(k, targetOverride, tokenName, op, namespace, name)
 	},
@@ -119,7 +119,7 @@ Example intent.json:
 
 // ── create / update path ─────────────────────────────────────────────────────
 
-func playWrite(ctx context.Context, k *katalog.Katalog, katalogFile, intentFile, targetOverride, tokenName string, op orktypes.ServeOperation, doSimulate bool, simulateConfig string) error {
+func playWrite(ctx context.Context, k *catalog.Catalog, catalogFile, intentFile, targetOverride, tokenName string, op types.ServeOperation, doSimulate bool, simulateConfig string) error {
 	if intentFile == "" {
 		intentFile = resolveDefaultIntentFile()
 		if intentFile == "" {
@@ -156,18 +156,18 @@ func playWrite(ctx context.Context, k *katalog.Katalog, katalogFile, intentFile,
 	fmt.Println()
 
 	if doSimulate {
-		return playRunSimulate(ctx, katalogFile, obj, simulateConfig)
+		return playRunSimulate(ctx, catalogFile, obj, simulateConfig)
 	}
 	return nil
 }
 
 // ── get / list / delete path ─────────────────────────────────────────────────
 
-func playRead(k *katalog.Katalog, target, tokenName string, op orktypes.ServeOperation, namespace, name string) error {
+func playRead(k *catalog.Catalog, target, tokenName string, op types.ServeOperation, namespace, name string) error {
 	if strings.TrimSpace(target) == "" {
 		return fmt.Errorf("%s --target is required for %s", cmdutil.FailureMark(), op)
 	}
-	if op != orktypes.ServeOpList && strings.TrimSpace(name) == "" {
+	if op != types.ServeOpList && strings.TrimSpace(name) == "" {
 		return fmt.Errorf("%s --name is required for %s", cmdutil.FailureMark(), op)
 	}
 
@@ -185,7 +185,7 @@ func playRead(k *katalog.Katalog, target, tokenName string, op orktypes.ServeOpe
 
 	// Stage 2: Token check
 	printStage(2, "Token check")
-	allowed, denyReason := crd.TokenAllowedFor(alias, tokenName, string(op), namespace, orktypes.ServeClassResources)
+	allowed, denyReason := crd.TokenAllowedFor(alias, tokenName, string(op), namespace, types.ServeClassResources)
 	if !allowed {
 		msg := denyReason.Message(tokenName, string(op), crd.Kind(), namespace)
 		printStageError(msg)
@@ -195,7 +195,7 @@ func playRead(k *katalog.Katalog, target, tokenName string, op orktypes.ServeOpe
 
 	// Stage 3: Response config
 	printStage(3, "Response config")
-	if op == orktypes.ServeOpDelete {
+	if op == types.ServeOpDelete {
 		printStageDetail(cmdutil.Gray(fmt.Sprintf("DELETE %s/%s in %s", crd.Kind(), name, namespaceOrAny(namespace))))
 		printStageOK("would be deleted")
 	} else {
@@ -215,7 +215,7 @@ func playRead(k *katalog.Katalog, target, tokenName string, op orktypes.ServeOpe
 				printStageDetail(cmdutil.Gray(fmt.Sprintf("excluded paths: %s", strings.Join(cfg.Exclude, ", "))))
 			}
 		}
-		if op == orktypes.ServeOpGet {
+		if op == types.ServeOpGet {
 			printStageOK(fmt.Sprintf("GET %s/%s in %s — response config above applies", crd.Kind(), name, namespaceOrAny(namespace)))
 		} else {
 			printStageOK(fmt.Sprintf("LIST %s in %s — response config applies to all items", crd.Kind(), namespaceOrAny(namespace)))
@@ -268,7 +268,7 @@ func namespaceOrAny(ns string) string {
 
 func printPlayHeader(file, target, token, op string) {
 	fmt.Println()
-	fmt.Printf("%s  ork serve play\n", cmdutil.Bold("▶"))
+	fmt.Printf("%s  inrun serve play\n", cmdutil.Bold("▶"))
 	fmt.Printf("  %s %s\n", cmdutil.Gray("intent:"), cmdutil.Cyan(file))
 	fmt.Printf("  %s %s\n", cmdutil.Gray("target:"), cmdutil.Bold(target))
 	fmt.Printf("  %s %s\n", cmdutil.Gray("token: "), cmdutil.Bold(token))
@@ -278,7 +278,7 @@ func printPlayHeader(file, target, token, op string) {
 
 func printPlayHeaderRead(target, token, op, namespace, name string) {
 	fmt.Println()
-	fmt.Printf("%s  ork serve play\n", cmdutil.Bold("▶"))
+	fmt.Printf("%s  inrun serve play\n", cmdutil.Bold("▶"))
 	fmt.Printf("  %s %s\n", cmdutil.Gray("target:   "), cmdutil.Bold(target))
 	fmt.Printf("  %s %s\n", cmdutil.Gray("token:    "), cmdutil.Bold(token))
 	fmt.Printf("  %s %s\n", cmdutil.Gray("op:       "), cmdutil.Bold(op))
@@ -327,10 +327,10 @@ func init() {
 	servePlayCmd.Flags().StringP("intent", "i", "", "Intent file to play (YAML or JSON; default: intent.yaml or intent.json in cwd)")
 	servePlayCmd.Flags().StringP("token", "t", "", "Token name to authenticate with")
 	servePlayCmd.Flags().StringP("target", "T", "", "Target or alias name (required for get/list/delete; overrides intent file for create/update)")
-	servePlayCmd.Flags().StringP("operation", "o", string(orktypes.ServeOpCreate), "Operation to simulate ("+validServeOperations+")")
+	servePlayCmd.Flags().StringP("operation", "o", string(types.ServeOpCreate), "Operation to simulate ("+validServeOperations+")")
 	servePlayCmd.Flags().StringP("namespace", "N", "", "Namespace (for get/list/delete)")
 	servePlayCmd.Flags().StringP("name", "n", "", "Resource name (for get/delete)")
-	servePlayCmd.Flags().StringP("simulate", "S", "", "After play, hand the built CR to ork simulate; pass a simulate.yaml path to use assert mode")
+	servePlayCmd.Flags().StringP("simulate", "S", "", "After play, hand the built CR to inrun simulate; pass a simulate.yaml path to use assert mode")
 	servePlayCmd.Flags().Lookup("simulate").NoOptDefVal = "-"
 
 	_ = servePlayCmd.MarkFlagRequired("token")

@@ -1,4 +1,4 @@
-apiVersion: demo.orkestra.io/v1alpha1
+apiVersion: demo.inrun.dev/v1alpha1
 kind: BlockchainApp
 metadata:
   name: 01-hooks-my-chain
@@ -8,4 +8,4 @@ spec:
   network: testnet
   nodeType: full-node
   replicas: 5
-  serviceUrl: "http://orkestra-dev-server.orkestra-system.svc:9999"
+  serviceUrl: "http://inrun-dev-server.inrun-system.svc:9999"

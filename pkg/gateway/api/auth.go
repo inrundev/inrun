@@ -2,7 +2,7 @@
 //
 // Bearer token authentication for the Gateway API.
 //
-// At startup, LoadTokens resolves every token entry in the Katalog config:
+// At startup, LoadTokens resolves every token entry in the Catalog config:
 //   - secretRef entries: read or self-bootstrap the Kubernetes Secret, then
 //     optionally rotate it if rotateAfter has elapsed.
 //   - token entries: expand ${ENV_VAR} references.
@@ -27,19 +27,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	oidcpkg "github.com/orkspace/orkestra/pkg/gateway/oidc"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/secrets"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	oidcpkg "github.com/inrundev/inrun/pkg/gateway/oidc"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/secrets"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // TokenSet holds resolved static bearer tokens and OIDC token configurations.
 // Lookups are O(n) — Gateway API token counts are tiny.
 type TokenSet struct {
 	entries     []resolvedToken
-	oidcEntries []orktypes.APIToken
+	oidcEntries []types.APIToken
 	oidcCache   *oidcpkg.Cache
 }
 
@@ -89,11 +89,11 @@ func (ts *TokenSet) MatchesOIDC(ctx context.Context, bearer string) (name, sub s
 	return "", ""
 }
 
-// LoadTokens resolves all Gateway API token entries from the Katalog config.
+// LoadTokens resolves all Gateway API token entries from the Catalog config.
 // secretRef entries are bootstrapped/rotated via the Kubernetes client.
 // token entries are expanded from environment variables.
 // OIDC entries are stored in the TokenSet and verified per request via oidcCache.
-func LoadTokens(ctx context.Context, tokens []orktypes.APIToken, kube kubeclient.Interface, ownNamespace string, oidcCache *oidcpkg.Cache) (*TokenSet, error) {
+func LoadTokens(ctx context.Context, tokens []types.APIToken, kube kubeclient.Interface, ownNamespace string, oidcCache *oidcpkg.Cache) (*TokenSet, error) {
 	ts := &TokenSet{oidcCache: oidcCache}
 	for _, t := range tokens {
 		switch {
@@ -123,7 +123,7 @@ func LoadTokens(ctx context.Context, tokens []orktypes.APIToken, kube kubeclient
 
 // ResolveSecretRef reads the token from a Kubernetes Secret, creating or
 // rotating it as needed using the same annotation-based rotation as pkg/secrets.
-func ResolveSecretRef(ctx context.Context, ref *orktypes.APISecretRef, kube kubeclient.Interface, ownNamespace string) (string, error) {
+func ResolveSecretRef(ctx context.Context, ref *types.APISecretRef, kube kubeclient.Interface, ownNamespace string) (string, error) {
 	ns := ref.Namespace
 	if ns == "" {
 		ns = ownNamespace
@@ -181,7 +181,7 @@ func createTokenSecret(ctx context.Context, kube kubeclient.Interface, ns, name,
 			Name:        name,
 			Namespace:   ns,
 			Annotations: annotations,
-			Labels:      orklabels.WithDeletionProtection(orklabels.OrkestraResourceLabels()),
+			Labels:      labels.WithDeletionProtection(labels.InrunResourceLabels()),
 		},
 		Type: corev1.SecretTypeOpaque,
 		StringData: map[string]string{

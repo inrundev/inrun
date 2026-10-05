@@ -1,7 +1,7 @@
 ---
 # App in "default" namespace — NOT in allowedNamespaces ["production"].
 # This will be rejected at admission time.
-apiVersion: security.orkestra.io/v1alpha1
+apiVersion: security.inrun.dev/v1alpha1
 kind: App
 metadata:
   name: blocked-app
@@ -13,7 +13,7 @@ spec:
 ---
 # Cache in "kube-system" — in restrictedNamespaces.
 # This will be rejected at admission time.
-apiVersion: security.orkestra.io/v1alpha1
+apiVersion: security.inrun.dev/v1alpha1
 kind: Cache
 metadata:
   name: blocked-cache

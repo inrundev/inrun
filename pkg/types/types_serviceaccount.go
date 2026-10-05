@@ -3,7 +3,7 @@ package types
 
 // ── ServiceAccount ────────────────────────────────────────────────────────────
 
-// ServiceAccountTemplateSource declares one ServiceAccount to be managed by Orkestra.
+// ServiceAccountTemplateSource declares one ServiceAccount to be managed by Inrun.
 //
 // Example:
 //
@@ -84,7 +84,7 @@ type ServiceAccountTemplateSource struct {
 
 // ── Namespace ────────────────────────────────────────────────────────────
 
-// NamespaceTemplateSource declares one Namespace to be managed by Orkestra.
+// NamespaceTemplateSource declares one Namespace to be managed by Inrun.
 //
 // Example:
 //

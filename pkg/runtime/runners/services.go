@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orksvc "github.com/orkspace/orkestra/pkg/resources/services"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/services"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunServices resolves and applies Service template declarations.
@@ -18,15 +18,15 @@ import (
 func RunServices(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.ServiceTemplateSource,
+	srcs []types.ServiceTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -39,7 +39,7 @@ func RunServices(
 
 	for i, src := range srcs {
 		// 1. Evaluate conditions BEFORE resolving templates
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 		ns, _ := resolver.Resolve(src.Namespace)
@@ -57,7 +57,7 @@ func RunServices(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orksvc.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := services.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("services[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -77,20 +77,20 @@ func RunServices(
 		}
 
 		// 3. Build registry spec and apply
-		spec := orksvc.Resolve(resolved, resolver.OwnerName())
+		spec := services.Resolve(resolved, resolver.OwnerName())
 
 		if update {
-			if err := orksvc.Update(ctx, kube, owner, spec); err != nil {
+			if err := services.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("services[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orksvc.Create(ctx, kube, owner, spec); err != nil {
+			if err := services.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("services[%d].create: %w", i, err)
 			}
 
 			// reconcile: true
 			if src.Reconcile {
-				if err := orksvc.Update(ctx, kube, owner, spec); err != nil {
+				if err := services.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("services[%d].reconcile: %w", i, err)
 				}
 			}

@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 

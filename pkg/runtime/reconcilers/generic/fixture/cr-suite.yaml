@@ -1,4 +1,4 @@
-apiVersion: reconciler.orkestra.io/v1alpha1
+apiVersion: reconciler.inrun.dev/v1alpha1
 kind: ReconcilerSuite
 metadata:
   name: probe-suite

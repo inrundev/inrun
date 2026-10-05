@@ -18,8 +18,8 @@ before it reaches etcd.
 ## Run
 
 ```sh
-ork e2e pkg/runtime/reconciler/fixture/validation-external/e2e.yaml --dev-server
+inrun e2e pkg/runtime/reconciler/fixture/validation-external/e2e.yaml --dev-server
 ```
 
 The `--dev-server` flag deploys the mock HTTP server into the cluster at
-`http://orkestra-dev-server.orkestra-system.svc:9999`.
+`http://inrun-dev-server.inrun-system.svc:9999`.

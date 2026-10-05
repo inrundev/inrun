@@ -1,17 +1,17 @@
-module github.com/orkspace/orkestra-args-demo
+module github.com/inrundev/inrun-args-demo
 
 go 1.26.6
 
-replace github.com/orkspace/orkestra => ../../..
+replace github.com/inrundev/inrun => ../../..
 
-replace github.com/orkspace/orkestra-args-hooks => ./01-hooks
+replace github.com/inrundev/inrun-args-hooks => ./01-hooks
 
-replace github.com/orkspace/orkestra-args-constructor => ./02-constructor
+replace github.com/inrundev/inrun-args-constructor => ./02-constructor
 
 require (
-	github.com/orkspace/orkestra v0.0.0
-	github.com/orkspace/orkestra-args-constructor v0.0.0
-	github.com/orkspace/orkestra-args-hooks v0.0.0
+	github.com/inrundev/inrun v0.0.0
+	github.com/inrundev/inrun-args-constructor v0.0.0
+	github.com/inrundev/inrun-args-hooks v0.0.0
 	k8s.io/apimachinery v0.36.1
 	k8s.io/client-go v0.36.1
 )

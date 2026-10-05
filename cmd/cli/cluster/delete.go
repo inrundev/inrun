@@ -5,27 +5,27 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/tools/cluster"
+	"github.com/inrundev/inrun/pkg/tools/cluster"
 	"github.com/spf13/cobra"
 )
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete Orkestra infrastructure resources",
+	Short: "Delete Inrun infrastructure resources",
 }
 
 var deleteClusterCmd = &cobra.Command{
 	Use:   "cluster",
-	Short: "Delete one or more local kind clusters created by ork create cluster",
+	Short: "Delete one or more local kind clusters created by inrun create cluster",
 	Long: `Deletes one or more local kind cluster by name.
 	Separated by commas.
 
 
-  ork delete cluster
-  ork delete cluster --name ork-e2e
-  ork delete cluster --name ork-1,ork-2,ork-3`,
+  inrun delete cluster
+  inrun delete cluster --name inrun-e2e
+  inrun delete cluster --name inrun-1,inrun-2,inrun-3`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
 
@@ -45,7 +45,7 @@ func init() {
 	cmdutil.RootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
 
-	deleteClusterCmd.Flags().StringP("name", "n", "ork-playground", "Cluster name. Accepts multiple names separated by commas.")
+	deleteClusterCmd.Flags().StringP("name", "n", "inrun-playground", "Cluster name. Accepts multiple names separated by commas.")
 
 	// Shadow global flags
 	cmdutil.ShadowGlobalCommandFlags(deleteClusterCmd, "file")

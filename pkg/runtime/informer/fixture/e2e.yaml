@@ -1,22 +1,22 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: informer-probe-e2e
   description: >
     Living fixture for pkg/runtime/informer. Verifies that the namespace filter
-    gates reconciliation at the queue layer. The katalog allows only team-a.
+    gates reconciliation at the queue layer. The catalog allows only team-a.
     A CR in team-a is reconciled and its ConfigMap is created. A CR in team-b
     is accepted by the API server but the informer drops the event — no
     reconcile fires, no ConfigMap is created, no status is set.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./cr.yaml
 
   cluster:
     provider: kind
-    name: ork-informer-probe
+    name: inrun-informer-probe
     reuse: false
 
   setup:
@@ -96,11 +96,11 @@ spec:
           namespace: team-b
       logs:
         - leaderElection:
-            lease: orkestra-konductor
-            namespace: orkestra-system
+            lease: inrun-leader
+            namespace: inrun-system
           since: 2m
     commands:
       - kubectl get informerprobes -A -o wide
       - kubectl get configmaps -n team-a
       - kubectl get configmaps -n team-b
-      - kubectl get pods -n orkestra-system -o wide
+      - kubectl get pods -n inrun-system -o wide

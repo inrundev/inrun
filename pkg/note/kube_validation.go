@@ -11,16 +11,16 @@ import (
 // Kubernetes already validates this format at the API server: a label or
 // annotation key must be a valid [prefix/]name, and a label value (unlike
 // an annotation value, which is an unrestricted free-form string) follows
-// that same name format. ork validate already runs this exact check once,
-// at katalog-authoring time, against the keys a katalog author declares
+// that same name format. inrun validate already runs this exact check once,
+// at catalog-authoring time, against the keys a catalog author declares
 // under serve.labels and serve.annotations — but nothing checks the values
 // a runtime client actually submits (curl, raw kubectl, a custom UI) until
 // the object reaches the real API server.
 //
 // These notes expose that same upstream Kubernetes check so a
 // validation.rules entry can gate on it directly, at admission time, with
-// an Orkestra-native message instead of the API server's raw rejection —
-// and so ork simulate, which doesn't run full structural schema
+// an Inrun-native message instead of the API server's raw rejection —
+// and so inrun simulate, which doesn't run full structural schema
 // validation, can catch it too.
 //
 // Usage examples:

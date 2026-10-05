@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkcm "github.com/orkspace/orkestra/pkg/resources/configmaps"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/configmaps"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunConfigMaps resolves and applies ConfigMap template declarations.
@@ -29,15 +29,15 @@ import (
 func RunConfigMaps(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.ConfigMapTemplateSource,
+	srcs []types.ConfigMapTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -50,7 +50,7 @@ func RunConfigMaps(
 
 	for i, src := range srcs {
 		// 1. Evaluate conditions BEFORE resolving templates
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		// Early name/ns resolution — needed for guard check and DeleteIfOwned cleanup.
 		// ResolveConfigMapTemplate resolves these again internally — intentional, cheap.
@@ -68,7 +68,7 @@ func RunConfigMaps(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orkcm.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := configmaps.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("configMaps[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -88,7 +88,7 @@ func RunConfigMaps(
 		}
 
 		// 3. Build registry spec and apply
-		spec := orkcm.Resolve(resolved, resolver.OwnerName())
+		spec := configmaps.Resolve(resolved, resolver.OwnerName())
 
 		// toNamespaces — distribute to multiple namespaces, guarded per target
 		if len(resolved.ToNamespaces) > 0 {
@@ -106,11 +106,11 @@ func RunConfigMaps(
 				nsSpec := spec
 				nsSpec.Namespace = targetNs
 				if shouldSync {
-					if err := orkcm.Update(ctx, kube, owner, nsSpec); err != nil {
+					if err := configmaps.Update(ctx, kube, owner, nsSpec); err != nil {
 						return fmt.Errorf("configmaps[%d].update namespace=%s: %w", i, targetNs, err)
 					}
 				} else {
-					if err := orkcm.Create(ctx, kube, owner, nsSpec); err != nil {
+					if err := configmaps.Create(ctx, kube, owner, nsSpec); err != nil {
 						return fmt.Errorf("configmaps[%d].create namespace=%s: %w", i, targetNs, err)
 					}
 				}
@@ -120,15 +120,15 @@ func RunConfigMaps(
 
 		// Single namespace
 		if update {
-			if err := orkcm.Update(ctx, kube, owner, spec); err != nil {
+			if err := configmaps.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("configmaps[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkcm.Create(ctx, kube, owner, spec); err != nil {
+			if err := configmaps.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("configmaps[%d].create: %w", i, err)
 			}
 			if src.Reconcile {
-				if err := orkcm.Update(ctx, kube, owner, spec); err != nil {
+				if err := configmaps.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("configmaps[%d].reconcile: %w", i, err)
 				}
 			}

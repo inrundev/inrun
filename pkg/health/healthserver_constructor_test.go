@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
+	"github.com/inrundev/inrun/pkg/config"
 )
 
 func TestNewHealthServer_ConstructorWiresAllFields(t *testing.T) {
-	kfg := konfig.NewDefaultKonfig()
-	kfg.Ork().SetName("test-runtime")
+	kfg := config.NewDefaultConfig()
+	kfg.Inrun().SetName("test-runtime")
 	kfg.Health().SetPort("8080")
 
 	hs := NewHealthServer(kfg)
@@ -24,7 +24,7 @@ func TestNewHealthServer_ConstructorWiresAllFields(t *testing.T) {
 		t.Fatalf("httpPort: expected %q, got %q", "8080", hs.httpPort)
 	}
 
-	// Start() must not panic with default konfig
+	// Start() must not panic with default config
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("Start() should not panic: %v", r)

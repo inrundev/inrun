@@ -1,6 +1,6 @@
 # Exercises: production with productionApproval — warn rule does NOT fire.
 # Expected: accepted, no ValidationWarning.
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: PlatformResource
 metadata:
   name: payments-api-prod-approved

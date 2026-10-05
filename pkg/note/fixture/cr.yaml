@@ -1,4 +1,4 @@
-apiVersion: note.orkestra.io/v1alpha1
+apiVersion: note.inrun.dev/v1alpha1
 kind: NoteProbe
 metadata:
   name: my-probe

@@ -36,5 +36,5 @@ field "{{ inBusinessHours }}": deployments are only allowed during business hour
 ## Run
 
 ```sh
-ork e2e pkg/runtime/reconciler/fixture/notes-validation/e2e.yaml
+inrun e2e pkg/runtime/reconciler/fixture/notes-validation/e2e.yaml
 ```

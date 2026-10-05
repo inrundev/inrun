@@ -4,7 +4,7 @@ The CR tells you *what* to run. It cannot tell you *when* the business is open o
 *whether* a feature flag is enabled. Those answers come from the world — and
 `args:` is how they reach the hook.
 
-The Katalog declares a user-defined note for business hours and an external call
+The Catalog declares a user-defined note for business hours and an external call
 for the feature flag. The runtime evaluates both before invoking the hook:
 
 ```yaml
@@ -27,7 +27,7 @@ hooks:
 ```
 
 The hook reads both from `kube.Args()` — no time library, no HTTP client,
-no flag-service SDK. When the business-hours window changes, only the Katalog
+no flag-service SDK. When the business-hours window changes, only the Catalog
 changes. The binary is identical across environments and schedules.
 
 ```go
@@ -40,7 +40,7 @@ if inBusinessHours && featureEnabled {
 }
 ```
 
-**Requirement:** `ork` CLI — install from [orkestra-install](https://github.com/orkspace/orkestra#getting-started)
+**Requirement:** `inrun` CLI — install from [inrun-install](https://github.com/inrundev/inrun#getting-started)
 
 ---
 
@@ -54,14 +54,14 @@ make registry
 
 ```bash
 make clean && make build
-ork validate katalog.yaml
-ork simulate --dev-server
+inrun validate catalog.yaml
+inrun simulate --dev-server
 ```
 
 ## Step 3 — Run
 
 ```bash
-ork run --dev-server
+inrun --dev-server
 
 kubectl get deployment 01-hooks-my-chain \
   -o jsonpath='{.metadata.annotations.feature\.demo/v2-enabled}' && echo
@@ -81,7 +81,7 @@ kubectl get blockchainapp 01-hooks-my-chain \
 ```bash
 make docker push IMAGE_REPO=yourregistry/blockchainapp-operator IMAGE_TAG=latest
 
-ork e2e --dev-server \
+inrun e2e --dev-server \
   --set runtime.image.repository=yourregistry/blockchainapp-operator \
   --set runtime.image.tag=latest
 ```

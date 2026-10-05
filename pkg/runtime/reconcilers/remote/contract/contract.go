@@ -12,9 +12,9 @@ type Result struct {
 	// Error is a human-readable error message. Non-empty triggers backoff retry.
 	Error string `json:"error,omitempty"`
 	// Status is an optional map of fields to patch onto the CR's status.
-	// Merged with any katalog emit.status patch; remote fields win on conflict.
+	// Merged with any catalog emit.status patch; remote fields win on conflict.
 	Status map[string]interface{} `json:"status,omitempty"`
 	// Resources is an optional list of Kubernetes objects to apply via SSA.
-	// Orkestra sets the CR as owner for same-namespace resources.
+	// Inrun sets the CR as owner for same-namespace resources.
 	Resources []map[string]interface{} `json:"resources,omitempty"`
 }

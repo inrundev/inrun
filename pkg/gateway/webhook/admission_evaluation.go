@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	orkexternal "github.com/orkspace/orkestra/pkg/external"
-	"github.com/orkspace/orkestra/pkg/intent"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils/common/query"
+	"github.com/inrundev/inrun/pkg/external"
+	"github.com/inrundev/inrun/pkg/intent"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils/common/query"
 )
 
 // ── Validation evaluation ─────────────────────────────────────────────────────
@@ -20,22 +20,22 @@ type validationViolation struct {
 	Message  string
 	Got      string
 	RuleType string
-	Action   orktypes.ValidationAction
+	Action   types.ValidationAction
 }
 
 func (ws *WebhookServer) evaluateValidationRules(
 	ctx context.Context,
 	obj map[string]interface{},
-	cfg *orktypes.ValidationConfig,
+	cfg *types.ValidationConfig,
 	kindName string,
 ) (denials []validationViolation, warnings []validationViolation) {
 	if cfg == nil || len(cfg.Rules) == 0 {
 		return nil, nil
 	}
 
-	resolver := orktmpl.NewResolverFromMap(obj)
-	kat := ws.katalog
-	var notes orktypes.NoteRegistry
+	resolver := template.NewResolverFromMap(obj)
+	kat := ws.catalog
+	var notes types.NoteRegistry
 	if kat != nil {
 		notes = kat.UserNotes()
 		resolver = resolver.WithUserNotes(notes)
@@ -48,7 +48,7 @@ func (ws *WebhookServer) evaluateValidationRules(
 	}
 	if calls := cfg.AdmissionExternal(); len(calls) > 0 {
 		var err error
-		resolver, err = orkexternal.Run(ctx, kindName, resolver, calls, ws.kubeClient)
+		resolver, err = external.Run(ctx, kindName, resolver, calls, ws.kubeClient)
 		if err != nil {
 			logger.FromContext(ctx).Warn().Err(err).Str("kind", kindName).Msg("admission/validate: external call failed")
 		}
@@ -58,8 +58,8 @@ func (ws *WebhookServer) evaluateValidationRules(
 	// so CRDs with no unique/health/metrics rules pay zero HTTP cost.
 	// Note bodies are scanned so a rule like {{ inBusinessHours }} correctly
 	// triggers a fetch when inBusinessHours references .health.* or .metrics.*.
-	if kat != nil && ws.konfig != nil && (cfg.HasUniqueRule() || cfg.HasHealthField(notes) || cfg.HasMetricsField(notes)) {
-		result := ws.katalog.LookupByKind(kindName)
+	if kat != nil && ws.config != nil && (cfg.HasUniqueRule() || cfg.HasHealthField(notes) || cfg.HasMetricsField(notes)) {
+		result := ws.catalog.LookupByKind(kindName)
 		if result.Entry() != nil {
 			crdName := result.Entry().Name
 			q := query.NewRuntimeQuery(ctx, ws.runtimeEndpoint(), crdName)
@@ -76,10 +76,10 @@ func (ws *WebhookServer) evaluateValidationRules(
 	}
 	data := resolver.Data()
 	for _, rule := range cfg.Rules {
-		if !orktypes.EvaluateConditions(data, rule.When, rule.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(data, rule.When, rule.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
-		rv := orktypes.EvaluateValidationRule(data, resolver, rule)
+		rv := types.EvaluateValidationRule(data, resolver, rule)
 		if rv == nil {
 			continue
 		}
@@ -90,10 +90,10 @@ func (ws *WebhookServer) evaluateValidationRules(
 			RuleType: rv.Rule,
 			Action:   rule.Action,
 		}
-		switch orktypes.EffectiveAction(rule.Action) {
-		case orktypes.ValidationActionDeny:
+		switch types.EffectiveAction(rule.Action) {
+		case types.ValidationActionDeny:
 			denials = append(denials, *v)
-		case orktypes.ValidationActionWarn:
+		case types.ValidationActionWarn:
 			warnings = append(warnings, *v)
 		}
 	}
@@ -113,16 +113,16 @@ type fieldChange struct {
 func (ws *WebhookServer) applyMutationRules(
 	ctx context.Context,
 	obj map[string]interface{},
-	cfg *orktypes.MutationConfig,
+	cfg *types.MutationConfig,
 	kindName string,
 ) ([]fieldChange, error) {
 	if cfg == nil || len(cfg.Rules) == 0 {
 		return nil, nil
 	}
 
-	resolver := orktmpl.NewResolverFromMap(obj)
-	kat := ws.katalog
-	var notes orktypes.NoteRegistry
+	resolver := template.NewResolverFromMap(obj)
+	kat := ws.catalog
+	var notes types.NoteRegistry
 	if kat != nil {
 		notes = kat.UserNotes()
 		resolver = resolver.WithUserNotes(notes)
@@ -136,12 +136,12 @@ func (ws *WebhookServer) applyMutationRules(
 	}
 	if calls := cfg.AdmissionExternal(); len(calls) > 0 {
 		var err error
-		resolver, err = orkexternal.Run(ctx, kindName, resolver, calls, ws.kubeClient)
+		resolver, err = external.Run(ctx, kindName, resolver, calls, ws.kubeClient)
 		if err != nil {
 			logger.FromContext(ctx).Warn().Err(err).Str("kind", kindName).Msg("admission/mutate: external call failed")
 		}
 	}
-	if kat != nil && ws.konfig != nil && (cfg.HasUniqueRule() || cfg.HasHealthField(notes) || cfg.HasMetricsField(notes)) {
+	if kat != nil && ws.config != nil && (cfg.HasUniqueRule() || cfg.HasHealthField(notes) || cfg.HasMetricsField(notes)) {
 		result := kat.LookupByKind(kindName)
 		if result.Entry() != nil {
 			crdName := result.Entry().Name
@@ -161,13 +161,13 @@ func (ws *WebhookServer) applyMutationRules(
 
 	mdata := resolver.Data()
 	for _, rule := range cfg.Rules {
-		if !orktypes.EvaluateConditions(mdata, rule.When, rule.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(mdata, rule.When, rule.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 
 		// Resolve template expression in the field path.
 		targetField := rule.Field
-		if orktypes.IsTemplate(targetField) {
+		if types.IsTemplate(targetField) {
 			if resolved, err := resolver.Resolve(targetField); err == nil {
 				targetField = resolved
 			}
@@ -185,7 +185,7 @@ func (ws *WebhookServer) applyMutationRules(
 				return nil, fmt.Errorf("mutation rule override for field %q: %w", targetField, err)
 			}
 			rawResolved = raw
-			changeType = orktypes.OverrideMutationChangeType.String()
+			changeType = types.OverrideMutationChangeType.String()
 
 		case rule.IsDefaultChangeType():
 			currentVal, found := resolveScalar(obj, targetField)
@@ -197,7 +197,7 @@ func (ws *WebhookServer) applyMutationRules(
 				return nil, fmt.Errorf("mutation rule default for field %q: %w", targetField, err)
 			}
 			rawResolved = raw
-			changeType = orktypes.DefaultMutationChangeType.String()
+			changeType = types.DefaultMutationChangeType.String()
 
 		default:
 			continue

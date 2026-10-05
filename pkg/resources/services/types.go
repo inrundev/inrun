@@ -33,7 +33,7 @@ type ResolvedServiceSpec struct {
 	TargetPort int32
 
 	// Labels — applied to Service metadata.
-	// Orkestra always adds: managed-by=orkestra, orkestra-owner=<cr-name>
+	// Inrun always adds: managed-by=inrun, inrun-owner=<cr-name>
 	Labels map[string]string
 
 	// Selector —> service selector to route traffic to pods.

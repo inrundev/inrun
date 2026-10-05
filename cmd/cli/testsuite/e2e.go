@@ -10,11 +10,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
-	"github.com/orkspace/orkestra/cmd/cli/validate"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/validate"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/registry/e2e"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/registry/e2e"
 	"gopkg.in/yaml.v3"
 
 	"github.com/spf13/cobra"
@@ -26,25 +26,25 @@ var e2eCmd = &cobra.Command{
 	Long: `Runs an E2E test defined in a YAML spec file.
 
 Orchestrates the full lifecycle: cluster creation → dependency installation →
-CRD apply → bundle apply → Orkestra install → CR apply → expectation checking → cleanup.
+CRD apply → bundle apply → Inrun install → CR apply → expectation checking → cleanup.
 
 The same command runs locally and in CI. The e2e.yaml file is the source of truth.
 
-  ork e2e                 # e2e.yaml here, then test/e2e.yaml
-  ork e2e -f e2e.yaml
-  ork e2e -f e2e.yaml --keep-cluster
-  ork e2e -f e2e.yaml --cluster my-existing-context
-  ork e2e -f e2e.yaml --version v1.2.3 --values values.yaml
+  inrun e2e                 # e2e.yaml here, then test/e2e.yaml
+  inrun e2e -f e2e.yaml
+  inrun e2e -f e2e.yaml --keep-cluster
+  inrun e2e -f e2e.yaml --cluster my-existing-context
+  inrun e2e -f e2e.yaml --version v1.2.3 --values values.yaml
 
 Discovery mode — runs all *e2e.yaml files found recursively (skips pure aggregators):
 
-  ork e2e ./...
-  ork e2e ./examples/reconcilers/declarative/...
-  ork e2e ./... --wait 2s
-  ork e2e ./... --skip vendor,testdata,external/07-vault`,
+  inrun e2e ./...
+  inrun e2e ./examples/reconcilers/declarative/...
+  inrun e2e ./... --wait 2s
+  inrun e2e ./... --skip vendor,testdata,external/07-vault`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		file, _ := cmd.Flags().GetString("file")
-		// Allow positional argument: ork e2e ./... (like go test ./...)
+		// Allow positional argument: inrun e2e ./... (like go test ./...)
 		if len(args) > 0 {
 			file = args[0]
 		}
@@ -91,7 +91,7 @@ Discovery mode — runs all *e2e.yaml files found recursively (skips pure aggreg
 		runner, err := e2e.New(file, e2e.Options{
 			ClusterCtx: clusterCtx, UseCurrentCtx: useCurrentCtx,
 			KeepCluster: keepCluster, Workers: workers,
-			DevServer: devServer, OrkVersion: version,
+			DevServer: devServer, InrunVersion: version,
 			ValueFiles: valuesFiles, HelmArgs: helmArgs,
 			ReportFile: reportFile, NoRuntime: noRuntime,
 		})
@@ -169,7 +169,7 @@ func runDiscovery(cmd *cobra.Command, root, wait string, skip []string, clusterC
 	suite := e2e.BuildDiscoveryE2E(paths, wait)
 
 	// Write to a temp file so the runner resolves relative paths correctly.
-	tmp, err := os.CreateTemp("", "ork-e2e-discovery-*.yaml")
+	tmp, err := os.CreateTemp("", "inrun-e2e-discovery-*.yaml")
 	if err != nil {
 		return fmt.Errorf("creating temp suite file: %w", err)
 	}
@@ -181,7 +181,7 @@ func runDiscovery(cmd *cobra.Command, root, wait string, skip []string, clusterC
 	}
 	tmp.Close()
 
-	runner, err := e2e.New(tmp.Name(), e2e.Options{ClusterCtx: clusterCtx, UseCurrentCtx: useCurrentCtx, KeepCluster: keepCluster, Workers: workers, DevServer: devServer, OrkVersion: version, ValueFiles: valuesFiles, HelmArgs: helmArgs})
+	runner, err := e2e.New(tmp.Name(), e2e.Options{ClusterCtx: clusterCtx, UseCurrentCtx: useCurrentCtx, KeepCluster: keepCluster, Workers: workers, DevServer: devServer, InrunVersion: version, ValueFiles: valuesFiles, HelmArgs: helmArgs})
 	if err != nil {
 		return err
 	}
@@ -195,21 +195,21 @@ type crdInfo struct {
 	kind string
 }
 
-// ── ork e2e init ─────────────────────────────────────────────────────────────
+// ── inrun e2e init ─────────────────────────────────────────────────────────────
 
 var e2eInitCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Scaffold an e2e.yaml from the current Katalog",
-	Long: `Reads the Katalog in the current directory and generates a best-practice
+	Short: "Scaffold an e2e.yaml from the current Catalog",
+	Long: `Reads the Catalog in the current directory and generates a best-practice
 e2e.yaml skeleton: CR created → resources created → cleanup verified.
-No cluster is needed — it reads only the Katalog for CRD names and kinds.
+No cluster is needed — it reads only the Catalog for CRD names and kinds.
 
-  ork e2e init                         # auto-detect katalog.yaml
-  ork e2e init -f katalog.yaml         # explicit
-  ork e2e init --force                 # overwrite existing e2e.yaml
-  ork e2e init --dry-run               # preview without writing
-  ork e2e init --suite                 # aggregate all e2e.yaml files under .
-  ork e2e init --suite ./examples/     # aggregate under a specific dir`,
+  inrun e2e init                         # auto-detect catalog.yaml
+  inrun e2e init -f catalog.yaml         # explicit
+  inrun e2e init --force                 # overwrite existing e2e.yaml
+  inrun e2e init --dry-run               # preview without writing
+  inrun e2e init --suite                 # aggregate all e2e.yaml files under .
+  inrun e2e init --suite ./examples/     # aggregate under a specific dir`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if suite, _ := cmd.Flags().GetBool("suite"); suite {
 			return e2eInitSuite(cmd, args)
@@ -218,21 +218,21 @@ No cluster is needed — it reads only the Katalog for CRD names and kinds.
 	},
 }
 
-// e2eInitScaffold reads the Katalog and writes an e2e.yaml scaffold.
+// e2eInitScaffold reads the Catalog and writes an e2e.yaml scaffold.
 func e2eInitScaffold(cmd *cobra.Command) error {
-	katalogFile, _ := cmd.Flags().GetString("file")
+	catalogFile, _ := cmd.Flags().GetString("file")
 	force, _ := cmd.Flags().GetBool("force")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 	var err error
-	katalogFile, err = cmdutil.ResolveKatalogFile(katalogFile)
+	catalogFile, err = cmdutil.ResolveCatalogFile(catalogFile)
 	if err != nil {
 		return err
 	}
 
-	kat, err := katalog.ParseFile(katalogFile)
+	kat, err := catalog.ParseFile(catalogFile)
 	if err != nil {
-		return fmt.Errorf("parsing Katalog: %w", err)
+		return fmt.Errorf("parsing Catalog: %w", err)
 	}
 
 	outPath := filepath.Join(cmdutil.DirTest, cmdutil.FileE2e)
@@ -243,9 +243,9 @@ func e2eInitScaffold(cmd *cobra.Command) error {
 	}
 
 	// Paths in the spec are relative to the spec file, in test/.
-	relKatalog := relFromDir(cmdutil.DirTest, katalogFile)
-	relCRD := relFromDir(cmdutil.DirTest, projectFile(katalogFile, cmdutil.FileCrd, cmdutil.DirManifests))
-	relCR := relFromDir(cmdutil.DirTest, projectFile(katalogFile, cmdutil.FileCr, cmdutil.DirManifests))
+	relCatalog := relFromDir(cmdutil.DirTest, catalogFile)
+	relCRD := relFromDir(cmdutil.DirTest, projectFile(catalogFile, cmdutil.FileCrd, cmdutil.DirManifests))
+	relCR := relFromDir(cmdutil.DirTest, projectFile(catalogFile, cmdutil.FileCr, cmdutil.DirManifests))
 
 	crdNames := kat.CRDNames()
 	var crds []crdInfo
@@ -258,7 +258,7 @@ func e2eInitScaffold(cmd *cobra.Command) error {
 	}
 	sort.Slice(crds, func(i, j int) bool { return crds[i].name < crds[j].name })
 
-	output := buildE2EScaffoldYAML(kat.Metadata().Name, relKatalog, relCRD, relCR, crds)
+	output := buildE2EScaffoldYAML(kat.Metadata().Name, relCatalog, relCRD, relCR, crds)
 
 	if dryRun {
 		fmt.Print(output)
@@ -274,7 +274,7 @@ func e2eInitScaffold(cmd *cobra.Command) error {
 
 	fmt.Printf("%s Generated %s\n", cmdutil.SuccessMark(), outPath)
 	fmt.Printf("  %d CRD(s): %s\n", len(crds), crdKindList(crds))
-	fmt.Printf("\n  Edit the placeholders, then run %s.\n", cmdutil.Bold("ork e2e"))
+	fmt.Printf("\n  Edit the placeholders, then run %s.\n", cmdutil.Bold("inrun e2e"))
 	return nil
 }
 
@@ -335,11 +335,11 @@ func e2eInitSuite(cmd *cobra.Command, args []string) error {
 		Imports    []suiteImport `yaml:"imports"`
 	}
 	doc := suiteDoc{
-		APIVersion: "orkestra.orkspace.io/v1",
+		APIVersion: "inrun.dev/v1",
 		Kind:       "E2E",
 		Metadata: suiteMeta{
 			Name:        "suite",
-			Description: fmt.Sprintf("Generated by ork e2e init --suite — %d file(s) discovered", len(paths)),
+			Description: fmt.Sprintf("Generated by inrun e2e init --suite — %d file(s) discovered", len(paths)),
 		},
 	}
 	for _, imp := range discovered.Imports {
@@ -379,13 +379,13 @@ func e2eInitSuite(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Printf("    %s\n", cmdutil.Dim(imp.Path))
 	}
-	fmt.Printf("\n  Run %s to verify.\n", cmdutil.Bold("ork e2e"))
+	fmt.Printf("\n  Run %s to verify.\n", cmdutil.Bold("inrun e2e"))
 	return nil
 }
 
-// buildE2EScaffoldYAML returns the scaffold YAML string for ork e2e init.
+// buildE2EScaffoldYAML returns the scaffold YAML string for inrun e2e init.
 // Comments are injected directly — yaml.Marshal cannot preserve them.
-func buildE2EScaffoldYAML(katalogName, katalogFile, crdFile, crFile string, crds []crdInfo) string {
+func buildE2EScaffoldYAML(catalogName, catalogFile, crdFile, crFile string, crds []crdInfo) string {
 	var b strings.Builder
 	w := func(s string) { b.WriteString(s + "\n") }
 
@@ -395,30 +395,30 @@ func buildE2EScaffoldYAML(katalogName, katalogFile, crdFile, crFile string, crds
 	}
 
 	w("# Schema reference: " + cmdutil.SchemaRefE2E)
-	w("apiVersion: orkestra.orkspace.io/v1")
+	w("apiVersion: inrun.dev/v1")
 	w("kind: E2E")
 	w("metadata:")
-	w("  name: " + katalogName + "-e2e")
-	w(`  description: "Generated by ork e2e init — edit to refine"`)
+	w("  name: " + catalogName + "-e2e")
+	w(`  description: "Generated by inrun e2e init — edit to refine"`)
 	w("")
 	w("spec:")
-	w("  katalog: " + katalogFile)
+	w("  catalog: " + catalogFile)
 	w("  crd: " + crdFile)
 	w("  cr: " + crFile)
 	w("")
 	w("  cluster:")
 	w("    provider: kind")
-	w("    name: " + katalogName + "-e2e")
+	w("    name: " + catalogName + "-e2e")
 	w("    reuse: false")
 
 	if len(crds) > 1 {
 		w("")
-		w("  # Multiple CRDs in this Katalog. Apply the remaining CRDs and CRs via setup.")
+		w("  # Multiple CRDs in this Catalog. Apply the remaining CRDs and CRs via setup.")
 		w("  setup:")
 		w("    apply:")
 		w("      - ./other-crds.yaml   # CRD definitions for the remaining kinds")
 		w("      - ./other-crs.yaml    # CR instances for the remaining kinds")
-		w("      # Additional CRDs in this Katalog:")
+		w("      # Additional CRDs in this Catalog:")
 		for _, c := range crds[1:] {
 			w("      # - " + c.kind)
 		}
@@ -476,7 +476,7 @@ func init() {
 	cmdutil.RootCmd.AddCommand(e2eCmd)
 	e2eCmd.AddCommand(e2eInitCmd)
 
-	e2eInitCmd.Flags().StringP("file", "f", "", "Path to katalog.yaml or komposer.yaml")
+	e2eInitCmd.Flags().StringP("file", "f", "", "Path to catalog.yaml or stack.yaml")
 	e2eInitCmd.Flags().Bool("force", false, "Overwrite existing e2e.yaml")
 	e2eInitCmd.Flags().Bool("dry-run", false, "Print the generated e2e.yaml to stdout instead of writing the file")
 	e2eInitCmd.Flags().Bool("suite", false, "Aggregate all e2e.yaml leaf files found under the given dir (default: .)")
@@ -488,16 +488,16 @@ func init() {
 	e2eCmd.Flags().Bool("use-current", false, "Use the current kubectl context, skip cluster creation")
 	e2eCmd.Flags().String("cluster", "", "Use an existing kubectl context instead of creating a cluster")
 	e2eCmd.Flags().Int("workers", 0, "Number of kind worker nodes to provision (default: 0, control-plane only)")
-	e2eCmd.Flags().String("version", "", "Orkestra version to install (e.g., v1.2.3)")
-	e2eCmd.Flags().StringSlice("values", []string{}, "Helm values files to pass to Orkestra installation")
+	e2eCmd.Flags().String("version", "", "Inrun version to install (e.g., v1.2.3)")
+	e2eCmd.Flags().StringSlice("values", []string{}, "Helm values files to pass to Inrun installation")
 	e2eCmd.Flags().StringSlice("set", []string{}, "Additional Helm --set arguments (e.g., key=value)")
 	e2eCmd.Flags().Bool("dev-server", false, "Deploy the mock dev server into the cluster for external: examples")
-	e2eCmd.Flags().Bool("no-runtime", false, "Skip the Orkestra runtime; start the gateway only. CR is optional.")
+	e2eCmd.Flags().Bool("no-runtime", false, "Skip the Inrun runtime; start the gateway only. CR is optional.")
 	e2eCmd.Flags().String("wait", "", "Duration to wait between discovered tests (e.g. 2s). Only applies in ./... discovery mode.")
 	e2eCmd.Flags().StringSlice("skip", []string{}, "Comma-separated path patterns to skip during ./... discovery (e.g. vendor,testdata)")
 	e2eCmd.Flags().Bool("dry-run", false, "Print what would run without executing. Single file: runs validate. ./...: lists discovered files.")
 	e2eCmd.Flags().String("report-file", "", "Write test results as markdown to this file (e.g. $GITHUB_STEP_SUMMARY). Results are always printed to stdout.")
 
-	// Shadow global flags so they don't appear under `ork e2e`
+	// Shadow global flags so they don't appear under `inrun e2e`
 	cmdutil.ShadowGlobalCommandFlags(e2eCmd)
 }

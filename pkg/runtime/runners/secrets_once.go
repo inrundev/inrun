@@ -36,9 +36,9 @@ package runners
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/secrets"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/secrets"
 )
 
 // SecretExists delegates to pkg/secrets.

@@ -3,8 +3,8 @@ package children
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -13,7 +13,7 @@ import (
 //
 // Summary: {name, zone, region, instanceType}
 // Zone and region come from well-known topology labels.
-func enrichGroupWithNode(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry) {
+func enrichGroupWithNode(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry) {
 	if !enrichmentEnabled("node", crd) {
 		return
 	}
@@ -33,7 +33,7 @@ func enrichGroupWithNode(ctx context.Context, kube kubeclient.Interface, m map[s
 			continue
 		}
 		// Cache to avoid fetching the same node multiple times when
-		// a katalog declares multiple pods on the same node.
+		// a catalog declares multiple pods on the same node.
 		if cached, ok := nodeCache[nodeName]; ok {
 			obj["_node"] = cached
 			continue

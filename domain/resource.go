@@ -9,23 +9,23 @@ import (
 // ManagedResource describes a Kubernetes resource type that a typed extension
 // (either a hook or a constructor) will manage.
 //
-// Orkestra uses this information for two purposes:
+// Inrun uses this information for two purposes:
 //
 //  1. RBAC generation — each declared resource results in permissions to
 //     get/list/watch/create/update/patch/delete that resource type.
 //
-//  2. Implicit watch informer — Orkestra automatically starts a watch informer
+//  2. Implicit watch informer — Inrun automatically starts a watch informer
 //     for each declared resource, identical to declaring a watch: entry with
 //     all events and owner-reference key resolution. This means:
 //
 //     - r.client.Get / r.client.List for that type are served from cache
-//     - when an owned resource changes, Orkestra enqueues the primary CR
+//     - when an owned resource changes, Inrun enqueues the primary CR
 //
 //     If you need finer control (custom on:, enqueueGate:, keyFrom:, or index:),
 //     declare a watch: entry for that type — it takes priority over the
 //     implicit informer from resources:.
 //
-// For built-in Kubernetes resources, Kind alone is sufficient because Orkestra
+// For built-in Kubernetes resources, Kind alone is sufficient because Inrun
 // resolves the full GroupVersionResource from its internal registry.
 //
 // For custom resources or non-core API groups, APIVersion and/or explicit

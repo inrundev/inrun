@@ -1,6 +1,6 @@
 // domain/generic.go
 //
-// Hook types for the Orkestra reconcile framework.
+// Hook types for the Inrun reconcile framework.
 //
 // There are three layers here, each serving a different audience:
 //
@@ -10,14 +10,14 @@
 //     Kubernetes informers store and return pointer values.
 //
 //  2. AnyReconcileHooks — the type-erased marker interface.
-//     Allows the Katalog and ObjectRegistry to store hooks without knowing T.
+//     Allows the Catalog and ObjectRegistry to store hooks without knowing T.
 //     The unexported isHooks() method prevents accidental implementation.
 //
 //  3. ObjectHooks / HookBinder — the internal adapter layer.
 //     generic.Reconciler stores ObjectHooks, not ReconcileHooks[T], so that
 //     a single reconciler type can serve both the typed user-hooks path
 //     (T = *Database) and the dynamic template path (T = domain.Object)
-//     that goes through the runtime registry in runtime_konstructor.go.
+//     that goes through the runtime registry in runtime_construct.go.
 package domain
 
 import "context"
@@ -55,7 +55,7 @@ type ReconcileHooks[T Object] struct {
 }
 
 // AnyReconcileHooks is the type-erased marker interface for ReconcileHooks[T].
-// It allows the Katalog, ObjectRegistry, and HookFactory closures to store
+// It allows the Catalog, ObjectRegistry, and HookFactory closures to store
 // hooks without knowing the concrete T at compile time.
 //
 // The unexported isHooks() method prevents third-party types from accidentally

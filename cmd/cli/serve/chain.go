@@ -10,25 +10,25 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
-	"github.com/orkspace/orkestra/cmd/cli/gate"
-	"github.com/orkspace/orkestra/cmd/cli/testsuite"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/gate"
+	"github.com/inrundev/inrun/cmd/cli/testsuite"
 
-	"github.com/orkspace/orkestra/pkg/gateway/api"
-	"github.com/orkspace/orkestra/pkg/intent"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	"github.com/orkspace/orkestra/pkg/merger"
-	"github.com/orkspace/orkestra/pkg/registry/simulate"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/gateway/api"
+	"github.com/inrundev/inrun/pkg/intent"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/registry/simulate"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // runCreateUpdateChain runs stages 1-6 of the play chain against an
 // already-resolved intent map, printing each stage exactly like
-// "ork serve play" does. Shared with "ork webhook play" — same engine,
+// "inrun serve play" does. Shared with "inrun webhook play" — same engine,
 // different front door: serve play reads its intent from a file, webhook
 // play builds one from a source payload (push event, slash command, JSON
 // body), then hands off here.
@@ -39,7 +39,7 @@ import (
 // does for a real delivery. op is ServeOpCreate or ServeOpUpdate — webhook
 // play always passes ServeOpCreate, since a delivered push/command has no
 // --operation flag of its own.
-func runCreateUpdateChain(k *katalog.Katalog, raw map[string]interface{}, tokenName, source string, op orktypes.ServeOperation) (*unstructured.Unstructured, *orktypes.CRDEntry, string, error) {
+func runCreateUpdateChain(k *catalog.Catalog, raw map[string]interface{}, tokenName, source string, op types.ServeOperation) (*unstructured.Unstructured, *types.CRDEntry, string, error) {
 	target, _ := raw["target"].(string)
 	if strings.TrimSpace(target) == "" {
 		return nil, nil, "", fmt.Errorf(`"target" must be set in the intent`)
@@ -57,7 +57,7 @@ func runCreateUpdateChain(k *katalog.Katalog, raw map[string]interface{}, tokenN
 
 	// Stage 2: Token check
 	printStage(2, "Token check")
-	allowed, denyReason := crd.TokenAllowedFor(alias, tokenName, string(op), "", orktypes.ServeClassResources)
+	allowed, denyReason := crd.TokenAllowedFor(alias, tokenName, string(op), "", types.ServeClassResources)
 	if !allowed {
 		msg := denyReason.Message(tokenName, string(op), crd.Kind(), "")
 		printStageError(msg)
@@ -87,7 +87,7 @@ func runCreateUpdateChain(k *katalog.Katalog, raw map[string]interface{}, tokenN
 	ann := obj.GetAnnotations()
 	keys := make([]string, 0, len(ann))
 	for k := range ann {
-		if strings.HasPrefix(k, "orkestra.") {
+		if strings.HasPrefix(k, "inrun.") {
 			keys = append(keys, k)
 		}
 	}
@@ -102,7 +102,7 @@ func runCreateUpdateChain(k *katalog.Katalog, raw map[string]interface{}, tokenN
 	// unique: operator is skipped (no live cluster); external: calls are skipped.
 	printStage(5, "Admission validation")
 	{
-		resolver := orktmpl.NewResolverFromMap(obj.Object).WithUserNotes(k.Notes).WithRequest(raw)
+		resolver := template.NewResolverFromMap(obj.Object).WithUserNotes(k.Notes).WithRequest(raw)
 		eval := resolver.TemplateEvaluator()
 		r := gate.EvalAdmissionValidation(obj.Object, crd, resolver, eval)
 		for _, v := range r.Violations {
@@ -169,9 +169,9 @@ func runCreateUpdateChain(k *katalog.Katalog, raw map[string]interface{}, tokenN
 
 // playRunSimulate writes the built CR to a temp file and hands it to simulate.
 // simulateConfig is the path to a simulate.yaml; empty means op-print mode with
-// the same katalog play used. Shared by "ork serve play --simulate" and
-// "ork webhook play --simulate" via playSimulate below.
-func playRunSimulate(ctx context.Context, katalogFile string, obj *unstructured.Unstructured, simulateConfig string) error {
+// the same catalog play used. Shared by "inrun serve play --simulate" and
+// "inrun webhook play --simulate" via playSimulate below.
+func playRunSimulate(ctx context.Context, catalogFile string, obj *unstructured.Unstructured, simulateConfig string) error {
 	b, err := yaml.Marshal(obj.Object)
 	if err != nil {
 		return fmt.Errorf("marshalling CR for simulate: %w", err)
@@ -193,10 +193,10 @@ func playRunSimulate(ctx context.Context, katalogFile string, obj *unstructured.
 	if simulateConfig != "" {
 		return runSimulateWithCR(ctx, simulateConfig, tmp.Name())
 	}
-	return testsuite.RunSimulate(ctx, katalogFile, tmp.Name(), testsuite.CliSimulateOptions{MaxCycles: 10, SkipExternal: true})
+	return testsuite.RunSimulate(ctx, catalogFile, tmp.Name(), testsuite.CliSimulateOptions{MaxCycles: 10, SkipExternal: true})
 }
 
-// runSimulateWithCR runs simulate using the spec file for katalog/cycles/expect
+// runSimulateWithCR runs simulate using the spec file for catalog/cycles/expect
 // but substitutes crFile (the play-built CR) instead of spec.cr.
 // The expect: block is fully evaluated — this is assert mode, not op-print mode.
 func runSimulateWithCR(ctx context.Context, specPath, crFile string) error {
@@ -207,7 +207,7 @@ func runSimulateWithCR(ctx context.Context, specPath, crFile string) error {
 	if err != nil {
 		return fmt.Errorf("reading simulate config %q: %w", specPath, err)
 	}
-	var doc orktypes.Simulate
+	var doc types.Simulate
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return fmt.Errorf("parsing simulate config %q: %w", specPath, err)
 	}
@@ -215,20 +215,20 @@ func runSimulateWithCR(ctx context.Context, specPath, crFile string) error {
 		return fmt.Errorf("simulate config %q: missing spec", specPath)
 	}
 
-	katalogPath := cmdutil.JoinPath(specPath, doc.Spec.Katalog)
+	catalogPath := cmdutil.JoinPath(specPath, doc.Spec.Catalog)
 	cycles := doc.Spec.Cycles
 	if cycles <= 0 {
 		cycles = 10
 	}
 	opts := simulate.RunOptions{SkipExternal: doc.Spec.SkipExternal}
 
-	m := merger.New(katalogPath)
+	m := merger.New(catalogPath)
 	if err := m.Merge(); err != nil {
-		return fmt.Errorf("merging Katalog: %w", err)
+		return fmt.Errorf("merging Catalog: %w", err)
 	}
 	kat, err := pipeline.BuildExpanded(cmdutil.Kfg, m)
 	if err != nil {
-		return fmt.Errorf("parsing Katalog: %w", err)
+		return fmt.Errorf("parsing Catalog: %w", err)
 	}
 
 	crData, err := cmdutil.ReadLocal(crFile)
@@ -268,17 +268,17 @@ func runSimulateWithCR(ctx context.Context, specPath, crFile string) error {
 	return nil
 }
 
-// RunIntentPlay builds a Katalog from katalogPath, runs the play chain
+// RunIntentPlay builds a Catalog from catalogPath, runs the play chain
 // against intentFile without printing stage output, and returns the resolved
 // target name on success.
-func RunIntentPlay(katalogPath, intentFile string) (string, error) {
-	m := merger.New(katalogPath)
+func RunIntentPlay(catalogPath, intentFile string) (string, error) {
+	m := merger.New(catalogPath)
 	if err := m.Merge(); err != nil {
-		return "", fmt.Errorf("merging katalog: %w", err)
+		return "", fmt.Errorf("merging catalog: %w", err)
 	}
 	k, err := pipeline.BuildExpanded(cmdutil.Kfg, m)
 	if err != nil {
-		return "", fmt.Errorf("building katalog: %w", err)
+		return "", fmt.Errorf("building catalog: %w", err)
 	}
 
 	raw, err := readIntentFile(intentFile)
@@ -298,9 +298,9 @@ func RunIntentPlay(katalogPath, intentFile string) (string, error) {
 	crd, alias := resolution.CRD, resolution.Alias
 
 	if tokenName, _ := raw["token"].(string); tokenName != "" {
-		allowed, denyReason := crd.TokenAllowedFor(alias, tokenName, string(orktypes.ServeOpCreate), "", orktypes.ServeClassResources)
+		allowed, denyReason := crd.TokenAllowedFor(alias, tokenName, string(types.ServeOpCreate), "", types.ServeClassResources)
 		if !allowed {
-			return target, fmt.Errorf("token %q denied: %s", tokenName, denyReason.Message(tokenName, string(orktypes.ServeOpCreate), crd.Kind(), ""))
+			return target, fmt.Errorf("token %q denied: %s", tokenName, denyReason.Message(tokenName, string(types.ServeOpCreate), crd.Kind(), ""))
 		}
 	} else {
 		return target, fmt.Errorf("intent file must declare a 'token' — token: <name>")
@@ -311,7 +311,7 @@ func RunIntentPlay(katalogPath, intentFile string) (string, error) {
 		return target, fmt.Errorf("CR construction: %w", err)
 	}
 
-	resolver := orktmpl.NewResolverFromMap(obj.Object).WithUserNotes(k.Notes).WithRequest(raw)
+	resolver := template.NewResolverFromMap(obj.Object).WithUserNotes(k.Notes).WithRequest(raw)
 	eval := resolver.TemplateEvaluator()
 	r := gate.EvalAdmissionValidation(obj.Object, crd, resolver, eval)
 	denied := r.Denied()
@@ -327,23 +327,23 @@ func RunIntentPlay(katalogPath, intentFile string) (string, error) {
 }
 
 // webhookSimulate carries the --simulate handoff arguments through
-// "ork webhook play" to wherever a play chain successfully builds a CR —
-// same handoff "ork serve play --simulate" does (playRunSimulate), just
+// "inrun webhook play" to wherever a play chain successfully builds a CR —
+// same handoff "inrun serve play --simulate" does (playRunSimulate), just
 // reached from a different front door, and potentially more than once per
 // run: a GitHub/GitLab push can match several files, each its own build.
 type webhookSimulate struct {
 	ctx         context.Context
-	katalogFile string
+	catalogFile string
 	enabled     bool
 	config      string
 }
 
-// playSimulate hands obj to ork simulate when sim.enabled — a no-op
+// playSimulate hands obj to inrun simulate when sim.enabled — a no-op
 // otherwise. Called after every successful runCreateUpdateChain in
-// "ork webhook play".
+// "inrun webhook play".
 func playSimulate(sim webhookSimulate, obj *unstructured.Unstructured) error {
 	if !sim.enabled {
 		return nil
 	}
-	return playRunSimulate(sim.ctx, sim.katalogFile, obj, sim.config)
+	return playRunSimulate(sim.ctx, sim.catalogFile, obj, sim.config)
 }

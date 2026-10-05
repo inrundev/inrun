@@ -8,16 +8,16 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
 	"path/filepath"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/registry/e2e"
-	motifpkg "github.com/orkspace/orkestra/pkg/registry/motif"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/registry/e2e"
+	modulepkg "github.com/inrundev/inrun/pkg/registry/module"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -25,24 +25,24 @@ import (
 
 var validateCmd = &cobra.Command{
 	Use:   "validate",
-	Short: "Validate an Orkestra pattern (Katalog, Komposer, Motif, E2E, Simulate)",
-	Long: `Validates any Orkestra pattern and reports errors.
+	Short: "Validate an Inrun pattern (Catalog, Stack, Module, E2E, Simulate)",
+	Long: `Validates any Inrun pattern and reports errors.
 
 The pattern kind is detected automatically from the 'kind' field:
-  Katalog   — operator definition with CRD declarations
-  Komposer  — multi-source katalog composer
-  Motif     — reusable operator pattern
+  Catalog   — operator definition with CRD declarations
+  Stack  — multi-source catalog composer
+  Module     — reusable operator pattern
   E2E       — declarative end-to-end test spec
   Simulate  — declarative reconciler assertions
 
-Reads katalog.yaml or komposer.yaml from the current directory by default.
+Reads catalog.yaml or stack.yaml from the current directory by default.
 Pass -f to validate a different file.
 
 Examples:
-  ork validate
-  ork validate -f e2e.yaml
-  ork validate -f simulate.yaml
-  ork validate -f motif.yaml`,
+  inrun validate
+  inrun validate -f e2e.yaml
+  inrun validate -f simulate.yaml
+  inrun validate -f module.yaml`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		paths, _ := cmd.Flags().GetStringSlice("file")
 		expanded := cmdutil.ParseFilePaths(paths)
@@ -50,7 +50,7 @@ Examples:
 			expanded = cmdutil.DefaultFilePaths()
 		}
 		if len(expanded) == 0 {
-			return fmt.Errorf(cmdutil.ErrNoKatalog)
+			return fmt.Errorf(cmdutil.ErrNoCatalog)
 		}
 
 		var docKind string
@@ -61,28 +61,28 @@ Examples:
 			}
 
 			// Validate document type
-			if !konfig.IsValidPatternKind(kind) {
+			if !config.IsValidPatternKind(kind) {
 				if kind == "" {
 					return fmt.Errorf(
-						"not an Orkestra pattern — expected a 'kind' field (allowed kinds: %s)",
-						konfig.ValidKindsString(),
+						"not an Inrun pattern — expected a 'kind' field (allowed kinds: %s)",
+						config.ValidKindsString(),
 					)
 				}
 				return fmt.Errorf(
-					"invalid Orkestra pattern kind %q (allowed kinds: %s)",
-					kind, konfig.ValidKindsString(),
+					"invalid Inrun pattern kind %q (allowed kinds: %s)",
+					kind, config.ValidKindsString(),
 				)
 			}
 
-			if konfig.IsMotifKind(kind) {
-				return validateMotifFile(path)
+			if config.IsModuleKind(kind) {
+				return validateModuleFile(path)
 			}
 
-			if konfig.IsE2EKind(kind) {
+			if config.IsE2EKind(kind) {
 				return ValidateE2EFile(path)
 			}
 
-			if konfig.IsSimulateKind(kind) {
+			if config.IsSimulateKind(kind) {
 				playMode, _ := cmd.Flags().GetBool("play")
 				return validateSimulateFilePlay(path, playMode)
 			}
@@ -90,9 +90,9 @@ Examples:
 			docKind = kind
 		}
 
-		// Default path: Katalog / Komposer validation
+		// Default path: Catalog / Stack validation
 		spin := cmdutil.StartSpinner("Resolving imports...")
-		m, err := cmdutil.GenerateKatalog(cmd)
+		m, err := cmdutil.GenerateCatalog(cmd)
 		if err != nil {
 			spin.Failure()
 			return err
@@ -101,17 +101,17 @@ Examples:
 
 		k, err := pipeline.BuildExpanded(cmdutil.Kfg, m.Merger)
 		if err != nil {
-			var typedErr *katalog.TypedOperatorError
+			var typedErr *catalog.TypedOperatorError
 			if errors.As(err, &typedErr) {
-				cmdutil.PrintTypedOperatorHint(typedErr, "ork validate")
+				cmdutil.PrintTypedOperatorHint(typedErr, "inrun validate")
 			}
 			return err
 		}
 		entries := k.EnabledCRDs()
 
-		kindLabel := "Katalog"
-		if konfig.IsKomposerKind(docKind) {
-			kindLabel = "Komposer"
+		kindLabel := "Catalog"
+		if config.IsStackKind(docKind) {
+			kindLabel = "Stack"
 		}
 
 		if k.IsStandaloneGateway() {
@@ -139,7 +139,7 @@ Examples:
 		}
 
 		// Sort entries by name for stable output across runs.
-		sortedEntries := make([]orktypes.CRDEntry, 0, len(entries))
+		sortedEntries := make([]types.CRDEntry, 0, len(entries))
 		for _, e := range entries {
 			sortedEntries = append(sortedEntries, e)
 		}
@@ -155,10 +155,10 @@ Examples:
 		custom := 0
 
 		var deprecationHint string
-		if konfig.IsKomposerKind(docKind) {
-			deprecationHint = "To acknowledge this import, add it to lifecycle.accept.patterns in your Komposer."
+		if config.IsStackKind(docKind) {
+			deprecationHint = "To acknowledge this import, add it to lifecycle.accept.patterns in your Stack."
 		}
-		cmdutil.PrintKatalogDeprecationWithHint(k.Deprecation(), deprecationHint)
+		cmdutil.PrintCatalogDeprecationWithHint(k.Deprecation(), deprecationHint)
 
 		// Print each CRD entry with enrichment info
 		for _, entry := range sortedEntries {
@@ -233,13 +233,13 @@ func ValidateE2EFile(path string) error {
 		return fmt.Errorf("reading %s: %w", path, err)
 	}
 
-	var doc orktypes.E2E
+	var doc types.E2E
 	if err := cmdutil.StrictUnmarshal(data, &doc); err != nil {
 		return fmt.Errorf("parsing %s: %w", path, err)
 	}
 
 	baseDir := filepath.Dir(path)
-	isAggregator := len(doc.Imports) > 0 && doc.Spec.Katalog == "" && doc.Spec.Init == nil
+	isAggregator := len(doc.Imports) > 0 && doc.Spec.Catalog == "" && doc.Spec.Init == nil
 
 	var errs []string
 
@@ -249,9 +249,9 @@ func ValidateE2EFile(path string) error {
 	isCustom := doc.Spec.Custom != nil && doc.Spec.Custom.Target != ""
 	if isCustom {
 		switch doc.Spec.Custom.Target {
-		case orktypes.CustomTargetKubernetes:
+		case types.CustomTargetKubernetes:
 			// valid and supported
-		case orktypes.CustomTargetContainer:
+		case types.CustomTargetContainer:
 			return fmt.Errorf("spec.custom.target \"container\" is coming soon — not yet supported in this version")
 		default:
 			errs = append(errs, fmt.Sprintf(
@@ -262,8 +262,8 @@ func ValidateE2EFile(path string) error {
 	}
 	expanded := doc.Spec.Expect
 	if !isAggregator {
-		if doc.Spec.Katalog == "" && doc.Spec.Init == nil && !isCustom {
-			errs = append(errs, "spec.katalog is required (or spec.init for example packs, spec.custom.target for custom targets, or imports)")
+		if doc.Spec.Catalog == "" && doc.Spec.Init == nil && !isCustom {
+			errs = append(errs, "spec.catalog is required (or spec.init for example packs, spec.custom.target for custom targets, or imports)")
 		}
 		if doc.Spec.CRD == "" && doc.Spec.Init == nil && !isCustom {
 			errs = append(errs, "spec.crd is required (or spec.init for example packs, spec.custom.target for custom targets, or imports)")
@@ -286,17 +286,17 @@ func ValidateE2EFile(path string) error {
 			}
 			after := exp.After
 			if after == "" {
-				after = orktypes.AfterSetupComplete
+				after = types.AfterSetupComplete
 			}
 			validAfter := false
-			for _, v := range orktypes.ValidAfterValues {
+			for _, v := range types.ValidAfterValues {
 				if after == v {
 					validAfter = true
 					break
 				}
 			}
 			if !validAfter {
-				errs = append(errs, fmt.Sprintf("spec.expect[%d].after must be one of %v (got %q)", i, orktypes.ValidAfterValues, exp.After))
+				errs = append(errs, fmt.Sprintf("spec.expect[%d].after must be one of %v (got %q)", i, types.ValidAfterValues, exp.After))
 			}
 			var kubectlCount int
 			if k := exp.Kubectl; k != nil {
@@ -338,10 +338,10 @@ func ValidateE2EFile(path string) error {
 	}
 	if !isAggregator {
 		if isCustom {
-			fmt.Printf("    %s\n", cmdutil.Gray(fmt.Sprintf("mode    : custom target (%s — Orkestra install skipped)", doc.Spec.Custom.Target)))
+			fmt.Printf("    %s\n", cmdutil.Gray(fmt.Sprintf("mode    : custom target (%s — Inrun install skipped)", doc.Spec.Custom.Target)))
 		}
-		if doc.Spec.Katalog != "" {
-			fmt.Printf("    %s\n", cmdutil.Gray("katalog : "+doc.Spec.Katalog))
+		if doc.Spec.Catalog != "" {
+			fmt.Printf("    %s\n", cmdutil.Gray("catalog : "+doc.Spec.Catalog))
 		}
 		if doc.Spec.CRD != "" {
 			fmt.Printf("    %s\n", cmdutil.Gray("crd     : "+doc.Spec.CRD))
@@ -386,7 +386,7 @@ func ValidateE2EFile(path string) error {
 		}
 		after := exp.After
 		if after == "" {
-			after = orktypes.AfterSetupComplete
+			after = types.AfterSetupComplete
 		}
 		fmt.Printf("    %s\n",
 			cmdutil.Gray(fmt.Sprintf("%-40s after: %-12s timeout: %s", exp.Name, after, to)))
@@ -431,7 +431,7 @@ func validateSimulateFileOpts(path string, quiet, playMode bool) error {
 		return fmt.Errorf("reading %s: %w", path, err)
 	}
 
-	var doc orktypes.Simulate
+	var doc types.Simulate
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return fmt.Errorf("parsing %s: %w", path, err)
 	}
@@ -459,14 +459,14 @@ func validateSimulateFileOpts(path string, quiet, playMode bool) error {
 		}
 	}
 	if doc.Spec != nil {
-		if doc.Spec.Katalog == "" {
-			errs = append(errs, "spec.katalog is required")
-		} else if !cmdutil.FileExists(filepath.Join(baseDir, doc.Spec.Katalog)) {
-			errs = append(errs, "spec.katalog not found: "+doc.Spec.Katalog)
+		if doc.Spec.Catalog == "" {
+			errs = append(errs, "spec.catalog is required")
+		} else if !cmdutil.FileExists(filepath.Join(baseDir, doc.Spec.Catalog)) {
+			errs = append(errs, "spec.catalog not found: "+doc.Spec.Catalog)
 		}
 		if len(doc.Spec.AllCRPaths()) == 0 {
 			if !playMode {
-				errs = append(errs, "spec.cr or spec.crFiles is required (or use --play if ork serve play will supply the CR)")
+				errs = append(errs, "spec.cr or spec.crFiles is required (or use --play if inrun serve play will supply the CR)")
 			}
 		} else {
 			for _, p := range doc.Spec.AllCRPaths() {
@@ -481,7 +481,7 @@ func validateSimulateFileOpts(path string, quiet, playMode bool) error {
 			}
 		}
 		if doc.Spec.Expect != nil {
-			if expandErr := orktypes.ExpandSimulateOpsIncludes(doc.Spec.Expect, baseDir); expandErr != nil {
+			if expandErr := types.ExpandSimulateOpsIncludes(doc.Spec.Expect, baseDir); expandErr != nil {
 				errs = append(errs, "expanding ops includes: "+expandErr.Error())
 			}
 			validVerbs := map[string]bool{
@@ -491,7 +491,7 @@ func validateSimulateFileOpts(path string, quiet, playMode bool) error {
 				"delete": true,
 				"patch":  true,
 			}
-			validateOpRules := func(rules []orktypes.SimulateOpRule, prefix string) {
+			validateOpRules := func(rules []types.SimulateOpRule, prefix string) {
 				for i, rule := range rules {
 					switch {
 					case rule.Verb == "" || rule.Resource == "":
@@ -501,7 +501,7 @@ func validateSimulateFileOpts(path string, quiet, playMode bool) error {
 					}
 				}
 			}
-			validateAbsentRules := func(rules []orktypes.SimulateOpRule, prefix string) {
+			validateAbsentRules := func(rules []types.SimulateOpRule, prefix string) {
 				for i, rule := range rules {
 					switch {
 					case rule.Resource == "":
@@ -538,7 +538,7 @@ func validateSimulateFileOpts(path string, quiet, playMode bool) error {
 		return nil
 	}
 
-	// Success — print structured summary matching the Katalog/E2E style.
+	// Success — print structured summary matching the Catalog/E2E style.
 	fmt.Printf("%s %s\n", cmdutil.HealthIcon("ready"), cmdutil.Bold(doc.Metadata.Name))
 	if doc.Metadata.Description != "" {
 		fmt.Printf("    %s\n", cmdutil.Gray(doc.Metadata.Description))
@@ -555,7 +555,7 @@ func validateSimulateFileOpts(path string, quiet, playMode bool) error {
 		if cycles <= 0 {
 			cycles = 10
 		}
-		fmt.Printf("    %s\n", cmdutil.Gray(fmt.Sprintf("katalog : %s", doc.Spec.Katalog)))
+		fmt.Printf("    %s\n", cmdutil.Gray(fmt.Sprintf("catalog : %s", doc.Spec.Catalog)))
 		fmt.Printf("    %s\n", cmdutil.Gray(fmt.Sprintf("cr      : %s", doc.Spec.CR)))
 		fmt.Printf("    %s\n", cmdutil.Gray(fmt.Sprintf("cycles  : %d", cycles)))
 		if doc.Spec.Expect != nil {
@@ -597,13 +597,13 @@ func validateSimulateFileOpts(path string, quiet, playMode bool) error {
 	return nil
 }
 
-// validateMotifFile runs Motif-specific validation and prints results.
-func validateMotifFile(path string) error {
+// validateModuleFile runs Module-specific validation and prints results.
+func validateModuleFile(path string) error {
 	fmt.Println()
-	fmt.Println(cmdutil.Bold("Validating Motif..."))
+	fmt.Println(cmdutil.Bold("Validating Module..."))
 	fmt.Println()
 
-	errs := katalog.ValidateMotif(path)
+	errs := catalog.ValidateModule(path)
 	if len(errs) > 0 {
 		for _, e := range errs {
 			fmt.Printf("  %s %s\n", cmdutil.FailureMark(), e.Error())
@@ -613,10 +613,10 @@ func validateMotifFile(path string) error {
 		return fmt.Errorf("%d validation error(s) in %s", len(errs), path)
 	}
 
-	// Load the motif to build the structured summary.
-	m, err := motifpkg.Load(path)
+	// Load the module to build the structured summary.
+	m, err := modulepkg.Load(path)
 	if err != nil {
-		// ValidateMotif already passed, so this is unexpected — degrade gracefully.
+		// ValidateModule already passed, so this is unexpected — degrade gracefully.
 		fmt.Printf("%s %s\n", cmdutil.HealthIcon("ready"), cmdutil.Bold(path))
 	} else {
 		fmt.Printf("%s %s\n", cmdutil.HealthIcon("ready"), cmdutil.Bold(m.Metadata.Name))
@@ -633,23 +633,23 @@ func validateMotifFile(path string) error {
 			}
 			fmt.Printf("    %s\n", cmdutil.Gray(fmt.Sprintf("inputs  : %d", len(m.Inputs))))
 		}
-		if summary := motifResourceSummary(m); summary != "" {
+		if summary := moduleResourceSummary(m); summary != "" {
 			fmt.Printf("    %s\n", cmdutil.Gray("resources: "+summary))
 		}
-		if summary := motifProfileSummary(m); summary != "" {
+		if summary := moduleProfileSummary(m); summary != "" {
 			fmt.Printf("    %s\n", cmdutil.Gray("profiles : "+summary))
 		}
 	}
 
 	fmt.Println()
 	fmt.Println(strings.Repeat("─", 60))
-	fmt.Println("Motif is valid")
+	fmt.Println("Module is valid")
 	return nil
 }
 
-// motifProfileSummary returns a compact string listing non-empty profile classes
+// moduleProfileSummary returns a compact string listing non-empty profile classes
 // and their counts, e.g. "networkPolicies(2) resourceQuotas(1)".
-func motifProfileSummary(m *orktypes.Motif) string {
+func moduleProfileSummary(m *types.Module) string {
 	reg := m.Profiles
 	if reg.Empty() {
 		return ""
@@ -669,9 +669,9 @@ func motifProfileSummary(m *orktypes.Motif) string {
 	return strings.Join(parts, " ")
 }
 
-// motifResourceSummary returns a compact string listing non-empty resource types
+// moduleResourceSummary returns a compact string listing non-empty resource types
 // and their counts, e.g. "deployments(1) services(1) networkPolicies(2)".
-func motifResourceSummary(m *orktypes.Motif) string {
+func moduleResourceSummary(m *types.Module) string {
 	if m.Resources == nil {
 		return ""
 	}
@@ -706,7 +706,7 @@ func motifResourceSummary(m *orktypes.Motif) string {
 	return strings.Join(parts, " ")
 }
 
-func printValidateProfiles(reg orktypes.ProfileRegistry) {
+func printValidateProfiles(reg types.ProfileRegistry) {
 	if reg.Empty() {
 		return
 	}
@@ -760,13 +760,13 @@ func printValidateProfiles(reg orktypes.ProfileRegistry) {
 
 func printRuntimeContext() {
 	fmt.Println()
-	fmt.Printf("%s\n", cmdutil.Bold("Runtime context (.ork.*)"))
-	fmt.Printf("  %s   %s\n", cmdutil.PadRight(cmdutil.Cyan(".ork.inPod"), 16), cmdutil.Gray("true when Orkestra is running inside a Kubernetes pod"))
-	fmt.Printf("  %s   %s\n", cmdutil.PadRight(cmdutil.Cyan(".ork.namespace"), 16), cmdutil.Gray("namespace Orkestra is deployed in"))
-	fmt.Printf("  %s   %s\n", cmdutil.PadRight(cmdutil.Cyan(".ork.version"), 16), cmdutil.Gray("running Orkestra version string"))
+	fmt.Printf("%s\n", cmdutil.Bold("Runtime context (.inrun.*)"))
+	fmt.Printf("  %s   %s\n", cmdutil.PadRight(cmdutil.Cyan(".inrun.inPod"), 16), cmdutil.Gray("true when Inrun is running inside a Kubernetes pod"))
+	fmt.Printf("  %s   %s\n", cmdutil.PadRight(cmdutil.Cyan(".inrun.namespace"), 16), cmdutil.Gray("namespace Inrun is deployed in"))
+	fmt.Printf("  %s   %s\n", cmdutil.PadRight(cmdutil.Cyan(".inrun.version"), 16), cmdutil.Gray("running Inrun version string"))
 }
 
-func printValidateNotes(reg orktypes.NoteRegistry) {
+func printValidateNotes(reg types.NoteRegistry) {
 	if reg.Empty() {
 		return
 	}
@@ -786,12 +786,12 @@ func printValidateNotes(reg orktypes.NoteRegistry) {
 func init() {
 	cmdutil.RootCmd.AddCommand(validateCmd)
 
-	validateCmd.Flags().StringSliceP("file", "f", nil, "Path to an Orkestra pattern (repeatable or comma-separated)")
+	validateCmd.Flags().StringSliceP("file", "f", nil, "Path to an Inrun pattern (repeatable or comma-separated)")
 	validateCmd.Flags().Bool("full", false, "Show per-CRD permissions, dependency graph, and system-level RBAC")
 	validateCmd.Flags().Bool("notes", false, "Quiet mode: print only the merged note registry, skip full validate output")
 	validateCmd.Flags().Bool("profiles", false, "Quiet mode: print only the merged profile registry, skip full validate output")
-	validateCmd.Flags().Bool("play", false, "For Simulate specs: skip spec.cr requirement (ork serve play will supply the CR)")
+	validateCmd.Flags().Bool("play", false, "For Simulate specs: skip spec.cr requirement (inrun serve play will supply the CR)")
 
-	// Shadow global flags so they don't appear under `ork validate`
+	// Shadow global flags so they don't appear under `inrun validate`
 	cmdutil.ShadowGlobalCommandFlags(validateCmd)
 }

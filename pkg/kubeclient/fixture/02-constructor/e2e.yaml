@@ -1,9 +1,9 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: blockchainnode-constructor-e2e
   description: >
-    Run with: ork e2e --dev-server
+    Run with: inrun e2e --dev-server
 
     Verifies the constructor args: pattern end-to-end. The constructor reads
     flagUrl and the business-hours window from args, checks the clock itself,
@@ -11,7 +11,7 @@ metadata:
     the result.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd-node.yaml
   cr: ./cr-node-e2e.yaml
 
@@ -25,7 +25,7 @@ spec:
 
   cluster:
     provider: kind
-    name: ork-args-constructor
+    name: inrun-args-constructor
     reuse: false
 
   expect:

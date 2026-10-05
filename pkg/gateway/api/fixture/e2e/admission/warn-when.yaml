@@ -5,7 +5,7 @@ expect:
     commands:
       - run: |
           kubectl apply -f - <<'EOF'
-          apiVersion: gateway.fixture.orkestra.io/v1alpha1
+          apiVersion: gateway.fixture.inrun.dev/v1alpha1
           kind: PlatformResource
           metadata:
             name: payments-api-prod
@@ -27,7 +27,7 @@ expect:
     kubectl:
       apply:
         - inline: |
-            apiVersion: gateway.fixture.orkestra.io/v1alpha1
+            apiVersion: gateway.fixture.inrun.dev/v1alpha1
             kind: PlatformResource
             metadata:
               name: payments-api-prod-approved
@@ -51,7 +51,7 @@ expect:
     kubectl:
       apply:
         - inline: |
-            apiVersion: gateway.fixture.orkestra.io/v1alpha1
+            apiVersion: gateway.fixture.inrun.dev/v1alpha1
             kind: PlatformResource
             metadata:
               name: payments-api-staging

@@ -1,4 +1,0 @@
-apiVersion: orkestra.orkspace.io/v1
-kind: Katalog
-metadata:
-  name: not-a-motif

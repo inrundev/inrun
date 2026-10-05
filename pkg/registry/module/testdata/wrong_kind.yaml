@@ -1,0 +1,4 @@
+apiVersion: inrun.dev/v1
+kind: Catalog
+metadata:
+  name: not-a-module

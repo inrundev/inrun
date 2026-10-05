@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 var (
@@ -22,11 +22,11 @@ var (
 	resolveEnvVar    = utils.ResolveEnvVar
 )
 
-// mergeKatalogSecurity merges two KatalogSecurity values.
+// mergeCatalogSecurity merges two CatalogSecurity values.
 // Fields that are non-nil/non-zero in override win; otherwise the base value is kept.
-// This is the correct semantics for Komposer layering: source Katalog settings are
-// inherited, and the Komposer only needs to declare what it explicitly wants to change.
-func mergeKatalogSecurity(base, override orktypes.KatalogSecurity) orktypes.KatalogSecurity {
+// This is the correct semantics for Stack layering: source Catalog settings are
+// inherited, and the Stack only needs to declare what it explicitly wants to change.
+func mergeCatalogSecurity(base, override types.CatalogSecurity) types.CatalogSecurity {
 	result := base
 	if override.DeletionProtection != nil {
 		result.DeletionProtection = override.DeletionProtection
@@ -111,14 +111,14 @@ func gitClone(repo, dst, ref string) error {
 	return nil
 }
 
-// isFileMotif returns true when a motif reference is a local file path.
-// Matches ./, ../, absolute paths, and bare relative paths (e.g. "motifs/foo/motif.yaml").
+// isFileModule returns true when a module reference is a local file path.
+// Matches ./, ../, absolute paths, and bare relative paths (e.g. "modules/foo/module.yaml").
 // OCI references (ghcr.io/...) and URLs (https://...) do not match.
-func isFileMotif(motif string) bool {
-	return strings.HasPrefix(motif, "./") ||
-		strings.HasPrefix(motif, "../") ||
-		filepath.IsAbs(motif) ||
-		(!strings.Contains(motif, "://") && !strings.Contains(motif, ":") && strings.Contains(motif, "/"))
+func isFileModule(module string) bool {
+	return strings.HasPrefix(module, "./") ||
+		strings.HasPrefix(module, "../") ||
+		filepath.IsAbs(module) ||
+		(!strings.Contains(module, "://") && !strings.Contains(module, ":") && strings.Contains(module, "/"))
 }
 
 // unused but kept for completeness

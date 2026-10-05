@@ -34,7 +34,7 @@ Output shows every file synced and any section indices auto-created:
 Cleaning content/docs ...
 Syncing docs: .../documentation → .../website/content/docs
   docs: getting-started/index.md
-  docs: orkestra-registry/katalogs.md
+  docs: inrun-registry/catalogs.md
   ...
 Done.
 ```
@@ -45,7 +45,7 @@ The deploy workflow runs exactly the same two steps:
 
 ```bash
 bash website/scripts/sync-docs.sh
-hugo --source ./website --gc --minify --baseURL "https://orkestra.sh/"
+hugo --source ./website --gc --minify --baseURL "https://inrun.dev/"
 ```
 
 If it passes locally, it passes in CI. If `hugo server` shows broken links or missing shortcodes, fix them before pushing — CI will fail on the same errors.

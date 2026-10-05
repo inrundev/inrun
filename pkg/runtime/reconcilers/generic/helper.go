@@ -3,15 +3,15 @@ package generic
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/children"
-	orkexternal "github.com/orkspace/orkestra/pkg/external"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/children"
+	"github.com/inrundev/inrun/pkg/external"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator/prepare"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -47,11 +47,11 @@ var (
 func runExternal(
 	ctx context.Context,
 	gvk string,
-	resolver *orktmpl.Resolver,
-	calls []orktypes.ExternalCallSpec,
+	resolver *template.Resolver,
+	calls []types.ExternalCallSpec,
 	cs kubernetes.Interface,
-) (*orktmpl.Resolver, error) {
-	return orkexternal.Run(ctx, gvk, resolver, calls, cs)
+) (*template.Resolver, error) {
+	return external.Run(ctx, gvk, resolver, calls, cs)
 }
 
 // hooksFor returns the ObjectHooks for the given target name.
@@ -69,7 +69,7 @@ func (r *Reconciler[PTR]) hooksFor(target string) domain.ObjectHooks {
 // withTargetArgs returns a context whose kube client carries the per-target
 // merged hooks.args for this reconcile cycle. When the effective box has no
 // args override, the context is returned unchanged.
-func (r *Reconciler[PTR]) withTargetArgs(ctx context.Context, box orktypes.OperatorBoxConfig) context.Context {
+func (r *Reconciler[PTR]) withTargetArgs(ctx context.Context, box types.OperatorBoxConfig) context.Context {
 	var args map[string]interface{}
 	if box.Reconcile != nil {
 		args = box.Reconcile.HooksArgs()
@@ -95,7 +95,7 @@ func (r *Reconciler[PTR]) namespaceGuardFunc() func(ctx context.Context, obj dom
 }
 
 // patchStripFinalizers removes all box-declared finalizers from obj and patches the API server.
-func (r *Reconciler[PTR]) patchStripFinalizers(ctx context.Context, obj PTR, box orktypes.OperatorBoxConfig) error {
+func (r *Reconciler[PTR]) patchStripFinalizers(ctx context.Context, obj PTR, box types.OperatorBoxConfig) error {
 	if len(obj.GetFinalizers()) == 0 {
 		return nil
 	}

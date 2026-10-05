@@ -1,6 +1,6 @@
 package note
 
-import "github.com/orkspace/orkestra/pkg/utils"
+import "github.com/inrundev/inrun/pkg/utils"
 
 var (
 	expandCronMacro   = utils.ExpandCronMacro

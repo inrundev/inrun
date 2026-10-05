@@ -1,13 +1,13 @@
 // webhook/registration.go — webhook configuration registration and cleanup.
 //
 // At startup, when admission webhooks or deletion/namespace protection are enabled,
-// Orkestra creates or updates the corresponding ValidatingWebhookConfiguration and
-// MutatingWebhookConfiguration objects that tell the API server to call Orkestra
+// Inrun creates or updates the corresponding ValidatingWebhookConfiguration and
+// MutatingWebhookConfiguration objects that tell the API server to call Inrun
 // during admission.
 //
 // All registration functions are idempotent — safe to call on restart or from the
 // reconciliation controller. Existing configurations are updated to match the
-// current Katalog state.
+// current Catalog state.
 package webhook
 
 import (
@@ -16,10 +16,10 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/utils"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,11 +27,11 @@ import (
 )
 
 const (
-	validatingWebhookConfigName           = "orkestra-admission-validation"
-	mutatingWebhookConfigName             = "orkestra-admission-mutation"
-	deletionProtectionWebhookConfigName   = "orkestra-deletion-protection"
-	namespaceProtectionWebhookConfigName  = "orkestra-namespace-protection"
-	strictModeProtectionWebhookConfigName = "orkestra-strict-mode-protection"
+	validatingWebhookConfigName           = "inrun-admission-validation"
+	mutatingWebhookConfigName             = "inrun-admission-mutation"
+	deletionProtectionWebhookConfigName   = "inrun-deletion-protection"
+	namespaceProtectionWebhookConfigName  = "inrun-namespace-protection"
+	strictModeProtectionWebhookConfigName = "inrun-strict-mode-protection"
 
 	maxAttempts          = 5
 	delayBetweenAttempts = 5 * time.Second
@@ -49,13 +49,13 @@ const (
 
 // WebhookRegistrationOptions holds the configuration for webhook registration.
 type WebhookRegistrationOptions struct {
-	Caller                 string
-	ServiceName            string
-	ServiceNamespace       string
-	Port                   int32
-	FailurePolicy          admissionv1.FailurePolicyType
-	TLSCertFile            string
-	OrkestraResourceLabels map[string]string
+	Caller              string
+	ServiceName         string
+	ServiceNamespace    string
+	Port                int32
+	FailurePolicy       admissionv1.FailurePolicyType
+	TLSCertFile         string
+	InrunResourceLabels map[string]string
 }
 
 // WebhookCleanupOptions selects which webhook configurations to remove.
@@ -70,10 +70,10 @@ func CleanupAllWebhooks() WebhookCleanupOptions {
 	return WebhookCleanupOptions{mutating: true, validating: true}
 }
 
-// admissionRegistryReader is the subset of katalog.AdmissionRegistry used here.
+// admissionRegistryReader is the subset of catalog.AdmissionRegistry used here.
 type admissionRegistryReader interface {
-	ValidationGVRs() []katalog.GVREntry
-	MutationGVRs() []katalog.GVREntry
+	ValidationGVRs() []catalog.GVREntry
+	MutationGVRs() []catalog.GVREntry
 }
 
 // RegisterAdmissionWebhooks creates or updates the ValidatingWebhookConfiguration
@@ -178,7 +178,7 @@ func UnregisterAdmissionWebhooks(
 func registerValidatingWebhook(
 	ctx context.Context,
 	client kubernetes.Interface,
-	gvrs []katalog.GVREntry,
+	gvrs []catalog.GVREntry,
 	caBundle []byte,
 	opts WebhookRegistrationOptions,
 ) error {
@@ -189,11 +189,11 @@ func registerValidatingWebhook(
 	config := &admissionv1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   validatingWebhookConfigName,
-			Labels: opts.OrkestraResourceLabels,
+			Labels: opts.InrunResourceLabels,
 		},
 		Webhooks: []admissionv1.ValidatingWebhook{
 			{
-				Name: "validate.orkestra.orkspace.io",
+				Name: "validate.inrun.dev",
 				ClientConfig: admissionv1.WebhookClientConfig{
 					Service: &admissionv1.ServiceReference{
 						Name:      opts.ServiceName,
@@ -219,7 +219,7 @@ func registerValidatingWebhook(
 func registerMutatingWebhook(
 	ctx context.Context,
 	client kubernetes.Interface,
-	gvrs []katalog.GVREntry,
+	gvrs []catalog.GVREntry,
 	caBundle []byte,
 	opts WebhookRegistrationOptions,
 ) error {
@@ -230,11 +230,11 @@ func registerMutatingWebhook(
 	config := &admissionv1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   mutatingWebhookConfigName,
-			Labels: opts.OrkestraResourceLabels,
+			Labels: opts.InrunResourceLabels,
 		},
 		Webhooks: []admissionv1.MutatingWebhook{
 			{
-				Name: "mutate.orkestra.orkspace.io",
+				Name: "mutate.inrun.dev",
 				ClientConfig: admissionv1.WebhookClientConfig{
 					Service: &admissionv1.ServiceReference{
 						Name:      opts.ServiceName,
@@ -262,12 +262,12 @@ func registerMutatingWebhook(
 // for deletion protection. Two webhook entries are registered within the same configuration:
 //
 //  1. CRD protection — intercepts DELETE on customresourcedefinitions.
-//  2. Orkestra resource protection — intercepts DELETE on deployments, services, ingresses,
+//  2. Inrun resource protection — intercepts DELETE on deployments, services, ingresses,
 //     and admission webhook configurations via ObjectSelector.
 func registerDeletionProtectionWebhook(
 	ctx context.Context,
 	client kubernetes.Interface,
-	gvrs []katalog.GVREntry,
+	gvrs []catalog.GVREntry,
 	caBundle []byte,
 	opts WebhookRegistrationOptions,
 ) error {
@@ -275,12 +275,12 @@ func registerDeletionProtectionWebhook(
 	path := "/deletion-protection"
 	port := opts.Port
 
-	var crdGVRs, orkestraGVRs []katalog.GVREntry
+	var crdGVRs, inrunGVRs []catalog.GVREntry
 	for _, gvr := range gvrs {
 		if gvr.Resource == "customresourcedefinitions" {
 			crdGVRs = append(crdGVRs, gvr)
 		} else {
-			orkestraGVRs = append(orkestraGVRs, gvr)
+			inrunGVRs = append(inrunGVRs, gvr)
 		}
 	}
 
@@ -288,7 +288,7 @@ func registerDeletionProtectionWebhook(
 
 	if len(crdGVRs) > 0 {
 		webhooks = append(webhooks, admissionv1.ValidatingWebhook{
-			Name: "protect.crds.orkestra.orkspace.io",
+			Name: "protect.crds.inrun.dev",
 			ClientConfig: admissionv1.WebhookClientConfig{
 				Service: &admissionv1.ServiceReference{
 					Name:      opts.ServiceName,
@@ -307,9 +307,9 @@ func registerDeletionProtectionWebhook(
 		})
 	}
 
-	if len(orkestraGVRs) > 0 {
+	if len(inrunGVRs) > 0 {
 		webhooks = append(webhooks, admissionv1.ValidatingWebhook{
-			Name: "protect.resources.orkestra.orkspace.io",
+			Name: "protect.resources.inrun.dev",
 			ClientConfig: admissionv1.WebhookClientConfig{
 				Service: &admissionv1.ServiceReference{
 					Name:      opts.ServiceName,
@@ -320,7 +320,7 @@ func registerDeletionProtectionWebhook(
 				CABundle: caBundle,
 			},
 			ObjectSelector:          labels.DeletionProtectionSelector(),
-			Rules:                   buildDeletionProtectionRules(orkestraGVRs),
+			Rules:                   buildDeletionProtectionRules(inrunGVRs),
 			FailurePolicy:           failurePolicyPtr(admissionv1.Fail),
 			MatchPolicy:             matchPolicyPtr(admissionv1.Exact),
 			AdmissionReviewVersions: []string{"v1"},
@@ -332,7 +332,7 @@ func registerDeletionProtectionWebhook(
 	config := &admissionv1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   deletionProtectionWebhookConfigName,
-			Labels: opts.OrkestraResourceLabels,
+			Labels: opts.InrunResourceLabels,
 		},
 		Webhooks: webhooks,
 	}
@@ -360,7 +360,7 @@ func registerDeletionProtectionWebhook(
 func registerNamespaceProtectionWebhook(
 	ctx context.Context,
 	client kubernetes.Interface,
-	gvrs []katalog.GVREntry,
+	gvrs []catalog.GVREntry,
 	caBundle []byte,
 	opts WebhookRegistrationOptions,
 	svcName string,
@@ -374,11 +374,11 @@ func registerNamespaceProtectionWebhook(
 	config := &admissionv1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   namespaceProtectionWebhookConfigName,
-			Labels: opts.OrkestraResourceLabels,
+			Labels: opts.InrunResourceLabels,
 		},
 		Webhooks: []admissionv1.ValidatingWebhook{
 			{
-				Name: "namespace-protect.orkestra.orkspace.io",
+				Name: "namespace-protect.inrun.dev",
 				ClientConfig: admissionv1.WebhookClientConfig{
 					Service: &admissionv1.ServiceReference{
 						Name:      svcName,
@@ -430,11 +430,11 @@ func registerStrictModeProtectionWebhook(
 	config := &admissionv1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   strictModeProtectionWebhookConfigName,
-			Labels: opts.OrkestraResourceLabels,
+			Labels: opts.InrunResourceLabels,
 		},
 		Webhooks: []admissionv1.ValidatingWebhook{
 			{
-				Name: "strict-mode.orkestra.orkspace.io",
+				Name: "strict-mode.inrun.dev",
 				ClientConfig: admissionv1.WebhookClientConfig{
 					Service: &admissionv1.ServiceReference{
 						Name:      opts.ServiceName,
@@ -458,7 +458,7 @@ func registerStrictModeProtectionWebhook(
 	return applyWebhookConfig(ctx, client, config)
 }
 
-func buildAdmissionRules(gvrs []katalog.GVREntry) []admissionv1.RuleWithOperations {
+func buildAdmissionRules(gvrs []catalog.GVREntry) []admissionv1.RuleWithOperations {
 	rules := make([]admissionv1.RuleWithOperations, 0, len(gvrs))
 	for _, gvr := range gvrs {
 		ops := make([]admissionv1.OperationType, 0, len(gvr.Operations))
@@ -477,7 +477,7 @@ func buildAdmissionRules(gvrs []katalog.GVREntry) []admissionv1.RuleWithOperatio
 	return rules
 }
 
-func buildDeletionProtectionRules(gvrs []katalog.GVREntry) []admissionv1.RuleWithOperations {
+func buildDeletionProtectionRules(gvrs []catalog.GVREntry) []admissionv1.RuleWithOperations {
 	rules := make([]admissionv1.RuleWithOperations, 0, len(gvrs))
 	for _, gvr := range gvrs {
 		ops := make([]admissionv1.OperationType, 0, len(gvr.Operations))
@@ -549,7 +549,7 @@ func applyMutatingWebhookConfig(ctx context.Context, client kubernetes.Interface
 
 // validatingWebhookConfigEqual returns true when the existing configuration
 // already reflects the desired state (labels and webhook definitions match).
-// Only the fields Orkestra controls are compared — Kubernetes-managed metadata
+// Only the fields Inrun controls are compared — Kubernetes-managed metadata
 // like resourceVersion and managedFields are intentionally excluded.
 func validatingWebhookConfigEqual(existing, desired *admissionv1.ValidatingWebhookConfiguration) bool {
 	return reflect.DeepEqual(existing.Labels, desired.Labels) &&

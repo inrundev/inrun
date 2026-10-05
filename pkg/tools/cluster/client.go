@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/kubeclient"
 	"k8s.io/client-go/tools/clientcmd"
 )
 

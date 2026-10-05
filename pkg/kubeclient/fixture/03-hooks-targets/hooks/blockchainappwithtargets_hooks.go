@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	apiv1 "github.com/orkspace/orkestra-args-hooks-targets/api/v1alpha1"
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orkdeploy "github.com/orkspace/orkestra/pkg/resources/deployments"
+	apiv1 "github.com/inrundev/inrun-args-hooks-targets/api/v1alpha1"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/resources/deployments"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// BlockchainAppHooks returns the hook implementation registered in the Katalog.
+// BlockchainAppHooks returns the hook implementation registered in the Catalog.
 func BlockchainAppHooks() domain.AnyReconcileHooks {
 	return domain.ReconcileHooks[*apiv1.BlockchainAppWithTargets]{OnReconcile: onBlockchainAppWithTargetsReconcile}
 }
@@ -22,7 +22,7 @@ func onBlockchainAppWithTargetsReconcile(ctx context.Context, obj *apiv1.Blockch
 		return fmt.Errorf("kubeclient not in context")
 	}
 
-	// Both values come from the Katalog args — resolved per target surface.
+	// Both values come from the Catalog args — resolved per target surface.
 	// v2-enabled target: featureEnabled="true", enqueueGate blocks outside hours.
 	// v2-disabled target: featureEnabled="false", no gate.
 	// The hook binary is identical — only the args change between targets.
@@ -39,7 +39,7 @@ func onBlockchainAppWithTargetsReconcile(ctx context.Context, obj *apiv1.Blockch
 		replicas = 1
 	}
 
-	spec := orkdeploy.ResolvedDeploymentSpec{
+	spec := deployments.ResolvedDeploymentSpec{
 		Name:      obj.Name,
 		Namespace: obj.Namespace,
 		Image:     obj.Spec.Image,
@@ -48,7 +48,7 @@ func onBlockchainAppWithTargetsReconcile(ctx context.Context, obj *apiv1.Blockch
 			"feature.demo/v2-enabled": annotation,
 		},
 	}
-	if err := orkdeploy.Apply(ctx, kube, obj, spec); err != nil {
+	if err := deployments.Apply(ctx, kube, obj, spec); err != nil {
 		return fmt.Errorf("blockchainappwithtargets deployment: %w", err)
 	}
 

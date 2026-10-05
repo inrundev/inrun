@@ -1,8 +1,8 @@
 // pkg/registry/pattern.go
 //
-// Generic pattern layer for the Orkestra registry.
+// Generic pattern layer for the Inrun registry.
 //
-// Every Orkestra pattern file carries a kind: field. This package reads that
+// Every Inrun pattern file carries a kind: field. This package reads that
 // field to determine the pattern's media type, required/optional files, and
 // which registry to push to — without a separate code path per kind.
 //
@@ -14,33 +14,33 @@ import (
 	"os"
 	"path/filepath"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"gopkg.in/yaml.v3"
 )
 
 // patternSpecs is the registry of known pattern kinds.
 // Add new kinds here — no other changes required.
 var patternSpecs = map[PatternKind]*PatternSpec{
-	KatalogKind: {
-		Kind:          KatalogKind,
-		MediaType:     "application/vnd.orkestra.pattern.v1+tar+gzip",
-		PrimaryFile:   FileKatalog,
-		RequiredFiles: []string{FileKatalog},
-		OptionalFiles: []string{FileKomposer, FileCRD, FileReadme, FileCR, FileE2E, FileSimulate, FileIntentYAML, FileIntentJSON, FileGoMod, FileGoSum, FileMakefile},
+	CatalogKind: {
+		Kind:          CatalogKind,
+		MediaType:     "application/vnd.inrun.pattern.v1+tar+gzip",
+		PrimaryFile:   FileCatalog,
+		RequiredFiles: []string{FileCatalog},
+		OptionalFiles: []string{FileStack, FileCRD, FileReadme, FileCR, FileE2E, FileSimulate, FileIntentYAML, FileIntentJSON, FileGoMod, FileGoSum, FileMakefile},
 	},
-	MotifKind: {
-		Kind:          MotifKind,
-		MediaType:     "application/vnd.orkestra.motif.v1+tar+gzip",
-		PrimaryFile:   FileMotif,
-		RequiredFiles: []string{FileMotif},
+	ModuleKind: {
+		Kind:          ModuleKind,
+		MediaType:     "application/vnd.inrun.module.v1+tar+gzip",
+		PrimaryFile:   FileModule,
+		RequiredFiles: []string{FileModule},
 		OptionalFiles: []string{FileReadme, "example/"},
 	},
 }
 
 // DetectKind reads the primary YAML file in dir and returns the pattern kind.
-// Tries katalog.yaml first, then motif.yaml.
+// Tries catalog.yaml first, then module.yaml.
 func DetectKind(dir string) (PatternKind, *PatternSpec, error) {
-	candidates := []string{FileKatalog, FileMotif}
+	candidates := []string{FileCatalog, FileModule}
 	for _, name := range candidates {
 		path := filepath.Join(dir, name)
 		data, err := readLocal(path)
@@ -59,8 +59,8 @@ func DetectKind(dir string) (PatternKind, *PatternSpec, error) {
 		}
 	}
 	return UnknownKind, nil, fmt.Errorf(
-		"no recognized Orkestra pattern in %s (expected %s with kind: Katalog, or motif.yaml with kind: Motif)",
-		dir, FileKatalog,
+		"no recognized Inrun pattern in %s (expected %s with kind: Catalog, or module.yaml with kind: Module)",
+		dir, FileCatalog,
 	)
 }
 
@@ -98,7 +98,7 @@ func ValidatePatternDirectory(dir string) (PatternKind, *PatternSpec, []string, 
 }
 
 // LoadPatternMeta reads name/version/description from the primary file.
-// Works for both Katalog (katalog.yaml) and Motif (motif.yaml).
+// Works for both Catalog (catalog.yaml) and Module (module.yaml).
 func LoadPatternMeta(dir string, spec *PatternSpec) (*PatternMeta, error) {
 	path := filepath.Join(dir, spec.PrimaryFile)
 	data, err := readLocal(path)
@@ -115,7 +115,7 @@ func LoadPatternMeta(dir string, spec *PatternSpec) (*PatternMeta, error) {
 			License     string   `yaml:"license"`
 			Tags        []string `yaml:"tags"`
 		} `yaml:"metadata"`
-		Lifecycle *orktypes.KatalogLifecycle `yaml:"lifecycle"`
+		Lifecycle *types.CatalogLifecycle `yaml:"lifecycle"`
 	}
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("parsing %s: %w", spec.PrimaryFile, err)
@@ -154,10 +154,10 @@ func LoadPatternMeta(dir string, spec *PatternSpec) (*PatternMeta, error) {
 // kind returns a display string for a PatternKind.
 func kind(k PatternKind) string {
 	switch k {
-	case KatalogKind:
+	case CatalogKind:
 		return "Pattern"
-	case MotifKind:
-		return "Motif"
+	case ModuleKind:
+		return "Module"
 	default:
 		return "Pattern"
 	}
@@ -167,20 +167,20 @@ func kind(k PatternKind) string {
 // a specific pattern kind.
 func mediaTypeForPatternFile(name string, k PatternKind) string {
 	switch filepath.Base(name) {
-	case FileKatalog:
-		return "application/vnd.orkestra.katalog.v1+yaml"
+	case FileCatalog:
+		return "application/vnd.inrun.catalog.v1+yaml"
 	case FileCRD:
 		return "application/vnd.kubernetes.crd.v1+yaml"
 	case FileCR:
 		return "application/vnd.kubernetes.cr.v1+yaml"
 	case FileReadme:
 		return "text/markdown"
-	case FileMotif:
-		return "application/vnd.orkestra.motif.v1+yaml"
+	case FileModule:
+		return "application/vnd.inrun.module.v1+yaml"
 	case FileE2E:
-		return "application/vnd.orkestra.e2e.v1+yaml"
+		return "application/vnd.inrun.e2e.v1+yaml"
 	case FileSimulate:
-		return "application/vnd.orkestra.simulate.v1+yaml"
+		return "application/vnd.inrun.simulate.v1+yaml"
 	case FileGoMod, FileGoSum:
 		return "text/plain"
 	case FileMakefile:

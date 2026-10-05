@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -17,8 +17,8 @@ func (e CRDEntry) ReconcileConfig() *ReconcileConfig {
 	return e.Box().Reconcile
 }
 
-// EffectiveImports returns the motif imports from reconcile.imports. Safe on nil receiver.
-func (c *CRDEntry) EffectiveImports() []MotifImport {
+// EffectiveImports returns the module imports from reconcile.imports. Safe on nil receiver.
+func (c *CRDEntry) EffectiveImports() []ModuleImport {
 	if c == nil || c.Box().Reconcile == nil {
 		return nil
 	}
@@ -111,7 +111,7 @@ func (c *CRDEntry) ResolveForceConflict() *bool {
 // status.observedGeneration field during readiness checks.
 //
 // This is applied mainly to built‑in Kubernetes resources or CRDs that do not
-// implement observedGeneration semantics. When true, Orkestra will NOT use
+// implement observedGeneration semantics. When true, Inrun will NOT use
 // generation-based readiness logic for this CRD.
 func (c *CRDEntry) SkipObservedGeneration() bool {
 	return c.Box().Runtime != nil && c.Box().Runtime.IgnoreObservedGeneration
@@ -227,14 +227,14 @@ func (c *CRDEntry) WithHooksDecl() bool {
 
 // RunHooksFirst reports whether the hook should run before declarative templates.
 // Returns false by default — declared templates run first (the 90/10 hybrid pattern).
-// Set reconcile.hooks.runHooksFirst: true in the Katalog to override.
+// Set reconcile.hooks.runHooksFirst: true in the Catalog to override.
 func (c *CRDEntry) RunHooksFirst() bool {
 	r := c.Box().Reconcile
 	return r != nil && r.Hooks != nil && r.Hooks.RunHooksFirst
 }
 
 // WithConstructorDecl returns true if the CRD has a constructor declaration.
-// Required when reconcile.default: false in the Katalog.
+// Required when reconcile.default: false in the Catalog.
 func (c *CRDEntry) WithConstructorDecl() bool {
 	return c.Box().Reconcile.HasConstructorDecl()
 }
@@ -465,7 +465,7 @@ func (c *CRDEntry) WithEventEntries() bool {
 }
 
 // HasTemplates reports whether this CRD declares any declarative hook templates.
-// Used by `ork generate` to determine whether to emit generated runtime hooks.
+// Used by `inrun generate` to determine whether to emit generated runtime hooks.
 func (c *CRDEntry) HasTemplates() bool {
 	r := c.Box().Reconcile
 	return r != nil && (r.OnCreate != nil || r.OnReconcile != nil || r.OnDelete != nil)
@@ -590,7 +590,7 @@ func (c *CRDEntry) HasConstructor() bool {
 	return r != nil && r.Constructor != nil
 }
 
-// HooksArgs returns the args declared under reconcile.hooks.args in the Katalog.
+// HooksArgs returns the args declared under reconcile.hooks.args in the Catalog.
 // Returns nil when no hooks declaration or no args are present.
 func (c *CRDEntry) HooksArgs() map[string]interface{} {
 	r := c.Box().Reconcile
@@ -624,7 +624,7 @@ func (c *CRDEntry) HasHooksExternal() bool {
 	return len(c.HooksExternal()) > 0
 }
 
-// ConstructorArgs returns the args declared under reconcile.constructor.args in the Katalog.
+// ConstructorArgs returns the args declared under reconcile.constructor.args in the Catalog.
 // Returns nil when no constructor declaration or no args are present.
 func (c *CRDEntry) ConstructorArgs() map[string]interface{} {
 	r := c.Box().Reconcile
@@ -796,7 +796,7 @@ func (c *CRDEntry) HasCRFiles() bool {
 }
 
 // HasSetup reports whether this CRDEntry declares any setup work
-// to be done before Orkestra starts.
+// to be done before Inrun starts.
 func (c *CRDEntry) HasSetup() bool {
 	if c == nil || c.Setup == nil {
 		return false
@@ -857,7 +857,7 @@ func (c *CRDEntry) EffectiveConversion() *CRDConversion {
 // IsConversionParticipant reports whether this CRD is a participant-only member
 // of a conversion pair. Participants hold no conversion paths — those live on
 // the CRD that owns the /convert logic. Used to skip path registration so a
-// participant entry can never clobber the real rules during Katalog load.
+// participant entry can never clobber the real rules during Catalog load.
 func (c *CRDEntry) IsConversionParticipant() bool {
 	cv := c.EffectiveConversion()
 	if cv == nil {
@@ -867,7 +867,7 @@ func (c *CRDEntry) IsConversionParticipant() bool {
 }
 
 // UpdateCRDCaBundle reports whether this CRD declares an updateCRD field
-// Used to update the crd when certificate is autogenerted by orkestra
+// Used to update the crd when certificate is autogenerted by inrun
 func (c *CRDEntry) UpdateCRDCaBundle() bool {
 	cv := c.EffectiveConversion()
 	if cv == nil {

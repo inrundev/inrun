@@ -1,19 +1,19 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: external-postgres-e2e
   description: >
-    Verifies protocol: postgres by deploying PostgreSQL in orkestra-system
+    Verifies protocol: postgres by deploying PostgreSQL in inrun-system
     and querying current_database() and pg_stat_activity from the WebApp reconciler.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./e2e/cr-e2e.yaml
 
   cluster:
     provider: kind
-    name: ork-external-postgres
+    name: inrun-external-postgres
     reuse: false
 
   expect:
@@ -28,6 +28,6 @@ spec:
           namespace: default
       logs:
         - leaderElection:
-            lease: orkestra-konductor
-            namespace: orkestra-system
+            lease: inrun-leader
+            namespace: inrun-system
           since: 2m

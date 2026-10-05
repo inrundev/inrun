@@ -3,18 +3,18 @@ package remote
 import (
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/event"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orkhttp "github.com/orkspace/orkestra/pkg/runtime/reconcilers/remote/http"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/event"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/runtime/reconcilers/remote/http"
+	"github.com/inrundev/inrun/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // New returns the reconciler for the declared remote transport.
 // Callers import only this package — transport selection is internal.
 func New(
-	decl *orktypes.RemoteReconcilerDeclaration,
+	decl *types.RemoteReconcilerDeclaration,
 	gvk schema.GroupVersionKind,
 	kube kubeclient.Interface,
 	ev event.Recorder,
@@ -23,11 +23,11 @@ func New(
 ) (domain.Reconciler, error) {
 	t := decl.Protocol
 	if t == "" {
-		t = orktypes.RemoteReconcileProtocolHTTP
+		t = types.RemoteReconcileProtocolHTTP
 	}
 	switch t {
-	case orktypes.RemoteReconcileProtocolHTTP:
-		return orkhttp.New(decl, gvk, kube, ev, managedResources, ownNamespace), nil
+	case types.RemoteReconcileProtocolHTTP:
+		return http.New(decl, gvk, kube, ev, managedResources, ownNamespace), nil
 	default:
 		return nil, fmt.Errorf("remote reconciler: unsupported transport %q", t)
 	}

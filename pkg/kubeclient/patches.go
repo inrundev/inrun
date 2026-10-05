@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -126,7 +126,7 @@ func (k *Kubeclient) PatchLabels(
 // are added or updated on the server; keys absent from the patch are left
 // unchanged (not deleted).
 //
-// This is intentionally a one-way merge: Orkestra's annotation management
+// This is intentionally a one-way merge: Inrun's annotation management
 // only ever adds keys (managed-by and managed-since are write-once and never
 // removed). If key deletion is ever needed, mirror the base/desired pattern
 // used by [PatchLabels].

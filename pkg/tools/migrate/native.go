@@ -74,7 +74,7 @@ func rewriteKubeCalls(src []byte, receiverName string) []byte {
 			} else {
 				keyText := sliceSrc(src, fset, call.Args[1])
 				newArgs = ctxText + `, namespace, name, ` + objText +
-					` /* TODO(ork migrate): extract namespace+name from: ` + keyText + ` */`
+					` /* TODO(inrun migrate): extract namespace+name from: ` + keyText + ` */`
 			}
 			reps = append(reps, replacement{
 				start: off(fset, call.Args[0].Pos()),
@@ -140,7 +140,7 @@ func extractObjectKeyFields(src []byte, fset *token.FileSet, n ast.Node) (namesp
 }
 
 // rewriteStruct finds the reconciler struct by name, replaces its fields with
-// Orkestra's (informer, kube, ev), and appends a constructor function if one
+// Inrun's (informer, kube, ev), and appends a constructor function if one
 // named New<ReceiverType> does not already exist.
 func rewriteStruct(src []byte, receiverType string) ([]byte, bool) {
 	if receiverType == "" {
@@ -195,7 +195,7 @@ func rewriteStruct(src []byte, receiverType string) ([]byte, bool) {
 
 	if !hasConstructor {
 		constructor := fmt.Sprintf(`
-// %s is the constructor function registered in the Katalog.
+// %s is the constructor function registered in the Catalog.
 func %s(kube kubeclient.Interface) domain.Reconciler {
 	return &%s{kube: kube}
 }

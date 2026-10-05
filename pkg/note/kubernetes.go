@@ -107,7 +107,7 @@ func noteName(obj interface{}) string {
 
 // noteNamespace returns metadata.namespace or an empty string.
 //
-//	{{ namespace .children.deployment }}  → "orkestra-system"
+//	{{ namespace .children.deployment }}  → "inrun-system"
 func noteNamespace(obj interface{}) string {
 	meta := noteMeta(obj)
 	if ns, ok := meta["namespace"].(string); ok {

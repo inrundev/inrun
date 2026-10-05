@@ -1,0 +1,56 @@
+apiVersion: v2
+name: inrun
+description: >-
+  Inrun is the intent runner for Kubernetes. Callers send an intent through the
+  gateway; Inrun turns it into a custom resource, reconciles it, and returns a
+  view. Deploys the runtime, the gateway and the console.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+keywords:
+  - inrun
+  - intent
+  - kubernetes
+  - operator
+  - reconciler
+  - crd
+  - gateway
+
+home: https://github.com/inrundev/inrun
+sources:
+  - https://github.com/inrundev/inrun
+
+maintainers:
+  - name: inrundev
+    email: releases@inrun.dev
+    url: https://github.com/inrundev/inrun
+
+icon: https://raw.githubusercontent.com/inrundev/inrun/main/docs/assets/inrun-mark.svg
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/operator: "true"
+  artifacthub.io/operatorCapabilities: Deep Insights
+  artifacthub.io/images: |
+    - name: runtime
+      image: ghcr.io/inrundev/inrun
+    - name: gateway
+      image: ghcr.io/inrundev/inrun-gateway
+    - name: console
+      image: ghcr.io/inrundev/inrun-console
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://github.com/inrundev/inrun/tree/main/docs
+    - name: Examples
+      url: https://github.com/inrundev/inrun/tree/main/examples
+  artifacthub.io/screenshots: |
+    - title: Inrun Console
+      url: https://raw.githubusercontent.com/inrundev/inrun/main/docs/assets/console/console-landing.png
+    - title: CRD Health View
+      url: https://raw.githubusercontent.com/inrundev/inrun/main/docs/assets/console/control-panel-app-platform.png
+    - title: Metrics Overview
+      url: https://raw.githubusercontent.com/inrundev/inrun/main/docs/assets/console/console-app-service-metrics.png
+  artifacthub.io/changes: |
+    - kind: added
+      description: "First Inrun release"

@@ -1,6 +1,6 @@
 # Secret
 
-This declares one Secret to be managed by Orkestra.
+This declares one Secret to be managed by Inrun.
 
 Secret data values are static — template expressions are not evaluated in Secret data entries. For dynamic configuration, use a custom Go hook.
 
@@ -22,7 +22,7 @@ You may also copy from an existing Secret using FromSecret.
 
 ## Lifecycle
 
-Declare this resource under `onCreate` for an idempotent, one-time create: Orkestra creates it on the first reconcile and leaves it untouched afterward. Set `reconcile: true` on the same entry to also apply it as drift correction on every subsequent reconcile. This is a shorthand for declaring the identical entry under `onReconcile` as well — there's no need to do both.
+Declare this resource under `onCreate` for an idempotent, one-time create: Inrun creates it on the first reconcile and leaves it untouched afterward. Set `reconcile: true` on the same entry to also apply it as drift correction on every subsequent reconcile. This is a shorthand for declaring the identical entry under `onReconcile` as well — there's no need to do both.
 
 Declare a resource under `onDelete` to run explicit cleanup before the CR's finalizer is removed. Most resources need no `onDelete` entry — they are garbage-collected automatically through owner references when the CR itself is deleted.
 
@@ -82,7 +82,7 @@ Annotations — applied to Secret metadata.
 
 Type: string
 
-FromSecret — name of an existing Secret to copy data from. Orkestra reads this at reconcile time — copies stay in sync with the source.
+FromSecret — name of an existing Secret to copy data from. Inrun reads this at reconcile time — copies stay in sync with the source.
 
 ---
 
@@ -171,7 +171,7 @@ Type: string
 RotateAfter declares a time-based rotation threshold. When set alongside once: true, the Secret is recreated when its age exceeds this duration. The creation time is tracked via the annotation:
 
 ```yaml
-orkestra.orkspace.io/generated-at: "2026-04-06T08:00:00Z"
+inrun.dev/generated-at: "2026-04-06T08:00:00Z"
 ```
 
 Supported formats: 30s, 5m, 12h, 90d, 1y Days (d) and years (y) are extensions beyond Go's standard duration format.
@@ -195,7 +195,7 @@ Type: object
 
 TLS declares self-signed CA and server certificate generation. When set, the data: block is ignored — the Secret is created as type kubernetes.io/tls with fields: tls.crt, tls.key, ca.crt
 
-Default Secret name when name is empty: "orkestra-tls" Default validFor when empty: same as rotateAfter, or "1y"
+Default Secret name when name is empty: "inrun-tls" Default validFor when empty: same as rotateAfter, or "1y"
 
 Example:
 

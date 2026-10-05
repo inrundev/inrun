@@ -4,61 +4,55 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
-// Merger loads one or more Katalog files, resolves their imports
+// Merger loads one or more Catalog files, resolves their imports
 // (files, URLs, Helm charts), merges all CRD entries, and exposes
 // the result through Enabled(), All(), and Get().
 //
-// Entry point: one or more file paths from the CLI or konstructRuntime.
+// Entry point: one or more file paths from the CLI or constructRuntime.
 // Everything else — source resolution, Helm rendering, deduplication —
 // is internal to the merger.
 //
 // Merge rules:
-//   - Sources within a Katalog are loaded before spec.crds
+//   - Sources within a Catalog are loaded before spec.crds
 //   - Inline spec.crds win on name conflict (local overrides remote)
-//   - Duplicate names across independent Katalog files are errors
+//   - Duplicate names across independent Catalog files are errors
 //   - disabled CRDs are preserved and filtered by Enabled()
 type Merger struct {
-	// entryPoints are the initial file paths/URLs passed from the CLI (ork run or or generate)
+	// entryPoints are the initial file paths/URLs passed from the CLI (inrun or or generate)
 	entryPoints []string
 
 	// result holds the merged CRD entries after Merge() completes — keyed by CRD name
-	result map[string]orktypes.CRDEntry
+	result map[string]types.CRDEntry
 
-	// security holds the security configuration of the final katalog
-	security orktypes.KatalogSecurity
+	// security holds the security configuration of the final catalog
+	security types.CatalogSecurity
 
-	// gateway holds the gateway deployment config of the final katalog
-	gateway *orktypes.GatewayConfig
+	// gateway holds the gateway deployment config of the final catalog
+	gateway *types.GatewayConfig
 
-	// publish holds the publishing and consumer policy of the final katalog
-	publish *orktypes.PublishConfig
+	// publish holds the publishing and consumer policy of the final catalog
+	publish *types.PublishConfig
 
-	// profiles holds the merged user-defined profile registry of the final katalog
-	profiles orktypes.ProfileRegistry
+	// profiles holds the merged user-defined profile registry of the final catalog
+	profiles types.ProfileRegistry
 
-	// specImports holds the spec.imports motif list from the loaded Katalog.
-	// These are motifs whose profiles and notes are merged at the Katalog level.
-	specImports []orktypes.MotifImport
+	// specImports holds the spec.imports module list from the loaded Catalog.
+	// These are modules whose profiles and notes are merged at the Catalog level.
+	specImports []types.ModuleImport
 
-	// notes holds the Katalog-level user-defined note registry.
-	notes orktypes.NoteRegistry
+	// notes holds the Catalog-level user-defined note registry.
+	notes types.NoteRegistry
 
-	// lifecycle holds the lifecycle policy of the final katalog.
-	lifecycle *orktypes.KatalogLifecycle
+	// lifecycle holds the lifecycle policy of the final catalog.
+	lifecycle *types.CatalogLifecycle
 
-	// policy holds the platform policy block of the final katalog.
-	policy *orktypes.KatalogPolicy
-
-	// projects holds the merged projectInfo configuration of the final katalog
-	projects map[string]interface{}
-
-	// projectInfo holds the merged projectInfo configuration of the final katalog
-	projectInfo interface{}
+	// policy holds the platform policy block of the final catalog.
+	policy *types.CatalogPolicy
 
 	// merged tracks whether Merge() has been called
 	merged bool
@@ -67,7 +61,7 @@ type Merger struct {
 	// used by cli and health endpoints
 	apiMetadata apiMetadata
 
-	registryURL string // set from ORK_REGISTRY via SetRegistryURL
+	registryURL string // set from INRUN_REGISTRY via SetRegistryURL
 
 	// Refresh bypasses all local caches — git charts, remote Helm repos, and
 	// remote file fetches are re-downloaded and the cached copies are overwritten.
@@ -75,9 +69,9 @@ type Merger struct {
 }
 
 type apiMetadata struct {
-	APIVersion string               `json:"apiVersion" yaml:"apiVersion"`
-	Kind       string               `json:"kind" yaml:"kind"`
-	Metadata   orktypes.KatalogMeta `json:"metadata" yaml:"metadata"`
+	APIVersion string            `json:"apiVersion" yaml:"apiVersion"`
+	Kind       string            `json:"kind" yaml:"kind"`
+	Metadata   types.CatalogMeta `json:"metadata" yaml:"metadata"`
 }
 
 // New creates a Merger with the given entry point file paths or URLs.
@@ -99,12 +93,12 @@ func (m *Merger) Add(paths ...string) *Merger {
 func (m *Merger) Merge() error {
 	// seen lives here — top level only (tracks which file each name came from)
 	seen := map[string]string{}
-	merged := make(map[string]orktypes.CRDEntry)
+	merged := make(map[string]types.CRDEntry)
 
 	for _, path := range m.entryPoints {
-		// loadKatalogFile manages its OWN internal dedup
+		// loadCatalogFile manages its OWN internal dedup
 		// it does NOT receive seen — only returns the final CRD map for this file
-		crds, err := m.loadKatalogFile(path)
+		crds, err := m.loadCatalogFile(path)
 		if err != nil {
 			return fmt.Errorf("merger: loading %q: %w", path, err)
 		}
@@ -134,10 +128,10 @@ func (m *Merger) Merge() error {
 // The override wins on any field it explicitly declares.
 // Fields that are zero/nil/empty in the override are inherited from the base.
 //
-// This is how Komposer spec.crds works: you declare only what you want
+// This is how Stack spec.crds works: you declare only what you want
 // to change. Everything else — reconciler templates, validation rules,
-// mutation rules, status config — is inherited from the source Katalog.
-func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
+// mutation rules, status config — is inherited from the source Catalog.
+func mergeCRDEntry(base, override types.CRDEntry) types.CRDEntry {
 	result := base // start from the full base
 
 	// ── Identity ─────────────────────────────────────────────────────────
@@ -161,7 +155,7 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 	// Override only when non-zero — zero means "not declared in override"
 	if override.Box().Reconcile != nil {
 		if result.Box().Reconcile == nil {
-			result.Box().Reconcile = &orktypes.ReconcileConfig{}
+			result.Box().Reconcile = &types.ReconcileConfig{}
 		}
 		ov := override.Box().Reconcile
 		if ov.Workers > 0 {
@@ -182,10 +176,10 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 	if override.Box().Runtime != nil && override.Box().Runtime.DeletionProtection != nil {
 		ovDp := override.Box().Runtime.DeletionProtection
 		if result.Box().Runtime == nil {
-			result.Box().Runtime = &orktypes.RuntimeConfig{}
+			result.Box().Runtime = &types.RuntimeConfig{}
 		}
 		if result.Box().Runtime.DeletionProtection == nil {
-			result.Box().Runtime.DeletionProtection = &orktypes.DeletionProtectionOverride{}
+			result.Box().Runtime.DeletionProtection = &types.DeletionProtectionOverride{}
 		}
 		dp := result.Box().Runtime.DeletionProtection
 		if ovDp.ProtectCRD != nil {
@@ -215,7 +209,7 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 	// Restrictions are additive: override adds to base, never removes
 	if override.HasRestrictedNamespaces() {
 		if result.Box().Runtime == nil {
-			result.Box().Runtime = &orktypes.RuntimeConfig{}
+			result.Box().Runtime = &types.RuntimeConfig{}
 		}
 		seen := map[string]struct{}{}
 		for _, ns := range result.Box().Runtime.RestrictedNamespaces {
@@ -232,7 +226,7 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 	// Allowances are additive: override adds to base, never removes
 	if override.HasAllowedNamespaces() {
 		if result.Box().Runtime == nil {
-			result.Box().Runtime = &orktypes.RuntimeConfig{}
+			result.Box().Runtime = &types.RuntimeConfig{}
 		}
 		seen := map[string]struct{}{}
 		for _, ns := range result.Box().Runtime.AllowedNamespaces {
@@ -248,7 +242,7 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 	// ── Finalizers — additive ─────────────────────────────────────────────
 	if overrideFinals := override.Box().EffectiveFinalizers(); len(overrideFinals) > 0 {
 		if result.Box().Runtime == nil {
-			result.Box().Runtime = &orktypes.RuntimeConfig{}
+			result.Box().Runtime = &types.RuntimeConfig{}
 		}
 		seen := map[string]struct{}{}
 		for _, f := range result.Box().EffectiveFinalizers() {
@@ -271,7 +265,7 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 		(override.Box().Reconcile != nil && override.Box().Reconcile.HookFactory != nil) ||
 		(override.Box().Reconcile != nil && override.Box().Reconcile.Constructor != nil) {
 		if result.Box().Reconcile == nil {
-			result.Box().Reconcile = &orktypes.ReconcileConfig{}
+			result.Box().Reconcile = &types.ReconcileConfig{}
 		}
 		rc := result.Box().Reconcile
 		if override.Box().EffectiveOnCreate() != nil {
@@ -294,24 +288,24 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 	// ── Status — override replaces if declared ────────────────────────────
 	if override.Box().EffectiveStatus() != nil {
 		if result.Box().Emit == nil {
-			result.Box().Emit = &orktypes.EmitConfig{}
+			result.Box().Emit = &types.EmitConfig{}
 		}
 		result.Box().Emit.Status = override.Box().EffectiveStatus()
 	}
 
 	// ── Validation and mutation — override replaces if declared ───────────
 	// Platform teams may want to add stricter rules in production via the
-	// Komposer. Replacing rather than merging is the safe behaviour —
+	// Stack. Replacing rather than merging is the safe behaviour —
 	// merging rules from two imports could produce unexpected combinations.
 	if v := override.EffectiveValidation(); v != nil {
 		if result.Admission == nil {
-			result.Admission = &orktypes.AdmissionConfig{}
+			result.Admission = &types.AdmissionConfig{}
 		}
 		result.Admission.Validation = v
 	}
 	if m := override.EffectiveMutation(); m != nil {
 		if result.Admission == nil {
-			result.Admission = &orktypes.AdmissionConfig{}
+			result.Admission = &types.AdmissionConfig{}
 		}
 		result.Admission.Mutation = m
 	}
@@ -319,7 +313,7 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 	// ── Conversion — override replaces if declared ────────────────────────
 	if cv := override.EffectiveConversion(); cv != nil {
 		if result.Admission == nil {
-			result.Admission = &orktypes.AdmissionConfig{}
+			result.Admission = &types.AdmissionConfig{}
 		}
 		result.Admission.Conversion = cv
 	}
@@ -335,9 +329,9 @@ func mergeCRDEntry(base, override orktypes.CRDEntry) orktypes.CRDEntry {
 // ── Query methods ─────────────────────────────────────────────────────────────
 
 // Enabled returns only CRD entries where enabled: true.
-func (m *Merger) Enabled() map[string]orktypes.CRDEntry {
+func (m *Merger) Enabled() map[string]types.CRDEntry {
 	m.mustBeMerged()
-	out := make(map[string]orktypes.CRDEntry)
+	out := make(map[string]types.CRDEntry)
 	for name, crd := range m.result {
 		if crd.IsEnabled() {
 			out[name] = crd
@@ -347,13 +341,13 @@ func (m *Merger) Enabled() map[string]orktypes.CRDEntry {
 }
 
 // All returns all CRD entries including disabled ones.
-func (m *Merger) All() map[string]orktypes.CRDEntry {
+func (m *Merger) All() map[string]types.CRDEntry {
 	m.mustBeMerged()
 	return m.result
 }
 
 // Get returns a CRD entry by name. Returns (entry, true) if found.
-func (m *Merger) Get(name string) (orktypes.CRDEntry, bool) {
+func (m *Merger) Get(name string) (types.CRDEntry, bool) {
 	m.mustBeMerged()
 	crd, ok := m.result[name]
 	return crd, ok
@@ -370,83 +364,76 @@ func (m *Merger) EnabledCount() int {
 	return len(m.Enabled())
 }
 
-// ToSpec returns the merged result as a KatalogSpec.
-// Used by NewKatalog and generate.Registry to consume the merged result.
-func (m *Merger) ToSpec() orktypes.KatalogSpec {
+// ToSpec returns the merged result as a CatalogSpec.
+// Used by NewCatalog and generate.Registry to consume the merged result.
+func (m *Merger) ToSpec() types.CatalogSpec {
 	m.mustBeMerged()
-	return orktypes.KatalogSpec{CRDs: m.result}
+	return types.CatalogSpec{CRDs: m.result}
 }
 
-// ToSecurity returns the security config of the merged result as a KatalogSecurity
-// Used by NewKatalog consume the merged result.
-func (m *Merger) ToSecurity() orktypes.KatalogSecurity {
+// ToSecurity returns the security config of the merged result as a CatalogSecurity
+// Used by NewCatalog consume the merged result.
+func (m *Merger) ToSecurity() types.CatalogSecurity {
 	m.mustBeMerged()
 	return m.security
 }
 
 // ToGateway returns the gateway deployment config of the merged result.
-// Used by KomposeRuntimeKatalog to populate Katalog.Gateway.
-func (m *Merger) ToGateway() *orktypes.GatewayConfig {
+// Used by BuildRuntimeCatalog to populate Catalog.Gateway.
+func (m *Merger) ToGateway() *types.GatewayConfig {
 	m.mustBeMerged()
 	return m.gateway
 }
 
 // ToPublish returns the publish config of the merged result.
-// Used by KomposeRuntimeKatalog to populate Katalog.Publish.
-func (m *Merger) ToPublish() *orktypes.PublishConfig {
+// Used by BuildRuntimeCatalog to populate Catalog.Publish.
+func (m *Merger) ToPublish() *types.PublishConfig {
 	m.mustBeMerged()
 	return m.publish
 }
 
 // ToProfiles returns the merged user-defined profile registry of the merged result.
-// Used by KomposeRuntimeKatalog to populate Katalog.Profiles.
-func (m *Merger) ToProfiles() orktypes.ProfileRegistry {
+// Used by BuildRuntimeCatalog to populate Catalog.Profiles.
+func (m *Merger) ToProfiles() types.ProfileRegistry {
 	m.mustBeMerged()
 	return m.profiles
 }
 
-// ToSpecImports returns the spec.imports motif list from the loaded Katalog.
-// Used by KomposeRuntimeKatalog to populate Katalog.Spec.Imports before profile expansion.
-func (m *Merger) ToSpecImports() []orktypes.MotifImport {
+// ToSpecImports returns the spec.imports module list from the loaded Catalog.
+// Used by BuildRuntimeCatalog to populate Catalog.Spec.Imports before profile expansion.
+func (m *Merger) ToSpecImports() []types.ModuleImport {
 	m.mustBeMerged()
 	return m.specImports
 }
 
-// ToNotes returns the Katalog-level user-defined note registry.
-// Used by KomposeRuntimeKatalog to populate Katalog.Notes.
-func (m *Merger) ToNotes() orktypes.NoteRegistry {
+// ToNotes returns the Catalog-level user-defined note registry.
+// Used by BuildRuntimeCatalog to populate Catalog.Notes.
+func (m *Merger) ToNotes() types.NoteRegistry {
 	m.mustBeMerged()
 	return m.notes
 }
 
 // ToLifecycle returns the lifecycle policy of the merged result.
-// Used by KomposeRuntimeKatalog to populate Katalog.lifecycle.
-func (m *Merger) ToLifecycle() *orktypes.KatalogLifecycle {
+// Used by BuildRuntimeCatalog to populate Catalog.lifecycle.
+func (m *Merger) ToLifecycle() *types.CatalogLifecycle {
 	m.mustBeMerged()
 	return m.lifecycle
 }
 
 // ToPolicy returns the platform policy block of the merged result.
-func (m *Merger) ToPolicy() *orktypes.KatalogPolicy {
+func (m *Merger) ToPolicy() *types.CatalogPolicy {
 	m.mustBeMerged()
 	return m.policy
 }
 
-// ToProjectInfo returns merged project information of the merged result
-// This is used by KomposeRuntimeKatalog to populate Katalog.ProjectInfo.
-func (m *Merger) ToProjectInfo() interface{} {
-	m.mustBeMerged()
-	return m.projectInfo
-}
-
-// APIMetadata returns the merged result as a KatalogMeta with apiversion and kind.
+// APIMetadata returns the merged result as a CatalogMeta with apiversion and kind.
 func (m *Merger) APIMetadata() apiMetadata {
 	m.mustBeMerged()
 	return m.apiMetadata
 }
 
 // FirstEntryDir returns the directory of the first entry point path.
-// Used by the Katalog parser to resolve relative crdFile paths.
+// Used by the Catalog parser to resolve relative crdFile paths.
 func (m *Merger) FirstEntryDir() string {
 	if len(m.entryPoints) == 0 {
 		return ""
@@ -463,25 +450,25 @@ func (m *Merger) GetRegistryURL() string {
 	return m.registryURL
 }
 
-// ToUI returns a UI-friendly representation of the merged Katalog.
-// This method extracts only the fields needed for display in the Control Center:
-//   - API version and kind (always "Katalog" at runtime)
+// ToUI returns a UI-friendly representation of the merged Catalog.
+// This method extracts only the fields needed for display in the Console:
+//   - API version and kind (always "Catalog" at runtime)
 //   - Metadata (name, description, version, author, license)
 //   - All merged CRD definitions
 //
 // Internal fields (Scheme, GroupVersionKind, etc.) are excluded because they
 // have `yaml:"-" json:"-"` tags and won't be serialized to JSON.
 //
-// This method is used by the /katalog/raw endpoint to provide a clean,
-// readable view of the Katalog that created the current operator.
-func (m *Merger) ToUI() *orktypes.KatalogForUI {
+// This method is used by the /catalog/raw endpoint to provide a clean,
+// readable view of the Catalog that created the current operator.
+func (m *Merger) ToUI() *types.CatalogForUI {
 	m.mustBeMerged()
 
-	return &orktypes.KatalogForUI{
+	return &types.CatalogForUI{
 		APIVersion: m.apiMetadata.APIVersion,
-		Kind:       konfig.KatalogKind(),
+		Kind:       config.CatalogKind(),
 		Metadata:   m.apiMetadata.Metadata,
-		Spec: orktypes.KatalogSpecForUI{
+		Spec: types.CatalogSpecForUI{
 			CRDs: m.result,
 		},
 	}

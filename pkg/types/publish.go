@@ -29,7 +29,7 @@ type PublishTestsConfig struct {
 	// Setting false is equivalent to passing --no-simulate at push.
 	Simulate *bool `yaml:"simulate,omitempty" json:"simulate,omitempty"`
 
-	// Intent controls whether ork serve play runs at push time.
+	// Intent controls whether inrun serve play runs at push time.
 	// Default: false — opt-in. Equivalent to passing --add-intent at push.
 	// When true, intent.yaml or intent.json must be present in the pattern directory.
 	Intent *bool `yaml:"intent,omitempty" json:"intent,omitempty"`

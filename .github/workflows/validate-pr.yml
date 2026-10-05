@@ -30,14 +30,14 @@ jobs:
       - name: Run note generator
         run: make generate-notes
 
-      - name: Check for uncommitted changes (catalog_generated.go)
+      - name: Check for uncommitted changes (list_generated.go)
         run: |
-          if ! git diff --quiet pkg/note/catalog_generated.go; then
-            echo "❌ pkg/note/catalog_generated.go is out of date."
+          if ! git diff --quiet pkg/note/list_generated.go; then
+            echo "❌ pkg/note/list_generated.go is out of date."
             echo "Run 'make generate-notes' locally and commit the changes."
             exit 1
           else
-            echo "✅ Note catalog is up-to-date."
+            echo "✅ Note list is up-to-date."
           fi
 
   validate-resource-docs:
@@ -89,9 +89,9 @@ jobs:
   # waiting on. Matrix so all three targets also run in parallel with each
   # other, and so a failure names exactly which one.
   #
-  # Scoped to what actually ships: runtime, gateway, and Control Center.
-  # vuln-orkestra scans the dev-CLI build config (no tags — never deployed)
-  # and is manually triggered instead, from vuln-orkestra.yml — that's also
+  # Scoped to what actually ships: runtime, gateway, and Console.
+  # vuln-inrun scans the dev-CLI build config (no tags — never deployed)
+  # and is manually triggered instead, from vuln-inrun.yml — that's also
   # where the known, accepted findings live (see the comment above `vuln` in
   # the Makefile); none of them reach these three, so this is a hard gate —
   # no continue-on-error.
@@ -101,7 +101,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [vuln-controlcenter, vuln-runtime, vuln-gateway]
+        target: [vuln-console, vuln-runtime, vuln-gateway]
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -134,25 +134,25 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build ork
-        run: make ork
+      - name: Build inrun
+        run: make inrun
 
       - name: Create kind cluster
         uses: helm/kind-action@v1
         with:
-          cluster_name: orkestra-note-fixture
+          cluster_name: inrun-note-fixture
 
       - name: Apply CRD
         run: kubectl apply -f pkg/note/fixture/crd.yaml
 
       - name: Generate and apply bundle
         run: |
-          $HOME/.orkestra/bin/ork bundle \
-            --file pkg/note/fixture/katalog.yaml | kubectl apply -f -
+          $HOME/.inrun/bin/inrun bundle \
+            --file pkg/note/fixture/catalog.yaml | kubectl apply -f -
 
-      - name: Install Orkestra via Helm
+      - name: Install Inrun via Helm
         run: |
-          helm install orkestra ./charts/orkestra \
+          helm install inrun ./charts/inrun \
             --namespace default \
             --wait --timeout 120s
 
@@ -177,7 +177,7 @@ jobs:
         if: failure()
         run: |
           echo "=== ReconcilerProbe ===" && kubectl get noteprobe my-probe -o yaml || true
-          echo "=== Operator logs ===" && kubectl logs -l app.kubernetes.io/name=orkestra --tail=100 || true
+          echo "=== Operator logs ===" && kubectl logs -l app.kubernetes.io/name=inrun --tail=100 || true
 
   # ── Fixture: reconciler run_* ───────────────────────────────────────────────
   # Runs only when the reconciler package or its fixture changes.
@@ -198,25 +198,25 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build ork
-        run: make ork
+      - name: Build inrun
+        run: make inrun
 
       - name: Create kind cluster
         uses: helm/kind-action@v1
         with:
-          cluster_name: orkestra-reconciler-fixture
+          cluster_name: inrun-reconciler-fixture
 
       - name: Apply CRD
         run: kubectl apply -f pkg/runtime/reconciler/fixture/crd.yaml
 
       - name: Generate and apply bundle
         run: |
-          $HOME/.orkestra/bin/ork bundle \
-            --file pkg/runtime/reconciler/fixture/katalog.yaml | kubectl apply -f -
+          $HOME/.inrun/bin/inrun bundle \
+            --file pkg/runtime/reconciler/fixture/catalog.yaml | kubectl apply -f -
 
-      - name: Install Orkestra via Helm
+      - name: Install Inrun via Helm
         run: |
-          helm install orkestra ./charts/orkestra \
+          helm install inrun ./charts/inrun \
             --namespace default \
             --wait --timeout 120s
 
@@ -245,4 +245,4 @@ jobs:
         run: |
           echo "=== ReconcilerProbe ===" && kubectl get reconcilerprobe probe -o yaml || true
           echo "=== All resources in default ===" && kubectl get all || true
-          echo "=== Operator logs ===" && kubectl logs -l app.kubernetes.io/name=orkestra --tail=100 || true
+          echo "=== Operator logs ===" && kubectl logs -l app.kubernetes.io/name=inrun --tail=100 || true

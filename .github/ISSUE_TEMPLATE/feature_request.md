@@ -1,5 +1,5 @@
 name: Feature request
-about: Suggest an idea for Orkestra
+about: Suggest an idea for Inrun
 labels: enhancement
 
 ---
@@ -14,7 +14,7 @@ Why is this useful? What problem does it solve?
 
 ## Proposal
 
-How you imagine it working (CLI, Katalog, Komposer, Registry, etc.).
+How you imagine it working (CLI, Catalog, Stack, Registry, etc.).
 
 ## Alternatives
 

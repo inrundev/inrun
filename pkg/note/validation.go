@@ -13,7 +13,7 @@ import (
 // General-purpose input-format checks, exposed as notes.
 //
 // An IDP form field is free text until something checks it — these are the
-// checks a katalog author reaches for most often: is this actually an
+// checks a catalog author reaches for most often: is this actually an
 // email, a git repository, a URL, a container image reference, well-formed
 // JSON, a valid port number. Catching a malformed value at admission time,
 // with a message built from the field's label:, beats the developer

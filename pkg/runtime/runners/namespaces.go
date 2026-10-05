@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkns "github.com/orkspace/orkestra/pkg/resources/namespaces"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/namespaces"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunNamespaces resolves and applies Namespace template declarations.
@@ -24,31 +24,31 @@ import (
 func RunNamespaces(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.NamespaceTemplateSource,
+	srcs []types.NamespaceTemplateSource,
 	update bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
-		activeNames["orkestra.io"+"/"+n] = true
+		activeNames["inrun.dev"+"/"+n] = true
 	}
 
 	for i, src := range srcs {
 		// 1. Evaluate conditions BEFORE resolving templates
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		// Early name resolution — needed for DeleteIfOwned cleanup.
 		name, _ := resolver.Resolve(src.Name)
 
 		if !conditionPassed {
 			if update || src.Reconcile {
-				if !activeNames["orkestra.io"+"/"+name] {
-					if err := orkns.DeleteIfOwned(ctx, kube, owner, name); err != nil {
+				if !activeNames["inrun.dev"+"/"+name] {
+					if err := namespaces.DeleteIfOwned(ctx, kube, owner, name); err != nil {
 						return fmt.Errorf("namespace[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -68,10 +68,10 @@ func RunNamespaces(
 		}
 
 		// 3. Build registry spec and apply
-		spec := orkns.Resolve(resolved, resolver.OwnerName())
+		spec := namespaces.Resolve(resolved, resolver.OwnerName())
 
 		// Always create — Namespaces have no meaningful drift to correct
-		if err := orkns.Create(ctx, kube, owner, spec); err != nil {
+		if err := namespaces.Create(ctx, kube, owner, spec); err != nil {
 			return fmt.Errorf("namespace[%d].create: %w", i, err)
 		}
 	}

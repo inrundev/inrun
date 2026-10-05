@@ -6,12 +6,12 @@ import (
 )
 
 // HPAProfileEntry describes a single behavior.profile reference found in an
-// HPATemplateSource. Used by katalog validation to fail fast on unknown profiles
+// HPATemplateSource. Used by catalog validation to fail fast on unknown profiles
 // and to enforce mutual exclusivity with explicit scaleUp/scaleDown fields.
 type HPAProfileEntry struct {
 	Phase        string // "onCreate", "onReconcile", "onDelete"
 	ResourceName string // HPA name template (may be Empty()
-	Profile      string // raw profile name as written in the katalog
+	Profile      string // raw profile name as written in the catalog
 	Mixed        bool   // true when profile is set alongside explicit scaleUp or scaleDown
 }
 

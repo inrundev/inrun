@@ -6,8 +6,8 @@ import (
 )
 
 func TestCacheFileBytes_RoundTrip(t *testing.T) {
-	url := "https://example.com/test-katalog.yaml"
-	data := []byte("apiVersion: orkestra.orkspace.io/v1\nkind: Katalog\n")
+	url := "https://example.com/test-catalog.yaml"
+	data := []byte("apiVersion: inrun.dev/v1\nkind: Catalog\n")
 
 	// Ensure clean state
 	InvalidateFileCache(url)

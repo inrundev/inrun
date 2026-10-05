@@ -10,7 +10,7 @@ expect:
           field: .status.phase
           equals: "Ready"
 
-  - name: currentDatabase is orkestra
+  - name: currentDatabase is inrun
     after: cr-applied
     timeout: 90s
     kubectl:
@@ -19,7 +19,7 @@ expect:
           name: my-app
           namespace: default
           field: .status.currentDatabase
-          equals: "orkestra"
+          equals: "inrun"
 
   - name: connectionCount is set
     after: cr-applied

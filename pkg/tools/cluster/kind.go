@@ -12,18 +12,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 const (
-	// KindClusterName is the default kind cluster name used by ork run --dev.
-	KindClusterName    = "orkestra-playground"
+	// KindClusterName is the default kind cluster name used by inrun --dev.
+	KindClusterName    = "inrun-playground"
 	DefaultKindVersion = "v0.27.0"
 )
 
 // EnsureKindCluster creates a kind cluster named `name` if it does not already
 // exist, then switches kubectl to its context. Downloads the kind binary from
-// GitHub releases if not found in PATH or ~/.orkestra/bin.
+// GitHub releases if not found in PATH or ~/.inrun/bin.
 // workers > 0 provisions that many worker nodes in addition to the control-plane.
 // version selects the kind release to download; empty string uses DefaultKindVersion.
 func EnsureKindCluster(name string, workers int, version string) error {
@@ -118,7 +118,7 @@ func resolveKind(version string) (string, error) {
 		version = DefaultKindVersion
 	}
 	// Explicit version: use the versioned cache entry, downloading if needed.
-	dest := filepath.Join(orkBinDir(), "kind-"+version)
+	dest := filepath.Join(inrunBinDir(), "kind-"+version)
 	if _, err := os.Stat(dest); err == nil {
 		return dest, nil
 	}
@@ -164,7 +164,7 @@ func downloadKind(dest, version string) (string, error) {
 }
 
 func writeKindConfig(workers int) (string, error) {
-	f, err := os.CreateTemp("", "ork-kind-*.yaml")
+	f, err := os.CreateTemp("", "inrun-kind-*.yaml")
 	if err != nil {
 		return "", err
 	}
@@ -200,7 +200,7 @@ func waitForNodesReady(timeout time.Duration, onNodeReady func(nodeName string))
 		scanner := bufio.NewScanner(pr)
 		for scanner.Scan() {
 			line := scanner.Text()
-			// kubectl prints: "node/ork-playground-worker condition met"
+			// kubectl prints: "node/inrun-playground-worker condition met"
 			if strings.Contains(line, "condition met") {
 				parts := strings.Fields(line)
 				if len(parts) > 0 && onNodeReady != nil {
@@ -221,8 +221,8 @@ func waitForNodesReady(timeout time.Duration, onNodeReady func(nodeName string))
 	return nil
 }
 
-// orkBinDir returns ~/.orkestra/bin — where Orkestra stores downloaded tools.
-func orkBinDir() string {
+// inrunBinDir returns ~/.inrun/bin — where Inrun stores downloaded tools.
+func inrunBinDir() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".orkestra", "bin")
+	return filepath.Join(home, ".inrun", "bin")
 }

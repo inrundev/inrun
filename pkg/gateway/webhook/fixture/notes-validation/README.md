@@ -34,5 +34,5 @@ guarded by `when: inBusinessHours`.
 ## Run
 
 ```sh
-ork e2e pkg/gateway/webhook/fixture/notes-validation/e2e.yaml
+inrun e2e pkg/gateway/webhook/fixture/notes-validation/e2e.yaml
 ```

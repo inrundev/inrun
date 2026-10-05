@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/profiles"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -57,7 +57,7 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 }
 
 // Apply creates or updates a StatefulSet using Server-Side Apply.
-// Sends only the fields Orkestra owns; k8s-injected defaults are invisible.
+// Sends only the fields Inrun owns; k8s-injected defaults are invisible.
 func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedStatefulSetSpec) error {
 	namespace := shared.ResolveNamespace(owner, spec.Namespace)
 	if err := shared.SleepIfNeeded(spec.Sleep); err != nil {
@@ -74,7 +74,7 @@ func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, 
 
 	if _, err = kube.Clientset().AppsV1().StatefulSets(namespace).Patch(
 		ctx, spec.Name, k8stypes.ApplyPatchType, body,
-		metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
+		metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
 	); err != nil {
 		return fmt.Errorf("statefulset.Apply: %w", err)
 	}
@@ -120,14 +120,14 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface, owner domain.
 		}
 		return err
 	}
-	if existing.Labels[labels.OrkestraOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if existing.Labels[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 	return kube.Clientset().AppsV1().StatefulSets(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 // Resolve builds a ResolvedStatefulSetSpec from a StatefulSetTemplateSource.
-func Resolve(src orktypes.StatefulSetTemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedStatefulSetSpec {
+func Resolve(src types.StatefulSetTemplateSource, ownerName string, reg *types.ProfileRegistry) ResolvedStatefulSetSpec {
 	spec := ResolvedStatefulSetSpec{
 		Name:            src.Name,
 		Namespace:       src.Namespace,
@@ -198,7 +198,7 @@ func Resolve(src orktypes.StatefulSetTemplateSource, ownerName string, reg *orkt
 		if err != nil {
 			logger.Warn().Str("profile", src.RollingUpdate.Profile).Err(err).Msg("unknown rolling update profile — skipping")
 		} else {
-			spec.RollingUpdate = &orktypes.RollingUpdateBehavior{
+			spec.RollingUpdate = &types.RollingUpdateBehavior{
 				MaxSurge:       expansion.MaxSurge,
 				MaxUnavailable: expansion.MaxUnavailable,
 			}
@@ -234,7 +234,7 @@ func resolveAccessModes(modes []string) []corev1.PersistentVolumeAccessMode {
 }
 
 func buildStatefulSet(owner domain.Object, spec ResolvedStatefulSetSpec, ns string) *appsv1.StatefulSet {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 
 	replicas := spec.Replicas
 	container := corev1.Container{
@@ -293,7 +293,7 @@ func buildStatefulSet(owner domain.Object, spec ResolvedStatefulSetSpec, ns stri
 			ServiceName: spec.ServiceName,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					labels.OrkestraOwner: owner.GetName(),
+					labels.InrunOwner: owner.GetName(),
 				},
 			},
 			Template: corev1.PodTemplateSpec{

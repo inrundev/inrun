@@ -3,8 +3,8 @@ package profiles_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func TestHPAProfiles(t *testing.T) {
@@ -95,7 +95,7 @@ func TestHPAProfiles(t *testing.T) {
 	}
 }
 
-func assertRules(t *testing.T, label string, r *orktypes.HPAScalingRules, wantWindow int32, wantPolicy string, wantPolicies int) {
+func assertRules(t *testing.T, label string, r *types.HPAScalingRules, wantWindow int32, wantPolicy string, wantPolicies int) {
 	t.Helper()
 	if r.StabilizationWindowSeconds != wantWindow {
 		t.Errorf("%s stabilizationWindowSeconds: got %d, want %d", label, r.StabilizationWindowSeconds, wantWindow)

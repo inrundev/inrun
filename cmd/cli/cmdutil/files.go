@@ -5,12 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 const (
-	FileKatalog    = "katalog.yaml"
-	fileKomposer   = "komposer.yaml"
+	FileCatalog    = "catalog.yaml"
+	fileStack      = "stack.yaml"
 	FileE2e        = "e2e.yaml"
 	FileSimulate   = "simulate.yaml"
 	FileCrd        = "crd.yaml"
@@ -20,7 +20,7 @@ const (
 	FileDockerfile = "Dockerfile"
 	FileValues     = "values.yaml"
 
-	// A project keeps katalog.yaml at its root, what it applies to the cluster
+	// A project keeps catalog.yaml at its root, what it applies to the cluster
 	// (crd.yaml, cr.yaml, setup files) in manifests/, and its simulate.yaml,
 	// e2e.yaml and test values in test/.
 	DirManifests = "manifests"
@@ -41,18 +41,18 @@ func FindFile(name string, dirs ...string) string {
 	return ""
 }
 
-// ResolveKatalogPaths resolves the katalog file paths in the following order:
+// ResolveCatalogPaths resolves the catalog file paths in the following order:
 //
 //  1. Explicit CLI paths (highest priority)
-//  2. Default file paths in the working directory (katalog.yaml, komposer.yaml, etc.)
-//  3. Paths defined in the Konfig (kfg.Katalog().Paths())
+//  2. Default file paths in the working directory (catalog.yaml, stack.yaml, etc.)
+//  3. Paths defined in the Config (kfg.Catalog().Paths())
 //
-// Returns an error if no katalog file can be resolved.
-func ResolveKatalogPaths(cliPaths []string) ([]string, error) {
-	cfgPaths := Kfg.Katalog().Paths()
+// Returns an error if no catalog file can be resolved.
+func ResolveCatalogPaths(cliPaths []string) ([]string, error) {
+	cfgPaths := Kfg.Catalog().Paths()
 
 	// 1. CLI-provided paths — convert to absolute so all downstream relative
-	// path resolutions (crdFile, crFiles, setup, Komposer imports) use the
+	// path resolutions (crdFile, crFiles, setup, Stack imports) use the
 	// file's directory as the base, not the current working directory.
 	if len(cliPaths) > 0 {
 		abs := make([]string, len(cliPaths))
@@ -76,14 +76,14 @@ func ResolveKatalogPaths(cliPaths []string) ([]string, error) {
 		return cfgPaths, nil
 	}
 
-	return nil, fmt.Errorf(ErrNoKatalog)
+	return nil, fmt.Errorf(ErrNoCatalog)
 }
 
-// DefaultFilePaths returns the default katalog file if one exists in the
-// current directory and no -f flag was provided. Tries katalog.yaml first,
-// then komposer.yaml — the same precedence as Docker's Dockerfile / compose.yaml.
+// DefaultFilePaths returns the default catalog file if one exists in the
+// current directory and no -f flag was provided. Tries catalog.yaml first,
+// then stack.yaml — the same precedence as Docker's Dockerfile / compose.yaml.
 func DefaultFilePaths() []string {
-	for _, name := range []string{FileKatalog, fileKomposer} {
+	for _, name := range []string{FileCatalog, fileStack} {
 		if _, err := os.Stat(name); err == nil {
 			return []string{name}
 		}
@@ -91,20 +91,20 @@ func DefaultFilePaths() []string {
 	return nil
 }
 
-const ErrNoKatalog = "no katalog.yaml or komposer.yaml found in current directory\n" +
-	"pass -f <file> or create one with ork init"
+const ErrNoCatalog = "no catalog.yaml or stack.yaml found in current directory\n" +
+	"pass -f <file> or create one with inrun init"
 
-// ResolveKatalogFile resolves a single katalog file path from a CLI flag value.
+// ResolveCatalogFile resolves a single catalog file path from a CLI flag value.
 // If flagValue is empty it falls back to defaultFilePaths(). The resolved path
 // is always returned as an absolute path.
-func ResolveKatalogFile(flagValue string) (string, error) {
+func ResolveCatalogFile(flagValue string) (string, error) {
 	if flagValue == "" {
 		if d := DefaultFilePaths(); len(d) > 0 {
 			flagValue = d[0]
 		}
 	}
 	if flagValue == "" {
-		return "", fmt.Errorf(ErrNoKatalog)
+		return "", fmt.Errorf(ErrNoCatalog)
 	}
 	if abs, err := filepath.Abs(flagValue); err == nil {
 		return abs, nil

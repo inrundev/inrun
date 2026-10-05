@@ -1,16 +1,16 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: resource-probe-sim
   description: Verify the ResourceProbe hook fires — all 23 resource types applied on cycle 1
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   cr: ./cr.yaml
   cycles: 3
 
   # Requires a compiled binary with the type registry.
-  # Run `make build` then `ork simulate` from this directory.
+  # Run `make build` then `inrun simulate` from this directory.
   expect:
     steady: true
     noErrors: true

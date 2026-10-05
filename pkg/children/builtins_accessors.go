@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -73,7 +73,7 @@ func (r EnrichmentResult) APIPath() string { return r.builtIn.APIPath }
 
 // LookupBuiltInByGVK looks up a native resource by group, version, and kind.
 // Returns the BuiltInKind and true when found. Used to detect custom: declarations
-// that reference a type Orkestra manages natively (IsChild: true, HookKey set).
+// that reference a type Inrun manages natively (IsChild: true, HookKey set).
 // The version check is lenient — it matches on group+kind and requires that the
 // canonical version matches, preventing false positives on non-Kubernetes GVKs.
 func LookupBuiltInByGVK(group, version, kind string) (BuiltInKind, bool) {
@@ -268,7 +268,7 @@ func buildEnrichmentGroups() map[string][]string {
 }
 
 // SupportedEnrichmentGroups returns all supported enrichment targets, including
-// built-in Kubernetes resources and synthetic Orkestra-only targets.
+// built-in Kubernetes resources and synthetic Inrun-only targets.
 func SupportedEnrichmentGroups() map[string][]string {
 	return enrichmentGroups
 }

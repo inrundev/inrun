@@ -6,7 +6,7 @@
 # Without admission webhooks:
 #   Stored in etcd but reconcile halts immediately with a deny error.
 #   No child resources (Deployment, Service) are ever created.
-apiVersion: admission.orkestra.io/v1alpha1
+apiVersion: admission.inrun.dev/v1alpha1
 kind: Platform
 metadata:
   name: bad-platform

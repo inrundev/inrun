@@ -11,7 +11,7 @@ Two calls are declared:
 
 ```sh
 docker compose -f pkg/external/fixtures/redis/docker-compose.yaml up -d
-ork run -f pkg/external/fixtures/redis/katalog.yaml
+inrun -f pkg/external/fixtures/redis/catalog.yaml
 ```
 
 ## Check the Status
@@ -22,8 +22,8 @@ kubectl get webapp my-app -oyaml
 
 ## E2e
 
-Deploys a Redis instance as a Deployment in `orkestra-system` before the CR is applied. The CR uses `redis://redis.orkestra-system.svc:6379`.
+Deploys a Redis instance as a Deployment in `inrun-system` before the CR is applied. The CR uses `redis://redis.inrun-system.svc:6379`.
 
 ```sh
-ork e2e pkg/external/fixtures/redis/e2e.yaml
+inrun e2e pkg/external/fixtures/redis/e2e.yaml
 ```

@@ -1,6 +1,6 @@
 # Custom Resource
 
-This declares one arbitrary Kubernetes resource — any Kind not covered by one of Orkestra's built-in resource types (a third-party CRD such as cert-manager's Certificate, or your own CRD). It is schema-agnostic: the spec block is written and applied exactly as declared in the Katalog, with no built-in knowledge of its structure. Kubernetes enforces the resource's own CRD schema at apply time.
+This declares one arbitrary Kubernetes resource — any Kind not covered by one of Inrun's built-in resource types (a third-party CRD such as cert-manager's Certificate, or your own CRD). It is schema-agnostic: the spec block is written and applied exactly as declared in the Catalog, with no built-in knowledge of its structure. Kubernetes enforces the resource's own CRD schema at apply time.
 
 Example:
 
@@ -25,7 +25,7 @@ onCreate:
 
 ## Lifecycle
 
-Declare this resource under `onCreate` for an idempotent, one-time create: Orkestra creates it on the first reconcile and leaves it untouched afterward. Set `reconcile: true` on the same entry to also apply it as drift correction on every subsequent reconcile. This is a shorthand for declaring the identical entry under `onReconcile` as well — there's no need to do both.
+Declare this resource under `onCreate` for an idempotent, one-time create: Inrun creates it on the first reconcile and leaves it untouched afterward. Set `reconcile: true` on the same entry to also apply it as drift correction on every subsequent reconcile. This is a shorthand for declaring the identical entry under `onReconcile` as well — there's no need to do both.
 
 Declare a resource under `onDelete` to run explicit cleanup before the CR's finalizer is removed. Most resources need no `onDelete` entry — they are garbage-collected automatically through owner references when the CR itself is deleted.
 
@@ -53,7 +53,7 @@ Kind — the target resource's Kind, e.g. "Certificate". Required.
 
 Type: object
 
-Metadata — name, namespace, labels, and annotations for the resource. name is required. namespace is required for namespaced CRDs and must be omitted for cluster-scoped ones; Orkestra determines the correct scope via discovery unless namespaced is set explicitly.
+Metadata — name, namespace, labels, and annotations for the resource. name is required. namespace is required for namespaced CRDs and must be omitted for cluster-scoped ones; Inrun determines the correct scope via discovery unless namespaced is set explicitly.
 
 ```yaml
 metadata:
@@ -69,7 +69,7 @@ metadata:
 
 Type: map
 
-Spec is the conventional spec block for CRDs. It is schema-agnostic and may contain templated values. Only template syntax is validated by Orkestra; structural/schema validation is deferred to the API server.
+Spec is the conventional spec block for CRDs. It is schema-agnostic and may contain templated values. Only template syntax is validated by Inrun; structural/schema validation is deferred to the API server.
 
 ---
 
@@ -77,7 +77,7 @@ Spec is the conventional spec block for CRDs. It is schema-agnostic and may cont
 
 Type: map
 
-Status — an initial status block, useful when bootstrapping a resource that expects one to be present immediately. Orkestra only writes this if hasStatus resolves to true. Prefer letting the resource's own controller populate status rather than setting this.
+Status — an initial status block, useful when bootstrapping a resource that expects one to be present immediately. Inrun only writes this if hasStatus resolves to true. Prefer letting the resource's own controller populate status rather than setting this.
 
 ---
 

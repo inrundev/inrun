@@ -51,8 +51,8 @@ func (d CrossCRDDeclaration) IsValid(p string) bool {
 // ────────────────────────────────────────────────────────────────────────────────
 //
 
-// BuildONCOPURL constructs an Orkestra‑native cross‑operator URL using the
-// Orkestra Native Cross‑Operator Protocol (ONCOP).
+// BuildONCOPURL constructs an Inrun‑native cross‑operator URL using the
+// Inrun Native Cross‑Operator Protocol (ONCOP).
 //
 // ONCOP allows cross‑binary CRD observation without requiring callers to
 // hard‑code full URLs. When a CrossSource specifies a Host (and no Endpoint),
@@ -65,14 +65,14 @@ func (d CrossCRDDeclaration) IsValid(p string) bool {
 //
 // URL shapes:
 //
-//	Type: "cr"    → <host>/katalog/<crd>/cr/<ns>/<name>
-//	Type: "info"    → <host>/katalog/<crd>
-//	Type: "metrics" → <host>/katalog/<crd>
-//	Type: "health"  → <host>/katalog/<crd>/health
-//	Type: "events"  → <host>/katalog/<crd>/cr/<ns>/<name>/events
+//	Type: "cr"    → <host>/catalog/<crd>/cr/<ns>/<name>
+//	Type: "info"    → <host>/catalog/<crd>
+//	Type: "metrics" → <host>/catalog/<crd>
+//	Type: "health"  → <host>/catalog/<crd>/health
+//	Type: "events"  → <host>/catalog/<crd>/cr/<ns>/<name>/events
 //
 // If Source.Endpoint is provided, ONCOP is bypassed entirely and the raw
-// endpoint is used as‑is. This enables integration with non‑Orkestra operators
+// endpoint is used as‑is. This enables integration with non‑Inrun operators
 // or arbitrary JSON‑producing services.
 //
 // BuildONCOPURL centralises this logic so all cross‑CRD resolution paths
@@ -88,24 +88,24 @@ func BuildONCOPURL(decl CrossCRDDeclaration) string {
 
 	switch src.Protocol {
 	case ONCOPMetrics, ONCOPInfo, "":
-		return fmt.Sprintf("%s/katalog/%s", host, crd)
+		return fmt.Sprintf("%s/catalog/%s", host, crd)
 
 	case ONCOPHealth:
-		return fmt.Sprintf("%s/katalog/%s/health", host, crd)
+		return fmt.Sprintf("%s/catalog/%s/health", host, crd)
 
 	case ONCOPEvents:
 		if ns == "" {
-			return fmt.Sprintf("%s/katalog/%s/cr/%s/events", host, crd, name)
+			return fmt.Sprintf("%s/catalog/%s/cr/%s/events", host, crd, name)
 		}
-		return fmt.Sprintf("%s/katalog/%s/cr/%s/%s/events", host, crd, ns, name)
+		return fmt.Sprintf("%s/catalog/%s/cr/%s/%s/events", host, crd, ns, name)
 
 	case ONCOPCR:
 		if ns == "" {
-			return fmt.Sprintf("%s/katalog/%s/cr/%s", host, crd, name)
+			return fmt.Sprintf("%s/catalog/%s/cr/%s", host, crd, name)
 		}
-		return fmt.Sprintf("%s/katalog/%s/cr/%s/%s", host, crd, ns, name)
+		return fmt.Sprintf("%s/catalog/%s/cr/%s/%s", host, crd, ns, name)
 
 	default:
-		return fmt.Sprintf("%s/katalog/%s", host, crd)
+		return fmt.Sprintf("%s/catalog/%s", host, crd)
 	}
 }

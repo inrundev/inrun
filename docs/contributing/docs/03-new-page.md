@@ -5,13 +5,13 @@
 Create a `.md` file inside the relevant `documentation/` subdirectory:
 
 ```bash
-# Example: new page under orkestra-registry
-touch documentation/orkestra-registry/my-new-page.md
+# Example: new page under inrun-registry
+touch documentation/inrun-registry/my-new-page.md
 ```
 
 Start the file with a `# Heading` — the sync uses it as the page title. No front matter needed.
 
-The page will be synced automatically and appear at `/docs/orkestra-registry/my-new-page/`.
+The page will be synced automatically and appear at `/docs/inrun-registry/my-new-page/`.
 
 To control where it appears in the sidebar, register it in `website/data/sidebar.yaml` under the relevant section. Pages not in `sidebar.yaml` are still reachable by URL but won't appear in navigation.
 

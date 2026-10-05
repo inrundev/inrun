@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/orkspace/orkestra/pkg/registry"
+	"github.com/inrundev/inrun/pkg/registry"
 )
 
-// ResolveOCIRunPath resolves an OCI pattern reference to a local katalog or
-// komposer path, pulling to the cache if necessary.
-func ResolveOCIRunPath(ctx context.Context, ref string, useKomposer, refresh bool) (string, error) {
-	r, err := registry.ResolveForKind(ref, registry.KatalogKind)
+// ResolveOCIRunPath resolves an OCI pattern reference to a local catalog or
+// stack path, pulling to the cache if necessary.
+func ResolveOCIRunPath(ctx context.Context, ref string, useStack, refresh bool) (string, error) {
+	r, err := registry.ResolveForKind(ref, registry.CatalogKind)
 	if err != nil {
 		return "", fmt.Errorf("invalid reference: %w", err)
 	}
@@ -41,9 +41,9 @@ func ResolveOCIRunPath(ctx context.Context, ref string, useKomposer, refresh boo
 		return "", err
 	}
 
-	target := FileKatalog
-	if useKomposer {
-		target = fileKomposer
+	target := FileCatalog
+	if useStack {
+		target = fileStack
 	}
 	p := filepath.Join(cacheDir, target)
 	if !FileExists(p) {

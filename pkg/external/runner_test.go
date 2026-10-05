@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	orkexternal "github.com/orkspace/orkestra/pkg/external"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/external"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // stubTransport returns a fixed response for every request.
@@ -33,18 +33,18 @@ func (s stubTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 
 func withTransport(t *testing.T, transport http.RoundTripper) func() {
 	t.Helper()
-	prev := orkexternal.HTTPTransport
-	orkexternal.HTTPTransport = transport
-	return func() { orkexternal.HTTPTransport = prev }
+	prev := external.HTTPTransport
+	external.HTTPTransport = transport
+	return func() { external.HTTPTransport = prev }
 }
 
-func resolver(data map[string]interface{}) *orktmpl.Resolver {
-	return orktmpl.NewResolverFromMap(data)
+func resolver(data map[string]interface{}) *template.Resolver {
+	return template.NewResolverFromMap(data)
 }
 
 func TestRun_EmptyCalls(t *testing.T) {
 	r := resolver(map[string]interface{}{})
-	got, err := orkexternal.Run(context.Background(), "test", r, nil, nil)
+	got, err := external.Run(context.Background(), "test", r, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -57,11 +57,11 @@ func TestRun_SuccessfulCall(t *testing.T) {
 	defer withTransport(t, stubTransport{status: 200, body: `{"enabled":true}`})()
 
 	r := resolver(map[string]interface{}{})
-	calls := []orktypes.ExternalCallSpec{
+	calls := []types.ExternalCallSpec{
 		{Name: "flags", URL: "http://flags.internal/v1"},
 	}
 
-	got, err := orkexternal.Run(context.Background(), "test", r, calls, nil)
+	got, err := external.Run(context.Background(), "test", r, calls, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -87,11 +87,11 @@ func TestRun_JSONBodyAutoParsed(t *testing.T) {
 	defer withTransport(t, stubTransport{status: 200, body: `{"enabled":true,"limit":5}`})()
 
 	r := resolver(map[string]interface{}{})
-	calls := []orktypes.ExternalCallSpec{
+	calls := []types.ExternalCallSpec{
 		{Name: "cfg", URL: "http://config.internal/v1"},
 	}
 
-	got, err := orkexternal.Run(context.Background(), "test", r, calls, nil)
+	got, err := external.Run(context.Background(), "test", r, calls, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -113,11 +113,11 @@ func TestRun_ContinueOnError_True(t *testing.T) {
 	defer withTransport(t, stubTransport{status: 503, body: "unavailable"})()
 
 	r := resolver(map[string]interface{}{})
-	calls := []orktypes.ExternalCallSpec{
+	calls := []types.ExternalCallSpec{
 		{Name: "svc", URL: "http://svc.internal/health", ContinueOnError: true},
 	}
 
-	got, err := orkexternal.Run(context.Background(), "test", r, calls, nil)
+	got, err := external.Run(context.Background(), "test", r, calls, nil)
 	if err != nil {
 		t.Fatalf("expected no error with continueOnError:true, got: %v", err)
 	}
@@ -133,11 +133,11 @@ func TestRun_ContinueOnError_False(t *testing.T) {
 	defer withTransport(t, stubTransport{status: 503, body: "unavailable"})()
 
 	r := resolver(map[string]interface{}{})
-	calls := []orktypes.ExternalCallSpec{
+	calls := []types.ExternalCallSpec{
 		{Name: "svc", URL: "http://svc.internal/health", ContinueOnError: false},
 	}
 
-	_, err := orkexternal.Run(context.Background(), "test", r, calls, nil)
+	_, err := external.Run(context.Background(), "test", r, calls, nil)
 	if err == nil {
 		t.Fatal("expected error with continueOnError:false on a failed call")
 	}
@@ -153,17 +153,17 @@ func TestRun_WhenConditionSkipsCall(t *testing.T) {
 	r := resolver(map[string]interface{}{
 		"spec": map[string]interface{}{"env": "staging"},
 	})
-	calls := []orktypes.ExternalCallSpec{
+	calls := []types.ExternalCallSpec{
 		{
 			Name: "prod-only",
 			URL:  "http://prod.internal/v1",
-			Conditions: []orktypes.Condition{
+			Conditions: []types.Condition{
 				{Field: "spec.env", Equals: "production"},
 			},
 		},
 	}
 
-	_, err := orkexternal.Run(context.Background(), "test", r, calls, nil)
+	_, err := external.Run(context.Background(), "test", r, calls, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -194,12 +194,12 @@ func TestRun_LaterCallSeesEarlierResult(t *testing.T) {
 	defer withTransport(t, transport)()
 
 	r := resolver(map[string]interface{}{})
-	calls := []orktypes.ExternalCallSpec{
+	calls := []types.ExternalCallSpec{
 		{Name: "discovery", URL: "http://discovery.internal/v1"},
 		{Name: "data", URL: `{{ index .external "discovery" "endpoint" }}`},
 	}
 
-	got, err := orkexternal.Run(context.Background(), "test", r, calls, nil)
+	got, err := external.Run(context.Background(), "test", r, calls, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -217,11 +217,11 @@ func TestRun_ExpectedStatusMismatch(t *testing.T) {
 	defer withTransport(t, stubTransport{status: 201, body: ""})()
 
 	r := resolver(map[string]interface{}{})
-	calls := []orktypes.ExternalCallSpec{
+	calls := []types.ExternalCallSpec{
 		{Name: "api", URL: "http://api.internal/v1", ExpectedStatus: 200, ContinueOnError: false},
 	}
 
-	_, err := orkexternal.Run(context.Background(), "test", r, calls, nil)
+	_, err := external.Run(context.Background(), "test", r, calls, nil)
 	if err == nil {
 		t.Fatal("expected error when response status doesn't match expectedStatus")
 	}
@@ -232,11 +232,11 @@ func TestRun_JSONStatusKeyDoesNotOverwriteHTTPStatus(t *testing.T) {
 	defer withTransport(t, stubTransport{status: 200, body: `{"status":"ok"}`})()
 
 	r := resolver(map[string]interface{}{})
-	calls := []orktypes.ExternalCallSpec{
+	calls := []types.ExternalCallSpec{
 		{Name: "health", URL: "http://svc.internal/health"},
 	}
 
-	got, err := orkexternal.Run(context.Background(), "test", r, calls, nil)
+	got, err := external.Run(context.Background(), "test", r, calls, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -252,11 +252,11 @@ func TestRun_NonJSONBodyNotParsed(t *testing.T) {
 	defer withTransport(t, stubTransport{status: 200, body: "plain text response"})()
 
 	r := resolver(map[string]interface{}{})
-	calls := []orktypes.ExternalCallSpec{
+	calls := []types.ExternalCallSpec{
 		{Name: "txt", URL: "http://txt.internal/v1"},
 	}
 
-	got, err := orkexternal.Run(context.Background(), "test", r, calls, nil)
+	got, err := external.Run(context.Background(), "test", r, calls, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

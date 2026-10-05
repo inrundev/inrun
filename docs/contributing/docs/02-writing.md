@@ -7,8 +7,8 @@ Every page maps directly from `documentation/` to its URL:
 | File | URL |
 |---|---|
 | `documentation/getting-started/index.md` | `/docs/getting-started/` |
-| `documentation/orkestra-registry/katalogs.md` | `/docs/orkestra-registry/katalogs/` |
-| `documentation/blog/why-orkestra.md` | `/blog/why-orkestra/` |
+| `documentation/inrun-registry/catalogs.md` | `/docs/inrun-registry/catalogs/` |
+| `documentation/blog/why-inrun.md` | `/blog/why-inrun/` |
 
 Open the file, edit, save. The sync handles the rest.
 
@@ -36,7 +36,7 @@ Standard fenced code blocks. Always specify a language for syntax highlighting:
 
 ````markdown
 ```bash
-ork run
+inrun
 ```
 
 ```yaml
@@ -50,7 +50,7 @@ spec:
 
 ```text
 postgres/
-  katalog.yaml
+  catalog.yaml
   crd.yaml
 ```
 ````
@@ -62,8 +62,8 @@ Use `text` for directory trees or plain output. No language tag renders unstyled
 Use relative `.md` paths when linking to other docs pages. The sync rewrites them to Hugo paths automatically:
 
 ```markdown
-[Learning to Orkestrate](../getting-started/learning-to-orkestrate.md)
-[Katalog schema](../reference/schema/02-katalog/01-top-level.md)
+[Learning Inrun](../getting-started/learning-inrun.md)
+[Catalog schema](../reference/schema/02-catalog/01-top-level.md)
 ```
 
 Do not use absolute `/docs/...` paths inside documentation source files — they bypass the rewriter and break in local preview.

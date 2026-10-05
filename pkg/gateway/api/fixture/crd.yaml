@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: platformresources.gateway.fixture.orkestra.io
+  name: platformresources.gateway.fixture.inrun.dev
 spec:
-  group: gateway.fixture.orkestra.io
+  group: gateway.fixture.inrun.dev
   names:
     kind: PlatformResource
     plural: platformresources
@@ -100,9 +100,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: appgroups.gateway.fixture.orkestra.io
+  name: appgroups.gateway.fixture.inrun.dev
 spec:
-  group: gateway.fixture.orkestra.io
+  group: gateway.fixture.inrun.dev
   names:
     kind: AppGroup
     plural: appgroups
@@ -139,9 +139,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: clusterpolicies.gateway.fixture.orkestra.io
+  name: clusterpolicies.gateway.fixture.inrun.dev
 spec:
-  group: gateway.fixture.orkestra.io
+  group: gateway.fixture.inrun.dev
   names:
     kind: ClusterPolicy
     plural: clusterpolicies

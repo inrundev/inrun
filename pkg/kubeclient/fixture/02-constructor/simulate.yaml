@@ -1,9 +1,9 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: blockchainnode-constructor-sim
   description: >
-    Run with: ork simulate --dev-server
+    Run with: inrun simulate --dev-server
 
     The dev server returns "true" for all flag requests. The constructor reads
     flagUrl from kube.Args() (template-resolved per CR), makes the HTTP call
@@ -11,7 +11,7 @@ metadata:
     This is the difference from hooks: the constructor owns the HTTP call.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   cr: ./cr-node.yaml
   cycles: 3
 

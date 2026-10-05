@@ -3,8 +3,8 @@ package template
 import (
 	"fmt"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // ResolveCustomResourceTemplate resolves all template expressions in a
@@ -17,8 +17,8 @@ import (
 // The returned value is the same concrete template type with all string
 // templates evaluated. Caller is expected to call orkcust.Resolve(...) to
 // convert the resolved template into a ResolvedCustomResourceSpec.
-func (r *Resolver) ResolveCustomResourceTemplate(src orktypes.CustomResourceTemplateSource) (orktypes.CustomResourceTemplateSource, error) {
-	resolved := orktypes.CustomResourceTemplateSource{
+func (r *Resolver) ResolveCustomResourceTemplate(src types.CustomResourceTemplateSource) (types.CustomResourceTemplateSource, error) {
+	resolved := types.CustomResourceTemplateSource{
 		APIVersion: src.APIVersion,
 		Kind:       src.Kind,
 		Metadata:   src.Metadata, // we'll overwrite fields below as needed
@@ -123,7 +123,7 @@ func (r *Resolver) resolveValueTemplates(v any) (any, error) {
 		}
 		// When a template expression was resolved, try to coerce the result to a
 		// native type so integer/boolean/JSON CRD fields pass API server validation.
-		if orktypes.IsTemplate(vv) {
+		if types.IsTemplate(vv) {
 			return utils.TryCoerceString(res), nil
 		}
 		return res, nil

@@ -1,4 +1,4 @@
-apiVersion: security.orkestra.io/v1alpha1
+apiVersion: security.inrun.dev/v1alpha1
 kind: Cache
 metadata:
   name: my-cache

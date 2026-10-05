@@ -1,5 +1,5 @@
-# https://orkestra.sh/docs/reference/schema/e2e/
-apiVersion: orkestra.orkspace.io/v1
+# https://inrun.dev/docs/reference/schema/e2e/
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: gateway-serve-fixture-e2e
@@ -7,16 +7,16 @@ metadata:
     End-to-end test for the gateway serve fixture.
     Exercises: Gateway API (app workload), conditional admission rules
     (deny when, deny or, warn when), dryRun violation response,
-    schema catalog endpoint.
+    service-list endpoint.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./cr-default.yaml
 
   cluster:
     provider: kind
-    name: ork-e2e-gateway-serve
+    name: inrun-e2e-gateway-serve
     reuse: false
 
   setup:
@@ -87,11 +87,11 @@ spec:
     kubectl:
       logs:
         - leaderElection:
-            lease: orkestra-konductor
-          namespace: orkestra-system
+            lease: inrun-leader
+          namespace: inrun-system
           since: 5m
         - labelSelector: app.kubernetes.io/component=gateway
-          namespace: orkestra-system
+          namespace: inrun-system
           since: 5m
       describe:
         - kind: PlatformResource

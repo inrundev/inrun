@@ -6,37 +6,37 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/tools/generate"
+	"github.com/inrundev/inrun/pkg/tools/generate"
 	"github.com/spf13/cobra"
 )
 
 var createPatternCmd = &cobra.Command{
 	Use:   "pattern",
-	Short: "Scaffold a new Orkestra pattern: katalog.yaml, simulate.yaml, e2e.yaml, README.md",
-	Long: `Creates the files needed to build, test, and publish an Orkestra pattern.
+	Short: "Scaffold a new Inrun pattern: catalog.yaml, simulate.yaml, e2e.yaml, README.md",
+	Long: `Creates the files needed to build, test, and publish an Inrun pattern.
 
 Always written:
-  katalog.yaml   — operator declaration
-  simulate.yaml  — in-memory test scaffold (ork simulate)
-  e2e.yaml       — real-cluster integration test scaffold (ork e2e)
+  catalog.yaml   — operator declaration
+  simulate.yaml  — in-memory test scaffold (inrun simulate)
+  e2e.yaml       — real-cluster integration test scaffold (inrun e2e)
   README.md      — actionable steps from edit to release
 
 Also written when --typed, --add-hook, or --add-constructor:
-  values.yaml    — runtime image (set before ork e2e)
+  values.yaml    — runtime image (set before inrun e2e)
   Makefile       — registry, build, build-runtime, docker, push, release
   Dockerfile     — production container image (distroless, runtime binary only)
 
-Typed mode flags are forwarded to katalog generation:
+Typed mode flags are forwarded to catalog generation:
   --add-hook          Include a hooks section
   --add-constructor   Include a constructor section
   --typed             Include both hooks and constructor (commented)
 
 Examples:
-  ork create pattern
-  ork create pattern --add-hook -o ./my-operator/
-  ork create pattern --typed`,
+  inrun create pattern
+  inrun create pattern --add-hook -o ./my-operator/
+  inrun create pattern --typed`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		addHook, _ := cmd.Flags().GetBool("add-hook")
 		addConstructor, _ := cmd.Flags().GetBool("add-constructor")
@@ -49,20 +49,20 @@ Examples:
 
 		isTyped := typed || addHook || addConstructor
 
-		katalogOpts := generate.KatalogScaffoldOptions{
+		catalogOpts := generate.CatalogScaffoldOptions{
 			AddHook:        addHook,
 			AddConstructor: addConstructor,
 			Typed:          typed,
-			OutputFile:     filepath.Join(outputDir, cmdutil.FileKatalog),
+			OutputFile:     filepath.Join(outputDir, cmdutil.FileCatalog),
 		}
-		if err := katalogOpts.Validate(); err != nil {
+		if err := catalogOpts.Validate(); err != nil {
 			return err
 		}
 
 		fmt.Printf("generating pattern scaffold → %s/\n", outputDir)
 
-		if _, err := generate.KatalogScaffold(katalogOpts); err != nil {
-			return fmt.Errorf("generating %s: %w", cmdutil.FileKatalog, err)
+		if _, err := generate.CatalogScaffold(catalogOpts); err != nil {
+			return fmt.Errorf("generating %s: %w", cmdutil.FileCatalog, err)
 		}
 
 		if err := generate.WriteSimulateScaffold(filepath.Join(outputDir, cmdutil.DirTest, cmdutil.FileSimulate)); err != nil {
@@ -90,12 +90,12 @@ Examples:
 		}
 
 		fmt.Printf("\n→ pattern scaffold written to %s\n", cmdutil.Bold(outputDir+"/"))
-		fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.FileKatalog, cmdutil.Dim("declare your CRD(s) and resources"))
-		fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.DirTest+"/"+cmdutil.FileSimulate, cmdutil.Dim("ork simulate"))
-		fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.DirTest+"/"+cmdutil.FileE2e, cmdutil.Dim("ork e2e"))
+		fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.FileCatalog, cmdutil.Dim("declare your CRD(s) and resources"))
+		fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.DirTest+"/"+cmdutil.FileSimulate, cmdutil.Dim("inrun simulate"))
+		fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.DirTest+"/"+cmdutil.FileE2e, cmdutil.Dim("inrun e2e"))
 		fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.FileReadMe, cmdutil.Dim("start here"))
 		if isTyped {
-			fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.DirTest+"/"+cmdutil.FileValues, cmdutil.Dim("set runtime.image before ork e2e"))
+			fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.DirTest+"/"+cmdutil.FileValues, cmdutil.Dim("set runtime.image before inrun e2e"))
 			fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.FileMakeFile, cmdutil.Dim("make registry, make build, make release"))
 			fmt.Printf("  %s %-16s %s\n", cmdutil.SuccessMark(), cmdutil.FileDockerfile, cmdutil.Dim("production container image"))
 		}
@@ -107,9 +107,9 @@ Examples:
 func init() {
 	cmdutil.CreateCmd.AddCommand(createPatternCmd)
 	createPatternCmd.Flags().Bool("add-hook", false,
-		"Typed mode: include a hooks section in katalog.yaml (also writes Makefile + Dockerfile)")
+		"Typed mode: include a hooks section in catalog.yaml (also writes Makefile + Dockerfile)")
 	createPatternCmd.Flags().Bool("add-constructor", false,
-		"Typed mode: include a constructor section in katalog.yaml (also writes Makefile + Dockerfile)")
+		"Typed mode: include a constructor section in catalog.yaml (also writes Makefile + Dockerfile)")
 	createPatternCmd.Flags().Bool("typed", false,
 		"Typed mode: include both hooks and constructor commented (also writes Makefile + Dockerfile)")
 	createPatternCmd.Flags().StringP("output", "o", "",

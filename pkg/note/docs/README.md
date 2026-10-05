@@ -1,6 +1,6 @@
 # Note Library — Developer Documentation
 
-Notes are the template function library available in every Orkestra template expression — `status.fields`, `normalize.spec`, `onCreate`, `onReconcile`, mutation rules, and validation rules.
+Notes are the template function library available in every Inrun template expression — `status.fields`, `normalize.spec`, `onCreate`, `onReconcile`, mutation rules, and validation rules.
 
 A note is a **pure, named transformation function**. Notes receive values and return transformed values. They cannot perform I/O, call external APIs, or produce side effects.
 
@@ -10,8 +10,8 @@ The files here drive two generated outputs — run `make generate-notes` to refr
 
 | Output | What it does |
 |--------|--------------|
-| `pkg/note/catalog_generated.go` | Note registry used by the Orkestra runtime and the `ork notes` CLI command |
-| `documentation/reference/orkestra-notes/<domain>.md` | User-facing reference pages on the documentation site |
+| `pkg/note/list_generated.go` | Note registry used by the Inrun runtime and the `inrun notes` CLI command |
+| `documentation/reference/inrun-notes/<domain>.md` | User-facing reference pages on the documentation site |
 
 Add documentation here first. The generator handles the rest. **Do not hand-edit the generated outputs.**
 
@@ -19,7 +19,7 @@ Files containing an `## In Development` heading are excluded from both outputs u
 
 ## How notes are used
 
-In any Katalog template expression:
+In any Catalog template expression:
 
 ```yaml
 status:

@@ -1,27 +1,27 @@
 package types
 
 import (
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// Observe declares the Kubernetes resources and events Orkestra should
+// Observe declares the Kubernetes resources and events Inrun should
 // observe as reconciliation triggers.
 //
 // Observations are subordinate to the primary CRD informer: an observation
 // resolves one or more primary CR keys and enqueues them. The observer never
 // invokes reconciliation directly.
 type Observe struct {
-	// Watch declares secondary Kubernetes resources Orkestra should observe.
-	// When a watched resource changes, Orkestra resolves the relevant primary
+	// Watch declares secondary Kubernetes resources Inrun should observe.
+	// When a watched resource changes, Inrun resolves the relevant primary
 	// CR key(s) and enqueues them. The reconciler runs normally — the watched
 	// resource's current state is available via .children.* as usual.
 	Watch []WatchEntry `yaml:"watch,omitempty" json:"watch,omitempty"`
 
-	// Events declares Kubernetes Events Orkestra should observe.
-	// When a matching event occurs, Orkestra resolves the relevant primary
+	// Events declares Kubernetes Events Inrun should observe.
+	// When a matching event occurs, Inrun resolves the relevant primary
 	// CR key(s) and enqueues them. The reconciler runs normally — the event
 	// is treated as a trigger, not as the source of truth.
 	Events map[string]*EventEntry `yaml:"events,omitempty" json:"events,omitempty"`
@@ -31,7 +31,7 @@ type Observe struct {
 	// the reconciler template context.
 	Cross []CrossCRDDeclaration `yaml:"cross,omitempty" json:"cross,omitempty"`
 
-	// Include imports watch and event declarations from a local Katalog file.
+	// Include imports watch and event declarations from a local Catalog file.
 	// The included file may contain "watch:", "events:", and "cross:" declarations.
 	// Inline declarations are merged with the included declarations, with
 	// inline event declarations overriding included events with the same name.
@@ -116,8 +116,8 @@ func IsAllValid(events []string) (bool, []string) {
 
 // ── WatchEntry ────────────────────────────────────────────────────────────────
 
-// WatchEntry declares a secondary Kubernetes resource Orkestra should watch.
-// When the resource changes, Orkestra resolves the relevant primary CR key(s)
+// WatchEntry declares a secondary Kubernetes resource Inrun should watch.
+// When the resource changes, Inrun resolves the relevant primary CR key(s)
 // and enqueues them — no Go required.
 //
 // Key resolution: if the changed object has an ownerReference pointing to a
@@ -172,7 +172,7 @@ type WatchEntry struct {
 	// CRD it broadcasts to all known primary CRs.
 	KeyFrom *WatchKeyFrom `yaml:"keyFrom,omitempty" json:"keyFrom,omitempty"`
 
-	// Index declares field-path indexers that Orkestra registers on this watch's
+	// Index declares field-path indexers that Inrun registers on this watch's
 	// informer. Each entry makes client.List(ctx, &list, client.MatchingFields{name: value})
 	// serve from the cache instead of making a live API call.
 	//
@@ -184,7 +184,7 @@ type WatchEntry struct {
 	//          field: ".metadata.ownerReferences[0].name"
 	Index []WatchIndex `yaml:"index,omitempty" json:"index,omitempty"`
 
-	// Include is a path (relative to the katalog file) to a YAML file whose
+	// Include is a path (relative to the catalog file) to a YAML file whose
 	// "watch:" list replaces this entry in-place. When set all other fields on
 	// this entry are ignored. Cleared after expansion.
 	Include string `yaml:"include,omitempty" json:"include,omitempty"`
@@ -356,7 +356,7 @@ type EventEntry struct {
 	// matches. The Event is the observed object used for admission evaluation.
 	EnqueueGate *GateConditions `yaml:"enqueueGate,omitempty" json:"enqueueGate,omitempty"`
 
-	// Include is a path (relative to the katalog file) to a YAML file whose
+	// Include is a path (relative to the catalog file) to a YAML file whose
 	// "watch:" list replaces this entry in-place. When set all other fields on
 	// this entry are ignored. Cleared after expansion.
 	Include string `yaml:"include,omitempty" json:"include,omitempty"`

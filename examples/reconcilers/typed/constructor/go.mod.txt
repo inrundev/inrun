@@ -1,9 +1,9 @@
-module github.com/orkspace/orkestra-constructor-demo
+module github.com/inrundev/inrun-constructor-demo
 
 go 1.26.3
 
 require (
-	github.com/orkspace/orkestra {{ .OrkVersion }}
+	github.com/inrundev/inrun {{ .InrunVersion }}
 	k8s.io/api v0.36.1
 	k8s.io/apimachinery v0.36.1
 	k8s.io/client-go v0.36.1

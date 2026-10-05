@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,7 +83,7 @@ func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, 
 
 	if _, err = kube.Clientset().CoreV1().Pods(namespace).Patch(
 		ctx, spec.Name, k8stypes.ApplyPatchType, body,
-		metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
+		metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
 	); err != nil {
 		if errors.IsInvalid(err) {
 			logger.Info().Str("pod", spec.Name).Msg("pod spec immutable — delete+recreate")
@@ -152,7 +152,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 		return err
 	}
 	// Only delete if we own it
-	if existing.Labels[labels.OrkestraOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if existing.Labels[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 	return kube.Clientset().CoreV1().Pods(namespace).
@@ -165,9 +165,9 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 // must already be evaluated by template.Resolver before calling Resolve.
 // This function only reads already-resolved string values and assembles the spec.
 //
-// Orkestra system labels (managed-by, orkestra-owner) are always added
+// Inrun system labels (managed-by, inrun-owner) are always added
 // and cannot be overridden by the user.
-func Resolve(src orktypes.PodTemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedPodSpec {
+func Resolve(src types.PodTemplateSource, ownerName string, reg *types.ProfileRegistry) ResolvedPodSpec {
 	spec := ResolvedPodSpec{
 		Labels:        make(map[string]string),
 		Annotations:   make(map[string]string),
@@ -211,7 +211,7 @@ func Resolve(src orktypes.PodTemplateSource, ownerName string, reg *orktypes.Pro
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 func buildPod(owner domain.Object, spec ResolvedPodSpec, namespace string) *corev1.Pod {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            spec.Name,

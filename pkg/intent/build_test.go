@@ -3,15 +3,15 @@ package intent
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestNewCRSkeleton(t *testing.T) {
-	crd := &orktypes.CRDEntry{
-		APITypes: orktypes.APITypes{
+	crd := &types.CRDEntry{
+		APITypes: types.APITypes{
 			Group:   "platform.myorg.io",
 			Version: "v1",
 			Kind:    "AppRequest",
@@ -40,18 +40,18 @@ func TestNewCRSkeleton(t *testing.T) {
 }
 
 func TestRouteFields(t *testing.T) {
-	crd := &orktypes.CRDEntry{
-		Serve: &orktypes.ServeConfig{
-			Fields: map[string]orktypes.ServeFieldConfig{
+	crd := &types.CRDEntry{
+		Serve: &types.ServeConfig{
+			Fields: map[string]types.ServeFieldConfig{
 				"repository": {},
 				"image":      {},
 				"replicas":   {},
 			},
-			Labels: map[string]orktypes.ServeFieldConfig{
+			Labels: map[string]types.ServeFieldConfig{
 				"team":        {},
 				"environment": {},
 			},
-			Annotations: map[string]orktypes.ServeFieldConfig{
+			Annotations: map[string]types.ServeFieldConfig{
 				"jira-ticket": {},
 				"expose":      {},
 			},
@@ -71,7 +71,7 @@ func TestRouteFields(t *testing.T) {
 	}
 
 	obj := newCRSkeleton(crd)
-	routeFields(raw, crd, orktypes.NoteRegistry{}, obj)
+	routeFields(raw, crd, types.NoteRegistry{}, obj)
 
 	// Check spec fields
 	spec := obj.Object["spec"].(map[string]interface{})
@@ -97,13 +97,13 @@ func TestRouteFields(t *testing.T) {
 }
 
 func TestRouteFields_MissingFields(t *testing.T) {
-	crd := &orktypes.CRDEntry{
-		Serve: &orktypes.ServeConfig{
-			Fields: map[string]orktypes.ServeFieldConfig{
+	crd := &types.CRDEntry{
+		Serve: &types.ServeConfig{
+			Fields: map[string]types.ServeFieldConfig{
 				"repository": {},
 				"image":      {},
 			},
-			Labels: map[string]orktypes.ServeFieldConfig{
+			Labels: map[string]types.ServeFieldConfig{
 				"team": {},
 			},
 		},
@@ -117,7 +117,7 @@ func TestRouteFields_MissingFields(t *testing.T) {
 	}
 
 	obj := newCRSkeleton(crd)
-	routeFields(raw, crd, orktypes.NoteRegistry{}, obj)
+	routeFields(raw, crd, types.NoteRegistry{}, obj)
 
 	spec := obj.Object["spec"].(map[string]interface{})
 	assert.NotContains(t, spec, "repository") // Should be absent
@@ -128,9 +128,9 @@ func TestRouteFields_MissingFields(t *testing.T) {
 }
 
 func TestRouteFields_NonStringLabels(t *testing.T) {
-	crd := &orktypes.CRDEntry{
-		Serve: &orktypes.ServeConfig{
-			Labels: map[string]orktypes.ServeFieldConfig{
+	crd := &types.CRDEntry{
+		Serve: &types.ServeConfig{
+			Labels: map[string]types.ServeFieldConfig{
 				"count": {},
 			},
 		},
@@ -142,7 +142,7 @@ func TestRouteFields_NonStringLabels(t *testing.T) {
 	}
 
 	obj := newCRSkeleton(crd)
-	routeFields(raw, crd, orktypes.NoteRegistry{}, obj)
+	routeFields(raw, crd, types.NoteRegistry{}, obj)
 
 	labels := obj.Object["metadata"].(map[string]interface{})["labels"].(map[string]interface{})
 	assert.Equal(t, "42", labels["count"]) // Should be converted to string
@@ -150,15 +150,15 @@ func TestRouteFields_NonStringLabels(t *testing.T) {
 
 func TestResolveServeIdentity(t *testing.T) {
 	// Use built-in notes (repoSlug is built-in)
-	notes := orktypes.NoteRegistry{}
+	notes := types.NoteRegistry{}
 
 	namespaced := true
-	crd := &orktypes.CRDEntry{
+	crd := &types.CRDEntry{
 		Namespaced: &namespaced,
-		APITypes: orktypes.APITypes{
+		APITypes: types.APITypes{
 			Kind: "AppRequest",
 		},
-		Serve: &orktypes.ServeConfig{
+		Serve: &types.ServeConfig{
 			Name:      "{{ repoSlug .repository }}",
 			Namespace: "{{ .team }}-{{ .environment }}",
 		},
@@ -182,15 +182,15 @@ func TestResolveServeIdentity(t *testing.T) {
 
 func TestResolveServeIdentity_WithRepoSlugNote(t *testing.T) {
 	// Use built-in notes (repoSlug is built-in)
-	notes := orktypes.NoteRegistry{}
+	notes := types.NoteRegistry{}
 
 	namespaced := true
-	crd := &orktypes.CRDEntry{
+	crd := &types.CRDEntry{
 		Namespaced: &namespaced,
-		APITypes: orktypes.APITypes{
+		APITypes: types.APITypes{
 			Kind: "AppRequest",
 		},
-		Serve: &orktypes.ServeConfig{
+		Serve: &types.ServeConfig{
 			Name:      "{{ repoSlug .repository }}",
 			Namespace: "{{ .team }}-{{ .environment }}",
 		},
@@ -213,13 +213,13 @@ func TestResolveServeIdentity_WithRepoSlugNote(t *testing.T) {
 }
 
 func TestResolveServeIdentity_OnlyName(t *testing.T) {
-	notes := orktypes.NoteRegistry{}
+	notes := types.NoteRegistry{}
 
-	crd := &orktypes.CRDEntry{
-		APITypes: orktypes.APITypes{
+	crd := &types.CRDEntry{
+		APITypes: types.APITypes{
 			Kind: "AppRequest",
 		},
-		Serve: &orktypes.ServeConfig{
+		Serve: &types.ServeConfig{
 			Name: "{{ repoSlug .repository }}",
 			// Namespace not set — should be empty
 		},
@@ -240,13 +240,13 @@ func TestResolveServeIdentity_OnlyName(t *testing.T) {
 }
 
 func TestResolveServeIdentity_NoServeName_FallsBackToRawName(t *testing.T) {
-	notes := orktypes.NoteRegistry{}
+	notes := types.NoteRegistry{}
 
-	crd := &orktypes.CRDEntry{
-		APITypes: orktypes.APITypes{
+	crd := &types.CRDEntry{
+		APITypes: types.APITypes{
 			Kind: "AppRequest",
 		},
-		Serve: &orktypes.ServeConfig{
+		Serve: &types.ServeConfig{
 			// serve.name not declared.
 		},
 	}
@@ -264,13 +264,13 @@ func TestResolveServeIdentity_NoServeName_FallsBackToRawName(t *testing.T) {
 }
 
 func TestResolveServeIdentity_NoServeName_NoRawName_StaysEmpty(t *testing.T) {
-	notes := orktypes.NoteRegistry{}
+	notes := types.NoteRegistry{}
 
-	crd := &orktypes.CRDEntry{
-		APITypes: orktypes.APITypes{
+	crd := &types.CRDEntry{
+		APITypes: types.APITypes{
 			Kind: "AppRequest",
 		},
-		Serve: &orktypes.ServeConfig{
+		Serve: &types.ServeConfig{
 			// serve.name not declared, caller sent no "name" either.
 		},
 	}
@@ -287,15 +287,15 @@ func TestResolveServeIdentity_NoServeName_NoRawName_StaysEmpty(t *testing.T) {
 }
 
 func TestResolveServeIdentity_MissingName(t *testing.T) {
-	notes := orktypes.NoteRegistry{}
+	notes := types.NoteRegistry{}
 
 	namespaced := true
-	crd := &orktypes.CRDEntry{
+	crd := &types.CRDEntry{
 		Namespaced: &namespaced,
-		APITypes: orktypes.APITypes{
+		APITypes: types.APITypes{
 			Kind: "AppRequest",
 		},
-		Serve: &orktypes.ServeConfig{
+		Serve: &types.ServeConfig{
 			Name: "{{ repoSlug .repository }}",
 		},
 	}
@@ -315,15 +315,15 @@ func TestResolveServeIdentity_MissingName(t *testing.T) {
 }
 
 func TestResolveServeIdentity_MissingNamespace(t *testing.T) {
-	notes := orktypes.NoteRegistry{}
+	notes := types.NoteRegistry{}
 
 	namespaced := true
-	crd := &orktypes.CRDEntry{
+	crd := &types.CRDEntry{
 		Namespaced: &namespaced,
-		APITypes: orktypes.APITypes{
+		APITypes: types.APITypes{
 			Kind: "AppRequest",
 		},
-		Serve: &orktypes.ServeConfig{
+		Serve: &types.ServeConfig{
 			Namespace: "{{ .team }}-{{ .environment }}",
 		},
 	}
@@ -342,13 +342,13 @@ func TestResolveServeIdentity_MissingNamespace(t *testing.T) {
 }
 
 func TestResolveServeIdentity_EmptyName(t *testing.T) {
-	notes := orktypes.NoteRegistry{}
+	notes := types.NoteRegistry{}
 
-	crd := &orktypes.CRDEntry{
-		APITypes: orktypes.APITypes{
+	crd := &types.CRDEntry{
+		APITypes: types.APITypes{
 			Kind: "AppRequest",
 		},
-		Serve: &orktypes.ServeConfig{
+		Serve: &types.ServeConfig{
 			Name: "{{ .missingField }}",
 		},
 	}
@@ -367,12 +367,12 @@ func TestResolveServeIdentity_EmptyName(t *testing.T) {
 
 func TestNewBuild(t *testing.T) {
 	// Use built-in notes (repoSlug is built-in)
-	notes := orktypes.NoteRegistry{}
+	notes := types.NoteRegistry{}
 
 	namespaced := true
-	crd := &orktypes.CRDEntry{
+	crd := &types.CRDEntry{
 		Namespaced: &namespaced,
-		APITypes: orktypes.APITypes{
+		APITypes: types.APITypes{
 			Group:   "platform.myorg.io",
 			Version: "v1",
 			Kind:    "AppRequest",
@@ -380,19 +380,19 @@ func TestNewBuild(t *testing.T) {
 		GroupVersionKind: schema.GroupVersionKind{
 			Group: "platform.myorg.io", Version: "v1", Kind: "AppRequest",
 		},
-		Serve: &orktypes.ServeConfig{
+		Serve: &types.ServeConfig{
 			Name:      "{{ repoSlug .repository }}",
 			Namespace: "{{ .team }}-{{ .environment }}",
-			Fields: map[string]orktypes.ServeFieldConfig{
+			Fields: map[string]types.ServeFieldConfig{
 				"repository": {},
 				"image":      {},
 				"replicas":   {},
 			},
-			Labels: map[string]orktypes.ServeFieldConfig{
+			Labels: map[string]types.ServeFieldConfig{
 				"team":        {},
 				"environment": {},
 			},
-			Annotations: map[string]orktypes.ServeFieldConfig{
+			Annotations: map[string]types.ServeFieldConfig{
 				"jira-ticket": {},
 			},
 		},
@@ -453,8 +453,8 @@ func TestIsRequest(t *testing.T) {
 }
 
 func TestBuild(t *testing.T) {
-	appCRD := &orktypes.CRDEntry{
-		APITypes: orktypes.APITypes{
+	appCRD := &types.CRDEntry{
+		APITypes: types.APITypes{
 			Group:   "platform.myorg.io",
 			Version: "v1",
 			Kind:    "App",
@@ -463,22 +463,22 @@ func TestBuild(t *testing.T) {
 		GroupVersionKind: schema.GroupVersionKind{
 			Group: "platform.myorg.io", Version: "v1", Kind: "App",
 		},
-		Serve: &orktypes.ServeConfig{
-			Target: orktypes.ServeTargetValue{Entries: map[string]*orktypes.ServeTargetConfig{
+		Serve: &types.ServeConfig{
+			Target: types.ServeTargetValue{Entries: map[string]*types.ServeTargetConfig{
 				"app": {Primary: true},
 			}},
 			Name:      `{{ .repository | repoSlug }}`,
 			Namespace: `{{ .team }}-{{ .environment }}`,
-			Fields: map[string]orktypes.ServeFieldConfig{
+			Fields: map[string]types.ServeFieldConfig{
 				"repository":  {},
 				"image":       {},
 				"environment": {},
 				"replicas":    {},
 			},
-			Labels: map[string]orktypes.ServeFieldConfig{
+			Labels: map[string]types.ServeFieldConfig{
 				"team": {},
 			},
-			Annotations: map[string]orktypes.ServeFieldConfig{
+			Annotations: map[string]types.ServeFieldConfig{
 				"jira-ticket": {},
 			},
 		},
@@ -495,7 +495,7 @@ func TestBuild(t *testing.T) {
 			"jira-ticket": "PLAT-1234",
 		}
 
-		obj, err := Build(raw, appCRD, orktypes.NoteRegistry{})
+		obj, err := Build(raw, appCRD, types.NoteRegistry{})
 		require.NoError(t, err)
 
 		spec := obj.Object["spec"].(map[string]interface{})
@@ -523,7 +523,7 @@ func TestBuild(t *testing.T) {
 			"environment":   "staging",
 			"unknown-field": "should be ignored",
 		}
-		obj, err := Build(raw, appCRD, orktypes.NoteRegistry{})
+		obj, err := Build(raw, appCRD, types.NoteRegistry{})
 		require.NoError(t, err)
 
 		spec := obj.Object["spec"].(map[string]interface{})
@@ -538,7 +538,7 @@ func TestBuild(t *testing.T) {
 			"team":        "payments",
 			"environment": "staging",
 		}
-		obj, err := Build(raw, appCRD, orktypes.NoteRegistry{})
+		obj, err := Build(raw, appCRD, types.NoteRegistry{})
 		require.NoError(t, err)
 		assert.Equal(t, "platform.myorg.io/v1", obj.GetAPIVersion())
 		assert.Equal(t, "App", obj.GetKind())

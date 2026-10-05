@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/intent"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/intent"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -32,7 +32,7 @@ var (
 
 	// resolveScalarField resolves a dot-notation path (e.g., "status.phase")
 	// against a map and returns the value as a string.
-	resolveScalarField = orktypes.ResolveScalarField
+	resolveScalarField = types.ResolveScalarField
 
 	// validateK8sName tests that a string is a valid Kubernetes name.
 	validateK8sName = utils.ValidKubernetesName
@@ -56,8 +56,8 @@ var (
 // The resolver is used to evaluate templates in poll.url and poll.field.
 func resolvePollURL(
 	kind, namespace, name string,
-	config *orktypes.ServePollingConfig,
-	resolver *orktmpl.Resolver,
+	config *types.ServePollingConfig,
+	resolver *template.Resolver,
 ) string {
 	// 1. Start with default
 	pollURL := resourcePath(kind, namespace, name)

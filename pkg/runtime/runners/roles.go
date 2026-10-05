@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkroles "github.com/orkspace/orkestra/pkg/resources/roles"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/roles"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunRoles resolves and applies Role template declarations.
@@ -21,15 +21,15 @@ import (
 func RunRoles(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.RoleTemplateSource,
+	srcs []types.RoleTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -41,7 +41,7 @@ func RunRoles(
 	}
 
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 		ns, _ := resolver.Resolve(src.Namespace)
@@ -56,7 +56,7 @@ func RunRoles(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orkroles.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := roles.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("roles[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -73,14 +73,14 @@ func RunRoles(
 			return fmt.Errorf("roles[%d]: %w", i, err)
 		}
 
-		spec := orkroles.Resolve(resolved, resolver.OwnerName())
+		spec := roles.Resolve(resolved, resolver.OwnerName())
 
 		if update || src.Reconcile {
-			if err := orkroles.Update(ctx, kube, owner, spec); err != nil {
+			if err := roles.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("roles[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkroles.Create(ctx, kube, owner, spec); err != nil {
+			if err := roles.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("roles[%d].create: %w", i, err)
 			}
 		}

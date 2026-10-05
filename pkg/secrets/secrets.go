@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -58,9 +58,9 @@ func SecretNeedsRotation(ctx context.Context, kube kubeclient.Interface, namespa
 		return false, fmt.Errorf("checking secret %s/%s for rotation: %w", namespace, name, err)
 	}
 
-	generatedAt := secret.Annotations[orktypes.AnnotationGeneratedAt]
+	generatedAt := secret.Annotations[types.AnnotationGeneratedAt]
 	if generatedAt == "" {
-		// Secret exists but has no annotation — was it created outside Orkestra?
+		// Secret exists but has no annotation — was it created outside Inrun?
 		// Annotate it now and start the rotation clock from this reconcile.
 		logger.FromContext(ctx).Warn().
 			Str("secret", name).
@@ -68,7 +68,7 @@ func SecretNeedsRotation(ctx context.Context, kube kubeclient.Interface, namespa
 		return false, annotateSecret(ctx, kube, namespace, name, rotateAfter)
 	}
 
-	return orktypes.NeedsRotation(generatedAt, rotateAfter), nil
+	return types.NeedsRotation(generatedAt, rotateAfter), nil
 }
 
 // DeleteSecretForRotation deletes a Secret so it can be recreated with fresh values.
@@ -85,10 +85,10 @@ func DeleteSecretForRotation(ctx context.Context, kube kubeclient.Interface, nam
 // GenerationAnnotations returns the annotations to add to a freshly generated Secret.
 func GenerationAnnotations(rotateAfter string) map[string]string {
 	annotations := map[string]string{
-		orktypes.AnnotationGeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		types.AnnotationGeneratedAt: time.Now().UTC().Format(time.RFC3339),
 	}
 	if rotateAfter != "" {
-		annotations[orktypes.AnnotationRotateAfter] = rotateAfter
+		annotations[types.AnnotationRotateAfter] = rotateAfter
 	}
 	return annotations
 }
@@ -105,8 +105,8 @@ func annotateSecret(ctx context.Context, kube kubeclient.Interface, namespace, n
 	if secret.Annotations == nil {
 		secret.Annotations = map[string]string{}
 	}
-	secret.Annotations[orktypes.AnnotationGeneratedAt] = time.Now().UTC().Format(time.RFC3339)
-	secret.Annotations[orktypes.AnnotationRotateAfter] = rotateAfter
+	secret.Annotations[types.AnnotationGeneratedAt] = time.Now().UTC().Format(time.RFC3339)
+	secret.Annotations[types.AnnotationRotateAfter] = rotateAfter
 	_, err = kube.Clientset().CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	return err
 }

@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: pipelines.data.demo.orkestra.io
+  name: pipelines.data.demo.inrun.dev
 spec:
-  group: data.demo.orkestra.io
+  group: data.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -23,9 +23,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: datasets.data.demo.orkestra.io
+  name: datasets.data.demo.inrun.dev
 spec:
-  group: data.demo.orkestra.io
+  group: data.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -45,9 +45,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: schemas.data.demo.orkestra.io
+  name: schemas.data.demo.inrun.dev
 spec:
-  group: data.demo.orkestra.io
+  group: data.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -67,9 +67,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: transforms.data.demo.orkestra.io
+  name: transforms.data.demo.inrun.dev
 spec:
-  group: data.demo.orkestra.io
+  group: data.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -89,9 +89,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: sinks.data.demo.orkestra.io
+  name: sinks.data.demo.inrun.dev
 spec:
-  group: data.demo.orkestra.io
+  group: data.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -111,9 +111,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: sources.data.demo.orkestra.io
+  name: sources.data.demo.inrun.dev
 spec:
-  group: data.demo.orkestra.io
+  group: data.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -133,9 +133,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: datajobs.data.demo.orkestra.io
+  name: datajobs.data.demo.inrun.dev
 spec:
-  group: data.demo.orkestra.io
+  group: data.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -155,9 +155,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: schedules.data.demo.orkestra.io
+  name: schedules.data.demo.inrun.dev
 spec:
-  group: data.demo.orkestra.io
+  group: data.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -177,9 +177,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: alerts.data.demo.orkestra.io
+  name: alerts.data.demo.inrun.dev
 spec:
-  group: data.demo.orkestra.io
+  group: data.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -199,9 +199,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: dashboards.data.demo.orkestra.io
+  name: dashboards.data.demo.inrun.dev
 spec:
-  group: data.demo.orkestra.io
+  group: data.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true

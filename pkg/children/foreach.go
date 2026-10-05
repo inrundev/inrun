@@ -39,8 +39,8 @@ package children
 import (
 	"sort"
 
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,12 +53,12 @@ import (
 // resolve receives an item-scoped resolver and a copy of src; it must clear
 // ForEach on the copy, resolve all template fields, and return the result.
 func expandForEach[T any](
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	srcs []T,
-	getForEach func(T) *orktypes.ForEachSpec,
-	resolve func(ir *orktmpl.Resolver, src T) T,
+	getForEach func(T) *types.ForEachSpec,
+	resolve func(ir *template.Resolver, src T) T,
 ) []T {
-	if !anyHasForEach(len(srcs), func(i int) *orktypes.ForEachSpec { return getForEach(srcs[i]) }) {
+	if !anyHasForEach(len(srcs), func(i int) *types.ForEachSpec { return getForEach(srcs[i]) }) {
 		return srcs // fast path — no forEach in this list
 	}
 	var result []T
@@ -80,14 +80,14 @@ func expandForEach[T any](
 // Shared field-resolution helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-func resolveEnvVars(ir *orktmpl.Resolver, vars orktypes.EnvVarList) orktypes.EnvVarList {
+func resolveEnvVars(ir *template.Resolver, vars types.EnvVarList) types.EnvVarList {
 	if len(vars) == 0 {
 		return vars
 	}
-	out := make(orktypes.EnvVarList, 0, len(vars))
+	out := make(types.EnvVarList, 0, len(vars))
 	for _, v := range vars {
 		rv, _ := ir.Resolve(v.Value)
-		out = append(out, orktypes.EnvVar{Name: v.Name, Value: rv})
+		out = append(out, types.EnvVar{Name: v.Name, Value: rv})
 	}
 	return out
 }
@@ -95,7 +95,7 @@ func resolveEnvVars(ir *orktmpl.Resolver, vars orktypes.EnvVarList) orktypes.Env
 // resolveMap resolves template expressions in each value of a map[string]string —
 // used for labels, annotations, and match selectors alike. Keys are never
 // template expressions — only values are resolved.
-func resolveMap(ir *orktmpl.Resolver, m map[string]string) map[string]string {
+func resolveMap(ir *template.Resolver, m map[string]string) map[string]string {
 	if len(m) == 0 {
 		return m
 	}
@@ -112,12 +112,12 @@ func resolveMap(ir *orktmpl.Resolver, m map[string]string) map[string]string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func ExpandForEachNamespaces(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.NamespaceTemplateSource,
-) []orktypes.NamespaceTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.NamespaceTemplateSource,
+) []types.NamespaceTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.NamespaceTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.NamespaceTemplateSource) orktypes.NamespaceTemplateSource {
+		func(s types.NamespaceTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.NamespaceTemplateSource) types.NamespaceTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Labels = resolveMap(ir, src.Labels)
@@ -135,12 +135,12 @@ func ExpandForEachNamespaces(
 }
 
 func ExpandForEachDeployments(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.DeploymentTemplateSource,
-) []orktypes.DeploymentTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.DeploymentTemplateSource,
+) []types.DeploymentTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.DeploymentTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.DeploymentTemplateSource) orktypes.DeploymentTemplateSource {
+		func(s types.DeploymentTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.DeploymentTemplateSource) types.DeploymentTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Image, _ = ir.Resolve(src.Image)
@@ -156,12 +156,12 @@ func ExpandForEachDeployments(
 }
 
 func ExpandForEachReplicaSets(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.ReplicaSetTemplateSource,
-) []orktypes.ReplicaSetTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.ReplicaSetTemplateSource,
+) []types.ReplicaSetTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.ReplicaSetTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.ReplicaSetTemplateSource) orktypes.ReplicaSetTemplateSource {
+		func(s types.ReplicaSetTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.ReplicaSetTemplateSource) types.ReplicaSetTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Image, _ = ir.Resolve(src.Image)
@@ -177,12 +177,12 @@ func ExpandForEachReplicaSets(
 }
 
 func ExpandForEachServices(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.ServiceTemplateSource,
-) []orktypes.ServiceTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.ServiceTemplateSource,
+) []types.ServiceTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.ServiceTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.ServiceTemplateSource) orktypes.ServiceTemplateSource {
+		func(s types.ServiceTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.ServiceTemplateSource) types.ServiceTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -196,12 +196,12 @@ func ExpandForEachServices(
 }
 
 func ExpandForEachSecrets(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.SecretTemplateSource,
-) []orktypes.SecretTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.SecretTemplateSource,
+) []types.SecretTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.SecretTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.SecretTemplateSource) orktypes.SecretTemplateSource {
+		func(s types.SecretTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.SecretTemplateSource) types.SecretTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -212,12 +212,12 @@ func ExpandForEachSecrets(
 }
 
 func ExpandForEachConfigMaps(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.ConfigMapTemplateSource,
-) []orktypes.ConfigMapTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.ConfigMapTemplateSource,
+) []types.ConfigMapTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.ConfigMapTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.ConfigMapTemplateSource) orktypes.ConfigMapTemplateSource {
+		func(s types.ConfigMapTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.ConfigMapTemplateSource) types.ConfigMapTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -228,12 +228,12 @@ func ExpandForEachConfigMaps(
 }
 
 func ExpandForEachJobs(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.JobTemplateSource,
-) []orktypes.JobTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.JobTemplateSource,
+) []types.JobTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.JobTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.JobTemplateSource) orktypes.JobTemplateSource {
+		func(s types.JobTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.JobTemplateSource) types.JobTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Image, _ = ir.Resolve(src.Image)
@@ -245,12 +245,12 @@ func ExpandForEachJobs(
 }
 
 func ExpandForEachCronJobs(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.CronJobTemplateSource,
-) []orktypes.CronJobTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.CronJobTemplateSource,
+) []types.CronJobTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.CronJobTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.CronJobTemplateSource) orktypes.CronJobTemplateSource {
+		func(s types.CronJobTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.CronJobTemplateSource) types.CronJobTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Schedule, _ = ir.Resolve(src.Schedule)
@@ -262,12 +262,12 @@ func ExpandForEachCronJobs(
 }
 
 func ExpandForEachIngresses(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.IngressTemplateSource,
-) []orktypes.IngressTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.IngressTemplateSource,
+) []types.IngressTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.IngressTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.IngressTemplateSource) orktypes.IngressTemplateSource {
+		func(s types.IngressTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.IngressTemplateSource) types.IngressTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -296,12 +296,12 @@ func ExpandForEachIngresses(
 }
 
 func ExpandForEachHPAs(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.HPATemplateSource,
-) []orktypes.HPATemplateSource {
+	resolver *template.Resolver,
+	srcs []types.HPATemplateSource,
+) []types.HPATemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.HPATemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.HPATemplateSource) orktypes.HPATemplateSource {
+		func(s types.HPATemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.HPATemplateSource) types.HPATemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -318,12 +318,12 @@ func ExpandForEachHPAs(
 }
 
 func ExpandForEachPDBs(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.PDBTemplateSource,
-) []orktypes.PDBTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.PDBTemplateSource,
+) []types.PDBTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.PDBTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.PDBTemplateSource) orktypes.PDBTemplateSource {
+		func(s types.PDBTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.PDBTemplateSource) types.PDBTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -337,12 +337,12 @@ func ExpandForEachPDBs(
 }
 
 func ExpandForEachServiceAccounts(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.ServiceAccountTemplateSource,
-) []orktypes.ServiceAccountTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.ServiceAccountTemplateSource,
+) []types.ServiceAccountTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.ServiceAccountTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.ServiceAccountTemplateSource) orktypes.ServiceAccountTemplateSource {
+		func(s types.ServiceAccountTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.ServiceAccountTemplateSource) types.ServiceAccountTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -353,12 +353,12 @@ func ExpandForEachServiceAccounts(
 }
 
 func ExpandForEachStatefulSets(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.StatefulSetTemplateSource,
-) []orktypes.StatefulSetTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.StatefulSetTemplateSource,
+) []types.StatefulSetTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.StatefulSetTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.StatefulSetTemplateSource) orktypes.StatefulSetTemplateSource {
+		func(s types.StatefulSetTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.StatefulSetTemplateSource) types.StatefulSetTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -381,12 +381,12 @@ func ExpandForEachStatefulSets(
 }
 
 func ExpandForEachPVCs(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.PVCTemplateSource,
-) []orktypes.PVCTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.PVCTemplateSource,
+) []types.PVCTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.PVCTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.PVCTemplateSource) orktypes.PVCTemplateSource {
+		func(s types.PVCTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.PVCTemplateSource) types.PVCTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -400,12 +400,12 @@ func ExpandForEachPVCs(
 }
 
 func ExpandForEachPVs(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.PVTemplateSource,
-) []orktypes.PVTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.PVTemplateSource,
+) []types.PVTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.PVTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.PVTemplateSource) orktypes.PVTemplateSource {
+		func(s types.PVTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.PVTemplateSource) types.PVTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.StorageClassName, _ = ir.Resolve(src.StorageClassName)
@@ -421,12 +421,12 @@ func ExpandForEachPVs(
 }
 
 func ExpandForEachRoles(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.RoleTemplateSource,
-) []orktypes.RoleTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.RoleTemplateSource,
+) []types.RoleTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.RoleTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.RoleTemplateSource) orktypes.RoleTemplateSource {
+		func(s types.RoleTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.RoleTemplateSource) types.RoleTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -436,12 +436,12 @@ func ExpandForEachRoles(
 }
 
 func ExpandForEachRoleBindings(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.RoleBindingTemplateSource,
-) []orktypes.RoleBindingTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.RoleBindingTemplateSource,
+) []types.RoleBindingTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.RoleBindingTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.RoleBindingTemplateSource) orktypes.RoleBindingTemplateSource {
+		func(s types.RoleBindingTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.RoleBindingTemplateSource) types.RoleBindingTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -451,12 +451,12 @@ func ExpandForEachRoleBindings(
 }
 
 func ExpandForEachPods(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.PodTemplateSource,
-) []orktypes.PodTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.PodTemplateSource,
+) []types.PodTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.PodTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.PodTemplateSource) orktypes.PodTemplateSource {
+		func(s types.PodTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.PodTemplateSource) types.PodTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Image, _ = ir.Resolve(src.Image)
@@ -470,12 +470,12 @@ func ExpandForEachPods(
 }
 
 func ExpandForEachNetworkPolicies(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.NetworkPolicyTemplateSource,
-) []orktypes.NetworkPolicyTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.NetworkPolicyTemplateSource,
+) []types.NetworkPolicyTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.NetworkPolicyTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.NetworkPolicyTemplateSource) orktypes.NetworkPolicyTemplateSource {
+		func(s types.NetworkPolicyTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.NetworkPolicyTemplateSource) types.NetworkPolicyTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -485,12 +485,12 @@ func ExpandForEachNetworkPolicies(
 }
 
 func ExpandForEachResourceQuotas(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.ResourceQuotaTemplateSource,
-) []orktypes.ResourceQuotaTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.ResourceQuotaTemplateSource,
+) []types.ResourceQuotaTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.ResourceQuotaTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.ResourceQuotaTemplateSource) orktypes.ResourceQuotaTemplateSource {
+		func(s types.ResourceQuotaTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.ResourceQuotaTemplateSource) types.ResourceQuotaTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -500,12 +500,12 @@ func ExpandForEachResourceQuotas(
 }
 
 func ExpandForEachLimitRanges(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.LimitRangeTemplateSource,
-) []orktypes.LimitRangeTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.LimitRangeTemplateSource,
+) []types.LimitRangeTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.LimitRangeTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.LimitRangeTemplateSource) orktypes.LimitRangeTemplateSource {
+		func(s types.LimitRangeTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.LimitRangeTemplateSource) types.LimitRangeTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			src.Namespace, _ = ir.Resolve(src.Namespace)
@@ -515,12 +515,12 @@ func ExpandForEachLimitRanges(
 }
 
 func ExpandForEachClusterRoles(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.ClusterRoleTemplateSource,
-) []orktypes.ClusterRoleTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.ClusterRoleTemplateSource,
+) []types.ClusterRoleTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.ClusterRoleTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.ClusterRoleTemplateSource) orktypes.ClusterRoleTemplateSource {
+		func(s types.ClusterRoleTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.ClusterRoleTemplateSource) types.ClusterRoleTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			return src
@@ -529,12 +529,12 @@ func ExpandForEachClusterRoles(
 }
 
 func ExpandForEachClusterRoleBindings(
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.ClusterRoleBindingTemplateSource,
-) []orktypes.ClusterRoleBindingTemplateSource {
+	resolver *template.Resolver,
+	srcs []types.ClusterRoleBindingTemplateSource,
+) []types.ClusterRoleBindingTemplateSource {
 	return expandForEach(resolver, srcs,
-		func(s orktypes.ClusterRoleBindingTemplateSource) *orktypes.ForEachSpec { return s.ForEach },
-		func(ir *orktmpl.Resolver, src orktypes.ClusterRoleBindingTemplateSource) orktypes.ClusterRoleBindingTemplateSource {
+		func(s types.ClusterRoleBindingTemplateSource) *types.ForEachSpec { return s.ForEach },
+		func(ir *template.Resolver, src types.ClusterRoleBindingTemplateSource) types.ClusterRoleBindingTemplateSource {
 			src.ForEach = nil
 			src.Name, _ = ir.Resolve(src.Name)
 			return src
@@ -608,7 +608,7 @@ func resolveForEachItems(data map[string]interface{}, path string) []forEachItem
 // itemResolver returns an item-scoped resolver for one forEach iteration step.
 // For list items (fi.value == nil) only .item is injected.
 // For map items (fi.value != nil) both .item and .value are injected.
-func itemResolver(base *orktmpl.Resolver, fi forEachItem, as string, index int) *orktmpl.Resolver {
+func itemResolver(base *template.Resolver, fi forEachItem, as string, index int) *template.Resolver {
 	if fi.value != nil {
 		return base.WithItemAndValue(fi.key, fi.value, as, index)
 	}
@@ -630,7 +630,7 @@ func splitFieldPath(path string) []string {
 
 // anyHasForEach returns true if any element has a non-nil ForEach.
 // Used as a fast-path check to avoid allocation when no forEach is declared.
-func anyHasForEach(n int, getForEach func(int) *orktypes.ForEachSpec) bool {
+func anyHasForEach(n int, getForEach func(int) *types.ForEachSpec) bool {
 	for i := 0; i < n; i++ {
 		if getForEach(i) != nil {
 			return true

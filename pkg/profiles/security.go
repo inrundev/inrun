@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // SecurityProfile is a named security preset.
@@ -25,10 +25,10 @@ const (
 // ApplyContainerSecurityProfile expands a named profile into a
 // ContainerSecurityContext. User-defined profiles in reg are checked first;
 // falls back to built-ins. Returns an error for unknown profile names.
-func ApplyContainerSecurityProfile(name string, reg *orktypes.ProfileRegistry) (*orktypes.ContainerSecurityContext, error) {
+func ApplyContainerSecurityProfile(name string, reg *types.ProfileRegistry) (*types.ContainerSecurityContext, error) {
 	if reg != nil {
 		if def, found := reg.LookupContainerSecurity(name); found {
-			return &orktypes.ContainerSecurityContext{
+			return &types.ContainerSecurityContext{
 				AllowPrivilegeEscalation: def.AllowPrivilegeEscalation,
 				ReadOnlyRootFilesystem:   def.ReadOnlyRootFilesystem,
 				RunAsNonRoot:             def.RunAsNonRoot,
@@ -40,22 +40,22 @@ func ApplyContainerSecurityProfile(name string, reg *orktypes.ProfileRegistry) (
 	}
 	switch SecurityProfile(strings.ToLower(name)) {
 	case SecurityBaseline:
-		return &orktypes.ContainerSecurityContext{
+		return &types.ContainerSecurityContext{
 			AllowPrivilegeEscalation: utils.BoolPtr(false),
-			Capabilities:             &orktypes.CapabilitiesConfig{Drop: []string{"NET_RAW"}},
+			Capabilities:             &types.CapabilitiesConfig{Drop: []string{"NET_RAW"}},
 		}, nil
 	case SecurityRestricted:
-		return &orktypes.ContainerSecurityContext{
+		return &types.ContainerSecurityContext{
 			AllowPrivilegeEscalation: utils.BoolPtr(false),
 			RunAsNonRoot:             utils.BoolPtr(true),
-			Capabilities:             &orktypes.CapabilitiesConfig{Drop: []string{"ALL"}},
+			Capabilities:             &types.CapabilitiesConfig{Drop: []string{"ALL"}},
 		}, nil
 	case SecurityHardened:
-		return &orktypes.ContainerSecurityContext{
+		return &types.ContainerSecurityContext{
 			AllowPrivilegeEscalation: utils.BoolPtr(false),
 			ReadOnlyRootFilesystem:   utils.BoolPtr(true),
 			RunAsNonRoot:             utils.BoolPtr(true),
-			Capabilities:             &orktypes.CapabilitiesConfig{Drop: []string{"ALL"}},
+			Capabilities:             &types.CapabilitiesConfig{Drop: []string{"ALL"}},
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown container security profile: %q — allowed: baseline, restricted, hardened", name)
@@ -65,10 +65,10 @@ func ApplyContainerSecurityProfile(name string, reg *orktypes.ProfileRegistry) (
 // ApplyPodSecurityProfile expands a named profile into a PodSecurityContext.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyPodSecurityProfile(name string, reg *orktypes.ProfileRegistry) (*orktypes.PodSecurityContext, error) {
+func ApplyPodSecurityProfile(name string, reg *types.ProfileRegistry) (*types.PodSecurityContext, error) {
 	if reg != nil {
 		if def, found := reg.LookupPodSecurity(name); found {
-			return &orktypes.PodSecurityContext{
+			return &types.PodSecurityContext{
 				RunAsNonRoot: def.RunAsNonRoot,
 				RunAsUser:    def.RunAsUser,
 				RunAsGroup:   def.RunAsGroup,
@@ -78,16 +78,16 @@ func ApplyPodSecurityProfile(name string, reg *orktypes.ProfileRegistry) (*orkty
 	}
 	switch SecurityProfile(strings.ToLower(name)) {
 	case SecurityBaseline:
-		return &orktypes.PodSecurityContext{
+		return &types.PodSecurityContext{
 			RunAsNonRoot: utils.BoolPtr(false),
 		}, nil
 	case SecurityRestricted:
-		return &orktypes.PodSecurityContext{
+		return &types.PodSecurityContext{
 			RunAsNonRoot: utils.BoolPtr(true),
 			RunAsUser:    utils.Int64Ptr(1000),
 		}, nil
 	case SecurityHardened:
-		return &orktypes.PodSecurityContext{
+		return &types.PodSecurityContext{
 			RunAsNonRoot: utils.BoolPtr(true),
 			RunAsUser:    utils.Int64Ptr(65534),
 			RunAsGroup:   utils.Int64Ptr(65534),

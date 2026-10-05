@@ -1,20 +1,20 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: external-prometheus-e2e
   description: >
-    Verifies protocol: prometheus against Orkestra's own /api/v1/query endpoint.
-    Queries go_goroutines and process_cpu_seconds_total from the orkestra-runtime
+    Verifies protocol: prometheus against Inrun's own /api/v1/query endpoint.
+    Queries go_goroutines and process_cpu_seconds_total from the inrun-runtime
     health server (/api/v1/query). Exercises promValue, promAboveThreshold, and promSeriesCount.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./cr.yaml
 
   cluster:
     provider: kind
-    name: ork-external-prometheus
+    name: inrun-external-prometheus
     reuse: false
 
   expect:
@@ -28,6 +28,6 @@ spec:
           namespace: default
       logs:
         - leaderElection:
-            lease: orkestra-konductor
-            namespace: orkestra-system
+            lease: inrun-leader
+            namespace: inrun-system
           since: 2m

@@ -3,13 +3,13 @@ package profiles
 import (
 	"fmt"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ApplyLimitRangeProfile expands a named LimitRange profile into a list of LimitRangeItems.
 // User-defined profiles in reg are checked first; there are no built-in LimitRange profiles.
 // Returns an error for unknown profile names.
-func ApplyLimitRangeProfile(name string, reg *orktypes.ProfileRegistry) ([]orktypes.LimitRangeItem, error) {
+func ApplyLimitRangeProfile(name string, reg *types.ProfileRegistry) ([]types.LimitRangeItem, error) {
 	if reg != nil {
 		if def, found := reg.LookupLimitRange(name); found {
 			return def.Limits, nil
@@ -20,7 +20,7 @@ func ApplyLimitRangeProfile(name string, reg *orktypes.ProfileRegistry) ([]orkty
 
 // IsValidLimitRangeProfile reports whether name is a recognized LimitRange profile.
 // LimitRange profiles are always user-defined — there are no built-in presets.
-func IsValidLimitRangeProfile(name string, reg *orktypes.ProfileRegistry) bool {
+func IsValidLimitRangeProfile(name string, reg *types.ProfileRegistry) bool {
 	if reg == nil {
 		return false
 	}

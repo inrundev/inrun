@@ -5,13 +5,13 @@ expect:
     timeout: 60s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/apply
           method: POST
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
             Content-Type: "application/json"
           body: >
             {"target":"preview","name":"gw-preview","workloadType":"app",
@@ -29,7 +29,7 @@ expect:
         - kind: PlatformResource
           name: gw-preview
           namespace: team-payments
-          field: .metadata.annotations["orkestra.orkspace.io/serve-alias"]
+          field: .metadata.annotations["inrun.dev/serve-alias"]
           equals: "preview"
 
   - name: GET via gateway for preview alias — payload shows alias field
@@ -37,12 +37,12 @@ expect:
     timeout: 60s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/resources/platformresource/team-payments/gw-preview
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           jq: .payload.alias
           equals: "preview"
 
@@ -51,12 +51,12 @@ expect:
     timeout: 60s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/resources/platformresource/team-payments/gw-preview
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           jq: .spec
           notExists: true
 
@@ -66,13 +66,13 @@ expect:
     timeout: 60s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/apply
           method: POST
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
             Content-Type: "application/json"
           body: >
             {"target":"internal","name":"gw-internal","workloadType":"app",
@@ -87,29 +87,29 @@ expect:
     timeout: 60s
     kubectl:
       port-forward:
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/resources/platformresource/team-payments/gw-internal
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           jq: .payload.alias
           equals: "internal"
 
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/resources/platformresource/team-payments/gw-internal
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           jq: .payload.target
           equals: "apifixture"
 
-        - service: orkestra-gateway
-          namespace: orkestra-system
+        - service: inrun-gateway
+          namespace: inrun-system
           port: 8080
           path: /api/v1/resources/platformresource/team-payments/gw-internal
           headers:
-            Authorization: "Bearer ${FIXTURE_CC_TOKEN}"
+            Authorization: "Bearer ${FIXTURE_CONSOLE_TOKEN}"
           jq: .spec.workloadType
           equals: "app"

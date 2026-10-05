@@ -9,9 +9,9 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/registry"
+	"github.com/inrundev/inrun/pkg/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -21,15 +21,15 @@ var patternsCmd = &cobra.Command{
 	Use:   "patterns [registry-url]",
 	Short: "List available patterns in the registry",
 	Args:  cobra.MaximumNArgs(1),
-	Example: `  ork patterns
-  ork patterns --motifs
-  ork patterns --katalogs
-  ork patterns oci://ghcr.io/mycompany/patterns
-  ork patterns --tag database`,
+	Example: `  inrun patterns
+  inrun patterns --modules
+  inrun patterns --catalogs
+  inrun patterns oci://ghcr.io/mycompany/patterns
+  inrun patterns --tag database`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tag, _ := cmd.Flags().GetString("tag")
-		onlyKatalogs, _ := cmd.Flags().GetBool("katalogs")
-		onlyMotifs, _ := cmd.Flags().GetBool("motifs")
+		onlyCatalogs, _ := cmd.Flags().GetBool("catalogs")
+		onlyModules, _ := cmd.Flags().GetBool("modules")
 
 		client, err := registry.NewClient()
 		if err != nil {
@@ -48,7 +48,7 @@ var patternsCmd = &cobra.Command{
 			latestUpdatedAt = idx.UpdatedAt
 		} else {
 			var listErrs []string
-			if !onlyMotifs {
+			if !onlyModules {
 				patURL := os.Getenv(registry.EnvPatternRegistry)
 				if patURL == "" {
 					patURL = registry.DefaultPatternRegistry
@@ -63,14 +63,14 @@ var patternsCmd = &cobra.Command{
 					}
 				}
 			}
-			if !onlyKatalogs {
-				motifURL := os.Getenv(registry.EnvMotifRegistry)
-				if motifURL == "" {
-					motifURL = registry.DefaultMotifRegistry
+			if !onlyCatalogs {
+				moduleURL := os.Getenv(registry.EnvModuleRegistry)
+				if moduleURL == "" {
+					moduleURL = registry.DefaultModuleRegistry
 				}
-				idx, err := client.List(cmd.Context(), motifURL)
+				idx, err := client.List(cmd.Context(), moduleURL)
 				if err != nil {
-					listErrs = append(listErrs, fmt.Sprintf("  motifs:   %s", registryErrSummary(err)))
+					listErrs = append(listErrs, fmt.Sprintf("  modules:   %s", registryErrSummary(err)))
 				} else if idx != nil {
 					entries = append(entries, idx.Entries...)
 					if idx.UpdatedAt > latestUpdatedAt {
@@ -90,12 +90,12 @@ var patternsCmd = &cobra.Command{
 			}
 		}
 
-		label := "Orkestra Registry"
+		label := "Inrun Registry"
 		switch {
-		case onlyKatalogs:
-			label = "Orkestra Katalogs"
-		case onlyMotifs:
-			label = "Orkestra Motifs"
+		case onlyCatalogs:
+			label = "Inrun Catalogs"
+		case onlyModules:
+			label = "Inrun Modules"
 		}
 		fmt.Printf("\n%s\n", label)
 		fmt.Printf("%s\n", strings.Repeat("─", 57))
@@ -109,10 +109,10 @@ var patternsCmd = &cobra.Command{
 				continue
 			}
 			k := e.Kind
-			if onlyKatalogs && k != registry.KatalogKind.ToString() {
+			if onlyCatalogs && k != registry.CatalogKind.ToString() {
 				continue
 			}
-			if onlyMotifs && k != registry.MotifKind.ToString() {
+			if onlyModules && k != registry.ModuleKind.ToString() {
 				continue
 			}
 			tags := strings.Join(e.Tags, ", ")
@@ -151,8 +151,8 @@ var patternsCmd = &cobra.Command{
 		}
 		fmt.Printf("\n%d %s%s\n", count, noun, updatedAt)
 
-		fmt.Printf("\nTo pull:\n  ork pull <name>:<version>\n")
-		fmt.Printf("\nTo filter:\n  ork patterns --katalogs\n  ork patterns --motifs\n")
+		fmt.Printf("\nTo pull:\n  inrun pull <name>:<version>\n")
+		fmt.Printf("\nTo filter:\n  inrun patterns --catalogs\n  inrun patterns --modules\n")
 		fmt.Println()
 		return nil
 	},
@@ -169,10 +169,10 @@ func registryErrSummary(err error) string {
 
 func init() {
 	patternsCmd.Flags().StringP("tag", "t", "", "Filter by tag (e.g. database, stateful, security)")
-	patternsCmd.Flags().BoolP("katalogs", "k", false, "Show only katalogs (kind: Katalog)")
-	patternsCmd.Flags().BoolP("motifs", "m", false, "Show only motifs (kind: Motif)")
+	patternsCmd.Flags().BoolP("catalogs", "k", false, "Show only catalogs (kind: Catalog)")
+	patternsCmd.Flags().BoolP("modules", "m", false, "Show only modules (kind: Module)")
 	cmdutil.RootCmd.AddCommand(patternsCmd)
 
-	// Shadow global flags so they don't appear under `ork patterns`
+	// Shadow global flags so they don't appear under `inrun patterns`
 	cmdutil.ShadowGlobalCommandFlags(patternsCmd, "file")
 }

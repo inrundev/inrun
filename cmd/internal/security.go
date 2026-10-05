@@ -1,16 +1,16 @@
 // internal/security.go
 //
-// Security wiring — called from konstructRuntime after the HealthServer
-// is constructed and before Orkestra starts.
+// Security wiring — called from constructRuntime after the HealthServer
+// is constructed and before Inrun starts.
 //
 // Handles:
 //
 //  1. TLS certificate generation — when deletion protection, admission webhooks,
 //     or conversion webhooks are enabled and no explicit cert is configured.
-//     Uses certmanager.Manager to generate and store the bundle in orkestra-tls Secret.
+//     Uses certmanager.Manager to generate and store the bundle in inrun-tls Secret.
 //
 //  2. CRD conversion webhook patch — when a CRD declares conversion.updateCRD: true,
-//     Orkestra patches the CRD's spec.conversion.webhook.clientConfig.caBundle with
+//     Inrun patches the CRD's spec.conversion.webhook.clientConfig.caBundle with
 //     the CA certificate from the generated (or configured) TLS bundle.
 //
 // All operations fatal-log on failure — if security cannot be applied, the
@@ -27,22 +27,22 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/orkspace/orkestra/pkg/gateway/certmanager"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/gateway/certmanager"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/orkspace/orkestra/pkg/gateway/webhook"
+	"github.com/inrundev/inrun/pkg/gateway/webhook"
 )
 
 // ensureSecurity applies TLS certificates when security features
-// are enabled in the Katalog. Called synchronously before Start().
+// are enabled in the Catalog. Called synchronously before Start().
 //
 // Order:
 //  1. TLS  — must succeed before the HTTPS server starts (webhook endpoint)
@@ -52,8 +52,8 @@ import (
 // and the TLS bundle (for housekeeper Secret reconciliation).
 func ensureSecurity(
 	ctx context.Context,
-	kfg *konfig.Konfig,
-	kat *katalog.Katalog,
+	kfg *config.Config,
+	kat *catalog.Catalog,
 	kube *kubeclient.Kubeclient,
 ) (tlsCertFile, tlsKeyFile string, certMgr certmanager.Manager, bundle *certmanager.TLSBundle, err error) {
 	namespace := kfg.Cluster().Namespace()
@@ -61,26 +61,26 @@ func ensureSecurity(
 	// ── Namespace labeling ────────────────────────────────────────────────
 	// The deletion-protection webhook uses ObjectSelector to narrow to labeled
 	// resources. Namespaces are cluster-scoped and carry no labels by default,
-	// so the webhook would never fire for the Orkestra namespace unless we label
-	// it ourselves. Apply the full orkestra resource label set (including
-	// orkestra.io/deletion-protection) so the webhook intercepts any attempt to
+	// so the webhook would never fire for the Inrun namespace unless we label
+	// it ourselves. Apply the full inrun resource label set (including
+	// inrun.dev/deletion-protection) so the webhook intercepts any attempt to
 	// delete this namespace.
 	// This only makes sense when security.deletionProtection.enabled is true
 	// Gating it silences the permissions errors because kat.GenerateRBACRules()
 	// does not create namespace permissions if deletionProtection.enabled is false.
 	if kat.IsDeletionProtectionEnabled() {
-		if err := ensureNamespaceLabeled(ctx, kube, namespace, labels.OrkestraResourceLabels()); err != nil {
+		if err := ensureNamespaceLabeled(ctx, kube, namespace, labels.InrunResourceLabels()); err != nil {
 			logger.Warn().Err(err).
 				Str("namespace", namespace).
-				Msg("security: failed to label orkestra namespace — deletion protection will not cover it")
+				Msg("security: failed to label inrun namespace — deletion protection will not cover it")
 		}
 	}
 
 	// ── TLS certificate management ────────────────────────────────────────
 	// TLS is required whenever deletion protection, admission webhooks, or
 	// conversion webhooks are enabled. If the user has provided TLS_CERT and
-	// TLS_KEY those are used as-is. Otherwise Orkestra generates self-signed
-	// certs and stores them in the orkestra-tls Secret.
+	// TLS_KEY those are used as-is. Otherwise Inrun generates self-signed
+	// certs and stores them in the inrun-tls Secret.
 	needsTLS := kat.NeedsCertificates()
 	if !needsTLS {
 		return "", "", nil, nil, nil
@@ -108,7 +108,7 @@ func ensureSecurity(
 		Namespace:   namespace,
 		SecretName:  certmanager.DefaultTLSSecretName,
 		ValidFor:    kat.CertValidForStr(),
-		BaseLabels:  labels.OrkestraResourceLabels(),
+		BaseLabels:  labels.InrunResourceLabels(),
 	})
 	if bundleErr != nil {
 		logger.Fatal().Err(bundleErr).Msg("security: failed to ensure TLS secret")
@@ -140,7 +140,7 @@ func ensureSecurity(
 func patchConversionCRDs(
 	ctx context.Context,
 	kube *kubeclient.Kubeclient,
-	kat *katalog.Katalog,
+	kat *catalog.Catalog,
 	caCertPEM []byte,
 	serviceName, serviceNamespace string,
 ) error {
@@ -224,7 +224,7 @@ func applyCRDConversionPatch(
 // writeTLSToFiles writes the TLS bundle to temporary files.
 // Returns the cert file path and key file path.
 func writeTLSToFiles(bundle *certmanager.TLSBundle) (certFile, keyFile string, err error) {
-	cert, err := os.CreateTemp("", "orkestra-tls-cert-*.pem")
+	cert, err := os.CreateTemp("", "inrun-tls-cert-*.pem")
 	if err != nil {
 		return "", "", err
 	}
@@ -233,7 +233,7 @@ func writeTLSToFiles(bundle *certmanager.TLSBundle) (certFile, keyFile string, e
 	}
 	cert.Close()
 
-	key, err := os.CreateTemp("", "orkestra-tls-key-*.pem")
+	key, err := os.CreateTemp("", "inrun-tls-key-*.pem")
 	if err != nil {
 		return "", "", err
 	}
@@ -245,7 +245,7 @@ func writeTLSToFiles(bundle *certmanager.TLSBundle) (certFile, keyFile string, e
 	return cert.Name(), key.Name(), nil
 }
 
-// ensureNamespaceLabeled patches the Orkestra namespace with the given labels
+// ensureNamespaceLabeled patches the Inrun namespace with the given labels
 // so that the deletion-protection webhook's ObjectSelector can match it.
 // Namespaces are cluster-scoped and carry no labels by default — without this
 // patch the webhook rule for namespaces would never fire for this namespace.
@@ -282,8 +282,8 @@ func ensureNamespaceLabeled(ctx context.Context, kube *kubeclient.Kubeclient, na
 func WireWebhookHousekeeperInfra(
 	ws *webhook.WebhookServer,
 	kube *kubeclient.Kubeclient,
-	kat *katalog.Katalog,
-	kfg *konfig.Konfig,
+	kat *catalog.Catalog,
+	kfg *config.Config,
 ) {
 	serviceName := kat.GatewayServiceName()
 	namespace := kfg.Cluster().Namespace()

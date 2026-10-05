@@ -1,11 +1,11 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: gateway-fixture-app
   description: app workload — ArgoCD Application created on cycle 1
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   cr: ../cr-default.yaml
   cycles: 3
 

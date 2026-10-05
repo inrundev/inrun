@@ -10,7 +10,7 @@ import (
 // and returns true if anything changed.
 //
 // Guard: a field is only synced when desired is non-zero/non-nil. A zero value
-// means the Orkestra template did not declare the field — Kubernetes may have
+// means the Inrun template did not declare the field — Kubernetes may have
 // defaulted it, and we must not overwrite its defaults with empty values on
 // every reconcile. This is the standard "declared intent" principle: only correct
 // drift for fields the operator owns.
@@ -33,7 +33,7 @@ func SyncContainerSpec(existing *corev1.Container, desired corev1.Container) boo
 
 	// Env — sync when desired declares env vars.
 	// Also sync when existing has env but desired does not, so explicitly-cleared
-	// env vars are removed (e.g., after removing an env block from the katalog).
+	// env vars are removed (e.g., after removing an env block from the catalog).
 	if !reflect.DeepEqual(existing.Env, desired.Env) && (len(desired.Env) > 0 || len(existing.Env) > 0) {
 		existing.Env = desired.Env
 		drifted = true

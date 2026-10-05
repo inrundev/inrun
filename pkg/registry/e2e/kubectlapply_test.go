@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // exitErrorWithCode runs a trivial shell command that exits with code, and
@@ -23,7 +23,7 @@ func exitErrorWithCode(t *testing.T, code int) error {
 }
 
 func TestAssertKubectlApplyOutput_ExpectedSuccess(t *testing.T) {
-	err := assertKubectlApplyOutput("kubectl apply -f x.yaml", []byte("website.testground.orkestra.io/site-a created"), nil, orktypes.E2EKubectlApply{})
+	err := assertKubectlApplyOutput("kubectl apply -f x.yaml", []byte("website.testground.inrun.dev/site-a created"), nil, types.E2EKubectlApply{})
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestAssertKubectlApplyOutput_ExpectedSuccess(t *testing.T) {
 
 func TestAssertKubectlApplyOutput_UnexpectedFailure(t *testing.T) {
 	runErr := exitErrorWithCode(t, 1)
-	err := assertKubectlApplyOutput("kubectl apply -f x.yaml", []byte("Error from server (Forbidden): admission webhook denied the request"), runErr, orktypes.E2EKubectlApply{})
+	err := assertKubectlApplyOutput("kubectl apply -f x.yaml", []byte("Error from server (Forbidden): admission webhook denied the request"), runErr, types.E2EKubectlApply{})
 	if err == nil {
 		t.Fatal("expected error — apply failed but ExitCode: 0 (default) means success was expected")
 	}
@@ -39,7 +39,7 @@ func TestAssertKubectlApplyOutput_UnexpectedFailure(t *testing.T) {
 
 func TestAssertKubectlApplyOutput_ExpectedRejection(t *testing.T) {
 	runErr := exitErrorWithCode(t, 1)
-	e := orktypes.E2EKubectlApply{
+	e := types.E2EKubectlApply{
 		ExitCode:       1,
 		OutputContains: "denied the request",
 	}
@@ -50,8 +50,8 @@ func TestAssertKubectlApplyOutput_ExpectedRejection(t *testing.T) {
 }
 
 func TestAssertKubectlApplyOutput_ExpectedRejectionButSucceeded(t *testing.T) {
-	e := orktypes.E2EKubectlApply{ExitCode: 1}
-	err := assertKubectlApplyOutput("kubectl apply -f x.yaml", []byte("website.testground.orkestra.io/site-b created"), nil, e)
+	e := types.E2EKubectlApply{ExitCode: 1}
+	err := assertKubectlApplyOutput("kubectl apply -f x.yaml", []byte("website.testground.inrun.dev/site-b created"), nil, e)
 	if err == nil {
 		t.Fatal("expected error — apply succeeded but ExitCode: 1 means rejection was expected")
 	}
@@ -59,7 +59,7 @@ func TestAssertKubectlApplyOutput_ExpectedRejectionButSucceeded(t *testing.T) {
 
 func TestAssertKubectlApplyOutput_WrongExitCode(t *testing.T) {
 	runErr := exitErrorWithCode(t, 2)
-	e := orktypes.E2EKubectlApply{ExitCode: 1}
+	e := types.E2EKubectlApply{ExitCode: 1}
 	err := assertKubectlApplyOutput("kubectl apply -f x.yaml", []byte("some other failure"), runErr, e)
 	if err == nil {
 		t.Fatal("expected error — got exit code 2, wanted 1")
@@ -68,7 +68,7 @@ func TestAssertKubectlApplyOutput_WrongExitCode(t *testing.T) {
 
 func TestAssertKubectlApplyOutput_RejectionMessageMismatch(t *testing.T) {
 	runErr := exitErrorWithCode(t, 1)
-	e := orktypes.E2EKubectlApply{
+	e := types.E2EKubectlApply{
 		ExitCode:       1,
 		OutputContains: "spec.domain must be unique",
 	}
@@ -82,7 +82,7 @@ func TestAssertKubectlApplyOutput_NonExitError(t *testing.T) {
 	// A non-ExitError failure (e.g. "kubectl: command not found") should
 	// always propagate, regardless of e.ExitCode — there's no exit code to
 	// compare against.
-	err := assertKubectlApplyOutput("kubectl apply -f x.yaml", nil, exec.ErrNotFound, orktypes.E2EKubectlApply{ExitCode: 1})
+	err := assertKubectlApplyOutput("kubectl apply -f x.yaml", nil, exec.ErrNotFound, types.E2EKubectlApply{ExitCode: 1})
 	if err == nil {
 		t.Fatal("expected error to propagate for a non-ExitError failure")
 	}

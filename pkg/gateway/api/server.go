@@ -9,7 +9,7 @@
 //		 	GET    /api/v1/resources/{kind}/{ns}          → resourcesHandler — list
 //			GET    /api/v1/resources/{kind}/{ns}[/{name}] → resourcesHandler — get
 //			DELETE /api/v1/resources/{kind}/{ns}/{name}   → resourcesHandler — delete
-//			GET    /api/v1/schema/                        → schemaHandler — (service catalog — serve-enabled CRDs)
+//			GET    /api/v1/schema/                        → schemaHandler — (service list — serve-enabled CRDs)
 //		 	GET    /api/v1/schema?target=<t>              → schemaHandler — schema for target
 //	  		GET    /api/v1/raw-schema?kind=<k>            → schemaHandler — raw Kubernetes OpenAPI spec schema
 //
@@ -23,10 +23,10 @@ import (
 	"strings"
 	"sync"
 
-	oidcpkg "github.com/orkspace/orkestra/pkg/gateway/oidc"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/pkg/catalog"
+	oidcpkg "github.com/inrundev/inrun/pkg/gateway/oidc"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
 )
 
 // Registrar is the subset of health.HealthServer used here.
@@ -42,13 +42,13 @@ type APIServer struct {
 	oidcCache *oidcpkg.Cache
 	kube      kubeclient.Interface
 	clusters  *ClusterRegistry
-	kat       *katalog.Katalog
+	kat       *catalog.Catalog
 	ownNS     string
 }
 
 // NewAPIServer resolves all tokens (bootstrapping/rotating Secrets as
 // needed) and returns a ready-to-register server.
-func NewAPIServer(ctx context.Context, kat *katalog.Katalog, kube kubeclient.Interface, clusters *ClusterRegistry, ownNS string) (*APIServer, error) {
+func NewAPIServer(ctx context.Context, kat *catalog.Catalog, kube kubeclient.Interface, clusters *ClusterRegistry, ownNS string) (*APIServer, error) {
 	if !kat.HasServeEnabled() {
 		return nil, nil // not enabled — caller skips registration
 	}

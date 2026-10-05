@@ -1,12 +1,12 @@
-# Schema reference: https://orkestra.sh/docs/reference/schema/e2e/
-apiVersion: orkestra.orkspace.io/v1
+# Schema reference: https://inrun.dev/docs/reference/schema/e2e/
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: webapp-constructor-e2e
   description: Full lifecycle — constructor reconciler creates Deployment and Service, cleans up on delete
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   crd: ../manifests/crd.yaml
   cr: ../manifests/cr.yaml
   valuesFiles:
@@ -14,7 +14,7 @@ spec:
 
   cluster:
     provider: kind
-    name: ork-e2e
+    name: inrun-e2e
     reuse: false
 
   expect:

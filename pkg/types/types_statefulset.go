@@ -20,7 +20,7 @@ type VolumeClaimTemplateSource struct {
 	AccessModes []string `yaml:"accessModes,omitempty" json:"accessModes,omitempty"`
 }
 
-// StatefulSetTemplateSource declares one StatefulSet to be managed by Orkestra.
+// StatefulSetTemplateSource declares one StatefulSet to be managed by Inrun.
 //
 // Example:
 //

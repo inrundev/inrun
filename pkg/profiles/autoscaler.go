@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // AutoscaleProfile is a named autoscale behavior preset.
@@ -71,7 +71,7 @@ var configs = map[AutoscaleProfile]profileConfig{
 // ApplyAutoscalerProfile expands a named autoscale profile into a complete
 // AutoscaleSpec using the CRD's declared baseline values. Returns an error
 // for unknown profile names.
-func ApplyAutoscalerProfile(name string, b orktypes.AutoscaleBaseline) (*orktypes.AutoscaleSpec, error) {
+func ApplyAutoscalerProfile(name string, b types.AutoscaleBaseline) (*types.AutoscaleSpec, error) {
 	p := AutoscaleProfile(strings.ToLower(name))
 	cfg, ok := configs[p]
 	if !ok {
@@ -100,76 +100,76 @@ func IsValidAutoscaleProfile(name string) bool {
 	return ok
 }
 
-func expandBurst(b orktypes.AutoscaleBaseline, cfg profileConfig) *orktypes.AutoscaleSpec {
+func expandBurst(b types.AutoscaleBaseline, cfg profileConfig) *types.AutoscaleSpec {
 	threshold := int(float64(b.MaxDepth) * cfg.queueThresholdPct)
 	workers := int(float64(b.Workers) * cfg.workerMultiplier)
 	queue := int(float64(b.MaxDepth) * cfg.queueMultiplier)
-	return &orktypes.AutoscaleSpec{
-		Interval: orktypes.Duration{Duration: cfg.interval},
-		Cooldown: orktypes.Duration{Duration: cfg.cooldown},
-		Conditions: orktypes.AutoscaleConditions{
-			When: []orktypes.Condition{{Field: "metrics.queueDepth", GreaterThan: fmt.Sprintf("%d", threshold)}},
+	return &types.AutoscaleSpec{
+		Interval: types.Duration{Duration: cfg.interval},
+		Cooldown: types.Duration{Duration: cfg.cooldown},
+		Conditions: types.AutoscaleConditions{
+			When: []types.Condition{{Field: "metrics.queueDepth", GreaterThan: fmt.Sprintf("%d", threshold)}},
 		},
-		Do: orktypes.AutoscaleAction{Workers: intPtr(workers), QueueDepth: intPtr(queue)},
+		Do: types.AutoscaleAction{Workers: intPtr(workers), QueueDepth: intPtr(queue)},
 	}
 }
 
-func expandSteady(b orktypes.AutoscaleBaseline, cfg profileConfig) *orktypes.AutoscaleSpec {
+func expandSteady(b types.AutoscaleBaseline, cfg profileConfig) *types.AutoscaleSpec {
 	threshold := int(float64(b.MaxDepth) * cfg.queueThresholdPct)
 	workers := int(float64(b.Workers) * cfg.workerMultiplier)
 	queue := int(float64(b.MaxDepth) * cfg.queueMultiplier)
-	return &orktypes.AutoscaleSpec{
-		Interval: orktypes.Duration{Duration: cfg.interval},
-		Cooldown: orktypes.Duration{Duration: cfg.cooldown},
-		Conditions: orktypes.AutoscaleConditions{
-			When: []orktypes.Condition{
+	return &types.AutoscaleSpec{
+		Interval: types.Duration{Duration: cfg.interval},
+		Cooldown: types.Duration{Duration: cfg.cooldown},
+		Conditions: types.AutoscaleConditions{
+			When: []types.Condition{
 				{Field: "metrics.queueDepth", GreaterThan: fmt.Sprintf("%d", threshold)},
 				{Field: "metrics.workersBusyPercent", GreaterThan: "70"},
 			},
 		},
-		Do: orktypes.AutoscaleAction{Workers: intPtr(workers), QueueDepth: intPtr(queue)},
+		Do: types.AutoscaleAction{Workers: intPtr(workers), QueueDepth: intPtr(queue)},
 	}
 }
 
-func expandBatch(b orktypes.AutoscaleBaseline, cfg profileConfig) *orktypes.AutoscaleSpec {
+func expandBatch(b types.AutoscaleBaseline, cfg profileConfig) *types.AutoscaleSpec {
 	workers := int(float64(b.Workers) * cfg.workerMultiplier)
 	queue := int(float64(b.MaxDepth) * cfg.queueMultiplier)
-	return &orktypes.AutoscaleSpec{
-		Interval: orktypes.Duration{Duration: cfg.interval},
-		Cooldown: orktypes.Duration{Duration: cfg.cooldown},
-		Conditions: orktypes.AutoscaleConditions{
-			Or: []orktypes.Condition{{Cron: "0 23 * * *", Duration: orktypes.Duration{Duration: 3 * time.Hour}}},
+	return &types.AutoscaleSpec{
+		Interval: types.Duration{Duration: cfg.interval},
+		Cooldown: types.Duration{Duration: cfg.cooldown},
+		Conditions: types.AutoscaleConditions{
+			Or: []types.Condition{{Cron: "0 23 * * *", Duration: types.Duration{Duration: 3 * time.Hour}}},
 		},
-		Do: orktypes.AutoscaleAction{Workers: intPtr(workers), QueueDepth: intPtr(queue)},
+		Do: types.AutoscaleAction{Workers: intPtr(workers), QueueDepth: intPtr(queue)},
 	}
 }
 
-func expandLatencySensitive(b orktypes.AutoscaleBaseline, cfg profileConfig) *orktypes.AutoscaleSpec {
+func expandLatencySensitive(b types.AutoscaleBaseline, cfg profileConfig) *types.AutoscaleSpec {
 	workers := int(math.Ceil(float64(b.Workers) * cfg.workerMultiplier))
-	return &orktypes.AutoscaleSpec{
-		Interval: orktypes.Duration{Duration: cfg.interval},
-		Cooldown: orktypes.Duration{Duration: cfg.cooldown},
-		Conditions: orktypes.AutoscaleConditions{
-			When: []orktypes.Condition{{Field: "metrics.reconcileDurationP95Ms", GreaterThan: "200"}},
+	return &types.AutoscaleSpec{
+		Interval: types.Duration{Duration: cfg.interval},
+		Cooldown: types.Duration{Duration: cfg.cooldown},
+		Conditions: types.AutoscaleConditions{
+			When: []types.Condition{{Field: "metrics.reconcileDurationP95Ms", GreaterThan: "200"}},
 		},
-		Do: orktypes.AutoscaleAction{Workers: intPtr(workers)},
+		Do: types.AutoscaleAction{Workers: intPtr(workers)},
 	}
 }
 
-func expandCostOptimized(b orktypes.AutoscaleBaseline, cfg profileConfig) *orktypes.AutoscaleSpec {
+func expandCostOptimized(b types.AutoscaleBaseline, cfg profileConfig) *types.AutoscaleSpec {
 	workers := int(math.Max(1, float64(b.Workers)*cfg.workerMultiplier))
 	queue := int(float64(b.MaxDepth) * cfg.queueMultiplier)
 	threshold := int(float64(b.MaxDepth) * cfg.queueThresholdPct)
-	return &orktypes.AutoscaleSpec{
-		Interval: orktypes.Duration{Duration: cfg.interval},
-		Cooldown: orktypes.Duration{Duration: cfg.cooldown},
-		Conditions: orktypes.AutoscaleConditions{
-			When: []orktypes.Condition{
+	return &types.AutoscaleSpec{
+		Interval: types.Duration{Duration: cfg.interval},
+		Cooldown: types.Duration{Duration: cfg.cooldown},
+		Conditions: types.AutoscaleConditions{
+			When: []types.Condition{
 				{Field: "metrics.workersIdlePercent", GreaterThan: "60"},
 				{Field: "metrics.queueDepth", GreaterThan: fmt.Sprintf("%d", threshold)},
 			},
 		},
-		Do: orktypes.AutoscaleAction{Workers: intPtr(workers), QueueDepth: intPtr(queue)},
+		Do: types.AutoscaleAction{Workers: intPtr(workers), QueueDepth: intPtr(queue)},
 	}
 }
 

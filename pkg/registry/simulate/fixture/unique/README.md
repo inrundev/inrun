@@ -9,13 +9,13 @@ reconcile time via a live checker the reconciler injects into the resolver.
 
 ```sh
 # Passes — no other Website shares this domain:
-ork simulate -f pkg/registry/simulate/fixture/unique/katalog.yaml \
+inrun simulate -f pkg/registry/simulate/fixture/unique/catalog.yaml \
   --cr pkg/registry/simulate/fixture/unique/cr.yaml --cycles 2
 
 # Denied — cr-duplicate.yaml's second document is a pre-existing Website
 # with the same domain, seeded into the fake dynamic client so the checker
 # actually finds it:
-ork simulate -f pkg/registry/simulate/fixture/unique/katalog.yaml \
+inrun simulate -f pkg/registry/simulate/fixture/unique/catalog.yaml \
   --cr pkg/registry/simulate/fixture/unique/cr-duplicate.yaml --cycles 1
 ```
 

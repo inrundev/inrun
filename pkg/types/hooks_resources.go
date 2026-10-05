@@ -12,7 +12,7 @@ type ResourceProfileEntry struct {
 	Phase        string // "onCreate", "onReconcile", "onDelete"
 	Resource     string // e.g. "Deployment", "StatefulSet"
 	ResourceName string // template name field (may be Empty()
-	Profile      string // raw profile name as written in the katalog
+	Profile      string // raw profile name as written in the catalog
 	Mixed        bool   // true when profile is set alongside explicit requests/limits
 }
 

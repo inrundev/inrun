@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // buildWebsiteV1Alpha1 returns a minimal v1alpha1 Website object
 // as it would arrive in a ConversionReview from Kubernetes.
 func buildWebsiteV1Alpha1() map[string]interface{} {
 	return map[string]interface{}{
-		"apiVersion": "demo.orkestra.io/v1alpha1",
+		"apiVersion": "demo.inrun.dev/v1alpha1",
 		"kind":       "Website",
 		"metadata": map[string]interface{}{
 			"name":      "my-blog",
@@ -31,7 +31,7 @@ func buildWebsiteV1Alpha1() map[string]interface{} {
 // buildWebsiteV1 returns a minimal v1 Website object.
 func buildWebsiteV1() map[string]interface{} {
 	return map[string]interface{}{
-		"apiVersion": "demo.orkestra.io/v1",
+		"apiVersion": "demo.inrun.dev/v1",
 		"kind":       "Website",
 		"metadata": map[string]interface{}{
 			"name":      "my-blog",
@@ -49,11 +49,11 @@ func buildWebsiteV1() map[string]interface{} {
 }
 
 // websiteRules returns the ConversionRules for the Website CRD.
-func websiteRules() *orktypes.ConversionRules {
-	return &orktypes.ConversionRules{
+func websiteRules() *types.ConversionRules {
+	return &types.ConversionRules{
 		Kind:           "Website",
 		StorageVersion: "v1",
-		Paths: []orktypes.ConversionPath{
+		Paths: []types.ConversionPath{
 			{
 				From: "v1alpha1",
 				To:   "v1",
@@ -86,13 +86,13 @@ func TestApplyConversion_UpConversion_V1alpha1ToV1(t *testing.T) {
 	obj := buildWebsiteV1Alpha1()
 	rules := websiteRules()
 
-	result, err := applyConversion(obj, rules, "demo.orkestra.io/v1")
+	result, err := applyConversion(obj, rules, "demo.inrun.dev/v1")
 	if err != nil {
 		t.Fatalf("up-conversion failed: %v", err)
 	}
 
-	if result["apiVersion"] != "demo.orkestra.io/v1" {
-		t.Errorf("apiVersion: expected %q, got %q", "demo.orkestra.io/v1", result["apiVersion"])
+	if result["apiVersion"] != "demo.inrun.dev/v1" {
+		t.Errorf("apiVersion: expected %q, got %q", "demo.inrun.dev/v1", result["apiVersion"])
 	}
 
 	spec, ok := result["spec"].(map[string]interface{})
@@ -123,13 +123,13 @@ func TestApplyConversion_DownConversion_V1ToV1alpha1(t *testing.T) {
 	obj := buildWebsiteV1()
 	rules := websiteRules()
 
-	result, err := applyConversion(obj, rules, "demo.orkestra.io/v1alpha1")
+	result, err := applyConversion(obj, rules, "demo.inrun.dev/v1alpha1")
 	if err != nil {
 		t.Fatalf("down-conversion failed: %v", err)
 	}
 
-	if result["apiVersion"] != "demo.orkestra.io/v1alpha1" {
-		t.Errorf("apiVersion: expected %q, got %q", "demo.orkestra.io/v1alpha1", result["apiVersion"])
+	if result["apiVersion"] != "demo.inrun.dev/v1alpha1" {
+		t.Errorf("apiVersion: expected %q, got %q", "demo.inrun.dev/v1alpha1", result["apiVersion"])
 	}
 
 	spec, ok := result["spec"].(map[string]interface{})
@@ -156,12 +156,12 @@ func TestApplyConversion_SameVersion_NoOp(t *testing.T) {
 	obj := buildWebsiteV1()
 	rules := websiteRules()
 
-	result, err := applyConversion(obj, rules, "demo.orkestra.io/v1")
+	result, err := applyConversion(obj, rules, "demo.inrun.dev/v1")
 	if err != nil {
 		t.Fatalf("no-op conversion failed: %v", err)
 	}
 
-	if result["apiVersion"] != "demo.orkestra.io/v1" {
+	if result["apiVersion"] != "demo.inrun.dev/v1" {
 		t.Errorf("apiVersion changed during no-op: got %q", result["apiVersion"])
 	}
 }
@@ -170,15 +170,15 @@ func TestApplyConversion_SameVersion_NoOp(t *testing.T) {
 
 func TestApplyConversion_MissingPath_Error(t *testing.T) {
 	obj := buildWebsiteV1Alpha1()
-	rules := &orktypes.ConversionRules{
+	rules := &types.ConversionRules{
 		Kind:           "Website",
 		StorageVersion: "v1",
-		Paths: []orktypes.ConversionPath{
+		Paths: []types.ConversionPath{
 			{From: "v1alpha1", To: "v1", Spec: map[string]interface{}{"image": "{{ .spec.image }}"}},
 		},
 	}
 
-	_, err := applyConversion(obj, rules, "demo.orkestra.io/v1beta1")
+	_, err := applyConversion(obj, rules, "demo.inrun.dev/v1beta1")
 	if err == nil {
 		t.Error("expected error for missing conversion path")
 	}
@@ -194,10 +194,10 @@ func TestApplyConversion_BareVersionTarget(t *testing.T) {
 		"spec":       map[string]interface{}{"schedulerName": "default"},
 	}
 
-	rules := &orktypes.ConversionRules{
+	rules := &types.ConversionRules{
 		Kind:           "Pod",
 		StorageVersion: "v1",
-		Paths: []orktypes.ConversionPath{
+		Paths: []types.ConversionPath{
 			{
 				From: "v1alpha1",
 				To:   "v1",
@@ -261,13 +261,13 @@ func TestConversionReview_RoundTrip(t *testing.T) {
 		Kind:       "ConversionReview",
 		Request: &ConversionReviewRequest{
 			UID:               "test-uid-123",
-			DesiredAPIVersion: "demo.orkestra.io/v1",
+			DesiredAPIVersion: "demo.inrun.dev/v1",
 			Objects:           []json.RawMessage{objJSON},
 		},
 	}
 
 	rules := websiteRules()
-	registry := katalog.NewInMemoryRegistryForTest()
+	registry := catalog.NewInMemoryRegistryForTest()
 	registry.RegisterConversionRules(rules)
 
 	response := processConversionForTest(review, registry)
@@ -287,8 +287,8 @@ func TestConversionReview_RoundTrip(t *testing.T) {
 		t.Fatalf("unmarshalling converted object: %v", err)
 	}
 
-	if converted["apiVersion"] != "demo.orkestra.io/v1" {
-		t.Errorf("converted apiVersion: expected demo.orkestra.io/v1, got %q",
+	if converted["apiVersion"] != "demo.inrun.dev/v1" {
+		t.Errorf("converted apiVersion: expected demo.inrun.dev/v1, got %q",
 			converted["apiVersion"])
 	}
 }

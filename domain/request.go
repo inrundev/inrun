@@ -10,7 +10,7 @@ type Request struct {
 	Key string
 	// NamespacedName is parsed from Key for convenience.
 	NamespacedName types.NamespacedName
-	// Prepared holds the runtime-enriched context built by Kordinator before the
+	// Prepared holds the runtime-enriched context built by Coordinator before the
 	// reconciler is called.
 	Prepared *PreparedRequest
 }

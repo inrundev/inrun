@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/registry"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/registry"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -53,7 +53,6 @@ var (
 	HealthIconInfo  = utils.HealthIconInfo
 
 	// other cli utilities
-	orkestraLogo        = utils.OrkestraLogoCLI
 	IsRunningInPod      = utils.IsRunningInPod
 	WriteFileAndFormat  = utils.WriteFileAndFormat
 	SplitCommaSeparated = utils.SplitCommaSeparated
@@ -125,12 +124,12 @@ func ShadowGlobalCommandFlags(cmd *cobra.Command, flags ...string) {
 
 // ── printTemplateSummary ──────────────────────────────────────────────────────
 
-// PrintTemplateSummary prints the human-readable default output of `ork template`.
+// PrintTemplateSummary prints the human-readable default output of `inrun template`.
 // CRDs are listed in startup order so the user sees the dependency sequence.
-func PrintTemplateSummary(k *katalog.Katalog, crds map[string]orktypes.CRDEntry, startupOrder []string) {
+func PrintTemplateSummary(k *catalog.Catalog, crds map[string]types.CRDEntry, startupOrder []string) {
 	meta := k.Metadata()
 
-	fmt.Printf("\n%s", Cyan(Bold("Katalog")))
+	fmt.Printf("\n%s", Cyan(Bold("Catalog")))
 	if meta.Name != "" {
 		fmt.Printf(": %s", Bold(meta.Name))
 	}
@@ -265,7 +264,7 @@ func PrintTemplateSummary(k *katalog.Katalog, crds map[string]orktypes.CRDEntry,
 		fmt.Println()
 	}
 
-	fmt.Printf("  %s\n\n", Green("✓ Katalog is valid"))
+	fmt.Printf("  %s\n\n", Green("✓ Catalog is valid"))
 }
 
 // ── printDependencyGraph ──────────────────────────────────────────────────────
@@ -273,7 +272,7 @@ func PrintTemplateSummary(k *katalog.Katalog, crds map[string]orktypes.CRDEntry,
 // PrintDependencyGraph prints a two-part dependency view:
 // 1. Ordered startup list (flat)
 // 2. Tree view showing the dependency hierarchy
-func PrintDependencyGraph(crds map[string]orktypes.CRDEntry, g *katalog.DependencyGraph, startupOrder []string) {
+func PrintDependencyGraph(crds map[string]types.CRDEntry, g *catalog.DependencyGraph, startupOrder []string) {
 	fmt.Printf("\n%s\n\n", Cyan(Bold("Dependency Graph")))
 
 	// ── Part 1: startup order list ────────────────────────────────────────────
@@ -332,7 +331,7 @@ func PrintDependencyGraph(crds map[string]orktypes.CRDEntry, g *katalog.Dependen
 }
 
 // printGraphNode recursively prints one CRD node and its dependents in tree form.
-func printGraphNode(crds map[string]orktypes.CRDEntry, g *katalog.DependencyGraph, name, indent, connector string, printed map[string]bool) {
+func printGraphNode(crds map[string]types.CRDEntry, g *catalog.DependencyGraph, name, indent, connector string, printed map[string]bool) {
 	crd, ok := crds[name]
 	if !ok {
 		return
@@ -377,7 +376,7 @@ func printGraphNode(crds map[string]orktypes.CRDEntry, g *katalog.DependencyGrap
 
 // PrintCRDDetail prints the full expanded state of a single CRD as a
 // human-readable document — what the runtime will use for this CRD.
-func PrintCRDDetail(crd orktypes.CRDEntry, g *katalog.DependencyGraph) {
+func PrintCRDDetail(crd types.CRDEntry, g *catalog.DependencyGraph) {
 	fmt.Printf("\n%s\n", Bold(crd.Name))
 	fmt.Printf("  %s %s/%s\n", Cyan("APIVersion:"), crd.APITypes.Group, crd.APITypes.Version)
 	fmt.Printf("  %s %s  (plural: %s)\n", Cyan("Kind:     "), crd.APITypes.Kind, crd.APITypes.Plural)
@@ -492,7 +491,7 @@ func PrintCRDDetail(crd orktypes.CRDEntry, g *katalog.DependencyGraph) {
 }
 
 // printHookTemplateDetail prints a detailed breakdown of resource declarations.
-func printHookTemplateDetail(indent string, ht *orktypes.HookTemplates) {
+func printHookTemplateDetail(indent string, ht *types.HookTemplates) {
 	if ht == nil {
 		return
 	}
@@ -532,7 +531,7 @@ func printHookTemplateDetail(indent string, ht *orktypes.HookTemplates) {
 // ── summarizeHookTemplates ────────────────────────────────────────────────────
 
 // summarizeHookTemplates returns a compact one-line resource summary.
-func summarizeHookTemplates(ht *orktypes.HookTemplates) string {
+func summarizeHookTemplates(ht *types.HookTemplates) string {
 	if ht == nil {
 		return ""
 	}
@@ -567,7 +566,7 @@ func summarizeHookTemplates(ht *orktypes.HookTemplates) string {
 
 // ── Condition printer ─────────────────────────────────────────────────────────
 
-func printConditionLine(indent string, cond orktypes.Condition) {
+func printConditionLine(indent string, cond types.Condition) {
 	if cond.Field != "" {
 		line := fmt.Sprintf("%s- %s", indent, cond.Field)
 		if cond.GreaterThan != "" {
@@ -585,7 +584,7 @@ func printConditionLine(indent string, cond orktypes.Condition) {
 
 // ── Name list helpers (for printHookTemplateDetail) ───────────────────────────
 
-func deploymentNameList(srcs []orktypes.DeploymentTemplateSource) []string {
+func deploymentNameList(srcs []types.DeploymentTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		if s.Name != "" {
@@ -597,7 +596,7 @@ func deploymentNameList(srcs []orktypes.DeploymentTemplateSource) []string {
 	return out
 }
 
-func statefulSetNameList(srcs []orktypes.StatefulSetTemplateSource) []string {
+func statefulSetNameList(srcs []types.StatefulSetTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "statefulset"))
@@ -605,7 +604,7 @@ func statefulSetNameList(srcs []orktypes.StatefulSetTemplateSource) []string {
 	return out
 }
 
-func serviceNameList(srcs []orktypes.ServiceTemplateSource) []string {
+func serviceNameList(srcs []types.ServiceTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "service"))
@@ -613,7 +612,7 @@ func serviceNameList(srcs []orktypes.ServiceTemplateSource) []string {
 	return out
 }
 
-func configMapNameList(srcs []orktypes.ConfigMapTemplateSource) []string {
+func configMapNameList(srcs []types.ConfigMapTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "configmap"))
@@ -621,7 +620,7 @@ func configMapNameList(srcs []orktypes.ConfigMapTemplateSource) []string {
 	return out
 }
 
-func secretNameList(srcs []orktypes.SecretTemplateSource) []string {
+func secretNameList(srcs []types.SecretTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "secret"))
@@ -629,7 +628,7 @@ func secretNameList(srcs []orktypes.SecretTemplateSource) []string {
 	return out
 }
 
-func jobNameList(srcs []orktypes.JobTemplateSource) []string {
+func jobNameList(srcs []types.JobTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "job"))
@@ -637,7 +636,7 @@ func jobNameList(srcs []orktypes.JobTemplateSource) []string {
 	return out
 }
 
-func cronJobNameList(srcs []orktypes.CronJobTemplateSource) []string {
+func cronJobNameList(srcs []types.CronJobTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "cronjob"))
@@ -645,7 +644,7 @@ func cronJobNameList(srcs []orktypes.CronJobTemplateSource) []string {
 	return out
 }
 
-func serviceAccountNameList(srcs []orktypes.ServiceAccountTemplateSource) []string {
+func serviceAccountNameList(srcs []types.ServiceAccountTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "serviceaccount"))
@@ -653,7 +652,7 @@ func serviceAccountNameList(srcs []orktypes.ServiceAccountTemplateSource) []stri
 	return out
 }
 
-func ingressNameList(srcs []orktypes.IngressTemplateSource) []string {
+func ingressNameList(srcs []types.IngressTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "ingress"))
@@ -661,7 +660,7 @@ func ingressNameList(srcs []orktypes.IngressTemplateSource) []string {
 	return out
 }
 
-func pvcNameList(srcs []orktypes.PVCTemplateSource) []string {
+func pvcNameList(srcs []types.PVCTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "pvc"))
@@ -669,7 +668,7 @@ func pvcNameList(srcs []orktypes.PVCTemplateSource) []string {
 	return out
 }
 
-func namespaceNameList(srcs []orktypes.NamespaceTemplateSource) []string {
+func namespaceNameList(srcs []types.NamespaceTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "namespace"))
@@ -677,7 +676,7 @@ func namespaceNameList(srcs []orktypes.NamespaceTemplateSource) []string {
 	return out
 }
 
-func roleNameList(srcs []orktypes.RoleTemplateSource) []string {
+func roleNameList(srcs []types.RoleTemplateSource) []string {
 	out := make([]string, 0, len(srcs))
 	for _, s := range srcs {
 		out = append(out, nameOrFallback(s.Name, "role"))
@@ -685,7 +684,7 @@ func roleNameList(srcs []orktypes.RoleTemplateSource) []string {
 	return out
 }
 
-func clusterRoleNameList(srcs []orktypes.ClusterRoleTemplateSource) []string {
+func clusterRoleNameList(srcs []types.ClusterRoleTemplateSource) []string {
 	out := make([]string, len(srcs))
 	for i, s := range srcs {
 		if s.Name != "" {
@@ -707,12 +706,12 @@ func nameOrFallback(name, fallback string) string {
 // ── printTypedOperatorHint ────────────────────────────────────────────────────
 
 // PrintTypedBuildSteps prints the build steps for a custom runtime.
-// hasMakefile=true shows the make path; false shows ork generate + go build.
+// hasMakefile=true shows the make path; false shows inrun generate + go build.
 func PrintTypedBuildSteps(hasMakefile bool) {
 	if hasMakefile {
 		fmt.Printf("    make registry && make build\n")
 	} else {
-		fmt.Printf("    ork generate registry\n")
+		fmt.Printf("    inrun generate registry\n")
 		fmt.Printf("    go build .\n")
 	}
 }
@@ -720,24 +719,24 @@ func PrintTypedBuildSteps(hasMakefile bool) {
 // PrintTypedOperatorHint is called when a registry-sourced typed operator fails
 // validation or simulate. Tells the user to pull the pattern, build the custom
 // runtime, then re-run the same command.
-func PrintTypedOperatorHint(err *katalog.TypedOperatorError, command string) {
+func PrintTypedOperatorHint(err *catalog.TypedOperatorError, command string) {
 	fmt.Printf("\n%s  This operator is typed — requires a custom runtime.\n\n", Yellow("⚠"))
 	fmt.Printf("  Pull and build, then re-run:\n")
-	fmt.Printf("    ork pull %s -o .\n", err.Ref)
+	fmt.Printf("    inrun pull %s -o .\n", err.Ref)
 	PrintTypedBuildSteps(false) // Makefile presence unknown until pulled
 	fmt.Printf("    %s\n\n", command)
 }
 
 // ── crdModeLabel ──────────────────────────────────────────────────────────────
 
-// PrintKatalogDeprecation prints the deprecation notice for a locally validated
-// katalog. Reads timeline state from the KatalogDeprecation methods.
+// PrintCatalogDeprecation prints the deprecation notice for a locally validated
+// catalog. Reads timeline state from the CatalogDeprecation methods.
 // Prints nothing if the block is nil or today is before timeline.from.
-func PrintKatalogDeprecation(d *orktypes.KatalogDeprecation) {
-	PrintKatalogDeprecationWithHint(d, "")
+func PrintCatalogDeprecation(d *types.CatalogDeprecation) {
+	PrintCatalogDeprecationWithHint(d, "")
 }
 
-func PrintKatalogDeprecationWithHint(d *orktypes.KatalogDeprecation, hint string) {
+func PrintCatalogDeprecationWithHint(d *types.CatalogDeprecation, hint string) {
 	if d == nil {
 		return
 	}
@@ -755,17 +754,17 @@ func PrintPatternDeprecation(dep *registry.PatternDeprecated) {
 	if dep == nil {
 		return
 	}
-	d := &orktypes.KatalogDeprecation{
+	d := &types.CatalogDeprecation{
 		MigratedTo: dep.MigratedTo,
 		Message:    dep.Message,
 	}
 	if dep.TimelineFrom != "" || dep.TimelineTo != "" {
-		d.Timeline = &orktypes.DeprecationTimeline{
+		d.Timeline = &types.DeprecationTimeline{
 			From: dep.TimelineFrom,
 			To:   dep.TimelineTo,
 		}
 	}
-	PrintKatalogDeprecation(d)
+	PrintCatalogDeprecation(d)
 }
 
 // printDeprecationBlock renders the deprecation block for a given state.
@@ -796,7 +795,7 @@ func printDeprecationBlock(state, message, migrateTo, eolDate, hint string, days
 	fmt.Println()
 }
 
-func crdModeLabel(crd orktypes.CRDEntry) string {
+func crdModeLabel(crd types.CRDEntry) string {
 	if crd.DefaultReconcile() {
 		return "default"
 	}
@@ -871,9 +870,9 @@ func WriteOutput(path, filename string, data []byte) error {
 	return os.WriteFile(dest, data, 0644)
 }
 
-// PrintBanner prints the Orkestra CLI logo.
+// PrintBanner prints the CLI's name line.
 func PrintBanner() {
-	fmt.Printf("\n%s\n\n", Green(orkestraLogo))
+	fmt.Printf("\n%s\n\n", Bold("Inrun"))
 }
 
 // ExtractBinaryFromTarGz streams r (a .tar.gz) and writes the named binary entry to dst.
@@ -895,7 +894,7 @@ func ExtractBinaryFromTarGz(r io.Reader, binary string, dst io.Writer) error {
 			return err
 		}
 
-		// Match by base name so archives like "ork/ork" and flat "ork" both work.
+		// Match by base name so archives like "inrun/inrun" and flat "inrun" both work.
 		if header.Typeflag == tar.TypeReg && filepath.Base(header.Name) == binary {
 			if _, err := io.Copy(dst, tr); err != nil {
 				return err

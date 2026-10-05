@@ -10,7 +10,7 @@ Create the example directory under the right pack with the required files:
 
 ```text
 examples/beginner/05-my-example/
-  katalog.yaml
+  catalog.yaml
   crd.yaml
   cr.yaml
   README.md
@@ -30,13 +30,13 @@ A new top-level pack (e.g., `examples/maintenance/`) touches four files beyond t
 ```text
 examples/new-pack/
   example-1/
-    katalog.yaml
+    catalog.yaml
     crd.yaml
     cr.yaml
     README.md
 ```
 
-### 2. Update [examples/embed.go](https://github.com/orkspace/orkestra/blob/main/examples/embed.go)
+### 2. Update [examples/embed.go](https://github.com/inrundev/inrun/blob/main/examples/embed.go)
 
 Add the new pack name to the `//go:embed` directive. The current line is:
 
@@ -52,9 +52,9 @@ Add your pack name alongside the others:
 var FS embed.FS
 ```
 
-The CLI uses this embedded filesystem to serve examples for `ork init --pack`.
+The CLI uses this embedded filesystem to serve examples for `inrun init --pack`.
 
-### 3. Update [cmd/cli/init_packs.go](https://github.com/orkspace/orkestra/blob/main/cmd/cli/init_packs.go)
+### 3. Update [cmd/cli/init_packs.go](https://github.com/inrundev/inrun/blob/main/cmd/cli/init_packs.go)
 
 Add the pack to the `Packs` map. The `Pack` struct requires `Name`, `Description`, and `Path`:
 
@@ -72,7 +72,7 @@ var Packs = map[string]Pack{
 
 `Path` is the directory name inside the embedded FS. Set it to the full subdirectory path when the pack is nested.
 
-Also add a helper and a `firstExample()` case so `ork init --list-packs` shows the right starting point:
+Also add a helper and a `firstExample()` case so `inrun init --list-packs` shows the right starting point:
 
 ```go
 func (p Pack) isNewPackPack() bool { return p.Name == "new-pack" }
@@ -83,7 +83,7 @@ case p.isNewPackPack():
     return "my-first-example"
 ```
 
-### 4. Update [.github/workflows/package-examples.yml](https://github.com/orkspace/orkestra/blob/main/.github/workflows/package-examples.yml)
+### 4. Update [.github/workflows/package-examples.yml](https://github.com/inrundev/inrun/blob/main/.github/workflows/package-examples.yml)
 
 Add a `tar` command for the new pack in the packaging step:
 
@@ -98,7 +98,7 @@ Also add a line to the summary `echo` block so the pack appears in the CI build 
 echo "| New Pack | Description of the pack | \`examples_new-pack_${TAG}.tar.gz\` |" >> "$GITHUB_STEP_SUMMARY"
 ```
 
-### 5. Update [.github/workflows/sign-and-release.yml](https://github.com/orkspace/orkestra/blob/main/.github/workflows/sign-and-release.yml)
+### 5. Update [.github/workflows/sign-and-release.yml](https://github.com/inrundev/inrun/blob/main/.github/workflows/sign-and-release.yml)
 
 Add the artifact to the release upload list alongside the existing pack entries:
 
@@ -106,12 +106,12 @@ Add the artifact to the release upload list alongside the existing pack entries:
 dist/examples_new-pack_${{ github.ref_name }}.tar.gz
 ```
 
-### 6. Update [examples/README.md](https://github.com/orkspace/orkestra/blob/main/examples/README.md)
+### 6. Update [examples/README.md](https://github.com/inrundev/inrun/blob/main/examples/README.md)
 
 Add the pack to the `--pack` list and add a new section in the learning path:
 
 ```markdown
-ork init my-operator --pack new-pack   # One sentence description
+inrun init my-operator --pack new-pack   # One sentence description
 ```
 
 ```markdown
@@ -124,7 +124,7 @@ One sentence describing what belongs here.
 | [my-first-example](./new-pack/my-first-example/) | What this example teaches. |
 ```
 
-### 7. Update [documentation/getting-started/01-learning-to-orkestrate/index.md](../getting-started/01-learning-to-orkestrate/index.md)
+### 7. Update [documentation/getting-started/01-learning-inrun/index.md](../getting-started/01-learning-inrun/index.md)
 
 Add a row to the packs table:
 
@@ -143,5 +143,5 @@ Add a row to the packs table:
 - [ ] `.github/workflows/package-examples.yml` — `tar` command added, summary `echo` added
 - [ ] `.github/workflows/sign-and-release.yml` — artifact path added to release upload list
 - [ ] `examples/README.md` — pack added to the `--pack` list and a new section in the learning path
-- [ ] `documentation/getting-started/01-learning-to-orkestrate/index.md` — row added to the packs table
+- [ ] `documentation/getting-started/01-learning-inrun/index.md` — row added to the packs table
 - [ ] E2E workflow added (optional but recommended)

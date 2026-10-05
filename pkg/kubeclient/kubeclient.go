@@ -7,10 +7,10 @@ import (
 	"sync/atomic"
 
 	"errors"
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/utils"
 	apiextclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,8 +37,8 @@ type Kubeclient struct {
 	started    *atomic.Bool
 	mapper     meta.RESTMapper
 
-	// Starter konfig
-	konfig *konfig.Konfig
+	// Starter config
+	config *config.Config
 	scheme *runtime.Scheme
 
 	// rawArgs holds the template declarations from hooks.args or constructor.args.
@@ -83,14 +83,14 @@ func (k *Kubeclient) RefreshMapper() {
 	}
 }
 
-// Implementing yhe Komponent interface
-var _ domain.Komponent = (*Kubeclient)(nil)
+// Implementing yhe Component interface
+var _ domain.Component = (*Kubeclient)(nil)
 
 // -----------------------------------------------------------------------------
 // Entry point
 // -----------------------------------------------------------------------------
 // NewKubeclient returns a new Kubeclient with the correct scheme
-func NewKubeclient(kfg *konfig.Konfig, scheme *runtime.Scheme) *Kubeclient {
+func NewKubeclient(kfg *config.Config, scheme *runtime.Scheme) *Kubeclient {
 	if scheme == nil {
 		utils.Exit(errors.New("scheme cannot be nil"))
 	}
@@ -98,12 +98,12 @@ func NewKubeclient(kfg *konfig.Konfig, scheme *runtime.Scheme) *Kubeclient {
 	return &Kubeclient{
 		name:    "kubeclient",
 		scheme:  scheme,
-		konfig:  kfg,
+		config:  kfg,
 		started: new(atomic.Bool),
 	}
 }
 
-// Start is called by orkestra.Start() to start kube client
+// Start is called by inrun.Start() to start kube client
 func (k *Kubeclient) Start(ctx context.Context) error {
 	cfg, err := k.buildConfig()
 	if err != nil {
@@ -162,9 +162,9 @@ func (k *Kubeclient) buildConfig() (*rest.Config, error) {
 	var restCfg *rest.Config
 	var err error
 
-	if k.konfig.Cluster().KubekonfigPath() != "" {
+	if k.config.Cluster().KubeconfigPath() != "" {
 		logger.Debug().Msg("using kubeconfig")
-		restCfg, err = clientcmd.BuildConfigFromFlags(k.konfig.Cluster().MasterURL(), k.konfig.Cluster().KubekonfigPath())
+		restCfg, err = clientcmd.BuildConfigFromFlags(k.config.Cluster().MasterURL(), k.config.Cluster().KubeconfigPath())
 	} else {
 		logger.Debug().Msg("using incluster configuration")
 		restCfg, err = rest.InClusterConfig()
@@ -195,10 +195,10 @@ func (k *Kubeclient) DynamicClientFor(apiPath, group, version string) (dynamic.I
 // strategy engine — dynamic clients should use merge patch.
 // 3. Third, Update sends the full object and requires a current resourceVersion — more fragile, more data over the wire.
 
-// Started is called by orkestra for healthcheck
+// Started is called by inrun for healthcheck
 func (k *Kubeclient) Started() bool { return k.started.Load() }
 
-// Shutdown is called by orkestra fir graceful shutdown
+// Shutdown is called by inrun fir graceful shutdown
 func (k *Kubeclient) Shutdown(ctx context.Context) {}
 
 // Name returns the name of the kubeclient
@@ -226,7 +226,7 @@ func NewFakeClientset() kubernetes.Interface {
 
 // Args returns the resolved args for the current reconcile scope.
 // If ScopedFor has been called, returns the per-CR evaluated args.
-// Otherwise returns the raw (unevaluated) args from the Katalog declaration.
+// Otherwise returns the raw (unevaluated) args from the Catalog declaration.
 func (k *Kubeclient) Args() Args {
 	if k.args != nil {
 		return k.args
@@ -238,7 +238,7 @@ func (k *Kubeclient) Args() Args {
 }
 
 // WithArgs returns a shallow copy of the Kubeclient with the given args stored
-// as rawArgs. Used by the runtime to attach katalog-declared args before a hook
+// as rawArgs. Used by the runtime to attach catalog-declared args before a hook
 // or constructor is called; ScopedFor then evaluates templates at reconcile time.
 func (k *Kubeclient) WithArgs(args Args) Interface {
 	cp := *k

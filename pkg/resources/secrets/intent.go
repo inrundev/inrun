@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/resources/shared"
 )
 
 // Build converts a flat intent fields map into a full Secret object map

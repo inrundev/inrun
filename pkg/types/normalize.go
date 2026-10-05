@@ -53,7 +53,7 @@ type NormalizeConfig struct {
 	Spec map[string]string `yaml:"spec,omitempty" json:"spec,omitempty"`
 
 	// Audit enables per-field change tracking during normalize.
-	// When true, Orkestra records which spec fields were transformed and what
+	// When true, Inrun records which spec fields were transformed and what
 	// value they held before normalization. The changes are available in status
 	// field templates under ._normalizeChanges as a list of {field, from, to}.
 	//

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/tools/proxy"
+	"github.com/inrundev/inrun/pkg/tools/proxy"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -20,21 +20,21 @@ import (
 
 var proxyCmd = &cobra.Command{
 	Use:   "proxy",
-	Short: "Forward Orkestra service ports to localhost",
-	Long: `Forward ports for deployed Orkestra components to localhost.
+	Short: "Forward Inrun service ports to localhost",
+	Long: `Forward ports for deployed Inrun components to localhost.
 
 By default all deployed components are forwarded. Use --for to select specific components.
 
 Examples:
-  ork proxy                        # Forward Runtime, Control Center, and Gateway
-  ork proxy --for cc               # Forward Control Center only
-  ork proxy --for runtime,cc       # Forward Runtime and Control Center
-  ork proxy -n my-platform-ns      # Forward from a custom namespace
-  ork proxy --runtime-port 9090    # Use port 9090 for Runtime instead of 8080`,
+  inrun proxy                        # Forward Runtime, Console, and Gateway
+  inrun proxy --for console               # Forward Console only
+  inrun proxy --for runtime,console       # Forward Runtime and Console
+  inrun proxy -n my-platform-ns      # Forward from a custom namespace
+  inrun proxy --runtime-port 9090    # Use port 9090 for Runtime instead of 8080`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ns, _ := cmd.Flags().GetString("namespace")
 		runtimePort, _ := cmd.Flags().GetInt("runtime-port")
-		ccPort, _ := cmd.Flags().GetInt("cc-port")
+		consolePort, _ := cmd.Flags().GetInt("console-port")
 		gatewayPort, _ := cmd.Flags().GetInt("gateway-port")
 		devServerPort, _ := cmd.Flags().GetInt("dev-server-port")
 		kubeContext, _ := cmd.Flags().GetString("context")
@@ -53,26 +53,26 @@ Examples:
 		if include.runtime {
 			targets = append(targets, proxy.ForwardTarget{
 				Label:     "Runtime",
-				Komponent: proxy.KomponentRuntime,
+				Component: proxy.ComponentRuntime,
 				Namespace: ns,
 				LocalPort: runtimePort,
 				Scheme:    "http",
 				ViaLease:  true,
 			})
 		}
-		if include.cc {
+		if include.console {
 			targets = append(targets, proxy.ForwardTarget{
-				Label:     "Control Center",
-				Komponent: proxy.KomponentCC,
+				Label:     "Console",
+				Component: proxy.ComponentConsole,
 				Namespace: ns,
-				LocalPort: ccPort,
+				LocalPort: consolePort,
 				Scheme:    "http",
 			})
 		}
 		if include.gateway {
 			targets = append(targets, proxy.ForwardTarget{
 				Label:     "Gateway",
-				Komponent: proxy.KomponentGateway,
+				Component: proxy.ComponentGateway,
 				Namespace: ns,
 				LocalPort: gatewayPort,
 				Scheme:    "http",
@@ -82,7 +82,7 @@ Examples:
 			targets = append(targets, proxy.ForwardTarget{
 				Label:       "Dev Server",
 				ServiceName: proxy.DevServerServiceName,
-				Komponent:   proxy.DevServer,
+				Component:   proxy.DevServer,
 				Namespace:   ns,
 				LocalPort:   devServerPort,
 				Scheme:      "http",
@@ -94,7 +94,7 @@ Examples:
 		for _, t := range targets {
 			if err := proxy.CheckPort(t.LocalPort); err != nil {
 				fmt.Fprintf(os.Stderr, "  %s %-14s port %d in use — use --%s-port to set an alternative\n",
-					cmdutil.Red("✗"), t.Label, t.LocalPort, strings.ToLower(t.Komponent))
+					cmdutil.Red("✗"), t.Label, t.LocalPort, strings.ToLower(t.Component))
 				portOK = false
 			}
 		}
@@ -117,18 +117,18 @@ Examples:
 // proxyIncludes tracks which components the user selected via --for.
 type proxyIncludes struct {
 	runtime   bool
-	cc        bool
+	console   bool
 	gateway   bool
 	devServer bool
 }
 
 // proxyComponentsFromFor parses the --for flag using the same vocabulary as
-// ork generate bundle --for: runtime (run), gateway (gw), cc (controlcenter, control-center).
+// inrun generate bundle --for: runtime (run), gateway (gw), console.
 // An absent flag means all three components.
 func proxyComponentsFromFor(cmd *cobra.Command) (proxyIncludes, error) {
 	forVal, _ := cmd.Flags().GetString("for")
 	if forVal == "" {
-		return proxyIncludes{runtime: true, cc: true, gateway: true, devServer: true}, nil
+		return proxyIncludes{runtime: true, console: true, gateway: true, devServer: true}, nil
 	}
 	var inc proxyIncludes
 	var unknown []string
@@ -142,8 +142,8 @@ func proxyComponentsFromFor(cmd *cobra.Command) (proxyIncludes, error) {
 			inc.runtime = true
 		case "gw", "gateway":
 			inc.gateway = true
-		case "cc", "controlcenter", "control-center":
-			inc.cc = true
+		case "console":
+			inc.console = true
 		case "dev", "devserver", "dev-server":
 			inc.devServer = true
 		default:
@@ -152,20 +152,20 @@ func proxyComponentsFromFor(cmd *cobra.Command) (proxyIncludes, error) {
 	}
 	if len(unknown) > 0 {
 		return proxyIncludes{}, fmt.Errorf(
-			"orkestra: unknown --for value(s): %s\n\nValid values are:\n"+
+			"inrun: unknown --for value(s): %s\n\nValid values are:\n"+
 				"  runtime   	(alias: run)          	— reconcilers, leader election\n"+
 				"  gateway   	(alias: gw)            	— TLS, admission webhooks\n"+
-				"  cc        	(alias: controlcenter) 	— control center\n\n"+
+				"  console   					— console\n\n"+
 				"  devServer 	(alias: devserver)		— dev server\n\n"+
 				"Example: --for gateway\n"+
-				"         --for runtime,cc",
+				"         --for runtime,console",
 			strings.Join(unknown, ", "),
 		)
 	}
-	if !inc.runtime && !inc.cc && !inc.gateway && !inc.devServer {
+	if !inc.runtime && !inc.console && !inc.gateway && !inc.devServer {
 		return proxyIncludes{}, fmt.Errorf(
-			"orkestra: --for produced an empty component list\n\n" +
-				"Valid values are: runtime (run), gateway (gw), cc (controlcenter, control-center) devserver (dev, devserver, dev-server)",
+			"inrun: --for produced an empty component list\n\n" +
+				"Valid values are: runtime (run), gateway (gw), console devserver (dev, devserver, dev-server)",
 		)
 	}
 	return inc, nil
@@ -175,8 +175,8 @@ func proxyComponentsFromFor(cmd *cobra.Command) (proxyIncludes, error) {
 // kubeconfig. Respects the --kubeconfig flag (via kfg) and an explicit context override.
 func buildProxyClient(kubeContext string) (*rest.Config, kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	if cmdutil.Kfg != nil && cmdutil.Kfg.Cluster().KubekonfigPath() != "" {
-		loadingRules.ExplicitPath = cmdutil.Kfg.Cluster().KubekonfigPath()
+	if cmdutil.Kfg != nil && cmdutil.Kfg.Cluster().KubeconfigPath() != "" {
+		loadingRules.ExplicitPath = cmdutil.Kfg.Cluster().KubeconfigPath()
 	}
 	overrides := &clientcmd.ConfigOverrides{}
 	if kubeContext != "" {
@@ -198,14 +198,14 @@ func buildProxyClient(kubeContext string) (*rest.Config, kubernetes.Interface, e
 func init() {
 	cmdutil.RootCmd.AddCommand(proxyCmd)
 
-	proxyCmd.Flags().StringP("namespace", "n", cmdutil.DefaultNamespace(), "Namespace where Orkestra is deployed")
-	proxyCmd.Flags().String("for", "", "Comma-separated components to forward: runtime (run), gateway (gw), cc (controlcenter, control-center)")
+	proxyCmd.Flags().StringP("namespace", "n", cmdutil.DefaultNamespace(), "Namespace where Inrun is deployed")
+	proxyCmd.Flags().String("for", "", "Comma-separated components to forward: runtime (run), gateway (gw), console")
 	proxyCmd.Flags().Int("runtime-port", 8080, "Local port for Runtime")
-	proxyCmd.Flags().Int("cc-port", 8081, "Local port for Control Center")
+	proxyCmd.Flags().Int("console-port", 8081, "Local port for Console")
 	proxyCmd.Flags().Int("gateway-port", 8443, "Local port for Gateway")
 	proxyCmd.Flags().Int("dev-server-port", 9999, "Local port for Dev Server")
 	proxyCmd.Flags().String("context", "", "Kubernetes context to use")
 
-	// Shadow global flags so they don't appear under `ork proxy`
+	// Shadow global flags so they don't appear under `inrun proxy`
 	cmdutil.ShadowGlobalCommandFlags(proxyCmd, "file")
 }

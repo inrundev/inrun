@@ -5,10 +5,10 @@ package gate
 import (
 	"fmt"
 
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator/prepare"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // AdmissionViolation is a single fired validation rule — deny or warn.
@@ -73,18 +73,18 @@ func applyMutationPreviews(obj map[string]interface{}, previews []AdmissionMutat
 
 // EvalAdmissionValidation runs validation.rules against obj and returns the
 // result. It does not print — callers format the output for their context.
-func EvalAdmissionValidation(obj map[string]interface{}, crd *orktypes.CRDEntry, resolver *orktmpl.Resolver, eval orktypes.TemplateEvaluator) AdmissionValidationResult {
+func EvalAdmissionValidation(obj map[string]interface{}, crd *types.CRDEntry, resolver *template.Resolver, eval types.TemplateEvaluator) AdmissionValidationResult {
 	if !crd.HasValidationRules() {
 		return AdmissionValidationResult{}
 	}
 	validation := crd.EffectiveValidation()
 	result := AdmissionValidationResult{Total: len(validation.Rules)}
 	for _, rule := range validation.Rules {
-		if !orktypes.EvaluateConditions(obj, rule.When, rule.Or, eval) {
+		if !types.EvaluateConditions(obj, rule.When, rule.Or, eval) {
 			result.Passed++
 			continue
 		}
-		v := orktypes.EvaluateValidationRule(obj, resolver, rule)
+		v := types.EvaluateValidationRule(obj, resolver, rule)
 		if v == nil {
 			result.Passed++
 			continue
@@ -100,22 +100,22 @@ func EvalAdmissionValidation(obj map[string]interface{}, crd *orktypes.CRDEntry,
 
 // EvalAdmissionMutation previews mutation.rules against obj and returns what
 // would be applied. It does not print — callers format the output.
-func EvalAdmissionMutation(obj map[string]interface{}, crd *orktypes.CRDEntry, resolver *orktmpl.Resolver, eval orktypes.TemplateEvaluator) AdmissionMutationResult {
+func EvalAdmissionMutation(obj map[string]interface{}, crd *types.CRDEntry, resolver *template.Resolver, eval types.TemplateEvaluator) AdmissionMutationResult {
 	var result AdmissionMutationResult
 	if !crd.HasMutationRules() {
 		return result
 	}
 	for _, rule := range crd.EffectiveMutation().Rules {
-		if !orktypes.EvaluateConditions(obj, rule.When, rule.Or, eval) {
+		if !types.EvaluateConditions(obj, rule.When, rule.Or, eval) {
 			continue
 		}
 		field := rule.Field
-		if orktypes.IsTemplate(field) {
+		if types.IsTemplate(field) {
 			if resolved, err := resolver.Resolve(field); err == nil {
 				field = resolved
 			}
 		}
-		currentVal, found := orktypes.ResolveScalarField(obj, field)
+		currentVal, found := types.ResolveScalarField(obj, field)
 		desired, mutType, err := prepare.ResolveRuleValue(rule, found, currentVal, resolver)
 		if err != nil || desired == nil {
 			continue

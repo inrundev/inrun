@@ -3,7 +3,7 @@
 # Restricted response — no raw CR, only the fields callers need to act.
 # Provenance fields are included so callers can verify which surface was used.
 tokens:
-  control-center:
+  console:
     permissions:
       global: [get, list]
 

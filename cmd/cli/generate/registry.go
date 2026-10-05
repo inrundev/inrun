@@ -10,16 +10,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/tools/generate"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/tools/generate"
 	"github.com/spf13/cobra"
 )
 
 // Generate 'pkg/typeregistry/zz_generated_typeregistry.go' for one or more operator projects.
 //
-// This command scans a Katalog, resolves all CRDs, typed extensions, and
+// This command scans a Catalog, resolves all CRDs, typed extensions, and
 // managed‑resource contracts, and produces a complete runtime registry:
 //
 //   - CRD registrations
@@ -31,7 +31,7 @@ import (
 //
 //	pkg/typeregistry/zz_generated_typeregistry.go
 //
-// A matching cmd/orkestra/main.go file is also ensured, containing the required
+// A matching cmd/inrun/main.go file is also ensured, containing the required
 // blank import for the runtime package.
 //
 // The command supports both single‑project and multi‑project generation:
@@ -43,30 +43,30 @@ import (
 // Examples:
 //
 //	# Generate registry for the current project
-//	ork generate registry --file katalog.yaml
+//	inrun generate registry --file catalog.yaml
 //
-//	# Generate registry for a specific katalog file
-//	ork generate registry --file path/to/katalog.yaml
+//	# Generate registry for a specific catalog file
+//	inrun generate registry --file path/to/catalog.yaml
 //
 //	# Generate registry for multiple operator projects
-//	ork generate registry --dirs ./website,./database,./pipeline
+//	inrun generate registry --dirs ./website,./database,./pipeline
 //
 //	# Dry‑run (print generated files without writing them)
-//	ork generate registry --file katalog.yaml --dry-run
+//	inrun generate registry --file catalog.yaml --dry-run
 //
 // Each project directory must contain:
 //   - go.mod
-//   - a katalog.yaml (or --file pointing to one)
+//   - a catalog.yaml (or --file pointing to one)
 //   - pkg/typeregistry/ (created automatically if missing)
 //
 // The generated registry is deterministic and reflects the exact typed‑mode
-// contracts declared in the Katalog (hooks, constructors, operatorBox).
+// contracts declared in the Catalog (hooks, constructors, operatorBox).
 var generateRegistryCmd = &cobra.Command{
 	Use:   "registry",
-	Short: "Generate 'pkg/typeregistry/zz_generated_typeregistry.go' from a Katalog",
-	Long: `Generate the Orkestra runtime registry for one or multiple operator projects.
+	Short: "Generate 'pkg/typeregistry/zz_generated_typeregistry.go' from a Catalog",
+	Long: `Generate the Inrun runtime registry for one or multiple operator projects.
 
-This command scans a Katalog, resolves all CRDs, typed extensions, and
+This command scans a Catalog, resolves all CRDs, typed extensions, and
 managed‑resource contracts, and produces the runtime registry used by the
 operator process. The registry includes:
 
@@ -78,7 +78,7 @@ operator process. The registry includes:
 The registry is written to:
   pkg/typeregistry/zz_generated_typeregistry.go
 
-A matching cmd/orkestra/main.go file is also ensured, containing the required
+A matching cmd/inrun/main.go file is also ensured, containing the required
 blank import for the runtime package.
 
 You can generate the registry for the current project, or for multiple operator
@@ -86,20 +86,20 @@ projects in one invocation using --dirs.
 
 Examples:
   # Generate registry for the current project
-  ork generate registry --file katalog.yaml
+  inrun generate registry --file catalog.yaml
 
-  # Generate registry for a specific katalog file
-  ork generate registry --file path/to/katalog.yaml
+  # Generate registry for a specific catalog file
+  inrun generate registry --file path/to/catalog.yaml
 
   # Generate registries for multiple operator projects
-  ork generate registry --dirs ./database,./pipeline --file komposer.yaml
+  inrun generate registry --dirs ./database,./pipeline --file stack.yaml
 
   # Dry-run (print generated files without writing them)
-  ork generate registry --file katalog.yaml --dry-run
+  inrun generate registry --file catalog.yaml --dry-run
 
 Each project directory must contain:
   • go.mod
-  • a katalog.yaml
+  • a catalog.yaml
   • pkg/typeregistry/ (created automatically if missing)`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -135,10 +135,10 @@ func generateRegistryForDir(dir string, cmd *cobra.Command, perModuleTimeout tim
 		return fmt.Errorf("chdir %s: %w", dir, err)
 	}
 
-	// Load katalog (from --file or default)
-	out, err := cmdutil.GenerateKatalog(cmd)
+	// Load catalog (from --file or default)
+	out, err := cmdutil.GenerateCatalog(cmd)
 	if err != nil {
-		return fmt.Errorf("loading katalog: %w", err)
+		return fmt.Errorf("loading catalog: %w", err)
 	}
 
 	// Validate Go project
@@ -167,7 +167,7 @@ func generateRegistryForDir(dir string, cmd *cobra.Command, perModuleTimeout tim
 	fmt.Printf("  %s %s\n", cmdutil.SuccessMark(), cmdutil.Dim(registryPath))
 
 	// Ensure main.go only when the registry was actually written.
-	mainGoPath := filepath.Join("cmd", "orkestra", "main.go")
+	mainGoPath := filepath.Join("cmd", "inrun", "main.go")
 	if err := ensureMainGo(root, moduleName, dryRun); err != nil {
 		fmt.Fprintf(os.Stderr, "  %s main.go: %v\n", cmdutil.FailureMark(), err)
 	} else {
@@ -203,34 +203,34 @@ func validateProject() (string, string, error) {
 	return root, moduleName, nil
 }
 
-// ensureMainGo writes cmd/orkestra/main.go with the required blank import.
+// ensureMainGo writes cmd/inrun/main.go with the required blank import.
 func ensureMainGo(root, moduleName string, dryRun bool) error {
-	targetDir := filepath.Join(root, "cmd", "orkestra")
+	targetDir := filepath.Join(root, "cmd", "inrun")
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		return fmt.Errorf("creating cmd/orkestra: %w", err)
+		return fmt.Errorf("creating cmd/inrun: %w", err)
 	}
 	mainPath := filepath.Join(targetDir, "main.go")
 
 	timestamp := time.Now().UTC().Format(time.RFC3339)
 	importLine := fmt.Sprintf(`_ "%s/pkg/typeregistry"`, moduleName)
 
-	content := fmt.Sprintf(`// Code generated by "ork generate registry" on %s. DO NOT EDIT.
-// Re-generate by running: ork generate registry --file <path-or-url>
+	content := fmt.Sprintf(`// Code generated by "inrun generate registry" on %s. DO NOT EDIT.
+// Re-generate by running: inrun generate registry --file <path-or-url>
 package main
 
 import (
     "context"
 
-    "github.com/orkspace/orkestra/cmd/cli"
-    "github.com/orkspace/orkestra/pkg/konfig"
-    "github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/utils"
+    "github.com/inrundev/inrun/cmd/cli"
+    "github.com/inrundev/inrun/pkg/config"
+    "github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/utils"
 
     %s
 )
 
 func main() {
-    kfg, err := konfig.Init()
+    kfg, err := config.Init()
     if err != nil {
         logger.Fatal().AnErr("failed to load configurations", err)
         utils.Exit(err)

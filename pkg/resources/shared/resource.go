@@ -2,9 +2,9 @@
 package shared
 
 import (
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -12,7 +12,7 @@ import (
 // ResolveResources resolves resource requirements: if resources.profile is set
 // it expands to explicit requests/limits; otherwise the block is returned as-is.
 // Returns nil when neither profile nor explicit values are declared.
-func ResolveResources(r *orktypes.ResourceRequirements, reg *orktypes.ProfileRegistry) *orktypes.ResourceRequirements {
+func ResolveResources(r *types.ResourceRequirements, reg *types.ProfileRegistry) *types.ResourceRequirements {
 	if r == nil {
 		return nil
 	}
@@ -30,9 +30,9 @@ func ResolveResources(r *orktypes.ResourceRequirements, reg *orktypes.ProfileReg
 	return r
 }
 
-// BuildResourceRequirements converts an Orkestra ResourceRequirements spec into a
+// BuildResourceRequirements converts an Inrun ResourceRequirements spec into a
 // Kubernetes corev1.ResourceRequirements object.
-func BuildResourceRequirements(r *orktypes.ResourceRequirements) corev1.ResourceRequirements {
+func BuildResourceRequirements(r *types.ResourceRequirements) corev1.ResourceRequirements {
 	req := corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{},
 		Limits:   corev1.ResourceList{},

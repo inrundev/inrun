@@ -13,16 +13,16 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	oidcpkg "github.com/orkspace/orkestra/pkg/gateway/oidc"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	oidcpkg "github.com/inrundev/inrun/pkg/gateway/oidc"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/spf13/cobra"
 )
 
 const fileToken = "token.jwt"
 
-// ── ork token ─────────────────────────────────────────────────────────────────
+// ── inrun token ─────────────────────────────────────────────────────────────────
 
 var tokenCmd = &cobra.Command{
 	Use:   "token",
@@ -35,24 +35,24 @@ Subcommands:
   list      List all configured token entries`,
 }
 
-// ── ork token verify ──────────────────────────────────────────────────────────
+// ── inrun token verify ──────────────────────────────────────────────────────────
 
 var tokenVerifyCmd = &cobra.Command{
 	Use:   "verify",
 	Short: "Verify a JWT against the configured token entries",
-	Long: `Verify a JWT against gateway.api.auth.tokens in the katalog.
+	Long: `Verify a JWT against gateway.api.auth.tokens in the catalog.
 
-Local mode (default): loads the katalog, fetches JWKS from the real provider,
+Local mode (default): loads the catalog, fetches JWKS from the real provider,
 verifies the token signature and claims, and shows which entry matched.
 
 Live mode (--api): sends the token to a running gateway and reports accept/reject.
-Use ork proxy to expose the gateway locally first.
+Use inrun proxy to expose the gateway locally first.
 
 Examples:
-  ork token verify
-  ork token verify -f katalog.yaml -t token.jwt
-  ork token verify --api https://gateway.myorg.io -t token.jwt
-  ork token verify --api http://localhost:8443`,
+  inrun token verify
+  inrun token verify -f catalog.yaml -t token.jwt
+  inrun token verify --api https://gateway.myorg.io -t token.jwt
+  inrun token verify --api http://localhost:8443`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tokenFile, _ := cmd.Flags().GetString("token")
@@ -112,16 +112,16 @@ func runTokenVerifyLocal(cmd *cobra.Command, jwt, audienceOverride, tokenFile st
 		return fmt.Errorf("%s %q does not look like a JWT — could not extract iss claim", cmdutil.FailureMark(), tokenFile)
 	}
 
-	k, err := cmdutil.BuildKatalog(cmd)
+	k, err := cmdutil.BuildCatalog(cmd)
 	if err != nil {
 		return fmt.Errorf("%s %w", cmdutil.FailureMark(), err)
 	}
 
 	if !k.IsGatewayEnabled() || !k.Gateway.HasAPI() || k.Gateway.API.Auth.Empty() {
-		return fmt.Errorf("%s no gateway token auth configured in this katalog", cmdutil.FailureMark())
+		return fmt.Errorf("%s no gateway token auth configured in this catalog", cmdutil.FailureMark())
 	}
 
-	var candidates []orktypes.APIToken
+	var candidates []types.APIToken
 	for _, t := range k.Gateway.API.Auth.Tokens {
 		if t.IsOIDC() && t.OIDCIssuer() == iss {
 			candidates = append(candidates, t)
@@ -193,7 +193,7 @@ func printClaimsTable(claims map[string]string) {
 	w.Flush()
 }
 
-// ── ork token probe ───────────────────────────────────────────────────────────
+// ── inrun token probe ───────────────────────────────────────────────────────────
 
 var tokenProbeCmd = &cobra.Command{
 	Use:   "probe",
@@ -205,8 +205,8 @@ confirming a provider endpoint is reachable before deploying — especially for
 Vault, which uses a non-standard discovery path.
 
 Example:
-  ork token probe --name vault-ci
-  ork token probe -f katalog.yaml --name gh-ci`,
+  inrun token probe --name vault-ci
+  inrun token probe -f catalog.yaml --name gh-ci`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
@@ -214,16 +214,16 @@ Example:
 			return fmt.Errorf("%s --name is required", cmdutil.FailureMark())
 		}
 
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return fmt.Errorf("%s %w", cmdutil.FailureMark(), err)
 		}
 
 		if !k.IsGatewayEnabled() || !k.Gateway.HasAPI() || k.Gateway.API.Auth.Empty() {
-			return fmt.Errorf("%s no gateway token auth configured in this katalog", cmdutil.FailureMark())
+			return fmt.Errorf("%s no gateway token auth configured in this catalog", cmdutil.FailureMark())
 		}
 
-		var entry *orktypes.APIToken
+		var entry *types.APIToken
 		for i, t := range k.Gateway.API.Auth.Tokens {
 			if t.Name == name {
 				entry = &k.Gateway.API.Auth.Tokens[i]
@@ -317,7 +317,7 @@ func probeJWKS(jwksURI string) (int, []string, error) {
 	return len(ks.Keys), algs, nil
 }
 
-// ── ork token list ────────────────────────────────────────────────────────────
+// ── inrun token list ────────────────────────────────────────────────────────────
 
 var tokenListCmd = &cobra.Command{
 	Use:   "list",
@@ -327,11 +327,11 @@ var tokenListCmd = &cobra.Command{
 Shows each token's name, type, provider kind, and allow summary.
 
 Example:
-  ork token list
-  ork token list -f katalog.yaml`,
+  inrun token list
+  inrun token list -f catalog.yaml`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		k, err := cmdutil.BuildKatalog(cmd)
+		k, err := cmdutil.BuildCatalog(cmd)
 		if err != nil {
 			return fmt.Errorf("%s %w", cmdutil.FailureMark(), err)
 		}
@@ -382,7 +382,7 @@ Example:
 	},
 }
 
-func tokenListRow(t orktypes.APIToken) (typ, provider, allow string) {
+func tokenListRow(t types.APIToken) (typ, provider, allow string) {
 	switch {
 	case t.GitHubOIDC != nil:
 		return "oidc", "github", allowSummaryGitHub(t.GitHubOIDC.Allow)
@@ -405,7 +405,7 @@ func tokenListRow(t orktypes.APIToken) (typ, provider, allow string) {
 	}
 }
 
-func allowSummaryGitHub(a orktypes.GitHubOIDCClaims) string {
+func allowSummaryGitHub(a types.GitHubOIDCClaims) string {
 	var parts []string
 	if a.Repository != "" {
 		parts = append(parts, "repository="+a.Repository)
@@ -428,7 +428,7 @@ func allowSummaryGitHub(a orktypes.GitHubOIDCClaims) string {
 	return strings.Join(parts, " ")
 }
 
-func allowSummaryGitLab(a orktypes.GitLabOIDCClaims) string {
+func allowSummaryGitLab(a types.GitLabOIDCClaims) string {
 	var parts []string
 	if a.NamespacePath != "" {
 		parts = append(parts, "namespacePath="+a.NamespacePath)
@@ -442,7 +442,7 @@ func allowSummaryGitLab(a orktypes.GitLabOIDCClaims) string {
 	return strings.Join(parts, " ")
 }
 
-func allowSummaryVault(v *orktypes.VaultOIDC) string {
+func allowSummaryVault(v *types.VaultOIDC) string {
 	parts := []string{"url=" + v.URL}
 	if v.Allow.EntityName != "" {
 		parts = append(parts, "entityName="+v.Allow.EntityName)

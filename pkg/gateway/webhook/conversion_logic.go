@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/note"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/note"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // applyConversion converts obj from its current version to targetAPIVersion.
 // targetAPIVersion is the full apiVersion string from the ConversionReview request.
 func applyConversion(
 	obj map[string]interface{},
-	rules *orktypes.ConversionRules,
+	rules *types.ConversionRules,
 	targetAPIVersion string,
 ) (map[string]interface{}, error) {
 	sourceAPIVersion, ok := obj["apiVersion"].(string)
@@ -37,7 +37,7 @@ func applyConversion(
 	if path == nil {
 		return nil, fmt.Errorf(
 			"no conversion path declared for %s → %s in kind %q.\n"+
-				"Add a path to the Katalog:\n"+
+				"Add a path to the Catalog:\n"+
 				"  conversion:\n"+
 				"    paths:\n"+
 				"      - from: %s\n"+
@@ -49,7 +49,7 @@ func applyConversion(
 		)
 	}
 
-	resolver := orktmpl.NewResolverFromMap(obj)
+	resolver := template.NewResolverFromMap(obj)
 	convertedSpec, err := resolveMap(resolver, path.Spec)
 	if err != nil {
 		return nil, fmt.Errorf("converting spec from %s to %s: %w", sourceVersion, targetVersion, err)
@@ -62,7 +62,7 @@ func applyConversion(
 	return out, nil
 }
 
-func resolveMap(r *orktmpl.Resolver, src map[string]interface{}) (map[string]interface{}, error) {
+func resolveMap(r *template.Resolver, src map[string]interface{}) (map[string]interface{}, error) {
 	dst := make(map[string]interface{}, len(src))
 	for k, v := range src {
 		resolved, err := resolveValue(r, v)
@@ -74,7 +74,7 @@ func resolveMap(r *orktmpl.Resolver, src map[string]interface{}) (map[string]int
 	return dst, nil
 }
 
-func resolveValue(r *orktmpl.Resolver, v interface{}) (interface{}, error) {
+func resolveValue(r *template.Resolver, v interface{}) (interface{}, error) {
 	switch tv := v.(type) {
 	case string:
 		resolved, err := r.Resolve(tv)
@@ -92,7 +92,7 @@ func resolveValue(r *orktmpl.Resolver, v interface{}) (interface{}, error) {
 			}
 			return m, nil
 		}
-		if orktypes.IsTemplate(tv) {
+		if types.IsTemplate(tv) {
 			if resolved == "" {
 				return nil, nil
 			}

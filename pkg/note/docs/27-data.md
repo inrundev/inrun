@@ -55,7 +55,7 @@ onCreate:
 
 ### `sha256sum`
 
-Return the first 8 hex characters of the SHA256 hash of a string. The canonical tool for content-addressed naming and change detection in Orkestra — produces a stable, short, collision-resistant fingerprint.
+Return the first 8 hex characters of the SHA256 hash of a string. The canonical tool for content-addressed naming and change detection in Inrun — produces a stable, short, collision-resistant fingerprint.
 
 Keywords: data, hash, sha256, checksum, fingerprint, content, addressed, string
 

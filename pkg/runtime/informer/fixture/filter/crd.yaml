@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: filterprobes.filter.orkestra.io
+  name: filterprobes.filter.inrun.dev
 spec:
-  group: filter.orkestra.io
+  group: filter.inrun.dev
   names:
     kind: FilterProbe
     plural: filterprobes

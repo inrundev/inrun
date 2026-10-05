@@ -1,7 +1,7 @@
 # Default CR — happy path apply.
 # Tests: required fields present, enum valid, app workload type.
 # Apply with: POST /api/v1/apply
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: PlatformResource
 metadata:
   name: payments-api

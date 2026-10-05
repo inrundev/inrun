@@ -1,5 +1,5 @@
 # Exercises: ClusterPolicy (serve disabled) — NetworkPolicy created on reconcile.
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: ClusterPolicy
 metadata:
   name: platform-egress

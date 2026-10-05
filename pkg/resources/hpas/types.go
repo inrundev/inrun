@@ -2,7 +2,7 @@
 package hpas
 
 import (
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ResolvedHPASpec is the fully resolved HorizontalPodAutoscaler specification.
@@ -17,7 +17,7 @@ type ResolvedHPASpec struct {
 
 	// ScaleTargetRef — the target workload this HPA scales.
 	// Supports Deployment, ReplicaSet, StatefulSet, or any scalable resource.
-	ScaleTargetRef orktypes.ScaleTargetRef
+	ScaleTargetRef types.ScaleTargetRef
 
 	// MinReplicas — minimum pod replica count. Default: 1.
 	MinReplicas int32
@@ -30,12 +30,12 @@ type ResolvedHPASpec struct {
 	TargetCPUUtilizationPercentage int32
 
 	// Labels applied to HPA metadata.
-	// Orkestra always adds: managed-by=orkestra, orkestra-owner=<cr-name>
+	// Inrun always adds: managed-by=inrun, inrun-owner=<cr-name>
 	Labels map[string]string
 
 	// Behavior — fully resolved scaling behavior. nil means use Kubernetes defaults.
 	// When behavior.profile was declared, it is expanded here at resolve time.
-	Behavior *orktypes.HPABehavior
+	Behavior *types.HPABehavior
 
 	// Sleep injects an artificial delay into the reconcile of this resource.
 	// Useful for autoscale testing, latency simulation, and chaos engineering.

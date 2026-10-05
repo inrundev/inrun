@@ -1,6 +1,6 @@
 // pkg/runners/secret_tls.go
 //
-// TLS certificate generation and secret rotation for Orkestra secrets.
+// TLS certificate generation and secret rotation for Inrun secrets.
 //
 // Extends the once: true pattern with:
 //   - rotateAfter: <duration> — time-based rotation using a generated-at annotation
@@ -8,8 +8,8 @@
 //
 // The generated Secret is annotated with:
 //
-//	orkestra.orkspace.io/generated-at: "2026-04-06T08:00:00Z"
-//	orkestra.orkspace.io/rotate-after: "90d"
+//	inrun.dev/generated-at: "2026-04-06T08:00:00Z"
+//	inrun.dev/rotate-after: "90d"
 //
 // On each reconcile, secretNeedsRotation reads these annotations and returns
 // true when the threshold is crossed. The caller deletes and recreates.
@@ -29,12 +29,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/gateway/certmanager"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	"github.com/orkspace/orkestra/pkg/secrets"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/gateway/certmanager"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/secrets"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -55,7 +55,7 @@ func GenerationAnnotations(rotateAfter string) map[string]string {
 }
 
 // createTLSSecret creates a kubernetes.io/tls Secret from a TLSBundle.
-// The Secret name defaults to "owner.GetName()-orkestra-tls" when src.Name resolves to "".
+// The Secret name defaults to "owner.GetName()-inrun-tls" when src.Name resolves to "".
 func createTLSSecret(
 	ctx context.Context,
 	kube kubeclient.Interface,
@@ -64,7 +64,7 @@ func createTLSSecret(
 	bundle *certmanager.TLSBundle,
 ) error {
 	if name == "" {
-		name = owner.GetName() + "-orkestra-tls"
+		name = owner.GetName() + "-inrun-tls"
 	}
 
 	annotations := GenerationAnnotations(rotateAfter)
@@ -75,8 +75,8 @@ func createTLSSecret(
 			Namespace:   namespace,
 			Annotations: annotations,
 			Labels: map[string]string{
-				"orkestra-owner":               owner.GetName(),
-				"app.kubernetes.io/managed-by": "orkestra",
+				"inrun-owner":                  owner.GetName(),
+				"app.kubernetes.io/managed-by": "inrun",
 			},
 			OwnerReferences: shared.ResolveOwnerReferences(owner),
 		},

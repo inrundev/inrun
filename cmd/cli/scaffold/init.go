@@ -7,15 +7,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/orkspace/orkestra/cmd/cli/cmdutil"
+	"github.com/inrundev/inrun/cmd/cli/cmdutil"
 
-	"github.com/orkspace/orkestra/pkg/version"
+	"github.com/inrundev/inrun/pkg/version"
 	"github.com/spf13/cobra"
 )
 
 var initCmd = &cobra.Command{
 	Use:   "init [project-name]",
-	Short: "Initialize a new Orkestra operator project",
+	Short: "Initialize a new Inrun operator project",
 	Args: func(cmd *cobra.Command, args []string) error {
 		list, _ := cmd.Flags().GetBool("list")
 		clear, _ := cmd.Flags().GetBool("clear-cache")
@@ -25,7 +25,7 @@ var initCmd = &cobra.Command{
 		}
 
 		if len(args) > 1 {
-			return fmt.Errorf("too many arguments — usage: ork init [project-name]")
+			return fmt.Errorf("too many arguments — usage: inrun init [project-name]")
 		}
 
 		return nil
@@ -68,7 +68,7 @@ func initCanonical(name string) error {
 	if !isCurrentDirectory(name) {
 		steps = append(steps, initStep{"Creating project folder", func() error { return os.MkdirAll(name, 0755) }})
 	}
-	steps = append(steps, initStep{"Writing katalog.yaml", func() error { return extractCanonical(name) }})
+	steps = append(steps, initStep{"Writing catalog.yaml", func() error { return extractCanonical(name) }})
 
 	if err := runSteps(steps); err != nil {
 		return err
@@ -83,9 +83,9 @@ func initCanonical(name string) error {
 	if !isCurrentDirectory(name) {
 		fmt.Printf("  cd %s\n", name)
 	}
-	fmt.Printf("  ork run\n\n")
+	fmt.Printf("  inrun\n\n")
 	fmt.Println("To explore example packs:")
-	fmt.Printf("  ork init %s --pack declarative\n", label)
+	fmt.Printf("  inrun init %s --pack declarative\n", label)
 
 	return nil
 }
@@ -157,13 +157,13 @@ func initProject(name, pack string, refresh bool) error {
 	}
 
 	if p.Name == "declarative" {
-		fmt.Printf("  ork run\n\n")
+		fmt.Printf("  inrun\n\n")
 	} else {
 		fmt.Printf("  Follow the steps in the README\n\n")
 	}
 
-	fmt.Println("Control Center:")
-	fmt.Printf("  ork control    # open localhost:8081 (username:password → orkestra)\n\n")
+	fmt.Println("Console:")
+	fmt.Printf("  inrun console    # open localhost:8081 (username:password → inrun)\n\n")
 
 	return nil
 }
@@ -178,11 +178,11 @@ func listPacks() error {
 	}
 
 	fmt.Printf("\nNo pack — canonical hello-website operator:\n")
-	fmt.Printf("  ork init              # init in current directory\n")
-	fmt.Printf("  ork init my-operator  # init in new folder\n\n")
+	fmt.Printf("  inrun init              # init in current directory\n")
+	fmt.Printf("  inrun init my-operator  # init in new folder\n\n")
 	fmt.Printf("With a pack:\n")
-	fmt.Printf("  ork init --pack <name>\n")
-	fmt.Printf("  ork init my-operator --pack <name>\n")
+	fmt.Printf("  inrun init --pack <name>\n")
+	fmt.Printf("  inrun init my-operator --pack <name>\n")
 
 	return nil
 }
@@ -194,6 +194,6 @@ func init() {
 	initCmd.Flags().Bool("clear-cache", false, "Clear cached example packs")
 	initCmd.Flags().Bool("refresh-cache", false, "Fetch pack from GitHub Releases instead of using the built-in copy")
 
-	// Shadow global flags so they don't appear under `ork init`
+	// Shadow global flags so they don't appear under `inrun init`
 	cmdutil.ShadowGlobalCommandFlags(initCmd, "file")
 }

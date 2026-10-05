@@ -9,15 +9,15 @@ type DeletionProtectionOverride struct {
 	ProtectCRD *bool `yaml:"protectCRD,omitempty" json:"protectCRD,omitempty"`
 
 	// ProtectCRs determines whether instances of this CRD are protected
-	// from deletion (via the orkestra.io/deletion-protection label).
+	// from deletion (via the inrun.dev/deletion-protection label).
 	// Default true.
 	ProtectCRs *bool `yaml:"protectCRs,omitempty" json:"protectCRs,omitempty"`
 
 	// StrictMode controls whether removing the deletion-protection label from a resource
 	// is itself treated as a deletion attempt and blocked.
 	// When true, the only way to remove the label (and thus unprotect a resource) is to
-	// disable strictMode in the Katalog and restart Orkestra Gateway.
-	// Default: katalog level strictMode.
+	// disable strictMode in the Catalog and restart Inrun Gateway.
+	// Default: catalog level strictMode.
 	StrictMode *bool `yaml:"strictMode,omitempty" json:"strictMode,omitempty"`
 }
 
@@ -55,8 +55,8 @@ func (c *CRDEntry) ShouldProtectCRs() bool {
 }
 
 // IsStrictDeletionProtection returns whether strict deletion-protection semantics apply.
-func (c *CRDEntry) IsStrictDeletionProtection(katalogStrictMode bool) bool {
-	if !katalogStrictMode {
+func (c *CRDEntry) IsStrictDeletionProtection(catalogStrictMode bool) bool {
+	if !catalogStrictMode {
 		return false
 	}
 	dp := c.deletionProtection()
