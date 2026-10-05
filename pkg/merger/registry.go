@@ -34,21 +34,28 @@ import (
 
 const orasPullTimeout = 2 * time.Minute
 
-// knownPatternFiles is the complete set of files a pattern may contain.
-// All are attempted during Git pulls; presence is validated after pull
-// by validatePatternStructure using the kind-specific required/optional rules.
-var knownPatternFiles = []string{
-	pkgregistry.FileKatalog,
-	pkgregistry.FileMotif,
-	pkgregistry.FileCRD,
-	pkgregistry.FileReadme,
-	pkgregistry.FileCR,
-	pkgregistry.FileE2E,
-	pkgregistry.FileSimulate,
-	pkgregistry.FileGoMod,
-	pkgregistry.FileGoSum,
-	pkgregistry.FileMakefile,
-}
+// knownPatternFiles is every path a pattern file may have, at the root or in
+// its group directory. All are attempted during Git pulls; presence is
+// validated after pull by validatePatternStructure using the kind-specific
+// required/optional rules.
+var knownPatternFiles = func() []string {
+	var out []string
+	for _, f := range []string{
+		pkgregistry.FileKatalog,
+		pkgregistry.FileMotif,
+		pkgregistry.FileCRD,
+		pkgregistry.FileReadme,
+		pkgregistry.FileCR,
+		pkgregistry.FileE2E,
+		pkgregistry.FileSimulate,
+		pkgregistry.FileGoMod,
+		pkgregistry.FileGoSum,
+		pkgregistry.FileMakefile,
+	} {
+		out = append(out, pkgregistry.PatternFilePaths(f)...)
+	}
+	return out
+}()
 
 // loadRegistrySource loads a single registry pattern entry.
 //
@@ -344,7 +351,7 @@ func (m *Merger) pullGitHubPattern(url, version, tmpDir string, auth *utils.File
 		if err != nil {
 			continue // file not present in this pattern — validated after pull
 		}
-		if err := os.WriteFile(filepath.Join(tmpDir, filename), data, 0644); err != nil {
+		if err := writePatternFile(tmpDir, filename, data); err != nil {
 			return fmt.Errorf("writing %q: %w", filename, err)
 		}
 	}
@@ -359,7 +366,7 @@ func (m *Merger) pullGitLabPattern(url, version, tmpDir string, auth *utils.File
 		if err != nil {
 			continue
 		}
-		if err := os.WriteFile(filepath.Join(tmpDir, filename), data, 0644); err != nil {
+		if err := writePatternFile(tmpDir, filename, data); err != nil {
 			return fmt.Errorf("writing %q: %w", filename, err)
 		}
 	}
@@ -384,7 +391,7 @@ func pullGenericGitPattern(url, version, tmpDir string, auth *utils.FileAuth) er
 		if err != nil {
 			continue
 		}
-		if err := os.WriteFile(filepath.Join(tmpDir, filename), data, 0644); err != nil {
+		if err := writePatternFile(tmpDir, filename, data); err != nil {
 			return fmt.Errorf("copying %q: %w", filename, err)
 		}
 	}
@@ -520,4 +527,14 @@ func resolveRegistryAuth(auth *orktypes.FileSourceAuth) (*utils.FileAuth, error)
 		return nil, nil
 	}
 	return auth.Resolve()
+}
+
+// writePatternFile writes a pulled pattern file under dir, creating its group
+// directory when the path has one.
+func writePatternFile(dir, rel string, data []byte) error {
+	dst := filepath.Join(dir, rel)
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0644)
 }

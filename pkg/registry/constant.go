@@ -39,6 +39,12 @@ const (
 	FileIntentYAML = "intent.yaml"
 	FileIntentJSON = "intent.json"
 
+	// DirManifests and DirTest group a pattern's files: crd.yaml and cr.yaml
+	// in manifests/, simulate.yaml and e2e.yaml in test/. The root is also
+	// accepted for each.
+	DirManifests = "manifests"
+	DirTest      = "test"
+
 	// FileGoMod, FileGoSum, and FileMakefile are the typed operator build files.
 	// Present only in typed (hooks/constructor) patterns.
 	FileGoMod    = "go.mod"

@@ -89,8 +89,8 @@ func ValidatePatternDirectory(dir string) (PatternKind, *PatternSpec, []string, 
 		files = append(files, f)
 	}
 	for _, f := range spec.OptionalFiles {
-		if _, err := os.Stat(filepath.Join(dir, f)); err == nil {
-			files = append(files, f)
+		if rel := FindPatternFile(dir, f); rel != "" {
+			files = append(files, rel)
 		}
 	}
 
@@ -166,7 +166,7 @@ func kind(k PatternKind) string {
 // mediaTypeForPatternFile returns the OCI layer media type for a file within
 // a specific pattern kind.
 func mediaTypeForPatternFile(name string, k PatternKind) string {
-	switch name {
+	switch filepath.Base(name) {
 	case FileKatalog:
 		return "application/vnd.orkestra.katalog.v1+yaml"
 	case FileCRD:
@@ -188,4 +188,33 @@ func mediaTypeForPatternFile(name string, k PatternKind) string {
 	default:
 		return "application/octet-stream"
 	}
+}
+
+// groupDir is the directory a pattern file may live in besides the root:
+// what is applied to the cluster in manifests/, simulate and e2e specs in test/.
+var groupDir = map[string]string{
+	FileCRD:      DirManifests,
+	FileCR:       DirManifests,
+	FileE2E:      DirTest,
+	FileSimulate: DirTest,
+}
+
+// PatternFilePaths returns the relative paths name may have in a pattern:
+// the root, then its group directory.
+func PatternFilePaths(name string) []string {
+	if d, ok := groupDir[name]; ok {
+		return []string{name, filepath.Join(d, name)}
+	}
+	return []string{name}
+}
+
+// FindPatternFile returns the relative path of name within dir, or "" when
+// the pattern does not have it.
+func FindPatternFile(dir, name string) string {
+	for _, rel := range PatternFilePaths(name) {
+		if _, err := os.Stat(filepath.Join(dir, rel)); err == nil {
+			return rel
+		}
+	}
+	return ""
 }

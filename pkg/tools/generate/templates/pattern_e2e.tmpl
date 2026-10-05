@@ -5,9 +5,9 @@ metadata:
   name: # TODO: operator name
   description: "End-to-end test for <operator>"
 spec:
-  katalog: ./katalog.yaml
-  crd: ./crd.yaml
-  cr: ./cr.yaml
+  katalog: ../katalog.yaml
+  crd: ../manifests/crd.yaml
+  cr: ../manifests/cr.yaml
 {{- if .Typed}}
   valuesFiles:
     - ./values.yaml
