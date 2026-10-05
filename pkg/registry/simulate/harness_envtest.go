@@ -97,10 +97,6 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	if !ok {
 		return nil, fmt.Errorf("CRD %q not found in Katalog", crdName)
 	}
-	if crdEntry.WithRemoteDecl() {
-		return nil, ErrRemoteReconciler
-	}
-
 	result := &Result{}
 	box := effectiveOperatorBox(crdEntry, cr, opts.Target)
 	for _, phase := range []*orktypes.HookTemplates{
@@ -140,7 +136,22 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	// loopKube methods (AdvanceCycle, OpsForCycle, etc.) work correctly.
 	recKube := &managedKube{Interface: realKube, shared: shared}
 
-	// Apply the CR to the real API server before the loop starts.
+	// Apply the CRD's setup objects (e.g. a remote reconciler's token Secret),
+	// then the CR, to the real API server before the loop starts.
+	setup, err := setupObjects(&crdEntry)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range setup {
+		res, err := kubeclient.ResourceFor(recKube, obj)
+		if err != nil {
+			return nil, fmt.Errorf("setup %s %s: %w", obj.GetKind(), obj.GetName(), err)
+		}
+		if _, err := res.Create(ctx, obj, metav1.CreateOptions{}); err != nil {
+			return nil, fmt.Errorf("setup %s %s: %w", obj.GetKind(), obj.GetName(), err)
+		}
+	}
+
 	gvr := crdEntry.GVR()
 	crData, err := json.Marshal(cr.Object)
 	if err != nil {
@@ -237,7 +248,13 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	}
 
 	var r domain.Reconciler
-	if factoryFn, ok := orktypes.ReconcilerRegistry[gvk]; ok {
+	if crdEntry.WithRemoteDecl() {
+		r, err = newRemoteReconciler(&crdEntry, recKube.WithInformer(inf), outsidePodNamespace)
+		if err != nil {
+			return nil, err
+		}
+		result.Notes = append(result.Notes, remoteNote)
+	} else if factoryFn, ok := orktypes.ReconcilerRegistry[gvk]; ok {
 		r = factoryFn(recKube.WithInformer(inf).WithEventRecorder(event.Discard()))
 	} else {
 		r = generic.New(

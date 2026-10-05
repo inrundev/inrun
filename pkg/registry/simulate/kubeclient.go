@@ -2,6 +2,7 @@ package simulate
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -9,8 +10,10 @@ import (
 	"github.com/orkspace/orkestra/domain"
 	"github.com/orkspace/orkestra/pkg/kubeclient"
 	"github.com/orkspace/orkestra/pkg/utils"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8stypes "k8s.io/apimachinery/pkg/types"
@@ -18,6 +21,7 @@ import (
 	fakedynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
@@ -58,6 +62,7 @@ type FakeKubeclient struct {
 	storeFor      func(schema.GroupVersionKind) cache.Store
 	indexerFor    func(schema.GroupVersionKind) cache.Indexer
 	forceConflict *bool
+	tracker       k8stesting.ObjectTracker // seeded objects, read by Get
 }
 
 // dynamicObjects seeds the fake dynamic client's tracker at construction —
@@ -109,12 +114,56 @@ func NewFakeKubeclient(scheme *runtime.Scheme, dynamicObjects ...runtime.Object)
 			At:        time.Now(),
 		})
 		f.shared.mu.Unlock()
+		// The plain object tracker has no server-side apply; answer an apply
+		// with the applied object, as an API server would.
+		if pa, ok := action.(k8stesting.PatchAction); ok && pa.GetPatchType() == k8stypes.ApplyPatchType {
+			u := &unstructured.Unstructured{}
+			if err := u.UnmarshalJSON(pa.GetPatch()); err != nil {
+				return true, nil, err
+			}
+			return true, u, nil
+		}
 		return false, nil, nil
 	})
 	f.dynamic = dyn
+	f.tracker = dyn.Tracker()
 	f.mapper = &fakeMapper{}
 
 	return f
+}
+
+// Seed adds objects that exist before the operator starts (a CRD's setup
+// files). Built-in kinds go to the typed clientset, so reads such as a
+// remote reconciler's token Secret find them; everything else goes to the
+// dynamic tracker.
+func (f *FakeKubeclient) Seed(objs ...*unstructured.Unstructured) error {
+	for _, u := range objs {
+		gvk := u.GroupVersionKind()
+		typed, err := clientgoscheme.Scheme.New(gvk)
+		if err != nil {
+			if err := f.tracker.Add(u); err != nil {
+				return fmt.Errorf("seed %s %s: %w", gvk.Kind, u.GetName(), err)
+			}
+			continue
+		}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, typed); err != nil {
+			return fmt.Errorf("seed %s %s: %w", gvk.Kind, u.GetName(), err)
+		}
+		// The API server folds stringData into data; do the same.
+		if sec, ok := typed.(*corev1.Secret); ok && len(sec.StringData) > 0 {
+			if sec.Data == nil {
+				sec.Data = map[string][]byte{}
+			}
+			for k, v := range sec.StringData {
+				sec.Data[k] = []byte(v)
+			}
+			sec.StringData = nil
+		}
+		if err := f.clientset.(*fake.Clientset).Tracker().Add(typed); err != nil {
+			return fmt.Errorf("seed %s %s: %w", gvk.Kind, u.GetName(), err)
+		}
+	}
+	return nil
 }
 
 func (f *FakeKubeclient) Clientset() kubernetes.Interface  { return f.clientset }
@@ -372,8 +421,16 @@ func (f *FakeKubeclient) PatchAnnotations(_ context.Context, obj runtime.Object,
 	f.shared.mu.Unlock()
 	// Persist to the in-memory object so subsequent cycles see the update
 	// and the idempotency guard in ensureManagedAnnotations skips the patch.
+	// A merge patch adds to the existing annotations; it does not replace them.
 	if mo, ok := obj.(metav1.Object); ok {
-		mo.SetAnnotations(annotations)
+		merged := mo.GetAnnotations()
+		if merged == nil {
+			merged = map[string]string{}
+		}
+		for k, v := range annotations {
+			merged[k] = v
+		}
+		mo.SetAnnotations(merged)
 	}
 	return nil
 }

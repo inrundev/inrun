@@ -1,23 +1,3 @@
-// Package e2e implements the orchestration loop for `ork e2e`.
-//
-// A Runner executes a declarative E2E spec through its full lifecycle:
-//
-//  1. Cluster provisioning (kind) — skipped when --use-current or --cluster is set
-//  2. CRD apply
-//  3. Optional setup manifests
-//  4. Bundle generate + apply
-//  5. Orkestra helm install
-//  6. CR apply
-//  7. Expectation polling
-//  8. Teardown — always runs for non-owned clusters (--use-current, --cluster);
-//     for owned clusters only when --keep-cluster is absent
-//
-// Teardown reverses every applied resource in the correct order:
-// CR delete → helm uninstall → bundle delete → setup helm (reverse) → setup files (reverse) → CRDs.
-// This keeps borrowed clusters clean regardless of pass/fail.
-//
-// Run returns a *Result with per-case timings that callers (e.g. registry push)
-// embed as OCI annotations.
 package e2e
 
 import (
@@ -193,8 +173,9 @@ func (r *Runner) resolveSource() error {
 			r.crFiles = append(r.crFiles, r.abs(p))
 		}
 
-	case spec.Katalog != "" && r.noRuntime:
-		// --no-runtime: katalog without a CR is valid — the gateway drives expectations.
+	case spec.Katalog != "":
+		// Katalog without a CR: the CRs come from the gateway (an intent sent
+		// by an expectation) or from the expectations themselves.
 		r.katalogFile = r.abs(spec.Katalog)
 
 	case spec.Custom != nil && spec.Custom.Target != "":
@@ -208,7 +189,7 @@ func (r *Runner) resolveSource() error {
 		return nil
 
 	default:
-		return fmt.Errorf("e2e spec must declare either (katalog + cr) or init, or have imports")
+		return fmt.Errorf("e2e spec must declare a katalog, init or custom target, or have imports")
 	}
 
 	if r.katalogFile != "" {

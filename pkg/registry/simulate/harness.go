@@ -101,10 +101,6 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	if !ok {
 		return nil, fmt.Errorf("CRD %q not found in Katalog", crdName)
 	}
-	if crdEntry.WithRemoteDecl() {
-		return nil, ErrRemoteReconciler
-	}
-
 	// Strip cross-namespace copy resources (fromNamespace / toNamespaces) from
 	// all hook phases before the fake reconciler runs. These require a live API
 	// server to read the source object; in simulation they would error and block
@@ -160,6 +156,13 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 		dynamicObjects = append(dynamicObjects, existing)
 	}
 	fakeKube := NewFakeKubeclient(scheme, dynamicObjects...)
+	setup, err := setupObjects(&crdEntry)
+	if err != nil {
+		return nil, err
+	}
+	if err := fakeKube.Seed(setup...); err != nil {
+		return nil, err
+	}
 
 	// Pre-seed managed labels/annotations so the reconciler's idempotency
 	// guards skip those patches on every cycle.
@@ -236,7 +239,13 @@ func Run(ctx context.Context, kat *katalog.Katalog, crdName string, cr *unstruct
 	// Fallback: generic.Reconciler with the typed newObj factory and peer registry
 	// so hook BindToObjectHooks type-assertions and cross: lookups both work.
 	var r domain.Reconciler
-	if factoryFn, ok := orktypes.ReconcilerRegistry[gvk]; ok {
+	if crdEntry.WithRemoteDecl() {
+		r, err = newRemoteReconciler(&crdEntry, fakeKube.WithInformer(informer), outsidePodNamespace)
+		if err != nil {
+			return nil, err
+		}
+		result.Notes = append(result.Notes, remoteNote)
+	} else if factoryFn, ok := orktypes.ReconcilerRegistry[gvk]; ok {
 		r = factoryFn(fakeKube.WithInformer(informer).WithEventRecorder(event.Discard()))
 	} else {
 		r = generic.New(

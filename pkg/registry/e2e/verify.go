@@ -56,12 +56,17 @@ func verifyExpectation(ctx context.Context, exp orktypes.E2EExpectation, workDir
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 
+	// kubectl mutations (apply, patch, restart, scale, delete) run until they
+	// succeed once; only the assertions are retried after that. Re-running a
+	// mutation on every retry would undo what the assertion waits for, e.g. a
+	// drift patch re-applied right before checking it was reverted.
+	mutated := exp.Kubectl == nil
 	for {
-		if err := checkAll(ctx, exp, workDir, cs, cfg); err == nil {
+		if err := checkAll(ctx, exp, workDir, cs, cfg, &mutated); err == nil {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf("timeout after %s waiting for %q: %w", timeout, exp.Name, checkAll(ctx, exp, workDir, cs, cfg))
+			return fmt.Errorf("timeout after %s waiting for %q: %w", timeout, exp.Name, checkAll(ctx, exp, workDir, cs, cfg, &mutated))
 		}
 		select {
 		case <-ctx.Done():
@@ -71,7 +76,7 @@ func verifyExpectation(ctx context.Context, exp orktypes.E2EExpectation, workDir
 	}
 }
 
-func checkAll(ctx context.Context, exp orktypes.E2EExpectation, workDir string, cs kubernetes.Interface, cfg *rest.Config) error {
+func checkAll(ctx context.Context, exp orktypes.E2EExpectation, workDir string, cs kubernetes.Interface, cfg *rest.Config, mutated *bool) error {
 	// Commands run before resources so that action commands (e.g. cleanup deletes)
 	// execute before the resource state is checked.
 	for _, cmd := range exp.Commands {
@@ -80,6 +85,12 @@ func checkAll(ctx context.Context, exp orktypes.E2EExpectation, workDir string, 
 		}
 	}
 	if exp.Kubectl != nil {
+		if !*mutated {
+			if err := runKubectlMutations(ctx, exp.Kubectl, workDir, cs); err != nil {
+				return err
+			}
+			*mutated = true
+		}
 		if err := checkKubectl(ctx, exp.Kubectl, workDir, cs, cfg); err != nil {
 			return err
 		}
@@ -336,11 +347,10 @@ func applyAssertions(output string, a assertions) error {
 	return nil
 }
 
-// checkKubectl runs all kubectl DSL subcommands in the block.
-// Order: mutations first (apply → patch → restart → scale → delete), then assertions
-// (get, logs, describe, …). This mirrors the commands: ordering rule — actions
-// before checks — so that mutations take effect before assertions evaluate them.
-func checkKubectl(ctx context.Context, k *orktypes.E2EKubectl, workDir string, cs kubernetes.Interface, cfg *rest.Config) error {
+// runKubectlMutations runs the block's actions in order: apply → patch →
+// restart → scale → delete. verifyExpectation runs them once, before the
+// assertions in checkKubectl.
+func runKubectlMutations(ctx context.Context, k *orktypes.E2EKubectl, workDir string, cs kubernetes.Interface) error {
 	for i, e := range k.Apply {
 		if err := checkKubectlApply(ctx, e, workDir); err != nil {
 			return fmt.Errorf("kubectl.apply[%d]: %w", i, err)
@@ -366,6 +376,11 @@ func checkKubectl(ctx context.Context, k *orktypes.E2EKubectl, workDir string, c
 			return fmt.Errorf("kubectl.delete[%d]: %w", i, err)
 		}
 	}
+	return nil
+}
+
+// checkKubectl runs the block's assertions (get, logs, describe, …).
+func checkKubectl(ctx context.Context, k *orktypes.E2EKubectl, workDir string, cs kubernetes.Interface, cfg *rest.Config) error {
 	for i, e := range k.Get {
 		if err := checkKubectlGet(ctx, e, workDir); err != nil {
 			return fmt.Errorf("kubectl.get[%d]: %w", i, err)
