@@ -74,8 +74,8 @@ func TestWriteKindConfig_FileIsTemp(t *testing.T) {
 	defer os.Remove(path)
 
 	base := filepath.Base(path)
-	if !strings.HasPrefix(base, "ork-kind-") {
-		t.Errorf("expected temp file name to start with 'ork-kind-', got %q", base)
+	if !strings.HasPrefix(base, "inrun-kind-") {
+		t.Errorf("expected temp file name to start with 'inrun-kind-', got %q", base)
 	}
 }
 
@@ -91,13 +91,13 @@ func TestResolveKind_CachedBinaryUsed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Override orkBinDir by temporarily setting HOME to our temp dir.
+	// Override inrunBinDir by temporarily setting HOME to our temp dir.
 	origHome := os.Getenv("HOME")
 	os.Setenv("HOME", dir)
 	defer os.Setenv("HOME", origHome)
 
-	// Create the expected sub-path ~/.orkestra/bin/
-	cacheDir := filepath.Join(dir, ".orkestra", "bin")
+	// Create the expected sub-path ~/.inrun/bin/
+	cacheDir := filepath.Join(dir, ".inrun", "bin")
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -165,13 +165,13 @@ func TestWriteKindConfig_NegativeWorkers(t *testing.T) {
 	}
 }
 
-// ── orkBinDir ─────────────────────────────────────────────────────────────────
+// ── inrunBinDir ─────────────────────────────────────────────────────────────────
 
-func TestOrkBinDir(t *testing.T) {
+func TestInrunBinDir(t *testing.T) {
 	home, _ := os.UserHomeDir()
-	got := orkBinDir()
-	want := filepath.Join(home, ".orkestra", "bin")
+	got := inrunBinDir()
+	want := filepath.Join(home, ".inrun", "bin")
 	if got != want {
-		t.Errorf("orkBinDir() = %q, want %q", got, want)
+		t.Errorf("inrunBinDir() = %q, want %q", got, want)
 	}
 }

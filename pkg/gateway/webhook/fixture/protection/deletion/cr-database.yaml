@@ -1,4 +1,4 @@
-apiVersion: security.orkestra.io/v1alpha1
+apiVersion: security.inrun.dev/v1alpha1
 kind: Database
 metadata:
   name: my-database

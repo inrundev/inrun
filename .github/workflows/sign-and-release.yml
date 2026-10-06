@@ -16,32 +16,32 @@ on:
         description: 'Container registry base (e.g., ghcr.io/owner)'
         required: false
         type: string
-        default: 'ghcr.io/orkspace'
-      get_orkestra:
-        description: 'Orkestra installation script for Linux'
+        default: 'ghcr.io/inrundev'
+      get_inrun:
+        description: 'Inrun installation script for Linux'
         required: false
         type: string
-        default: 'get.orkestra.sh'
-      ork:
-        description: 'Shorthand for orkestra'
+        default: 'get.inrun.dev'
+      inrun:
+        description: 'Shorthand for inrun'
         required: false
         type: string
-        default: 'orkestra'
-      ork_image:
+        default: 'inrun'
+      inrun_image:
         description: 'Runtime image name (without registry)'
         required: false
         type: string
-        default: 'orkestra'
-      orkcc_image:
-        description: 'Control center image name (without registry)'
+        default: 'inrun'
+      inrun-console_image:
+        description: 'Console image name (without registry)'
         required: false
         type: string
-        default: 'orkestra-cc'
+        default: 'inrun-console'
       helm_repo_url:
         description: 'Helm repository URL'
         required: false
         type: string
-        default: 'https://orkspace.github.io/orkestra'
+        default: 'https://inrundev.github.io/inrun'
       helm_chart:
         description: 'Helm chart reference (repo/chart)'
         required: false
@@ -51,7 +51,7 @@ on:
         description: 'Homebrew tap (owner/tap)'
         required: false
         type: string
-        default: 'orkspace/tap'
+        default: 'inrundev/tap'
 
 jobs:
   release:
@@ -75,7 +75,7 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
-          FINGERPRINT=$(gpg --list-secret-keys --with-colons releases@${{ inputs.ork }}.io \
+          FINGERPRINT=$(gpg --list-secret-keys --with-colons releases@${{ inputs.inrun }}.io \
             | grep '^fpr' \
             | head -1 \
             | cut -d: -f10)
@@ -87,11 +87,11 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           cd dist
-          for archive in ork_*.tar.gz orkcc_*.tar.gz; do
+          for archive in inrun_*.tar.gz inrun-console_*.tar.gz; do
             gpg --batch --yes --passphrase "${GPG_PASSPHRASE}" --pinentry-mode loopback --armor --detach-sign "${archive}"
             echo "✅ Signed: ${archive}"
           done
-          for zip in ork_*.zip orkcc_*.zip; do
+          for zip in inrun_*.zip inrun-console_*.zip; do
             [ -f "$zip" ] || continue
             gpg --batch --yes --passphrase "${GPG_PASSPHRASE}" --pinentry-mode loopback --armor --detach-sign "${zip}"
             echo "✅ Signed: ${zip}"
@@ -99,22 +99,22 @@ jobs:
 
       - name: Export public key
         run: |
-          gpg --armor --export releases@${{ inputs.ork }}.io > dist/${{ inputs.ork }}-public-key.asc
+          gpg --armor --export releases@${{ inputs.inrun }}.io > dist/${{ inputs.inrun }}-public-key.asc
           echo "✅ Public key exported"
 
       - name: Generate checksums
         run: |
           cd dist
-          sha256sum ork_*.tar.gz orkcc_*.tar.gz ork_*.zip orkcc_*.zip 2>/dev/null | grep -v "No such file" > checksums.txt
+          sha256sum inrun_*.tar.gz inrun-console_*.tar.gz inrun_*.zip inrun-console_*.zip 2>/dev/null | grep -v "No such file" > checksums.txt
           echo "✅ Checksums generated"
 
       - name: Verify signatures
         run: |
           cd dist
-          for archive in ork_*.tar.gz orkcc_*.tar.gz; do
+          for archive in inrun_*.tar.gz inrun-console_*.tar.gz; do
             gpg --verify "${archive}.asc" "${archive}" && echo "✅ Verified: ${archive}" || { echo "❌ Failed: ${archive}"; exit 1; }
           done
-          for zip in ork_*.zip orkcc_*.zip; do
+          for zip in inrun_*.zip inrun-console_*.zip; do
             [ -f "$zip" ] || continue
             gpg --verify "${zip}.asc" "${zip}" && echo "✅ Verified: ${zip}" || { echo "❌ Failed: ${zip}"; exit 1; }
           done
@@ -132,47 +132,47 @@ jobs:
 
           ### 📦 Installation
 
-          #### CLI (Runtime + Control Center)
+          #### CLI (Runtime + Console)
 
           \`\`\`bash
           # macOS
-          brew tap ${{ inputs.brew_tap }} && brew install ork orkcc
+          brew tap ${{ inputs.brew_tap }} && brew install inrun inrun-console
 
           # Linux
-          curl -sSL ${{ inputs.get_orkestra }} | bash
+          curl -sSL ${{ inputs.get_inrun }} | bash
 
           # Windows (ZIP)
-          # Download ork_windows_amd64.zip and orkcc_windows_amd64.zip from release assets
+          # Download inrun_windows_amd64.zip and inrun-console_windows_amd64.zip from release assets
           \`\`\`
 
           #### Container Images
 
           \`\`\`bash
           # Runtime
-          docker pull ${{ inputs.container_registry }}/${{ inputs.ork_image }}:${IMAGE_TAG}
+          docker pull ${{ inputs.container_registry }}/${{ inputs.inrun_image }}:${IMAGE_TAG}
 
-          # Control Center
-          docker pull ${{ inputs.container_registry }}/${{ inputs.orkcc_image }}:${IMAGE_TAG}
+          # Console
+          docker pull ${{ inputs.container_registry }}/${{ inputs.inrun-console_image }}:${IMAGE_TAG}
           \`\`\`
 
           #### Helm
 
           \`\`\`bash
-          helm repo add ${{ inputs.ork }} ${{ inputs.helm_repo_url }}
-          helm upgrade --install ${{ inputs.ork }} ${{ inputs.helm_chart }} -n ${{ inputs.ork }}-system --create-namespace
+          helm repo add ${{ inputs.inrun }} ${{ inputs.helm_repo_url }}
+          helm upgrade --install ${{ inputs.inrun }} ${{ inputs.helm_chart }} -n ${{ inputs.inrun }}-system --create-namespace
           \`\`\`
 
           #### Examples
 
           \`\`\`bash
-          # upgrade ork CLI
-          ork upgrade --version v${IMAGE_TAG}
+          # upgrade inrun CLI
+          inrun upgrade --version v${IMAGE_TAG}
 
           # initialize a pack
-          ork init --pack <pack-name>
+          inrun init --pack <pack-name>
 
           # Run
-          ork run
+          inrun
           \`\`\`
           EOF
 
@@ -184,41 +184,36 @@ jobs:
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
-            dist/ork_linux_amd64.tar.gz
-            dist/ork_linux_amd64.tar.gz.asc
-            dist/ork_linux_arm64.tar.gz
-            dist/ork_linux_arm64.tar.gz.asc
-            dist/ork_darwin_amd64.tar.gz
-            dist/ork_darwin_amd64.tar.gz.asc
-            dist/ork_darwin_arm64.tar.gz
-            dist/ork_darwin_arm64.tar.gz.asc
-            dist/ork_windows_amd64.tar.gz
-            dist/ork_windows_amd64.tar.gz.asc
-            dist/ork_windows_amd64.zip
-            dist/ork_windows_amd64.zip.asc
-            dist/orkcc_linux_amd64.tar.gz
-            dist/orkcc_linux_amd64.tar.gz.asc
-            dist/orkcc_linux_arm64.tar.gz
-            dist/orkcc_linux_arm64.tar.gz.asc
-            dist/orkcc_darwin_amd64.tar.gz
-            dist/orkcc_darwin_amd64.tar.gz.asc
-            dist/orkcc_darwin_arm64.tar.gz
-            dist/orkcc_darwin_arm64.tar.gz.asc
-            dist/orkcc_windows_amd64.tar.gz
-            dist/orkcc_windows_amd64.tar.gz.asc
-            dist/orkcc_windows_amd64.zip
-            dist/orkcc_windows_amd64.zip.asc
+            dist/inrun_linux_amd64.tar.gz
+            dist/inrun_linux_amd64.tar.gz.asc
+            dist/inrun_linux_arm64.tar.gz
+            dist/inrun_linux_arm64.tar.gz.asc
+            dist/inrun_darwin_amd64.tar.gz
+            dist/inrun_darwin_amd64.tar.gz.asc
+            dist/inrun_darwin_arm64.tar.gz
+            dist/inrun_darwin_arm64.tar.gz.asc
+            dist/inrun_windows_amd64.tar.gz
+            dist/inrun_windows_amd64.tar.gz.asc
+            dist/inrun_windows_amd64.zip
+            dist/inrun_windows_amd64.zip.asc
+            dist/inrun-console_linux_amd64.tar.gz
+            dist/inrun-console_linux_amd64.tar.gz.asc
+            dist/inrun-console_linux_arm64.tar.gz
+            dist/inrun-console_linux_arm64.tar.gz.asc
+            dist/inrun-console_darwin_amd64.tar.gz
+            dist/inrun-console_darwin_amd64.tar.gz.asc
+            dist/inrun-console_darwin_arm64.tar.gz
+            dist/inrun-console_darwin_arm64.tar.gz.asc
+            dist/inrun-console_windows_amd64.tar.gz
+            dist/inrun-console_windows_amd64.tar.gz.asc
+            dist/inrun-console_windows_amd64.zip
+            dist/inrun-console_windows_amd64.zip.asc
             dist/checksums.txt
-            dist/${{ inputs.ork }}-public-key.asc
-            dist/examples_beginner_${{ github.ref_name }}.tar.gz
-            dist/examples_intermediate_${{ github.ref_name }}.tar.gz
-            dist/examples_advanced_${{ github.ref_name }}.tar.gz
-            dist/examples_use-cases_${{ github.ref_name }}.tar.gz
-            dist/examples_security_${{ github.ref_name }}.tar.gz
-            dist/examples_resilience_${{ github.ref_name }}.tar.gz
-            dist/examples_registry-guide_${{ github.ref_name }}.tar.gz
-            dist/examples_from-controller-runtime_${{ github.ref_name }}.tar.gz
-            dist/examples_ecosystem-composition_${{ github.ref_name }}.tar.gz
+            dist/${{ inputs.inrun }}-public-key.asc
+            dist/examples_declarative_${{ github.ref_name }}.tar.gz
+            dist/examples_remote_${{ github.ref_name }}.tar.gz
+            dist/examples_typed_${{ github.ref_name }}.tar.gz
+            dist/examples_intent_${{ github.ref_name }}.tar.gz
           fail_on_unmatched_files: true
       
       - name: Upload checksums as artifact

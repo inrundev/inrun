@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -16,7 +16,7 @@ import (
 //
 // It exposes the raw Kubernetes OpenAPI v3 schema for a CRD alongside the serve
 // metadata destinations (labels, annotations). The caller receives the full
-// structural picture and decides how to map their fields — no Orkestra
+// structural picture and decides how to map their fields — no Inrun
 // abstraction is applied.
 //
 // Intended for:
@@ -40,11 +40,11 @@ type RawSchemaResponse struct {
 
 	// Labels describes fields the serve expects in metadata.labels, when declared
 	// in serve.labels. Empty when not configured.
-	Labels map[string]orktypes.ServeFieldConfig `json:"labels,omitempty"`
+	Labels map[string]types.ServeFieldConfig `json:"labels,omitempty"`
 
 	// Annotations describes fields the serve expects in metadata.annotations,
 	// when declared in serve.annotations. Empty when not configured.
-	Annotations map[string]orktypes.ServeFieldConfig `json:"annotations,omitempty"`
+	Annotations map[string]types.ServeFieldConfig `json:"annotations,omitempty"`
 }
 
 // RawSchemaSection is the spec portion of the raw schema.
@@ -74,9 +74,9 @@ type RawSchemaSection struct {
 func rawSchemaHandler(
 	kube kubeclient.Interface,
 	clusters *ClusterRegistry,
-	kat *katalog.Katalog,
+	kat *catalog.Catalog,
 ) http.HandlerFunc {
-	var notes orktypes.NoteRegistry
+	var notes types.NoteRegistry
 	if !kat.Empty() {
 		notes = kat.UserNotes()
 	}
@@ -94,7 +94,7 @@ func rawSchemaHandler(
 
 		apiVersion := r.URL.Query().Get("apiVersion")
 
-		var crd *orktypes.CRDEntry
+		var crd *types.CRDEntry
 		if apiVersion != "" && kind != "" {
 			crd = kat.LookupByAPIVersionAndKind(apiVersion, kind).Entry()
 			if crd == nil {
@@ -117,7 +117,7 @@ func rawSchemaHandler(
 
 		if crd == nil {
 			writeJSONError(w, http.StatusNotFound, "kind not found",
-				fmt.Sprintf("kind %q not found in the Katalog", kind),
+				fmt.Sprintf("kind %q not found in the Catalog", kind),
 			)
 			return
 		}
@@ -126,11 +126,11 @@ func rawSchemaHandler(
 		tokenName := TokenNameFromContext(r.Context())
 		if crd.Serve != nil && crd.Serve.HasTokenRestrictions() {
 			allowed, reason := crd.Serve.TokenAllowed(
-				tokenName, orktypes.ServeOpGet, "", orktypes.ServeClassSchema,
+				tokenName, types.ServeOpGet, "", types.ServeClassSchema,
 			)
 			if !allowed {
 				writeJSONError(w, http.StatusForbidden, "permission denied",
-					reason.Message(tokenName, orktypes.ServeOpGet, kind, ""),
+					reason.Message(tokenName, types.ServeOpGet, kind, ""),
 				)
 				return
 			}

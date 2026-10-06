@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkpods "github.com/orkspace/orkestra/pkg/resources/pods"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/pods"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunPods resolves and applies Pod template declarations.
@@ -24,16 +24,16 @@ import (
 func RunPods(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.PodTemplateSource,
+	srcs []types.PodTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -46,7 +46,7 @@ func RunPods(
 
 	for i, src := range srcs {
 
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 		ns, _ := resolver.Resolve(src.Namespace)
@@ -69,7 +69,7 @@ func RunPods(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orkpods.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := pods.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("pods[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -82,19 +82,19 @@ func RunPods(
 			return fmt.Errorf("pods[%d]: %w", i, err)
 		}
 
-		spec := orkpods.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
+		spec := pods.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
 
 		if update {
-			if err := orkpods.Update(ctx, kube, owner, spec); err != nil {
+			if err := pods.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("pods[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkpods.Create(ctx, kube, owner, spec); err != nil {
+			if err := pods.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("pods[%d].create: %w", i, err)
 			}
 
 			if src.Reconcile {
-				if err := orkpods.Update(ctx, kube, owner, spec); err != nil {
+				if err := pods.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("pods[%d].reconcile: %w", i, err)
 				}
 			}

@@ -1,8 +1,0 @@
-apiVersion: security.orkestra.io/v1alpha1
-kind: Database
-metadata:
-  name: my-database
-  namespace: default
-spec:
-  engine: postgres
-  storageSize: "5Gi"

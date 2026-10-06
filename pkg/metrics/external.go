@@ -8,7 +8,7 @@ import (
 var (
 	externalCallsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "orkestra_external_calls_total",
+			Name: "inrun_external_calls_total",
 			Help: "Total number of external API calls made by the reconciler.",
 		},
 		[]string{"crd", "name", "url", "result"}, // result: "success", "error"
@@ -16,7 +16,7 @@ var (
 
 	externalCallDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "orkestra_external_call_duration_seconds",
+			Name:    "inrun_external_call_duration_seconds",
 			Help:    "Duration of external API calls.",
 			Buckets: prometheus.DefBuckets,
 		},
@@ -25,7 +25,7 @@ var (
 
 	externalCallErrors = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "orkestra_external_call_errors_total",
+			Name: "inrun_external_call_errors_total",
 			Help: "Total number of external API call errors, labelled by error type.",
 		},
 		[]string{"crd", "name", "url", "error_type"},

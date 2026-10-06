@@ -1,4 +1,4 @@
-apiVersion: data.demo.orkestra.io/v1alpha1
+apiVersion: data.demo.inrun.dev/v1alpha1
 kind: Pipeline
 metadata:
   name: events-pipeline
@@ -8,7 +8,7 @@ spec:
   sink: postgres-warehouse
   batchSize: "500"
 ---
-apiVersion: data.demo.orkestra.io/v1alpha1
+apiVersion: data.demo.inrun.dev/v1alpha1
 kind: Dataset
 metadata:
   name: user-events
@@ -17,7 +17,7 @@ spec:
   format: parquet
   location: s3://demo-bucket/user-events
 ---
-apiVersion: data.demo.orkestra.io/v1alpha1
+apiVersion: data.demo.inrun.dev/v1alpha1
 kind: Schema
 metadata:
   name: events-schema
@@ -26,7 +26,7 @@ spec:
   version: v2
   compatibility: BACKWARD
 ---
-apiVersion: data.demo.orkestra.io/v1alpha1
+apiVersion: data.demo.inrun.dev/v1alpha1
 kind: Transform
 metadata:
   name: enrich-events
@@ -36,7 +36,7 @@ spec:
   workers: "2"
   type: enrichment
 ---
-apiVersion: data.demo.orkestra.io/v1alpha1
+apiVersion: data.demo.inrun.dev/v1alpha1
 kind: Sink
 metadata:
   name: postgres-warehouse
@@ -45,7 +45,7 @@ spec:
   target: postgresql://warehouse.demo-05.svc:5432/events
   format: json
 ---
-apiVersion: data.demo.orkestra.io/v1alpha1
+apiVersion: data.demo.inrun.dev/v1alpha1
 kind: Source
 metadata:
   name: kafka-events
@@ -54,7 +54,7 @@ spec:
   endpoint: kafka.demo-05.svc:9092
   pollInterval: 500ms
 ---
-apiVersion: data.demo.orkestra.io/v1alpha1
+apiVersion: data.demo.inrun.dev/v1alpha1
 kind: DataJob
 metadata:
   name: backfill-job
@@ -64,7 +64,7 @@ spec:
   parallelism: "3"
   timeout: 2h
 ---
-apiVersion: data.demo.orkestra.io/v1alpha1
+apiVersion: data.demo.inrun.dev/v1alpha1
 kind: Schedule
 metadata:
   name: nightly-sync
@@ -73,7 +73,7 @@ spec:
   cron: "0 2 * * *"
   target: events-pipeline
 ---
-apiVersion: data.demo.orkestra.io/v1alpha1
+apiVersion: data.demo.inrun.dev/v1alpha1
 kind: Alert
 metadata:
   name: pipeline-lag-alert
@@ -83,7 +83,7 @@ spec:
   condition: "lag > 10000"
   channel: "#data-ops"
 ---
-apiVersion: data.demo.orkestra.io/v1alpha1
+apiVersion: data.demo.inrun.dev/v1alpha1
 kind: Dashboard
 metadata:
   name: pipeline-overview

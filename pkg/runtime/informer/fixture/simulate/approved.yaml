@@ -1,11 +1,11 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: informer-probe-approved
   description: CR in allowed namespace (team-a) — reconciler runs, ConfigMap created
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   cr: ../cr.yaml
   cycles: 2
 

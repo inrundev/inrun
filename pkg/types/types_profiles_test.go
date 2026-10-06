@@ -83,10 +83,10 @@ func TestProfileRegistry_Merge_NoConflict(t *testing.T) {
 		NetworkPolicies: []NetworkPolicyProfileDef{{Name: "base-policy"}},
 	}
 	other := ProfileRegistry{
-		NetworkPolicies: []NetworkPolicyProfileDef{{Name: "motif-policy"}},
-		ResourceQuotas:  []ResourceQuotaProfileDef{{Name: "motif-quota", Hard: map[string]string{"pods": "10"}}},
+		NetworkPolicies: []NetworkPolicyProfileDef{{Name: "module-policy"}},
+		ResourceQuotas:  []ResourceQuotaProfileDef{{Name: "module-quota", Hard: map[string]string{"pods": "10"}}},
 	}
-	merged, err := base.Merge(other, "motif \"tenant-isolation\"")
+	merged, err := base.Merge(other, "module \"tenant-isolation\"")
 	require.NoError(t, err)
 	assert.Len(t, merged.NetworkPolicies, 2)
 	assert.Len(t, merged.ResourceQuotas, 1)
@@ -99,7 +99,7 @@ func TestProfileRegistry_Merge_ConflictNetworkPolicy(t *testing.T) {
 	other := ProfileRegistry{
 		NetworkPolicies: []NetworkPolicyProfileDef{{Name: "shared-policy"}},
 	}
-	_, err := base.Merge(other, "motif \"tenant-isolation\"")
+	_, err := base.Merge(other, "module \"tenant-isolation\"")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "profile conflict")
 	assert.Contains(t, err.Error(), "shared-policy")
@@ -112,7 +112,7 @@ func TestProfileRegistry_Merge_ConflictResourceQuota(t *testing.T) {
 	other := ProfileRegistry{
 		ResourceQuotas: []ResourceQuotaProfileDef{{Name: "shared", Hard: map[string]string{}}},
 	}
-	_, err := base.Merge(other, "motif \"quotas\"")
+	_, err := base.Merge(other, "module \"quotas\"")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "resourceQuotas")
 }
@@ -125,7 +125,7 @@ func TestProfileRegistry_Merge_SameNameDifferentClass_Allowed(t *testing.T) {
 	other := ProfileRegistry{
 		HPA: []HPAProfileDef{{Name: "medium", MaxReplicas: "10"}},
 	}
-	merged, err := base.Merge(other, "motif \"sizing\"")
+	merged, err := base.Merge(other, "module \"sizing\"")
 	require.NoError(t, err)
 	assert.Len(t, merged.ResourceQuotas, 1)
 	assert.Len(t, merged.HPA, 1)
@@ -227,7 +227,7 @@ func TestProfileRegistry_LookupRollingUpdate_BothFields(t *testing.T) {
 func TestProfileRegistry_Merge_ConflictHPA(t *testing.T) {
 	base := ProfileRegistry{HPA: []HPAProfileDef{{Name: "clash"}}}
 	other := ProfileRegistry{HPA: []HPAProfileDef{{Name: "clash"}}}
-	_, err := base.Merge(other, "motif \"scaling\"")
+	_, err := base.Merge(other, "module \"scaling\"")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "hpa")
 	assert.Contains(t, err.Error(), "clash")
@@ -236,7 +236,7 @@ func TestProfileRegistry_Merge_ConflictHPA(t *testing.T) {
 func TestProfileRegistry_Merge_ConflictPDB(t *testing.T) {
 	base := ProfileRegistry{PDB: []PDBProfileDef{{Name: "clash"}}}
 	other := ProfileRegistry{PDB: []PDBProfileDef{{Name: "clash"}}}
-	_, err := base.Merge(other, "motif \"disruption\"")
+	_, err := base.Merge(other, "module \"disruption\"")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "pdb")
 }
@@ -244,7 +244,7 @@ func TestProfileRegistry_Merge_ConflictPDB(t *testing.T) {
 func TestProfileRegistry_Merge_ConflictRollingUpdate(t *testing.T) {
 	base := ProfileRegistry{RollingUpdate: []RollingUpdateProfileDef{{Name: "clash"}}}
 	other := ProfileRegistry{RollingUpdate: []RollingUpdateProfileDef{{Name: "clash"}}}
-	_, err := base.Merge(other, "motif \"rollout\"")
+	_, err := base.Merge(other, "module \"rollout\"")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "rollingUpdate")
 }
@@ -252,7 +252,7 @@ func TestProfileRegistry_Merge_ConflictRollingUpdate(t *testing.T) {
 func TestProfileRegistry_Merge_ConflictLimitRange(t *testing.T) {
 	base := ProfileRegistry{LimitRanges: []LimitRangeProfileDef{{Name: "clash"}}}
 	other := ProfileRegistry{LimitRanges: []LimitRangeProfileDef{{Name: "clash"}}}
-	_, err := base.Merge(other, "motif \"limits\"")
+	_, err := base.Merge(other, "module \"limits\"")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "limitRanges")
 }
@@ -262,7 +262,7 @@ func TestProfileRegistry_Merge_EmptyBase(t *testing.T) {
 		NetworkPolicies: []NetworkPolicyProfileDef{{Name: "np"}},
 		HPA:             []HPAProfileDef{{Name: "hpa", MaxReplicas: "5"}},
 	}
-	merged, err := ProfileRegistry{}.Merge(other, "motif \"full\"")
+	merged, err := ProfileRegistry{}.Merge(other, "module \"full\"")
 	require.NoError(t, err)
 	assert.Len(t, merged.NetworkPolicies, 1)
 	assert.Len(t, merged.HPA, 1)
@@ -272,7 +272,7 @@ func TestProfileRegistry_Merge_EmptyOther(t *testing.T) {
 	base := ProfileRegistry{
 		PDB: []PDBProfileDef{{Name: "strict", MinAvailable: "2"}},
 	}
-	merged, err := base.Merge(ProfileRegistry{}, "motif \"empty\"")
+	merged, err := base.Merge(ProfileRegistry{}, "module \"empty\"")
 	require.NoError(t, err)
 	assert.Len(t, merged.PDB, 1)
 }

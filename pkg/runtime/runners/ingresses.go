@@ -5,13 +5,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/gateway/certmanager"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkingress "github.com/orkspace/orkestra/pkg/resources/ingresses"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/gateway/certmanager"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/ingresses"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -21,15 +21,15 @@ import (
 func RunIngresses(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.IngressTemplateSource,
+	srcs []types.IngressTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -41,7 +41,7 @@ func RunIngresses(
 	}
 
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 		ns, _ := resolver.Resolve(src.Namespace)
@@ -56,7 +56,7 @@ func RunIngresses(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orkingress.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := ingresses.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("ingresses[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -73,7 +73,7 @@ func RunIngresses(
 			return fmt.Errorf("ingresses[%d]: %w", i, err)
 		}
 
-		spec := orkingress.Resolve(resolved, resolver.OwnerName())
+		spec := ingresses.Resolve(resolved, resolver.OwnerName())
 
 		// Ensure TLS secret exists before applying the Ingress.
 		if spec.TLS != nil && spec.TLS.Create {
@@ -83,15 +83,15 @@ func RunIngresses(
 		}
 
 		if update {
-			if err := orkingress.Update(ctx, kube, owner, spec); err != nil {
+			if err := ingresses.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("ingresses[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkingress.Create(ctx, kube, owner, spec); err != nil {
+			if err := ingresses.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("ingresses[%d].create: %w", i, err)
 			}
 			if src.Reconcile {
-				if err := orkingress.Update(ctx, kube, owner, spec); err != nil {
+				if err := ingresses.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("ingresses[%d].reconcile: %w", i, err)
 				}
 			}
@@ -109,7 +109,7 @@ func ensureIngressTLSSecret(
 	ctx context.Context,
 	kube kubeclient.Interface,
 	owner domain.Object,
-	spec orkingress.ResolvedIngressSpec,
+	spec ingresses.ResolvedIngressSpec,
 	namespace string,
 ) error {
 	secretName := spec.TLS.SecretName

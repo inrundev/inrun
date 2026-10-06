@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,8 +33,8 @@ const portForwardTimeout = 15 * time.Second
 // The runner detects it to record a skipped case rather than a failure.
 var errSkipped = fmt.Errorf("skipped")
 
-func verifyExpectation(ctx context.Context, exp orktypes.E2EExpectation, workDir string, cs kubernetes.Interface, cfg *rest.Config, noteEval orktypes.TemplateEvaluator) error {
-	if !orktypes.EvaluateConditions(nil, exp.When, exp.Or, noteEval) {
+func verifyExpectation(ctx context.Context, exp types.E2EExpectation, workDir string, cs kubernetes.Interface, cfg *rest.Config, noteEval types.TemplateEvaluator) error {
+	if !types.EvaluateConditions(nil, exp.When, exp.Or, noteEval) {
 		return errSkipped
 	}
 	if exp.Wait != "" {
@@ -56,12 +56,17 @@ func verifyExpectation(ctx context.Context, exp orktypes.E2EExpectation, workDir
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 
+	// kubectl mutations (apply, patch, restart, scale, delete) run until they
+	// succeed once; only the assertions are retried after that. Re-running a
+	// mutation on every retry would undo what the assertion waits for, e.g. a
+	// drift patch re-applied right before checking it was reverted.
+	mutated := exp.Kubectl == nil
 	for {
-		if err := checkAll(ctx, exp, workDir, cs, cfg); err == nil {
+		if err := checkAll(ctx, exp, workDir, cs, cfg, &mutated); err == nil {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf("timeout after %s waiting for %q: %w", timeout, exp.Name, checkAll(ctx, exp, workDir, cs, cfg))
+			return fmt.Errorf("timeout after %s waiting for %q: %w", timeout, exp.Name, checkAll(ctx, exp, workDir, cs, cfg, &mutated))
 		}
 		select {
 		case <-ctx.Done():
@@ -71,7 +76,7 @@ func verifyExpectation(ctx context.Context, exp orktypes.E2EExpectation, workDir
 	}
 }
 
-func checkAll(ctx context.Context, exp orktypes.E2EExpectation, workDir string, cs kubernetes.Interface, cfg *rest.Config) error {
+func checkAll(ctx context.Context, exp types.E2EExpectation, workDir string, cs kubernetes.Interface, cfg *rest.Config, mutated *bool) error {
 	// Commands run before resources so that action commands (e.g. cleanup deletes)
 	// execute before the resource state is checked.
 	for _, cmd := range exp.Commands {
@@ -80,6 +85,12 @@ func checkAll(ctx context.Context, exp orktypes.E2EExpectation, workDir string, 
 		}
 	}
 	if exp.Kubectl != nil {
+		if !*mutated {
+			if err := runKubectlMutations(ctx, exp.Kubectl, workDir, cs); err != nil {
+				return err
+			}
+			*mutated = true
+		}
 		if err := checkKubectl(ctx, exp.Kubectl, workDir, cs, cfg); err != nil {
 			return err
 		}
@@ -94,7 +105,7 @@ func checkAll(ctx context.Context, exp orktypes.E2EExpectation, workDir string, 
 
 // checkResource asserts the state of any Kubernetes resource using kubectl.
 // Kind can be any built-in or custom resource kind.
-func checkResource(ctx context.Context, r orktypes.E2EResourceCheck, workDir string) error {
+func checkResource(ctx context.Context, r types.E2EResourceCheck, workDir string) error {
 	ns := r.Namespace
 	if ns == "" {
 		ns = "default"
@@ -173,7 +184,7 @@ func checkReady(ctx context.Context, workDir, kind, name, ns string) error {
 	return nil
 }
 
-func checkCommand(ctx context.Context, c orktypes.E2ECommand, workDir string) error {
+func checkCommand(ctx context.Context, c types.E2ECommand, workDir string) error {
 	cmd := exec.CommandContext(ctx, "sh", "-c", c.Run)
 	if workDir != "" {
 		cmd.Dir = workDir
@@ -225,7 +236,7 @@ type assertions struct {
 // are skipped; every set field is checked independently so several can
 // combine on one entry, same as before.
 //
-// Each check builds a single-field orktypes.Condition around the trimmed
+// Each check builds a single-field types.Condition around the trimmed
 // output and evaluates it with the same EvaluateOneCond the reconciler and
 // webhook use for when:/or: — comparison logic (numeric parsing, regex,
 // ranges) lives in exactly one place instead of being reimplemented here,
@@ -234,101 +245,101 @@ func applyAssertions(output string, a assertions) error {
 	trimmed := strings.TrimSpace(output)
 	data := map[string]interface{}{"output": trimmed}
 
-	check := func(cond orktypes.Condition, format string, args ...interface{}) error {
-		if !orktypes.EvaluateOneCond(data, cond, nil) {
+	check := func(cond types.Condition, format string, args ...interface{}) error {
+		if !types.EvaluateOneCond(data, cond, nil) {
 			return fmt.Errorf(format, args...)
 		}
 		return nil
 	}
 
 	if a.OutputContains != "" {
-		if err := check(orktypes.Condition{Field: "output", Contains: a.OutputContains},
+		if err := check(types.Condition{Field: "output", Contains: a.OutputContains},
 			"output does not contain %q", a.OutputContains); err != nil {
 			return err
 		}
 	}
 	if a.OutputNotContains != "" {
-		if err := check(orktypes.Condition{Field: "output", NotContains: a.OutputNotContains},
+		if err := check(types.Condition{Field: "output", NotContains: a.OutputNotContains},
 			"output must not contain %q", a.OutputNotContains); err != nil {
 			return err
 		}
 	}
 	if a.Regex != "" {
-		if err := check(orktypes.Condition{Field: "output", Regex: a.Regex},
+		if err := check(types.Condition{Field: "output", Regex: a.Regex},
 			"output %q does not match pattern %q", trimmed, a.Regex); err != nil {
 			return err
 		}
 	}
 	if a.Equals != "" {
-		if err := check(orktypes.Condition{Field: "output", Equals: a.Equals},
+		if err := check(types.Condition{Field: "output", Equals: a.Equals},
 			"output: want %q got %q", a.Equals, trimmed); err != nil {
 			return err
 		}
 	}
 	if a.NotEquals != "" {
-		if err := check(orktypes.Condition{Field: "output", NotEquals: a.NotEquals},
+		if err := check(types.Condition{Field: "output", NotEquals: a.NotEquals},
 			"output must not equal %q", a.NotEquals); err != nil {
 			return err
 		}
 	}
 	if len(a.OneOf) > 0 {
-		if err := check(orktypes.Condition{Field: "output", In: strings.Join(a.OneOf, ",")},
+		if err := check(types.Condition{Field: "output", In: strings.Join(a.OneOf, ",")},
 			"output: want one of %v, got %q", a.OneOf, trimmed); err != nil {
 			return err
 		}
 	}
 	if len(a.NotOneOf) > 0 {
-		if err := check(orktypes.Condition{Field: "output", NotIn: strings.Join(a.NotOneOf, ",")},
+		if err := check(types.Condition{Field: "output", NotIn: strings.Join(a.NotOneOf, ",")},
 			"output: must not be one of %v, got %q", a.NotOneOf, trimmed); err != nil {
 			return err
 		}
 	}
 	if a.Exists {
 		t := true
-		if err := check(orktypes.Condition{Field: "output", Exists: &t},
+		if err := check(types.Condition{Field: "output", Exists: &t},
 			"output: field is empty or missing (exists assertion failed)"); err != nil {
 			return err
 		}
 	}
 	if a.NotExists {
 		t := true
-		if err := check(orktypes.Condition{Field: "output", NotExists: &t},
+		if err := check(types.Condition{Field: "output", NotExists: &t},
 			"output: field must be absent but got %q (notExists assertion failed)", trimmed); err != nil {
 			return err
 		}
 	}
 	if a.GreaterThan != "" {
-		if err := check(orktypes.Condition{Field: "output", GreaterThan: a.GreaterThan},
+		if err := check(types.Condition{Field: "output", GreaterThan: a.GreaterThan},
 			"output: want > %s, got %s", a.GreaterThan, trimmed); err != nil {
 			return err
 		}
 	}
 	if a.LessThan != "" {
-		if err := check(orktypes.Condition{Field: "output", LessThan: a.LessThan},
+		if err := check(types.Condition{Field: "output", LessThan: a.LessThan},
 			"output: want < %s, got %s", a.LessThan, trimmed); err != nil {
 			return err
 		}
 	}
 	if a.GreaterThanOrEqual != "" {
-		if err := check(orktypes.Condition{Field: "output", GreaterThanOrEqual: a.GreaterThanOrEqual},
+		if err := check(types.Condition{Field: "output", GreaterThanOrEqual: a.GreaterThanOrEqual},
 			"output: want >= %s, got %s", a.GreaterThanOrEqual, trimmed); err != nil {
 			return err
 		}
 	}
 	if a.LessThanOrEqual != "" {
-		if err := check(orktypes.Condition{Field: "output", LessThanOrEqual: a.LessThanOrEqual},
+		if err := check(types.Condition{Field: "output", LessThanOrEqual: a.LessThanOrEqual},
 			"output: want <= %s, got %s", a.LessThanOrEqual, trimmed); err != nil {
 			return err
 		}
 	}
 	if a.Between != "" {
-		if err := check(orktypes.Condition{Field: "output", Between: a.Between},
+		if err := check(types.Condition{Field: "output", Between: a.Between},
 			"output: want between %s, got %s", a.Between, trimmed); err != nil {
 			return err
 		}
 	}
 	if a.NotBetween != "" {
-		if err := check(orktypes.Condition{Field: "output", NotBetween: a.NotBetween},
+		if err := check(types.Condition{Field: "output", NotBetween: a.NotBetween},
 			"output: want outside range %s, got %s", a.NotBetween, trimmed); err != nil {
 			return err
 		}
@@ -336,11 +347,10 @@ func applyAssertions(output string, a assertions) error {
 	return nil
 }
 
-// checkKubectl runs all kubectl DSL subcommands in the block.
-// Order: mutations first (apply → patch → restart → scale → delete), then assertions
-// (get, logs, describe, …). This mirrors the commands: ordering rule — actions
-// before checks — so that mutations take effect before assertions evaluate them.
-func checkKubectl(ctx context.Context, k *orktypes.E2EKubectl, workDir string, cs kubernetes.Interface, cfg *rest.Config) error {
+// runKubectlMutations runs the block's actions in order: apply → patch →
+// restart → scale → delete. verifyExpectation runs them once, before the
+// assertions in checkKubectl.
+func runKubectlMutations(ctx context.Context, k *types.E2EKubectl, workDir string, cs kubernetes.Interface) error {
 	for i, e := range k.Apply {
 		if err := checkKubectlApply(ctx, e, workDir); err != nil {
 			return fmt.Errorf("kubectl.apply[%d]: %w", i, err)
@@ -366,6 +376,11 @@ func checkKubectl(ctx context.Context, k *orktypes.E2EKubectl, workDir string, c
 			return fmt.Errorf("kubectl.delete[%d]: %w", i, err)
 		}
 	}
+	return nil
+}
+
+// checkKubectl runs the block's assertions (get, logs, describe, …).
+func checkKubectl(ctx context.Context, k *types.E2EKubectl, workDir string, cs kubernetes.Interface, cfg *rest.Config) error {
 	for i, e := range k.Get {
 		if err := checkKubectlGet(ctx, e, workDir); err != nil {
 			return fmt.Errorf("kubectl.get[%d]: %w", i, err)
@@ -414,7 +429,7 @@ func checkKubectl(ctx context.Context, k *orktypes.E2EKubectl, workDir string, c
 	return nil
 }
 
-func checkKubectlRestart(ctx context.Context, e orktypes.E2EKubectlRestart, workDir string) error {
+func checkKubectlRestart(ctx context.Context, e types.E2EKubectlRestart, workDir string) error {
 	ns := e.Namespace
 	if ns == "" {
 		ns = "default"
@@ -431,7 +446,7 @@ func checkKubectlRestart(ctx context.Context, e orktypes.E2EKubectlRestart, work
 	return nil
 }
 
-func checkKubectlScale(ctx context.Context, e orktypes.E2EKubectlScale, workDir string) error {
+func checkKubectlScale(ctx context.Context, e types.E2EKubectlScale, workDir string) error {
 	ns := e.Namespace
 	if ns == "" {
 		ns = "default"
@@ -449,7 +464,7 @@ func checkKubectlScale(ctx context.Context, e orktypes.E2EKubectlScale, workDir 
 	return nil
 }
 
-func checkKubectlDelete(ctx context.Context, cs kubernetes.Interface, e orktypes.E2EKubectlDelete, workDir string) error {
+func checkKubectlDelete(ctx context.Context, cs kubernetes.Interface, e types.E2EKubectlDelete, workDir string) error {
 	var args []string
 	if e.LeaderElection != nil {
 		ns := e.Namespace
@@ -488,7 +503,7 @@ func checkKubectlDelete(ctx context.Context, cs kubernetes.Interface, e orktypes
 	return nil
 }
 
-func checkKubectlApply(ctx context.Context, e orktypes.E2EKubectlApply, workDir string) error {
+func checkKubectlApply(ctx context.Context, e types.E2EKubectlApply, workDir string) error {
 	var label string
 	var out []byte
 	var runErr error
@@ -528,7 +543,7 @@ func checkKubectlApply(ctx context.Context, e orktypes.E2EKubectlApply, workDir 
 // checkKubectlApply so the exit-code/assertion logic is testable without
 // actually shelling out to kubectl — runErr is whatever
 // exec.Cmd.CombinedOutput() (or an equivalent) returned.
-func assertKubectlApplyOutput(label string, out []byte, runErr error, e orktypes.E2EKubectlApply) error {
+func assertKubectlApplyOutput(label string, out []byte, runErr error, e types.E2EKubectlApply) error {
 	exitCode := 0
 	if runErr != nil {
 		var exitErr *exec.ExitError
@@ -549,7 +564,7 @@ func assertKubectlApplyOutput(label string, out []byte, runErr error, e orktypes
 	return nil
 }
 
-func checkKubectlPatch(ctx context.Context, e orktypes.E2EKubectlPatch, workDir string) error {
+func checkKubectlPatch(ctx context.Context, e types.E2EKubectlPatch, workDir string) error {
 	ns := e.Namespace
 	if ns == "" {
 		ns = "default"
@@ -566,7 +581,7 @@ func checkKubectlPatch(ctx context.Context, e orktypes.E2EKubectlPatch, workDir 
 	return nil
 }
 
-func checkKubectlGet(ctx context.Context, e orktypes.E2EKubectlGet, workDir string) error {
+func checkKubectlGet(ctx context.Context, e types.E2EKubectlGet, workDir string) error {
 	ns := e.Namespace
 	if ns == "" {
 		ns = "default"
@@ -603,7 +618,7 @@ func checkKubectlGet(ctx context.Context, e orktypes.E2EKubectlGet, workDir stri
 // assertKubectlGetOutput applies e's assertions to already-fetched (and
 // jq/yq-extracted) output. Split out from checkKubectlGet so this logic is
 // testable without kubectl or a cluster.
-func assertKubectlGetOutput(out string, e orktypes.E2EKubectlGet) error {
+func assertKubectlGetOutput(out string, e types.E2EKubectlGet) error {
 	if err := applyAssertions(out, kubectlGetAssertions(e)); err != nil {
 		return fmt.Errorf("kubectl get %s/%s: %w\noutput: %s", e.Kind, e.Name, err, out)
 	}
@@ -613,7 +628,7 @@ func assertKubectlGetOutput(out string, e orktypes.E2EKubectlGet) error {
 // resolveLeaderHolder looks up the holder of a Kubernetes Lease and returns the
 // pod name and the namespace the lease lives in. leaseNs defaults to ns when
 // the LeaderElection struct leaves it empty.
-func resolveLeaderHolder(ctx context.Context, cs kubernetes.Interface, le *orktypes.E2EKubectlLeaderElection, ns string) (pod, leaseNs string, err error) {
+func resolveLeaderHolder(ctx context.Context, cs kubernetes.Interface, le *types.E2EKubectlLeaderElection, ns string) (pod, leaseNs string, err error) {
 	leaseNs = le.Namespace
 	if leaseNs == "" {
 		leaseNs = ns
@@ -628,7 +643,7 @@ func resolveLeaderHolder(ctx context.Context, cs kubernetes.Interface, le *orkty
 	return strings.TrimSpace(*lease.Spec.HolderIdentity), leaseNs, nil
 }
 
-func checkKubectlLogs(ctx context.Context, cs kubernetes.Interface, e orktypes.E2EKubectlLogs, workDir string) error {
+func checkKubectlLogs(ctx context.Context, cs kubernetes.Interface, e types.E2EKubectlLogs, workDir string) error {
 	ns := e.Namespace
 	if ns == "" {
 		ns = "default"
@@ -669,14 +684,14 @@ func checkKubectlLogs(ctx context.Context, cs kubernetes.Interface, e orktypes.E
 // assertKubectlLogsOutput applies e's assertions to already-fetched (and
 // jq-extracted) log output. Split out so this logic is testable without
 // kubectl or a cluster.
-func assertKubectlLogsOutput(out string, e orktypes.E2EKubectlLogs) error {
+func assertKubectlLogsOutput(out string, e types.E2EKubectlLogs) error {
 	if err := applyAssertions(out, kubectlLogsAssertions(e)); err != nil {
 		return fmt.Errorf("kubectl logs: %w\noutput: %s", err, out)
 	}
 	return nil
 }
 
-func checkKubectlDescribe(ctx context.Context, e orktypes.E2EKubectlDescribe, workDir string) error {
+func checkKubectlDescribe(ctx context.Context, e types.E2EKubectlDescribe, workDir string) error {
 	ns := e.Namespace
 	if ns == "" {
 		ns = "default"
@@ -700,14 +715,14 @@ func checkKubectlDescribe(ctx context.Context, e orktypes.E2EKubectlDescribe, wo
 // assertKubectlDescribeOutput applies e's assertions to already-fetched
 // describe output. Split out so this logic is testable without kubectl or
 // a cluster.
-func assertKubectlDescribeOutput(out string, e orktypes.E2EKubectlDescribe) error {
+func assertKubectlDescribeOutput(out string, e types.E2EKubectlDescribe) error {
 	if err := applyAssertions(out, kubectlDescribeAssertions(e)); err != nil {
 		return fmt.Errorf("kubectl describe %s: %w\noutput: %s", e.Kind, err, out)
 	}
 	return nil
 }
 
-func checkKubectlExec(ctx context.Context, cs kubernetes.Interface, e orktypes.E2EKubectlExec, workDir string) error {
+func checkKubectlExec(ctx context.Context, cs kubernetes.Interface, e types.E2EKubectlExec, workDir string) error {
 	ns := e.Namespace
 	if ns == "" {
 		ns = "default"
@@ -758,14 +773,14 @@ func checkKubectlExec(ctx context.Context, cs kubernetes.Interface, e orktypes.E
 // assertKubectlExecOutput applies e's assertions to already-captured (and
 // jq/yq-extracted) exec output. Split out so this logic is testable
 // without kubectl or a cluster.
-func assertKubectlExecOutput(pod, out string, e orktypes.E2EKubectlExec) error {
+func assertKubectlExecOutput(pod, out string, e types.E2EKubectlExec) error {
 	if err := applyAssertions(out, kubectlExecAssertions(e)); err != nil {
 		return fmt.Errorf("kubectl exec %s: %w\noutput: %s", pod, err, out)
 	}
 	return nil
 }
 
-func checkKubectlPortForward(ctx context.Context, cs kubernetes.Interface, cfg *rest.Config, e orktypes.E2EKubectlPortForward, workDir string) error {
+func checkKubectlPortForward(ctx context.Context, cs kubernetes.Interface, cfg *rest.Config, e types.E2EKubectlPortForward, workDir string) error {
 	ns := e.Namespace
 	if ns == "" {
 		ns = "default"
@@ -830,7 +845,7 @@ func resolveServicePod(ctx context.Context, cs kubernetes.Interface, ns, svcName
 
 // doPortForwardGoRaw opens a Go port-forward to a pod, makes an HTTP request,
 // and returns the raw response body (or status code string when e.StatusCode != 0).
-func doPortForwardGoRaw(ctx context.Context, cfg *rest.Config, ns, pod string, e orktypes.E2EKubectlPortForward, workDir string) (string, error) {
+func doPortForwardGoRaw(ctx context.Context, cfg *rest.Config, ns, pod string, e types.E2EKubectlPortForward, workDir string) (string, error) {
 	localPort, err := freeLocalPort()
 	if err != nil {
 		return "", fmt.Errorf("port-forward: free port: %w", err)
@@ -922,7 +937,7 @@ func doPortForwardGoRaw(ctx context.Context, cfg *rest.Config, ns, pod string, e
 }
 
 // assertPortForwardOutput applies jq/yq extraction and assertions to raw curl output.
-func assertPortForwardOutput(ctx context.Context, workDir, raw string, e orktypes.E2EKubectlPortForward, target string) error {
+func assertPortForwardOutput(ctx context.Context, workDir, raw string, e types.E2EKubectlPortForward, target string) error {
 	out, err := applyExtract(ctx, workDir, raw, e.JQ, e.YQ)
 	if err != nil {
 		return fmt.Errorf("kubectl port-forward %s%s: %w", target, e.Path, err)
@@ -934,7 +949,7 @@ func assertPortForwardOutput(ctx context.Context, workDir, raw string, e orktype
 	return nil
 }
 
-func checkKubectlEvents(ctx context.Context, e orktypes.E2EKubectlEvents, workDir string) error {
+func checkKubectlEvents(ctx context.Context, e types.E2EKubectlEvents, workDir string) error {
 	ns := e.Namespace
 	if ns == "" {
 		ns = "default"
@@ -950,14 +965,14 @@ func checkKubectlEvents(ctx context.Context, e orktypes.E2EKubectlEvents, workDi
 // assertKubectlEventsOutput applies e's assertions to already-fetched
 // events output. Split out so this logic is testable without kubectl or a
 // cluster.
-func assertKubectlEventsOutput(out string, e orktypes.E2EKubectlEvents) error {
+func assertKubectlEventsOutput(out string, e types.E2EKubectlEvents) error {
 	if err := applyAssertions(out, kubectlEventsAssertions(e)); err != nil {
 		return fmt.Errorf("kubectl events %s/%s: %w\noutput: %s", e.Kind, e.Name, err, out)
 	}
 	return nil
 }
 
-func checkKubectlAuth(ctx context.Context, cs kubernetes.Interface, e orktypes.E2EKubectlAuth) error {
+func checkKubectlAuth(ctx context.Context, cs kubernetes.Interface, e types.E2EKubectlAuth) error {
 	attrs := &authorizationv1.ResourceAttributes{
 		Verb:      e.Verb,
 		Resource:  e.Resource,
@@ -1001,7 +1016,7 @@ func checkKubectlAuth(ctx context.Context, cs kubernetes.Interface, e orktypes.E
 	return nil
 }
 
-func checkKubectlCp(ctx context.Context, e orktypes.E2EKubectlCp, workDir string) error {
+func checkKubectlCp(ctx context.Context, e types.E2EKubectlCp, workDir string) error {
 	ns := e.Namespace
 	if ns == "" {
 		ns = "default"
@@ -1018,7 +1033,7 @@ func checkKubectlCp(ctx context.Context, e orktypes.E2EKubectlCp, workDir string
 		}
 	}
 
-	tmp, err := os.CreateTemp("", "ork-e2e-cp-*")
+	tmp, err := os.CreateTemp("", "inrun-e2e-cp-*")
 	if err != nil {
 		return fmt.Errorf("kubectl cp: creating temp file: %w", err)
 	}
@@ -1051,14 +1066,14 @@ func checkKubectlCp(ctx context.Context, e orktypes.E2EKubectlCp, workDir string
 // assertKubectlCpOutput applies e's assertions to the already-copied (and
 // jq/yq-extracted) file content. Split out so this logic is testable
 // without kubectl or a cluster.
-func assertKubectlCpOutput(src, out string, e orktypes.E2EKubectlCp) error {
+func assertKubectlCpOutput(src, out string, e types.E2EKubectlCp) error {
 	if err := applyAssertions(out, kubectlCpAssertions(e)); err != nil {
 		return fmt.Errorf("kubectl cp %s: %w\noutput: %s", src, err, out)
 	}
 	return nil
 }
 
-func checkKubectlTop(ctx context.Context, e orktypes.E2EKubectlTop, workDir string) error {
+func checkKubectlTop(ctx context.Context, e types.E2EKubectlTop, workDir string) error {
 	kind := strings.ToLower(e.Kind)
 	args := []string{"top", kind}
 	if kind == "pod" || kind == "pods" {
@@ -1088,7 +1103,7 @@ func checkKubectlTop(ctx context.Context, e orktypes.E2EKubectlTop, workDir stri
 // assertKubectlTopOutput applies e's assertions to already-fetched `kubectl
 // top` output. Split out so this logic is testable without kubectl or a
 // cluster.
-func assertKubectlTopOutput(kind, out string, e orktypes.E2EKubectlTop) error {
+func assertKubectlTopOutput(kind, out string, e types.E2EKubectlTop) error {
 	if err := applyAssertions(out, kubectlTopAssertions(e)); err != nil {
 		return fmt.Errorf("kubectl top %s: %w\noutput: %s", kind, err, out)
 	}

@@ -11,7 +11,7 @@ import (
 func TestAnnotationRoundTrip_Typed(t *testing.T) {
 	ref, _ := parseRef("ghcr.io/test/patterns/postgres:v1")
 	meta := &PatternMeta{
-		Kind:    KatalogKind,
+		Kind:    CatalogKind,
 		Name:    "postgres",
 		Version: "v1",
 		Typed: &PatternTyped{
@@ -22,13 +22,13 @@ func TestAnnotationRoundTrip_Typed(t *testing.T) {
 
 	ann := artifactMetaToAnnotations(meta, ref)
 
-	if ann["io.orkestra.katalog.typed"] != "true" {
+	if ann["io.inrun.catalog.typed"] != "true" {
 		t.Errorf("typed annotation not set")
 	}
-	if ann["io.orkestra.katalog.has_hooks"] != "true" {
+	if ann["io.inrun.catalog.has_hooks"] != "true" {
 		t.Errorf("has_hooks annotation not set")
 	}
-	if ann["io.orkestra.katalog.has_constructor"] == "true" {
+	if ann["io.inrun.catalog.has_constructor"] == "true" {
 		t.Errorf("has_constructor should not be set when HasConstructor=false")
 	}
 
@@ -47,7 +47,7 @@ func TestAnnotationRoundTrip_Typed(t *testing.T) {
 func TestAnnotationRoundTrip_TypedBoth(t *testing.T) {
 	ref, _ := parseRef("ghcr.io/test/patterns/redis:v2")
 	meta := &PatternMeta{
-		Kind:    KatalogKind,
+		Kind:    CatalogKind,
 		Name:    "redis",
 		Version: "v2",
 		Typed: &PatternTyped{
@@ -70,7 +70,7 @@ func TestAnnotationRoundTrip_TypedBoth(t *testing.T) {
 func TestAnnotationRoundTrip_Deprecated(t *testing.T) {
 	ref, _ := parseRef("ghcr.io/test/patterns/old-postgres:v1")
 	meta := &PatternMeta{
-		Kind:    KatalogKind,
+		Kind:    CatalogKind,
 		Name:    "old-postgres",
 		Version: "v1",
 		Deprecated: &PatternDeprecated{
@@ -81,14 +81,14 @@ func TestAnnotationRoundTrip_Deprecated(t *testing.T) {
 
 	ann := artifactMetaToAnnotations(meta, ref)
 
-	if ann["io.orkestra.katalog.deprecated"] != "true" {
+	if ann["io.inrun.catalog.deprecated"] != "true" {
 		t.Errorf("deprecated annotation not set")
 	}
-	if ann["io.orkestra.katalog.deprecated.migrated_to"] != meta.Deprecated.MigratedTo {
-		t.Errorf("migrated_to = %q; want %q", ann["io.orkestra.katalog.deprecated.migrated_to"], meta.Deprecated.MigratedTo)
+	if ann["io.inrun.catalog.deprecated.migrated_to"] != meta.Deprecated.MigratedTo {
+		t.Errorf("migrated_to = %q; want %q", ann["io.inrun.catalog.deprecated.migrated_to"], meta.Deprecated.MigratedTo)
 	}
-	if ann["io.orkestra.katalog.deprecated.message"] != meta.Deprecated.Message {
-		t.Errorf("message = %q; want %q", ann["io.orkestra.katalog.deprecated.message"], meta.Deprecated.Message)
+	if ann["io.inrun.catalog.deprecated.message"] != meta.Deprecated.Message {
+		t.Errorf("message = %q; want %q", ann["io.inrun.catalog.deprecated.message"], meta.Deprecated.Message)
 	}
 
 	got := annotationsToMeta(ann)
@@ -106,7 +106,7 @@ func TestAnnotationRoundTrip_Deprecated(t *testing.T) {
 func TestAnnotationRoundTrip_NoTypedNoDeprecated(t *testing.T) {
 	ref, _ := parseRef("ghcr.io/test/patterns/plain:v1")
 	meta := &PatternMeta{
-		Kind:    KatalogKind,
+		Kind:    CatalogKind,
 		Name:    "plain",
 		Version: "v1",
 	}
@@ -115,20 +115,20 @@ func TestAnnotationRoundTrip_NoTypedNoDeprecated(t *testing.T) {
 	got := annotationsToMeta(ann)
 
 	if got.Typed != nil {
-		t.Errorf("Typed should be nil for plain katalog")
+		t.Errorf("Typed should be nil for plain catalog")
 	}
 	if got.Deprecated != nil {
-		t.Errorf("Deprecated should be nil for plain katalog")
+		t.Errorf("Deprecated should be nil for plain catalog")
 	}
 }
 
-// ── fixture: testdata/katalog.yaml ───────────────────────────────────────────
+// ── fixture: testdata/catalog.yaml ───────────────────────────────────────────
 
-// TestLoadPatternMeta_Fixture reads the testdata katalog and asserts that
+// TestLoadPatternMeta_Fixture reads the testdata catalog and asserts that
 // metadata.deprecation and metadata.name are parsed correctly.
 func TestLoadPatternMeta_Fixture(t *testing.T) {
 	dir := "testdata"
-	spec := &PatternSpec{Kind: KatalogKind, PrimaryFile: FileKatalog}
+	spec := &PatternSpec{Kind: CatalogKind, PrimaryFile: FileCatalog}
 
 	meta, err := LoadPatternMeta(dir, spec)
 	if err != nil {
@@ -153,8 +153,8 @@ func TestLoadPatternMeta_Fixture(t *testing.T) {
 
 func TestLoadPatternMeta_Deprecation(t *testing.T) {
 	dir := t.TempDir()
-	katalogYAML := `
-kind: Katalog
+	catalogYAML := `
+kind: Catalog
 metadata:
   name: old-redis
   version: v6
@@ -166,11 +166,11 @@ lifecycle:
 spec:
   crds: {}
 `
-	if err := os.WriteFile(filepath.Join(dir, FileKatalog), []byte(katalogYAML), 0o644); err != nil {
-		t.Fatalf("writing test katalog: %v", err)
+	if err := os.WriteFile(filepath.Join(dir, FileCatalog), []byte(catalogYAML), 0o644); err != nil {
+		t.Fatalf("writing test catalog: %v", err)
 	}
 
-	spec := &PatternSpec{Kind: KatalogKind, PrimaryFile: FileKatalog}
+	spec := &PatternSpec{Kind: CatalogKind, PrimaryFile: FileCatalog}
 	meta, err := LoadPatternMeta(dir, spec)
 	if err != nil {
 		t.Fatalf("LoadPatternMeta: %v", err)
@@ -189,19 +189,19 @@ spec:
 
 func TestLoadPatternMeta_NoDeprecation(t *testing.T) {
 	dir := t.TempDir()
-	katalogYAML := `
-kind: Katalog
+	catalogYAML := `
+kind: Catalog
 metadata:
   name: postgres
   version: v14
 spec:
   crds: {}
 `
-	if err := os.WriteFile(filepath.Join(dir, FileKatalog), []byte(katalogYAML), 0o644); err != nil {
-		t.Fatalf("writing test katalog: %v", err)
+	if err := os.WriteFile(filepath.Join(dir, FileCatalog), []byte(catalogYAML), 0o644); err != nil {
+		t.Fatalf("writing test catalog: %v", err)
 	}
 
-	spec := &PatternSpec{Kind: KatalogKind, PrimaryFile: FileKatalog}
+	spec := &PatternSpec{Kind: CatalogKind, PrimaryFile: FileCatalog}
 	meta, err := LoadPatternMeta(dir, spec)
 	if err != nil {
 		t.Fatalf("LoadPatternMeta: %v", err)

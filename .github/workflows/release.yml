@@ -1,4 +1,4 @@
-name: Orkestra Release
+name: Inrun Release
 
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
           echo "IMAGE_TAG=$STRIPPED" >> $GITHUB_ENV
 
   build:
-    name: Build Runtime and Control Center
+    name: Build Runtime and Console
     uses: ./.github/workflows/build-matrix.yml
     secrets: inherit
 
@@ -70,7 +70,7 @@ jobs:
     secrets: inherit
     with:
       image_tag: ${{ needs.prepare.outputs.image_tag }}
-      tap_repository: orkspace/homebrew-tap
+      tap_repository: inrundev/homebrew-tap
 
   summary:
     name: Release Summary

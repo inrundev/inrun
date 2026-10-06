@@ -4,31 +4,31 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkcust "github.com/orkspace/orkestra/pkg/resources/customresources"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/customresources"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // runCustomResources resolves and applies CustomResource template declarations.
 func runCustomResources(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.CustomResourceTemplateSource,
+	srcs []types.CustomResourceTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
-	labelMgr *orklabels.Manager,
+	labelMgr *labels.Manager,
 	shouldProtect bool,
 ) error {
 	// Track active names for conditional cleanup when resources are no longer desired.
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Metadata.Name)
@@ -40,7 +40,7 @@ func runCustomResources(
 	}
 
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		// Resolve name/namespace for guard/cleanup decisions
 		name, _ := resolver.Resolve(src.Metadata.Name)
@@ -58,7 +58,7 @@ func runCustomResources(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orkcust.DeleteIfOwned(ctx, kube, owner, name, ns, src.APIVersion, src.Kind); err != nil {
+					if err := customresources.DeleteIfOwned(ctx, kube, owner, name, ns, src.APIVersion, src.Kind); err != nil {
 						return fmt.Errorf("custom[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -90,22 +90,22 @@ func runCustomResources(
 		}
 
 		// Convert resolved template into the runtime ResolvedCustomResourceSpec
-		spec := orkcust.Resolve(resolved, resolver.OwnerName())
+		spec := customresources.Resolve(resolved, resolver.OwnerName())
 
 		// Create is a no-op if the resource already exists (idempotent OnCreate).
 		// Update always corrects drift — delete drift (recreate) and spec drift.
 		if update {
-			if err := orkcust.Update(ctx, kube, owner, spec, labelMgr, shouldProtect); err != nil {
+			if err := customresources.Update(ctx, kube, owner, spec, labelMgr, shouldProtect); err != nil {
 				return fmt.Errorf("custom[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkcust.Create(ctx, kube, owner, spec, labelMgr, shouldProtect); err != nil {
+			if err := customresources.Create(ctx, kube, owner, spec, labelMgr, shouldProtect); err != nil {
 				return fmt.Errorf("custom[%d].create: %w", i, err)
 			}
 
 			// reconcile: true
 			if src.Reconcile {
-				if err := orkcust.Update(ctx, kube, owner, spec, labelMgr, shouldProtect); err != nil {
+				if err := customresources.Update(ctx, kube, owner, spec, labelMgr, shouldProtect); err != nil {
 					return fmt.Errorf("custom[%d].reconcile: %w", i, err)
 				}
 			}

@@ -1,4 +1,4 @@
-apiVersion: health.orkestra.io/v1alpha1
+apiVersion: health.inrun.dev/v1alpha1
 kind: HealthProbe
 metadata:
   name: probe

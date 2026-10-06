@@ -4,21 +4,21 @@ package types_test
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
 // ── AllowedNamespaces.IsAllowed ───────────────────────────────────────────────
 
 func TestAllowedNamespaces_EmptyAllowsAll(t *testing.T) {
-	var a orktypes.AllowedNamespaces
+	var a types.AllowedNamespaces
 	assert.True(t, a.IsAllowed("anything"))
 	assert.True(t, a.IsAllowed("kube-system"))
 	assert.True(t, a.IsAllowed(""))
 }
 
 func TestAllowedNamespaces_ExactMatch(t *testing.T) {
-	a := orktypes.AllowedNamespaces{"apps", "workloads"}
+	a := types.AllowedNamespaces{"apps", "workloads"}
 	assert.True(t, a.IsAllowed("apps"))
 	assert.True(t, a.IsAllowed("workloads"))
 	assert.False(t, a.IsAllowed("kube-system"))
@@ -26,7 +26,7 @@ func TestAllowedNamespaces_ExactMatch(t *testing.T) {
 }
 
 func TestAllowedNamespaces_PrefixWildcard(t *testing.T) {
-	a := orktypes.AllowedNamespaces{"team-*"}
+	a := types.AllowedNamespaces{"team-*"}
 	assert.True(t, a.IsAllowed("team-alpha"))
 	assert.True(t, a.IsAllowed("team-beta"))
 	assert.False(t, a.IsAllowed("myteam-alpha"))
@@ -34,7 +34,7 @@ func TestAllowedNamespaces_PrefixWildcard(t *testing.T) {
 }
 
 func TestAllowedNamespaces_SuffixWildcard(t *testing.T) {
-	a := orktypes.AllowedNamespaces{"*-sandbox"}
+	a := types.AllowedNamespaces{"*-sandbox"}
 	assert.True(t, a.IsAllowed("dev-sandbox"))
 	assert.True(t, a.IsAllowed("prod-sandbox"))
 	assert.False(t, a.IsAllowed("sandbox-dev"))
@@ -42,7 +42,7 @@ func TestAllowedNamespaces_SuffixWildcard(t *testing.T) {
 }
 
 func TestAllowedNamespaces_MultiplePatterns(t *testing.T) {
-	a := orktypes.AllowedNamespaces{"apps", "team-*", "*-sandbox"}
+	a := types.AllowedNamespaces{"apps", "team-*", "*-sandbox"}
 	assert.True(t, a.IsAllowed("apps"))
 	assert.True(t, a.IsAllowed("team-payments"))
 	assert.True(t, a.IsAllowed("dev-sandbox"))
@@ -52,8 +52,8 @@ func TestAllowedNamespaces_MultiplePatterns(t *testing.T) {
 // ── AllowedNamespaces.Merge ───────────────────────────────────────────────────
 
 func TestAllowedNamespaces_Merge_Deduplicates(t *testing.T) {
-	a := orktypes.AllowedNamespaces{"apps", "workloads"}
-	b := orktypes.AllowedNamespaces{"workloads", "team-*"}
+	a := types.AllowedNamespaces{"apps", "workloads"}
+	b := types.AllowedNamespaces{"workloads", "team-*"}
 	merged := a.Merge(b)
 	assert.Len(t, merged, 3)
 	assert.Contains(t, []string(merged), "apps")
@@ -62,42 +62,42 @@ func TestAllowedNamespaces_Merge_Deduplicates(t *testing.T) {
 }
 
 func TestAllowedNamespaces_Merge_EmptyRight(t *testing.T) {
-	a := orktypes.AllowedNamespaces{"apps"}
+	a := types.AllowedNamespaces{"apps"}
 	merged := a.Merge(nil)
-	assert.Equal(t, orktypes.AllowedNamespaces{"apps"}, merged)
+	assert.Equal(t, types.AllowedNamespaces{"apps"}, merged)
 }
 
 func TestAllowedNamespaces_Merge_EmptyLeft(t *testing.T) {
-	var a orktypes.AllowedNamespaces
-	b := orktypes.AllowedNamespaces{"apps"}
+	var a types.AllowedNamespaces
+	b := types.AllowedNamespaces{"apps"}
 	merged := a.Merge(b)
-	assert.Equal(t, orktypes.AllowedNamespaces{"apps"}, merged)
+	assert.Equal(t, types.AllowedNamespaces{"apps"}, merged)
 }
 
 // ── RestrictedNamespaces.IsRestricted ────────────────────────────────────────
 
 func TestRestrictedNamespaces_EmptyAllowsAll(t *testing.T) {
-	var r orktypes.RestrictedNamespaces
+	var r types.RestrictedNamespaces
 	assert.False(t, r.IsRestricted("kube-system"))
 	assert.False(t, r.IsRestricted("anything"))
 }
 
 func TestRestrictedNamespaces_ExactMatch(t *testing.T) {
-	r := orktypes.RestrictedNamespaces{"kube-system", "cert-manager"}
+	r := types.RestrictedNamespaces{"kube-system", "cert-manager"}
 	assert.True(t, r.IsRestricted("kube-system"))
 	assert.True(t, r.IsRestricted("cert-manager"))
 	assert.False(t, r.IsRestricted("apps"))
 }
 
 func TestRestrictedNamespaces_PrefixWildcard(t *testing.T) {
-	r := orktypes.RestrictedNamespaces{"kube-*"}
+	r := types.RestrictedNamespaces{"kube-*"}
 	assert.True(t, r.IsRestricted("kube-system"))
 	assert.True(t, r.IsRestricted("kube-public"))
 	assert.False(t, r.IsRestricted("notakube"))
 }
 
 func TestRestrictedNamespaces_SuffixWildcard(t *testing.T) {
-	r := orktypes.RestrictedNamespaces{"*-system"}
+	r := types.RestrictedNamespaces{"*-system"}
 	assert.True(t, r.IsRestricted("kube-system"))
 	assert.True(t, r.IsRestricted("monitoring-system"))
 	assert.False(t, r.IsRestricted("system-kube"))
@@ -106,8 +106,8 @@ func TestRestrictedNamespaces_SuffixWildcard(t *testing.T) {
 // ── RestrictedNamespaces.Merge ────────────────────────────────────────────────
 
 func TestRestrictedNamespaces_Merge_Deduplicates(t *testing.T) {
-	r := orktypes.RestrictedNamespaces{"kube-system", "monitoring"}
-	s := orktypes.RestrictedNamespaces{"monitoring", "cert-manager"}
+	r := types.RestrictedNamespaces{"kube-system", "monitoring"}
+	s := types.RestrictedNamespaces{"monitoring", "cert-manager"}
 	merged := r.Merge(s)
 	assert.Len(t, merged, 3)
 	assert.Contains(t, []string(merged), "kube-system")
@@ -116,7 +116,7 @@ func TestRestrictedNamespaces_Merge_Deduplicates(t *testing.T) {
 }
 
 func TestRestrictedNamespaces_Merge_EmptyRight(t *testing.T) {
-	r := orktypes.RestrictedNamespaces{"kube-system"}
+	r := types.RestrictedNamespaces{"kube-system"}
 	merged := r.Merge(nil)
-	assert.Equal(t, orktypes.RestrictedNamespaces{"kube-system"}, merged)
+	assert.Equal(t, types.RestrictedNamespaces{"kube-system"}, merged)
 }

@@ -3,20 +3,20 @@ package simulate
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // gatedReconciler wraps a domain.Reconciler and evaluates preReconcile
 // conditions before delegating. When the gate fires the reconcile is a no-op —
-// same behaviour as the kordinator gate in a live cluster.
+// same behaviour as the coordinator gate in a live cluster.
 type gatedReconciler struct {
 	inner  domain.Reconciler
-	gate   *orktypes.PreReconcileConfig
+	gate   *types.PreReconcileConfig
 	getObj func() *unstructured.Unstructured
-	notes  orktypes.NoteRegistry
+	notes  types.NoteRegistry
 }
 
 func (g *gatedReconciler) Reconcile(ctx context.Context, req domain.Request) (domain.Result, error) {
@@ -27,7 +27,7 @@ func (g *gatedReconciler) Reconcile(ctx context.Context, req domain.Request) (do
 	if obj == nil {
 		return g.inner.Reconcile(ctx, req)
 	}
-	resolver, err := orktmpl.NewResolver(ctx, obj)
+	resolver, err := template.NewResolver(ctx, obj)
 	if err != nil {
 		return g.inner.Reconcile(ctx, req)
 	}
@@ -35,14 +35,14 @@ func (g *gatedReconciler) Reconcile(ctx context.Context, req domain.Request) (do
 
 	// Evaluate preReconcile.enqueueGate first — mirrors informer-level drop in live path.
 	if g.gate.EnqueueGate.HasConditions() {
-		if !orktypes.EvaluateConditions(resolver.Data(), g.gate.EnqueueGate.WhenConditions(), g.gate.EnqueueGate.OrConditions(), eval) {
+		if !types.EvaluateConditions(resolver.Data(), g.gate.EnqueueGate.WhenConditions(), g.gate.EnqueueGate.OrConditions(), eval) {
 			return domain.Result{}, nil // filtered — skip, no error
 		}
 	}
 
-	// Evaluate preReconcile.when/or — mirrors kordinator gate in live path.
+	// Evaluate preReconcile.when/or — mirrors coordinator gate in live path.
 	if g.gate.ReconcileGate.HasConditions() {
-		if !orktypes.EvaluateConditions(resolver.Data(), g.gate.WhenConditions(), g.gate.OrConditions(), eval) {
+		if !types.EvaluateConditions(resolver.Data(), g.gate.WhenConditions(), g.gate.OrConditions(), eval) {
 			return domain.Result{}, nil // gated — skip, no error
 		}
 	}
@@ -52,7 +52,7 @@ func (g *gatedReconciler) Reconcile(ctx context.Context, req domain.Request) (do
 
 // wrapWithGate returns r wrapped with a preReconcile gate check if the CRD
 // declares any filter or when/or conditions; otherwise returns r unchanged.
-func wrapWithGate(r domain.Reconciler, gate *orktypes.PreReconcileConfig, notes orktypes.NoteRegistry, getObj func() *unstructured.Unstructured) domain.Reconciler {
+func wrapWithGate(r domain.Reconciler, gate *types.PreReconcileConfig, notes types.NoteRegistry, getObj func() *unstructured.Unstructured) domain.Reconciler {
 	if gate == nil || (!gate.ReconcileGate.HasConditions() && !gate.EnqueueGate.HasConditions()) {
 		return r
 	}

@@ -1,7 +1,7 @@
 // pkg/template/resolver_normalize.go
 package template
 
-import orktypes "github.com/orkspace/orkestra/pkg/types"
+import "github.com/inrundev/inrun/pkg/types"
 
 // WithNormalizeChanges returns a new Resolver that includes normalize audit
 // data under the "_normalizeChanges" key. Status field templates can reference
@@ -11,7 +11,7 @@ import orktypes "github.com/orkspace/orkestra/pkg/types"
 //     value: "{{ toJson ._normalizeChanges }}"
 //
 // When changes is empty, the original resolver is returned unchanged.
-func (r *Resolver) WithNormalizeChanges(changes []orktypes.NormalizeChange) *Resolver {
+func (r *Resolver) WithNormalizeChanges(changes []types.NormalizeChange) *Resolver {
 	if len(changes) == 0 {
 		return r
 	}

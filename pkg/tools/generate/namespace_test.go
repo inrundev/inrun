@@ -4,17 +4,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/tools/generate"
+	"github.com/inrundev/inrun/pkg/tools/generate"
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 const testNamespace = "test-namespace"
 
-// minimalExpandedKatalog returns the smallest valid expanded-katalog YAML —
+// minimalExpandedCatalog returns the smallest valid expanded-catalog YAML —
 // no imports, no CRDs. Used to satisfy ConfigMap / RenderBundle without
 // requiring a real merge+expand pipeline.
-func minimalExpandedKatalog() []byte {
-	return []byte("apiVersion: orkestra.orkspace.io/v1\nkind: Katalog\nmetadata:\n  name: test\nspec:\n  crds: {}\n")
+func minimalExpandedCatalog() []byte {
+	return []byte("apiVersion: inrun.dev/v1\nkind: Catalog\nmetadata:\n  name: test\nspec:\n  crds: {}\n")
 }
 
 // countOccurrences returns how many times sub appears in s.
@@ -84,7 +84,7 @@ func TestRBAC_NamespaceAppearsOnce(t *testing.T) {
 // ── ConfigMap standalone ─────────────────────────────────────────────────────
 
 func TestConfigMap_ContainsNamespaceFirst(t *testing.T) {
-	output, err := generate.ConfigMap(minimalExpandedKatalog(), testNamespace)
+	output, err := generate.ConfigMap(minimalExpandedCatalog(), testNamespace)
 	if err != nil {
 		t.Fatalf("ConfigMap: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestConfigMap_ContainsNamespaceFirst(t *testing.T) {
 }
 
 func TestConfigMap_NamespaceAppearsOnce(t *testing.T) {
-	output, err := generate.ConfigMap(minimalExpandedKatalog(), testNamespace)
+	output, err := generate.ConfigMap(minimalExpandedCatalog(), testNamespace)
 	if err != nil {
 		t.Fatalf("ConfigMap: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestConfigMap_NamespaceAppearsOnce(t *testing.T) {
 // ── Bundle ───────────────────────────────────────────────────────────────────
 
 func TestRenderBundle_NamespaceAppearsOnce(t *testing.T) {
-	bundle, err := generate.RenderBundle(nil, nil, minimalExpandedKatalog(), testNamespace, "", generate.DefaultBundleOptions())
+	bundle, err := generate.RenderBundle(nil, nil, minimalExpandedCatalog(), testNamespace, "", generate.DefaultBundleOptions())
 	if err != nil {
 		t.Fatalf("RenderBundle: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestRenderBundle_NamespaceAppearsOnce(t *testing.T) {
 }
 
 func TestRenderBundle_ContainsAllResources(t *testing.T) {
-	bundle, err := generate.RenderBundle([]rbacv1.PolicyRule{}, nil, minimalExpandedKatalog(), testNamespace, "", generate.DefaultBundleOptions())
+	bundle, err := generate.RenderBundle([]rbacv1.PolicyRule{}, nil, minimalExpandedCatalog(), testNamespace, "", generate.DefaultBundleOptions())
 	if err != nil {
 		t.Fatalf("RenderBundle: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestRenderBundle_ContainsAllResources(t *testing.T) {
 }
 
 func TestRenderBundle_NamespaceBeforeEverythingElse(t *testing.T) {
-	bundle, err := generate.RenderBundle(nil, nil, minimalExpandedKatalog(), testNamespace, "", generate.DefaultBundleOptions())
+	bundle, err := generate.RenderBundle(nil, nil, minimalExpandedCatalog(), testNamespace, "", generate.DefaultBundleOptions())
 	if err != nil {
 		t.Fatalf("RenderBundle: %v", err)
 	}
@@ -161,9 +161,9 @@ func TestRenderBundle_NamespaceBeforeEverythingElse(t *testing.T) {
 }
 
 func TestRenderBundle_WorkloadNamespace(t *testing.T) {
-	workloadNS := "myapp-orkestra-ns"
+	workloadNS := "myapp-inrun-ns"
 
-	bundle, err := generate.RenderBundle(nil, nil, minimalExpandedKatalog(), testNamespace, workloadNS, generate.DefaultBundleOptions())
+	bundle, err := generate.RenderBundle(nil, nil, minimalExpandedCatalog(), testNamespace, workloadNS, generate.DefaultBundleOptions())
 	if err != nil {
 		t.Fatalf("RenderBundle: %v", err)
 	}
@@ -180,8 +180,8 @@ func TestRenderBundle_WorkloadNamespace(t *testing.T) {
 }
 
 func TestRenderBundle_NoDoubleDocSeparators(t *testing.T) {
-	for _, workloadNS := range []string{"", "myapp-orkestra-ns"} {
-		bundle, err := generate.RenderBundle(nil, nil, minimalExpandedKatalog(), testNamespace, workloadNS, generate.DefaultBundleOptions())
+	for _, workloadNS := range []string{"", "myapp-inrun-ns"} {
+		bundle, err := generate.RenderBundle(nil, nil, minimalExpandedCatalog(), testNamespace, workloadNS, generate.DefaultBundleOptions())
 		if err != nil {
 			t.Fatalf("RenderBundle (workloadNS=%q): %v", workloadNS, err)
 		}

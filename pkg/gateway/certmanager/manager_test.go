@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/gateway/certmanager"
+	"github.com/inrundev/inrun/pkg/gateway/certmanager"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -21,12 +21,12 @@ func TestEnsureCertificate_Creates(t *testing.T) {
 	ctx := context.Background()
 
 	spec := certmanager.CertificateSpec{
-		ServiceName: "orkestra",
-		Namespace:   "orkestra-system",
+		ServiceName: "inrun",
+		Namespace:   "inrun-system",
 		SecretName:  certmanager.DefaultTLSSecretName,
 		ValidFor:    "1y",
 		BaseLabels: map[string]string{
-			"app.kubernetes.io/name": "orkestra",
+			"app.kubernetes.io/name": "inrun",
 		},
 	}
 
@@ -45,7 +45,7 @@ func TestEnsureCertificate_Creates(t *testing.T) {
 	if secret.Type != corev1.SecretTypeTLS {
 		t.Errorf("expected TLS type, got %s", secret.Type)
 	}
-	if secret.Labels["orkestra.io/deletion-protection"] != "true" {
+	if secret.Labels["inrun.dev/deletion-protection"] != "true" {
 		t.Error("deletion-protection label missing")
 	}
 	if secret.Labels["app.kubernetes.io/component"] != "tls" {
@@ -58,7 +58,7 @@ func TestEnsureCertificate_UpdatesExisting(t *testing.T) {
 	existing := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            certmanager.DefaultTLSSecretName,
-			Namespace:       "orkestra-system",
+			Namespace:       "inrun-system",
 			ResourceVersion: "1",
 		},
 		Type: corev1.SecretTypeTLS,
@@ -67,8 +67,8 @@ func TestEnsureCertificate_UpdatesExisting(t *testing.T) {
 	mgr := certmanager.New(cs)
 
 	spec := certmanager.CertificateSpec{
-		ServiceName: "orkestra",
-		Namespace:   "orkestra-system",
+		ServiceName: "inrun",
+		Namespace:   "inrun-system",
 		SecretName:  certmanager.DefaultTLSSecretName,
 		ValidFor:    "1y",
 	}
@@ -87,18 +87,18 @@ func TestDeleteCertificateAndSecret(t *testing.T) {
 	existing := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      certmanager.DefaultTLSSecretName,
-			Namespace: "orkestra-system",
+			Namespace: "inrun-system",
 		},
 	}
 	cs := fake.NewClientset(existing)
 	mgr := certmanager.New(cs)
 
-	if err := mgr.DeleteCertificateAndSecret(ctx, "orkestra-system", certmanager.DefaultTLSSecretName); err != nil {
+	if err := mgr.DeleteCertificateAndSecret(ctx, "inrun-system", certmanager.DefaultTLSSecretName); err != nil {
 		t.Fatalf("DeleteCertificateAndSecret: %v", err)
 	}
 
 	// Verify gone.
-	_, err := cs.CoreV1().Secrets("orkestra-system").Get(ctx, certmanager.DefaultTLSSecretName, metav1.GetOptions{})
+	_, err := cs.CoreV1().Secrets("inrun-system").Get(ctx, certmanager.DefaultTLSSecretName, metav1.GetOptions{})
 	if err == nil {
 		t.Fatal("expected secret to be deleted")
 	}

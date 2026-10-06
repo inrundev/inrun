@@ -1,8 +1,0 @@
-apiVersion: security.orkestra.io/v1alpha1
-kind: Cache
-metadata:
-  name: my-cache
-  namespace: default
-spec:
-  maxMemory: "512Mi"
-  evictionPolicy: allkeys-lru

@@ -1,5 +1,5 @@
 expect:
-  - name: deploy MongoDB in orkestra-system
+  - name: deploy MongoDB in inrun-system
     kubectl:
       apply:
         - inline: |
@@ -7,7 +7,7 @@ expect:
             kind: Deployment
             metadata:
               name: mongo
-              namespace: orkestra-system
+              namespace: inrun-system
             spec:
               replicas: 1
               selector:
@@ -29,7 +29,7 @@ expect:
             kind: Service
             metadata:
               name: mongo
-              namespace: orkestra-system
+              namespace: inrun-system
             spec:
               selector:
                 app: mongo
@@ -42,5 +42,5 @@ expect:
     resources:
       - kind: Deployment
         name: mongo
-        namespace: orkestra-system
+        namespace: inrun-system
         condition: Available

@@ -2,7 +2,7 @@
 # Tests: missing required field (team), invalid enum (workloadType).
 # Apply with: POST /api/v1/apply?dryRun=true
 # Expected: Accepted=false, Violations with field-level messages.
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: PlatformResource
 metadata:
   name: bad-request

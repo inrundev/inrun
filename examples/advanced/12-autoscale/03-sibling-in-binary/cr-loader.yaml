@@ -1,8 +1,0 @@
-apiVersion: autoscale.orkestra.io/v1alpha1
-kind: Loader
-metadata:
-  name: my-loader
-  namespace: default
-spec:
-  image: nginx:stable-alpine
-  replicas: 1

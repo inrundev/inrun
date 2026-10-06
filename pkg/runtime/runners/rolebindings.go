@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkrb "github.com/orkspace/orkestra/pkg/resources/rolebindings"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/rolebindings"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunRoleBindings resolves and applies RoleBinding template declarations.
@@ -21,15 +21,15 @@ import (
 func RunRoleBindings(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.RoleBindingTemplateSource,
+	srcs []types.RoleBindingTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -41,7 +41,7 @@ func RunRoleBindings(
 	}
 
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 		ns, _ := resolver.Resolve(src.Namespace)
@@ -56,7 +56,7 @@ func RunRoleBindings(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orkrb.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := rolebindings.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("roleBindings[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -73,14 +73,14 @@ func RunRoleBindings(
 			return fmt.Errorf("roleBindings[%d]: %w", i, err)
 		}
 
-		spec := orkrb.Resolve(resolved, resolver.OwnerName())
+		spec := rolebindings.Resolve(resolved, resolver.OwnerName())
 
 		if update || src.Reconcile {
-			if err := orkrb.Update(ctx, kube, owner, spec); err != nil {
+			if err := rolebindings.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("roleBindings[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkrb.Create(ctx, kube, owner, spec); err != nil {
+			if err := rolebindings.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("roleBindings[%d].create: %w", i, err)
 			}
 		}

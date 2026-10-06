@@ -1,37 +1,3 @@
-// Package health implements Orkestra's HTTP health, readiness, and metrics surface.
-//
-// # Responsibility
-//
-// The health package owns the HTTP server that Kubernetes uses to probe the
-// operator's lifecycle. It serves three standard probe endpoints:
-//
-//   - GET /startup  — Kubernetes startupProbe. Returns 200 once the controller has
-//     fully initialised. Prevents liveness/readiness probes from running too early.
-//   - GET /health   — Kubernetes livenessProbe. Returns 200 when the process is
-//     operational; 500 when a fatal condition is detected.
-//   - GET /ready    — Kubernetes readinessProbe. Returns 200 when the controller
-//     is ready to process requests; 503 during startup, informer sync, and shutdown.
-//
-// Additionally, the Prometheus metrics endpoint is served at GET /metrics.
-// All Katalog API routes (/katalog/...) are registered externally via Register()
-// by cmd/internal/runtime_konstructor.go before Start() is called.
-//
-// # What this package does NOT do
-//
-// Webhook admission and conversion handling, TLS server lifecycle, and webhook
-// configuration registration are handled by pkg/webhook. The two packages are
-// intentionally separated: this package starts first to serve /ready during
-// startup, and the webhook server starts after it, once the cluster-facing
-// admission surface is needed.
-//
-// # Lifecycle
-//
-// HealthServer implements domain.Komponent:
-//
-//	New(konfig)
-//	  → Register(path, handler)   — called before Start() to add Katalog routes
-//	  → Start(ctx)                — bind port, start HTTP server
-//	  → Shutdown(ctx)             — graceful drain, mark not-ready
 package health
 
 import (
@@ -43,15 +9,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var _ domain.Komponent = (*HealthServer)(nil)
+var _ domain.Component = (*HealthServer)(nil)
 
-// HealthServer serves Orkestra's HTTP health, readiness, and metrics endpoints.
+// HealthServer serves Inrun's HTTP health, readiness, and metrics endpoints.
 // It is intentionally minimal — all webhook and admission logic lives in pkg/webhook.
 //
 // Routes are registered before Start() via Register(). Start() binds the HTTP port
@@ -59,7 +25,7 @@ var _ domain.Komponent = (*HealthServer)(nil)
 type HealthServer struct {
 	name string
 
-	// HTTP server for health, readiness, metrics, and Katalog API routes.
+	// HTTP server for health, readiness, metrics, and Catalog API routes.
 	server *http.Server
 	mux    *http.ServeMux
 
@@ -77,12 +43,12 @@ type HealthServer struct {
 
 // NewHealthServer constructs a HealthServer. No I/O is performed.
 // Routes must be registered via Register() before calling Start().
-func NewHealthServer(kfg *konfig.Konfig) *HealthServer {
+func NewHealthServer(kfg *config.Config) *HealthServer {
 	hs := &HealthServer{
 		name:     "health server",
-		client:   kfg.Ork().Name(),
+		client:   kfg.Inrun().Name(),
 		httpPort: kfg.Health().Port(),
-		logLevel: kfg.Ork().LogLevel(),
+		logLevel: kfg.Inrun().LogLevel(),
 		mux:      http.NewServeMux(),
 	}
 	hs.ready.Store(false)

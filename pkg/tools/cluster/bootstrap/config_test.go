@@ -12,11 +12,11 @@ func TestLoadConfig_Valid(t *testing.T) {
 	yaml := `
 clusters:
   - name: staging
-    context: kind-ork-multi-2
+    context: kind-inrun-multi-2
   - name: prod
-    context: kind-ork-multi-3
+    context: kind-inrun-multi-3
     sa-namespace: restricted-ns
-    sa-name: argocd-ork-generated
+    sa-name: argocd-inrun-generated
 `
 	cfg := mustLoadYAML(t, yaml)
 
@@ -25,7 +25,7 @@ clusters:
 	}
 
 	s := cfg.Clusters[0]
-	if s.Name != "staging" || s.Context != "kind-ork-multi-2" {
+	if s.Name != "staging" || s.Context != "kind-inrun-multi-2" {
 		t.Errorf("unexpected staging entry: %+v", s)
 	}
 	if s.SANamespace != DefaultSANamespace {
@@ -36,8 +36,8 @@ clusters:
 	if p.SANamespace != "restricted-ns" {
 		t.Errorf("expected sa-namespace %q, got %q", "restricted-ns", p.SANamespace)
 	}
-	if p.SAName != "argocd-ork-generated" {
-		t.Errorf("expected sa-name %q, got %q", "argocd-ork-generated", p.SAName)
+	if p.SAName != "argocd-inrun-generated" {
+		t.Errorf("expected sa-name %q, got %q", "argocd-inrun-generated", p.SAName)
 	}
 }
 

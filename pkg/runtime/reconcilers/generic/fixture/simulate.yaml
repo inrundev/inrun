@@ -1,11 +1,11 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: reconciler-probe-sim
   description: Verify all onCreate resources are reconciled in cycle 1 with no errors
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   cr: ./cr.yaml
   cycles: 3
 

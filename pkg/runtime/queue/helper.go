@@ -1,8 +1,8 @@
 package queue
 
 import (
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/logger"
 	"k8s.io/client-go/tools/cache"
 )
 

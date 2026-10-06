@@ -1,4 +1,4 @@
-apiVersion: demo.orkestra.io/v1alpha1
+apiVersion: demo.inrun.dev/v1alpha1
 kind: BlockchainNode
 metadata:
   name: 02-constructor-my-node
@@ -7,4 +7,4 @@ spec:
   image: nginx:latest
   network: testnet
   replicas: 5
-  serviceUrl: "http://orkestra-dev-server.orkestra-system.svc:9999"
+  serviceUrl: "http://inrun-dev-server.inrun-system.svc:9999"

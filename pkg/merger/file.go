@@ -6,23 +6,23 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ── Merge rules ───────────────────────────────────────────────────────────────
 //
-// Katalog  (kind: Katalog)
+// Catalog  (kind: Catalog)
 //   Declares CRDs directly in spec.crds.
-//   Must NOT declare imports — imports are a Komposer concern.
+//   Must NOT declare imports — imports are a Stack concern.
 //   Error if imports block is present.
 //
-// Komposer (kind: Komposer)
-//   Composes Katalogs from multiple imports (files, registry, helm).
+// Stack (kind: Stack)
+//   Composes Catalogs from multiple imports (files, registry, helm).
 //   May declare inline spec.crds as overrides — merged last, win on conflict.
-//   Imports are resolved recursively. Each import must be a Katalog.
-//   A Komposer cannot import another Komposer.
+//   Imports are resolved recursively. Each import must be a Catalog.
+//   A Stack cannot import another Stack.
 //
 // Within one file's import tree:
 //   localSeen catches duplicates across imports and within inline block.
@@ -36,77 +36,77 @@ import (
 // Inline duplicates inline:
 //   always an error.
 
-// loadKatalogFile parses one file and dispatches to the correct loader
+// loadCatalogFile parses one file and dispatches to the correct loader
 // based on its kind. Returns the deduplicated CRD map for this file tree.
-func (m *Merger) loadKatalogFile(path string) (map[string]orktypes.CRDEntry, error) {
+func (m *Merger) loadCatalogFile(path string) (map[string]types.CRDEntry, error) {
 	data, err := loadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading %q: %w", path, err)
 	}
 
-	doc, err := parseKatalogDoc(data, path)
+	doc, err := parseCatalogDoc(data, path)
 	if err != nil {
 		return nil, err
 	}
 	if doc == nil {
 		if kind := sniffDocumentKind(data); kind != "" {
-			return nil, fmt.Errorf("%q: kind %q cannot be used here — expected kind: Katalog or Komposer", path, kind)
+			return nil, fmt.Errorf("%q: kind %q cannot be used here — expected kind: Catalog or Stack", path, kind)
 		}
 		logger.Debug().
 			Str("path", path).
-			Msg("merger: skipping — not a valid Katalog or Komposer document")
+			Msg("merger: skipping — not a valid Catalog or Stack document")
 		return nil, nil
 	}
 
-	// Dispatch on Kind — Katalog and Komposer are handled differently
+	// Dispatch on Kind — Catalog and Stack are handled differently
 	switch doc.Kind {
-	case konfig.KatalogKind():
-		return m.loadKatalog(path, doc)
-	case konfig.KomposerKind():
-		return m.loadKomposer(path, doc)
+	case config.CatalogKind():
+		return m.loadCatalog(path, doc)
+	case config.StackKind():
+		return m.loadStack(path, doc)
 	default:
-		// Should not reach here — parseKatalogDoc already validates Kind
+		// Should not reach here — parseCatalogDoc already validates Kind
 		return nil, fmt.Errorf("%q: unexpected kind %q", path, doc.Kind)
 	}
 }
 
-// loadKatalog reads CRD definitions from a Katalog file.
+// loadCatalog reads CRD definitions from a Catalog file.
 // Map keys are the CRD names; Name is injected from the key.
-func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string]orktypes.CRDEntry, error) {
-	// Guard — imports in a Katalog is a mistake
-	if doc.LooksLikeKomposer() {
+func (m *Merger) loadCatalog(path string, doc *types.CatalogFile) (map[string]types.CRDEntry, error) {
+	// Guard — imports in a Catalog is a mistake
+	if doc.LooksLikeStack() {
 		return nil, fmt.Errorf(
-			"%q: kind Katalog cannot declare imports — "+
-				"use kind: Komposer to compose multiple Katalogs",
+			"%q: kind Catalog cannot declare imports — "+
+				"use kind: Stack to compose multiple Catalogs",
 			path,
 		)
 	}
 
-	result := make(map[string]orktypes.CRDEntry, len(doc.Spec.CRDs))
+	result := make(map[string]types.CRDEntry, len(doc.Spec.CRDs))
 
-	// Resolve the katalog namespace — "default" when not declared.
-	katalogNamespace := doc.Metadata.Namespace
-	if katalogNamespace == "" {
-		katalogNamespace = "default"
+	// Resolve the catalog namespace — "default" when not declared.
+	catalogNamespace := doc.Metadata.Namespace
+	if catalogNamespace == "" {
+		catalogNamespace = "default"
 	}
 
-	// katalogDir is used to resolve relative crdFile and crFiles paths.
-	// We resolve them here — while we still have the katalog file's path —
+	// catalogDir is used to resolve relative crdFile and crFiles paths.
+	// We resolve them here — while we still have the catalog file's path —
 	// so they become absolute before being merged into the top-level map.
-	// This allows ork run/validate -f /any/path/katalog.yaml to work from
-	// any working directory, even when the katalog is imported by a Komposer.
+	// This allows inrun/validate -f /any/path/catalog.yaml to work from
+	// any working directory, even when the catalog is imported by a Stack.
 	//
-	// katalogDir must be made genuinely absolute (not just joined once) —
-	// downstream resolution (e.g. populateAPITypesFromCRDFile in
-	// pkg/katalog/crdfile.go) re-checks filepath.IsAbs() on the already-
-	// joined path and re-joins it against katalogDir again if it's still
+	// catalogDir must be made genuinely absolute (not just joined once) —
+	// downstream resolution (e.g. PopulateAPITypesFromCRDFile in
+	// pkg/catalog/crdfile.go) re-checks filepath.IsAbs() on the already-
+	// joined path and re-joins it against catalogDir again if it's still
 	// relative, doubling the directory. A relative -f path with a real
-	// subdirectory (e.g. -f a/b/katalog.yaml run from elsewhere) used to
-	// silently double into a/b/a/b/crd.yaml — invisible when katalogDir
-	// happened to be "." (running from inside the katalog's own directory).
-	katalogDir := filepath.Dir(path)
-	if abs, err := filepath.Abs(katalogDir); err == nil {
-		katalogDir = abs
+	// subdirectory (e.g. -f a/b/catalog.yaml run from elsewhere) used to
+	// silently double into a/b/a/b/crd.yaml — invisible when catalogDir
+	// happened to be "." (running from inside the catalog's own directory).
+	catalogDir := filepath.Dir(path)
+	if abs, err := filepath.Abs(catalogDir); err == nil {
+		catalogDir = abs
 	}
 
 	for name, crd := range doc.Spec.CRDs {
@@ -116,45 +116,45 @@ func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string
 		// Duplicate within the same file is impossible — map keys are unique.
 		crd.Name = name
 
-		// Resolve crdFile and crFiles to absolute paths relative to this katalog.
+		// Resolve crdFile and crFiles to absolute paths relative to this catalog.
 		if crd.CRDFile != "" && !filepath.IsAbs(crd.CRDFile) && !strings.HasPrefix(crd.CRDFile, "http") {
-			crd.CRDFile = filepath.Join(katalogDir, crd.CRDFile)
+			crd.CRDFile = filepath.Join(catalogDir, crd.CRDFile)
 		}
 		for i, cf := range crd.CRFiles {
 			if !filepath.IsAbs(cf) && !strings.HasPrefix(cf, "http") {
-				crd.CRFiles[i] = filepath.Join(katalogDir, cf)
+				crd.CRFiles[i] = filepath.Join(catalogDir, cf)
 			}
 		}
 		if crd.Setup != nil {
 			for i, entry := range crd.Setup.Apply {
 				if !filepath.IsAbs(entry.Path) && !strings.HasPrefix(entry.Path, "http") {
-					crd.Setup.Apply[i].Path = filepath.Join(katalogDir, entry.Path)
+					crd.Setup.Apply[i].Path = filepath.Join(catalogDir, entry.Path)
 				}
 			}
 		}
-		// Resolve motif file paths in imports to absolute so they work regardless
-		// of the working directory when expandMotifImports runs.
+		// Resolve module file paths in imports to absolute so they work regardless
+		// of the working directory when expandModuleImports runs.
 		if crd.Box().Reconcile != nil {
 			for i, imp := range crd.Box().Reconcile.Imports {
-				if isFileMotif(imp.Motif) && !filepath.IsAbs(imp.Motif) {
-					crd.Box().Reconcile.Imports[i].Motif = filepath.Join(katalogDir, imp.Motif)
+				if isFileModule(imp.Module) && !filepath.IsAbs(imp.Module) {
+					crd.Box().Reconcile.Imports[i].Module = filepath.Join(catalogDir, imp.Module)
 				}
 			}
 		}
 
-		// Stamp katalog metadata — only when not already set so that values
+		// Stamp catalog metadata — only when not already set so that values
 		// deserialized from an expanded ConfigMap YAML are preserved.
-		if crd.KatalogNamespace == "" {
-			crd.KatalogNamespace = katalogNamespace
+		if crd.CatalogNamespace == "" {
+			crd.CatalogNamespace = catalogNamespace
 		}
-		if crd.KatalogDescription == "" {
-			crd.KatalogDescription = doc.Metadata.Description
+		if crd.CatalogDescription == "" {
+			crd.CatalogDescription = doc.Metadata.Description
 		}
-		if crd.KatalogVersion == "" {
-			crd.KatalogVersion = doc.Metadata.Version
+		if crd.CatalogVersion == "" {
+			crd.CatalogVersion = doc.Metadata.Version
 		}
 
-		// Apply katalog-level CrossAccess as the default for every CRD that
+		// Apply catalog-level CrossAccess as the default for every CRD that
 		// does not declare its own crossAccess field.
 		if crd.CrossAccess == nil && doc.CrossAccess != nil {
 			v := *doc.CrossAccess
@@ -166,7 +166,7 @@ func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string
 		if protect != nil {
 			if len(protect.RestrictedNamespaces) > 0 || len(protect.AllowedNamespaces) > 0 {
 				if crd.Box().Runtime == nil {
-					rt := orktypes.RuntimeConfig{}
+					rt := types.RuntimeConfig{}
 					crd.Box().Runtime = &rt
 				}
 				if len(protect.RestrictedNamespaces) > 0 {
@@ -183,15 +183,15 @@ func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string
 		logger.Debug().
 			Str("crd", name).
 			Str("source", path).
-			Msg("merger: CRD loaded from Katalog")
+			Msg("merger: CRD loaded from Catalog")
 	}
 
 	logger.Debug().
 		Str("path", path).
 		Int("crds", len(result)).
-		Msg("merger: Katalog loaded")
+		Msg("merger: Catalog loaded")
 
-	// This is a katalog
+	// This is a catalog
 	apiMetadata := apiMetadata{
 		APIVersion: doc.APIVersion,
 		Kind:       doc.Kind,
@@ -201,17 +201,16 @@ func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string
 	m.lifecycle = doc.Lifecycle
 	m.policy = doc.Policy
 	m.security = doc.Security
-	m.notification = doc.Notification
 	m.gateway = doc.Gateway
 	m.publish = doc.Publish
 	m.profiles = doc.Profiles
 	m.notes = doc.Notes
-	// Resolve spec.imports motif file paths to absolute, same as CRD-level imports above.
-	specImports := make([]orktypes.MotifImport, len(doc.Spec.Imports))
+	// Resolve spec.imports module file paths to absolute, same as CRD-level imports above.
+	specImports := make([]types.ModuleImport, len(doc.Spec.Imports))
 	copy(specImports, doc.Spec.Imports)
 	for i, imp := range specImports {
-		if isFileMotif(imp.Motif) && !filepath.IsAbs(imp.Motif) {
-			specImports[i].Motif = filepath.Join(katalogDir, imp.Motif)
+		if isFileModule(imp.Module) && !filepath.IsAbs(imp.Module) {
+			specImports[i].Module = filepath.Join(catalogDir, imp.Module)
 		}
 	}
 	m.specImports = specImports
@@ -219,28 +218,26 @@ func (m *Merger) loadKatalog(path string, doc *orktypes.KatalogFile) (map[string
 	return result, nil
 }
 
-// loadKomposer resolves imports from a Komposer file and merges all CRDs.
-func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[string]orktypes.CRDEntry, error) {
+// loadStack resolves imports from a Stack file and merges all CRDs.
+func (m *Merger) loadStack(path string, doc *types.CatalogFile) (map[string]types.CRDEntry, error) {
 	if !doc.WithImportsOrSpecOverrides() {
 		logger.Warn().
 			Str("path", path).
-			Msg("merger: Komposer has no imports and no inline CRDs — nothing to load")
+			Msg("merger: Stack has no imports and no inline CRDs — nothing to load")
 		return nil, nil
 	}
 
 	localSeen := map[string]string{}
-	allCRDs := make(map[string]orktypes.CRDEntry)
+	allCRDs := make(map[string]types.CRDEntry)
 
-	// accSecurity, accNotification, accNotes, and accProfiles accumulate top-level
-	// settings from all imported Katalogs. Each import that calls loadKatalog sets these
+	// settings from all imported Catalogs. Each import that calls loadCatalog sets these
 	// as side-effects on m; we capture and merge here so they are not discarded
-	// when the Komposer's own (possibly Empty() block is applied at the end.
-	var accSecurity orktypes.KatalogSecurity
-	var accNotification *orktypes.KatalogNotification
-	var accProfiles orktypes.ProfileRegistry
-	var accSpecImports []orktypes.MotifImport
-	var accNotes orktypes.NoteRegistry
-	notesSeen := make(map[string]string) // note name → import label, for cross-Katalog conflict detection
+	// when the Stack's own (possibly Empty() block is applied at the end.
+	var accSecurity types.CatalogSecurity
+	var accProfiles types.ProfileRegistry
+	var accSpecImports []types.ModuleImport
+	var accNotes types.NoteRegistry
+	notesSeen := make(map[string]string) // note name → import label, for cross-Catalog conflict detection
 
 	// ── Step 1: registry imports ─────────────────────────────────────────────
 	if doc.Imports != nil {
@@ -262,9 +259,8 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 				allCRDs[name] = crd
 			}
 
-			// Accumulate security, notification, and profiles from registry source Katalog.
-			accSecurity = mergeKatalogSecurity(accSecurity, m.security)
-			accNotification = mergeKatalogNotification(accNotification, m.notification)
+			// Accumulate security and profiles from registry source Catalog.
+			accSecurity = mergeCatalogSecurity(accSecurity, m.security)
 			merged, err := accProfiles.Merge(m.profiles, fmt.Sprintf("registry:%d", i))
 			if err != nil {
 				return nil, fmt.Errorf("%q imports.registry[%d]: profiles: %w", path, i, err)
@@ -278,7 +274,7 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 			accNotes = mergedNotes
 			logger.Debug().
 				Str("import", fmt.Sprintf("registry:%d", i)).
-				Msg("merger: accumulated security and notification from registry import")
+				Msg("merger: accumulated security from registry import")
 		}
 	}
 
@@ -292,8 +288,8 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 				return nil, fmt.Errorf("%q imports.files: %w", path, err)
 			}
 
-			// Resolve relative paths against the Komposer's directory so
-			// ork run -f /any/path/komposer.yaml works from any working directory.
+			// Resolve relative paths against the Stack's directory so
+			// inrun -f /any/path/stack.yaml works from any working directory.
 			if !filepath.IsAbs(resolved) && !strings.HasPrefix(resolved, "http") {
 				resolved = filepath.Join(filepath.Dir(path), resolved)
 			}
@@ -304,7 +300,7 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 				return nil, fmt.Errorf("%q imports.files[%q]: auth: %w", path, resolved, err)
 			}
 
-			// Load the file — must be a Katalog, not another Komposer
+			// Load the file — must be a Catalog, not another Stack
 			crds, err := m.loadImportFileWithAuth(path, resolved, auth)
 			if err != nil {
 				return nil, fmt.Errorf("%q imports.files[%q]: %w", path, resolved, err)
@@ -318,9 +314,8 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 				allCRDs[name] = crd
 			}
 
-			// Accumulate security, notification, and profiles from this Katalog file import.
-			accSecurity = mergeKatalogSecurity(accSecurity, m.security)
-			accNotification = mergeKatalogNotification(accNotification, m.notification)
+			// Accumulate security and profiles from this Catalog file import.
+			accSecurity = mergeCatalogSecurity(accSecurity, m.security)
 			merged, err := accProfiles.Merge(m.profiles, "file:"+resolved)
 			if err != nil {
 				return nil, fmt.Errorf("%q imports.files[%q]: profiles: %w", path, resolved, err)
@@ -334,7 +329,7 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 			accNotes = mergedNotes
 			logger.Debug().
 				Str("import", "file:"+resolved).
-				Msg("merger: accumulated security and notification from file import")
+				Msg("merger: accumulated security from file import")
 		}
 		// ── Step 3: helm imports ──────────────────────────────────────────────
 		for i, helmSrc := range doc.Imports.Helm {
@@ -352,9 +347,8 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 				allCRDs[name] = crd
 			}
 
-			// Accumulate security, notification, and profiles from this Helm import.
-			accSecurity = mergeKatalogSecurity(accSecurity, m.security)
-			accNotification = mergeKatalogNotification(accNotification, m.notification)
+			// Accumulate security and profiles from this Helm import.
+			accSecurity = mergeCatalogSecurity(accSecurity, m.security)
 			merged, err := accProfiles.Merge(m.profiles, srcName)
 			if err != nil {
 				return nil, fmt.Errorf("%q imports.helm[%d]: profiles: %w", path, i, err)
@@ -368,7 +362,7 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 			accNotes = mergedNotes
 			logger.Debug().
 				Str("import", srcName).
-				Msg("merger: accumulated security and notification from helm import")
+				Msg("merger: accumulated security from helm import")
 		}
 	}
 
@@ -407,15 +401,15 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 
 		localSeen[name] = inlineKey
 	}
-	// Fill KatalogDescription and KatalogVersion fallbacks — if the sub-Katalog had none, use the Komposer's.
+	// Fill CatalogDescription and CatalogVersion fallbacks — if the sub-Catalog had none, use the Stack's.
 	for name, crd := range allCRDs {
 		changed := false
-		if crd.KatalogDescription == "" && doc.Metadata.Description != "" {
-			crd.KatalogDescription = doc.Metadata.Description
+		if crd.CatalogDescription == "" && doc.Metadata.Description != "" {
+			crd.CatalogDescription = doc.Metadata.Description
 			changed = true
 		}
-		if crd.KatalogVersion == "" && doc.Metadata.Version != "" {
-			crd.KatalogVersion = doc.Metadata.Version
+		if crd.CatalogVersion == "" && doc.Metadata.Version != "" {
+			crd.CatalogVersion = doc.Metadata.Version
 			changed = true
 		}
 		if changed {
@@ -423,13 +417,13 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 		}
 	}
 
-	// Merge Komposer-level restrictions into every CRD (additive).
+	// Merge Stack-level restrictions into every CRD (additive).
 	protect := doc.Security.NamespaceProtection
 	if protect != nil {
 		if len(protect.RestrictedNamespaces) > 0 || len(protect.AllowedNamespaces) > 0 {
 			for name, crd := range allCRDs {
 				if crd.Box().Runtime == nil {
-					rt := orktypes.RuntimeConfig{}
+					rt := types.RuntimeConfig{}
 					crd.Box().Runtime = &rt
 				}
 				crd.Box().Runtime.RestrictedNamespaces = protect.RestrictedNamespaces.Merge(crd.Box().Runtime.RestrictedNamespaces)
@@ -442,9 +436,9 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 	logger.Debug().
 		Str("path", path).
 		Int("crds", len(allCRDs)).
-		Msg("merger: Komposer loaded")
+		Msg("merger: Stack loaded")
 
-	// This is a komposer
+	// This is a stack
 	apiMetadata := apiMetadata{
 		APIVersion: doc.APIVersion,
 		Kind:       doc.Kind,
@@ -453,13 +447,12 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 
 	m.apiMetadata = apiMetadata
 
-	// Merge accumulated source fields with the Komposer's own top-level blocks.
-	// Komposer-declared fields win on conflict (non-nil / non-empty override semantics).
-	// This ensures all top-level Katalog fields — security, notification —
-	// are visible when running `ork generate rbac` or `ork generate configmap`
-	// against a Komposer, identical to running against the source Katalogs directly.
-	m.security = mergeKatalogSecurity(accSecurity, doc.Security)
-	m.notification = mergeKatalogNotification(accNotification, doc.Notification)
+	// Merge accumulated source fields with the Stack's own top-level blocks.
+	// Stack-declared fields win on conflict (non-nil / non-empty override semantics).
+	// This ensures all top-level Catalog fields, such as security,
+	// are visible when running `inrun generate rbac` or `inrun generate configmap`
+	// against a Stack, identical to running against the source Catalogs directly.
+	m.security = mergeCatalogSecurity(accSecurity, doc.Security)
 	if doc.Gateway != nil {
 		m.gateway = doc.Gateway
 	}
@@ -480,10 +473,10 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 	m.profiles = mergedProfiles
 
 	if len(doc.Spec.Imports) > 0 {
-		return nil, fmt.Errorf("%q: Komposer does not support spec.imports — declare notes: and profiles: inline to override Katalog-wide settings", path)
+		return nil, fmt.Errorf("%q: Stack does not support spec.imports — declare notes: and profiles: inline to override Catalog-wide settings", path)
 	}
 	m.specImports = accSpecImports
-	mergedNotes, err := doc.Notes.Merge(accNotes, "katalog")
+	mergedNotes, err := doc.Notes.Merge(accNotes, "catalog")
 	if err != nil {
 		return nil, fmt.Errorf("%q: notes: %w", path, err)
 	}
@@ -491,7 +484,7 @@ func (m *Merger) loadKomposer(path string, doc *orktypes.KatalogFile) (map[strin
 
 	logger.Debug().
 		Str("path", path).
-		Msg("merger: Komposer security and notification merged from imports and inline")
+		Msg("merger: Stack security merged from imports and inline")
 
 	return allCRDs, nil
 }

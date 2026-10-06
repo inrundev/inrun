@@ -1,10 +1,10 @@
 # Failing Intent Files
 
-Intent files that exercise the validation and permission chain in `ork serve play`.
+Intent files that exercise the validation and permission chain in `inrun serve play`.
 Each one is designed to fail at a specific stage so you can see the error surface.
 
 ```bash
-KATALOG=pkg/gateway/api/fixture/katalog.yaml
+CATALOG=pkg/gateway/api/fixture/catalog.yaml
 ```
 
 ---
@@ -14,11 +14,11 @@ KATALOG=pkg/gateway/api/fixture/katalog.yaml
 ### Unknown target
 
 ```bash
-ork serve play -f $KATALOG --token control-center \
+inrun serve play -f $CATALOG --token console \
   -i pkg/gateway/api/fixture/intent/failing/unknown-target.yaml
 ```
 
-`target: doesnotexist` — not declared in the katalog. Fails at stage 1 with the
+`target: doesnotexist` — not declared in the catalog. Fails at stage 1 with the
 list of available targets.
 
 ---
@@ -31,17 +31,17 @@ list of available targets.
 permissions.
 
 ```bash
-ork serve play -f $KATALOG --token ci-pipeline \
+inrun serve play -f $CATALOG --token ci-pipeline \
   -i pkg/gateway/api/fixture/intent/failing/ci-pipeline-create.yaml
 ```
 
-### `control-center` on a read-only alias
+### `console` on a read-only alias
 
-`preview` restricts `control-center` to `get` and `list`. Create is denied at
+`preview` restricts `console` to `get` and `list`. Create is denied at
 the alias token level.
 
 ```bash
-ork serve play -f $KATALOG --token control-center \
+inrun serve play -f $CATALOG --token console \
   -i pkg/gateway/api/fixture/intent/failing/preview-create.yaml
 ```
 
@@ -52,7 +52,7 @@ denied entirely regardless of operation, even though it has CRD-level access on
 the primary target.
 
 ```bash
-ork serve play -f $KATALOG --token ci-pipeline \
+inrun serve play -f $CATALOG --token ci-pipeline \
   -i pkg/gateway/api/fixture/intent/failing/ci-pipeline-on-alias.yaml
 ```
 
@@ -69,13 +69,13 @@ team-payments`. That is what would be sent to SSA; the real gateway rejects it
 there with "metadata.name is required" before the CR lands.
 
 ```bash
-ork serve play -f $KATALOG --token control-center \
+inrun serve play -f $CATALOG --token console \
   -i pkg/gateway/api/fixture/intent/failing/missing-name.yaml
 ```
 
 ---
 
-## Relationship to `ork simulate`
+## Relationship to `inrun simulate`
 
 The gateway is an intent runner. The runtime is a CR runner.
 
@@ -83,11 +83,11 @@ The gateway collects intentions — flat fields from a caller — and translates
 into a valid Kubernetes object. The runtime takes that object and reconciles it
 into cluster resources. Neither needs a cluster to do its job locally.
 
-- `ork serve play` runs the **gateway's** half: intent in, CR out.
-- `ork simulate` runs the **runtime's** half: CR in, child resources out.
+- `inrun serve play` runs the **gateway's** half: intent in, CR out.
+- `inrun simulate` runs the **runtime's** half: CR in, child resources out.
 
 Together they cover the full delivery loop without a cluster:
 
 ```
-intent file  →  ork serve play  →  CR  →  ork simulate  →  child resources
+intent file  →  inrun serve play  →  CR  →  inrun simulate  →  child resources
 ```

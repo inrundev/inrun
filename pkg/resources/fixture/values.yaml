@@ -1,4 +1,4 @@
 runtime:
   image:
-    repository: ghcr.io/orkspace/orkestra/pkg/resources/fixture
+    repository: ghcr.io/inrundev/inrun/pkg/resources/fixture
     tag: latest

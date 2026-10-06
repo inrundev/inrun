@@ -3,10 +3,10 @@ package types
 
 // ── Job ───────────────────────────────────────────────────────────────────────
 
-// JobTemplateSource declares one Job to be run by Orkestra.
+// JobTemplateSource declares one Job to be run by Inrun.
 //
 // Most commonly used under onDelete for cleanup tasks that must complete
-// before Orkestra removes finalizers from the CR:
+// before Inrun removes finalizers from the CR:
 //   - Draining queues or buffers
 //   - Archiving state to external storage
 //   - Notifying external systems of deletion
@@ -90,7 +90,7 @@ type JobTemplateSource struct {
 	Conditions []Condition `yaml:"when,omitempty" json:"when,omitempty"`
 
 	// Reconcile has no effect on a Job entry. Jobs are always a one-time,
-	// idempotent create — Orkestra never re-applies or updates a Job after it
+	// idempotent create — Inrun never re-applies or updates a Job after it
 	// runs, since Jobs are meant to run once to completion. This field exists
 	// for schema consistency with other resource types only.
 	Reconcile bool `yaml:"reconcile,omitempty" json:"reconcile,omitempty" validate:"omitempty"`
@@ -170,7 +170,7 @@ type JobTemplateSource struct {
 
 // ── CronJob ───────────────────────────────────────────────────────────────────
 
-// CronJobTemplateSource declares one CronJob to be managed by Orkestra.
+// CronJobTemplateSource declares one CronJob to be managed by Inrun.
 //
 // Example:
 //

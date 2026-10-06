@@ -1,0 +1,22 @@
+apiVersion: inrun.dev/v1
+kind: Simulate
+metadata:
+  name: website-intent-sim
+  description: >
+    Reconcile the CR the gateway builds from intent.json. There is no cr.yaml:
+    run inrun serve play -i intent.json --token dev --simulate=simulate.yaml.
+
+spec:
+  catalog: ../catalog.yaml
+  cycles: 5
+
+  expect:
+    steady: true
+    noErrors: true
+    ops:
+      - cycle: 1
+        verb: apply
+        resource: deployments
+      - cycle: 1
+        verb: apply
+        resource: services

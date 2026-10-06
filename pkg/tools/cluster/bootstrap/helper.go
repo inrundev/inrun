@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )

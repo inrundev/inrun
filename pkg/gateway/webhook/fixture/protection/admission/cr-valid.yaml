@@ -1,6 +1,6 @@
 # Valid CR — passes all validation rules as declared.
 # All fields are explicit: shows the operator running with known values.
-apiVersion: admission.orkestra.io/v1alpha1
+apiVersion: admission.inrun.dev/v1alpha1
 kind: Platform
 metadata:
   name: my-platform

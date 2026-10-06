@@ -2,7 +2,7 @@
 //
 // Gateway startup — handles TLS/security, admission/conversion webhooks,
 // and the Serve layer (Gateway API + intake webhooks). No reconcilers, no
-// informer factory, no konductor election (webhook servers are stateless and
+// informer factory, no leader election (webhook servers are stateless and
 // can run as multiple replicas).
 
 //go:build gateway
@@ -15,47 +15,46 @@ import (
 	"os"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	apigateway "github.com/orkspace/orkestra/pkg/gateway/api"
-	"github.com/orkspace/orkestra/pkg/gateway/api/intake"
-	"github.com/orkspace/orkestra/pkg/gateway/certmanager"
-	gwhandlers "github.com/orkspace/orkestra/pkg/gateway/handlers"
-	"github.com/orkspace/orkestra/pkg/gateway/webhook"
-	"github.com/orkspace/orkestra/pkg/health"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/merger"
-	ork "github.com/orkspace/orkestra/pkg/orkestra"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/config"
+	apigateway "github.com/inrundev/inrun/pkg/gateway/api"
+	"github.com/inrundev/inrun/pkg/gateway/certmanager"
+	gwhandlers "github.com/inrundev/inrun/pkg/gateway/handlers"
+	"github.com/inrundev/inrun/pkg/gateway/webhook"
+	"github.com/inrundev/inrun/pkg/health"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/process"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
-// KonductGateway starts the production gateway — TLS, WebhookServer
+// RunGateway starts the production gateway — TLS, WebhookServer
 // (admission/conversion), and the Serve layer (Gateway API + intake webhooks).
-// No konductor election — the gateway is stateless and supports multiple replicas.
-func KonductGateway(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) {
+// No leader election — the gateway is stateless and supports multiple replicas.
+func RunGateway(kfg *config.Config, m *merger.Merger, ctx context.Context) {
 
 	if !utils.IsRunningInPod() {
-		fmt.Println("orkestra: ork gate only runs inside a Kubernetes pod. Use 'ork gate run' for local development.")
+		fmt.Println("inrun: inrun gate only runs inside a Kubernetes pod. Use 'inrun gate run' for local development.")
 		os.Exit(1)
 	}
 
 	// ── 1a. Instance ────────────────────────────────────────────────────────────
-	kfg.SetInstance(konfig.Gateway())
+	kfg.SetInstance(config.Gateway())
 
-	// ── 1b. Katalog ────────────────────────────────────────────────────────────
+	// ── 1b. Catalog ────────────────────────────────────────────────────────────
 	// Needed to know which CRDs require webhooks.
-	kat := pipeline.NewKatalog(kfg, m)
+	kat := pipeline.NewCatalog(kfg, m)
 
 	if registryURL := kfg.RegistryConfig().RegistryURL; registryURL != "" {
 		m.SetRegistryURL(registryURL)
-		logger.Info().Str("registry", registryURL).Msg("registry URL configured from ORK_REGISTRY")
+		logger.Info().Str("registry", registryURL).Msg("registry URL configured from INRUN_REGISTRY")
 	}
 
 	// ── 2. Scheme ─────────────────────────────────────────────────────────────
-	scheme, err := katalog.NewSchemeRegistry(kat)
+	scheme, err := catalog.NewSchemeRegistry(kat)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to build scheme registry")
 	}
@@ -89,7 +88,7 @@ func KonductGateway(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) {
 		kfg.Security().Webhooks.TLSKey = tlsKey
 	}
 
-	// ── 5. HealthServer — HTTP (probes + metrics + /katalog API) ────────────────
+	// ── 5. HealthServer — HTTP (probes + metrics + /catalog API) ────────────────
 	hs := health.NewHealthServer(kfg)
 
 	// ── 6. WebhookServer ──────────────────────────────────────────────────────
@@ -105,29 +104,25 @@ func KonductGateway(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) {
 	// CRD conversion caBundles correct throughout the deployment lifecycle.
 	WireWebhookHousekeeperInfra(ws, kube, kat, kfg)
 
-	// ── 7. /katalog routes — gateway serves its own stats surface ────────────
-	// The control center discovers this endpoint via the "gatewayEndpoint" field
-	// in the runtime /katalog response and merges per-CRD stats by GVR key.
-	hs.Register("/katalog", gwhandlers.BuildGatewayKatalogHandler(kat, ws))
+	// ── 7. /catalog routes — gateway serves its own stats surface ────────────
+	// The console discovers this endpoint via the "gatewayEndpoint" field
+	// in the runtime /catalog response and merges per-CRD stats by GVR key.
+	hs.Register("/catalog", gwhandlers.BuildGatewayCatalogHandler(kat, ws))
 
-	// ── /notify — receives pre-throttled notification events from the runtime ─
-	// The runtime builds and throttle-checks events; the gateway owns dispatch
-	// (SMTP, Slack). Registering here keeps all external I/O off the runtime path.
-	hs.Register("/notify", gwhandlers.BuildNotifyHandler(kat))
 	for _, crd := range kat.Enabled() {
 		crdName := strings.ToLower(crd.Name)
 		gvr := crd.GVR()
 		gvrKey := webhook.GVRKey(gvr.Group, gvr.Version, gvr.Resource)
 		hs.Register(
-			"/katalog/"+crdName,
+			"/catalog/"+crdName,
 			gwhandlers.BuildGatewayCRDHandler(crd.Name, crd.GVKString(), gvr.String(), gvrKey, ws, kat),
 		)
 	}
-	logger.Debug().Msg("gateway /katalog routes registered")
+	logger.Debug().Msg("gateway /catalog routes registered")
 
 	// ── 7b. Gateway API ────────────────────────────────────────────────────────
 	// Registers POST /api/v1/apply, GET/DELETE /api/v1/resources/, GET /api/v1/schema/
-	// only when gateway.api.enabled: true in the Katalog and at least one
+	// only when gateway.api.enabled: true in the Catalog and at least one
 	// CRD has serve.enabled: true.
 
 	// Build the cluster registry once — shared by the API server and intake server.
@@ -141,44 +136,25 @@ func KonductGateway(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) {
 		logger.Fatal().Err(apiErr).Msg("gateway API setup failed")
 	}
 
-	// gateway.webhooks — inbound intent delivery (GitHub/GitLab push,
-	// Slack, generic HTTP). Only meaningful alongside the Gateway API
-	// (ork validate enforces this), but resolved and registered separately
-	intakeSrv, intakeErr := intake.NewIntakeServer(ctx, kat, kube, clusters, kfg.Cluster().Namespace())
-	if intakeErr != nil {
-		logger.Fatal().Err(intakeErr).Msg("gateway webhooks setup failed")
-	}
-
 	if api != nil {
 		api.Register(hs)
-		if intakeSrv != nil {
-			intakeSrv.Register(hs, kat.Notes)
-		}
-		ws.SetTokenReloader(func(ctx context.Context) error {
-			if err := api.ReloadTokens(ctx); err != nil {
-				return err
-			}
-			if intakeSrv != nil {
-				return intakeSrv.Reload(ctx)
-			}
-			return nil
-		})
+		ws.SetTokenReloader(api.ReloadTokens)
 	}
 
-	// ── 8. Komponent list ─────────────────────────────────────────────────────
-	komponents := []domain.Komponent{
+	// ── 8. Component list ─────────────────────────────────────────────────────
+	components := []domain.Component{
 		hs,   // 1. HTTP server — /ready, /livez probes
 		ws,   // 2. HTTPS webhook server — /validate, /mutate, /convert
 		kube, // 3. REST clients — already started, managed for Stop()
 	}
 
-	// ── 8. Orkestra ───────────────────────────────────────────────────────────
-	o := ork.NewOrkestra(
+	// ── 8. Inrun ───────────────────────────────────────────────────────────
+	o := process.New(
 		kfg.RunningInstance(),
-		kfg.Katalog().ShutdownGracePeriod(),
-		kfg.Ork().LogLevel(),
+		kfg.Catalog().ShutdownGracePeriod(),
+		kfg.Inrun().LogLevel(),
 	)
-	o.Register(komponents)
+	o.Register(components)
 
 	// ── Start and wait (no leader election) ──────────────────────────────────
 	go func() {

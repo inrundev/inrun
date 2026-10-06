@@ -1,7 +1,7 @@
 // pkg/types/types_hook_templates.go
 package types
 
-// HookTemplates declares the child resources Orkestra manages at a lifecycle event.
+// HookTemplates declares the child resources Inrun manages at a lifecycle event.
 // Resources receive owner references — Kubernetes GC handles deletion automatically.
 // All slices are optional; undeclared resources are invisible to the reconciler.
 type HookTemplates struct {
@@ -53,7 +53,7 @@ type HookTemplates struct {
 
 	// Groups declares sequential deletion stages for ordered deletes.
 	// Each element is a full HookTemplates block whose resources are deleted
-	// as a unit. Orkestra deletes stage N, waits until all resources are gone,
+	// as a unit. Inrun deletes stage N, waits until all resources are gone,
 	// then deletes stage N+1. Omit when Ordered is false.
 	// When Ordered is true and Groups is empty, the flat resource fields above
 	// (Jobs, Deployments, …) are treated as a single implicit group.

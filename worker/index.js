@@ -1,4 +1,4 @@
-// Cloudflare Worker — get.orkestra.sh
+// Cloudflare Worker — get.inrun.dev
 //
 // Serves install.sh and install.sh.sha256 from GitHub raw.
 // Edge-caches responses for CACHE_TTL seconds (default 300).
@@ -12,7 +12,7 @@
 //   *              → 404
 
 const UPSTREAM =
-  "https://raw.githubusercontent.com/orkspace/orkestra/refs/heads/main/install.sh";
+  "https://raw.githubusercontent.com/inrundev/inrun/refs/heads/main/install.sh";
 
 const PLAIN_TEXT = "text/plain; charset=utf-8";
 
@@ -56,7 +56,7 @@ async function fetchScript() {
 
 async function serveScript(ctx, ttl) {
   const cache = caches.default;
-  const key = new Request("https://get.orkestra.sh/install.sh");
+  const key = new Request("https://get.inrun.dev/install.sh");
 
   const cached = await cache.match(key);
   if (cached) return cached;
@@ -73,7 +73,7 @@ async function serveScript(ctx, ttl) {
 
 async function serveChecksum(ctx, ttl) {
   const cache = caches.default;
-  const key = new Request("https://get.orkestra.sh/install.sh.sha256");
+  const key = new Request("https://get.inrun.dev/install.sh.sha256");
 
   const cached = await cache.match(key);
   if (cached) return cached;

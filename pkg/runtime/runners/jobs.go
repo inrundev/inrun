@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkjobs "github.com/orkspace/orkestra/pkg/resources/jobs"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/jobs"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -23,14 +23,14 @@ const jobCompletionPollInterval = 3 * time.Second
 func RunJobs(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.JobTemplateSource,
+	srcs []types.JobTemplateSource,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	for i, src := range srcs {
 		// 1. Evaluate conditions BEFORE resolving templates
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		// Early name/ns resolution — needed for guard check.
 		// Jobs are terminal (no DeleteIfOwned on condition fail), but guard
@@ -63,10 +63,10 @@ func RunJobs(
 		}
 
 		// 3. Build registry spec and apply
-		spec := orkjobs.Resolve(resolved, resolved.BackoffLimit, resolver.OwnerName(), resolver.Profiles())
+		spec := jobs.Resolve(resolved, resolved.BackoffLimit, resolver.OwnerName(), resolver.Profiles())
 
 		// Jobs are always creates — no update semantics
-		if err := orkjobs.Create(ctx, kube, owner, spec); err != nil {
+		if err := jobs.Create(ctx, kube, owner, spec); err != nil {
 			return fmt.Errorf("jobs[%d].create: %w", i, err)
 		}
 	}
@@ -83,14 +83,14 @@ const DefaultDeleteJobTimeout = 5 * time.Minute
 func RunDeleteJobs(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.JobTemplateSource,
+	srcs []types.JobTemplateSource,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 	deadline time.Time,
 ) error {
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 		ns, _ := resolver.Resolve(src.Namespace)
@@ -114,9 +114,9 @@ func RunDeleteJobs(
 			return fmt.Errorf("delete-jobs[%d]: %w", i, err)
 		}
 
-		spec := orkjobs.Resolve(resolved, resolved.BackoffLimit, resolver.OwnerName(), resolver.Profiles())
+		spec := jobs.Resolve(resolved, resolved.BackoffLimit, resolver.OwnerName(), resolver.Profiles())
 
-		if err := orkjobs.CreateForDelete(ctx, kube, owner, spec); err != nil {
+		if err := jobs.CreateForDelete(ctx, kube, owner, spec); err != nil {
 			return fmt.Errorf("delete-jobs[%d].create: %w", i, err)
 		}
 

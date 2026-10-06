@@ -1,44 +1,3 @@
-// Package certmanager centralises the TLS certificate lifecycle for Orkestra.
-//
-// Orkestra generates self-signed TLS certificates when security features
-// (deletion protection, admission webhooks, conversion webhooks) are enabled and
-// the operator has not been given explicit TLS_CERT/TLS_KEY paths. This package
-// owns that lifecycle: generation, Secret storage, and optional deletion on
-// graceful shutdown.
-//
-// # Architecture
-//
-// Manager is the public interface; k8sManager is its only production
-// implementation. The separation lets tests inject a fake without importing
-// client-go fakes into every caller.
-//
-// # Secret shape
-//
-// The generated Secret is of type kubernetes.io/tls and carries three keys:
-//
-//	tls.crt — PEM-encoded signed server certificate
-//	tls.key — PEM-encoded server private key
-//	ca.crt  — PEM-encoded CA certificate (used as caBundle in webhook configs)
-//
-// The Secret is labelled with the deletion-protection label so that Orkestra's
-// own admission webhook will reject accidental delete requests against it.
-//
-// # Shutdown cleanup
-//
-// When DeletionProtection.CleanupOnShutdown is true, the HealthServer calls
-// DeleteCertificateAndSecret during Shutdown(). A NotFound error is silently
-// ignored — the operator may have been restarted without the Secret present.
-//
-// # Usage
-//
-//	mgr := certmanager.New(kube.Clientset())
-//	bundle, err := mgr.EnsureCertificate(ctx, certmanager.CertificateSpec{
-//	    ServiceName: "orkestra",
-//	    Namespace:   "orkestra-system",
-//	    SecretName:  certmanager.DefaultTLSSecretName,
-//	    ValidFor:    "1y",
-//	    BaseLabels:  kfg.OrkestraResourceLabels(),
-//	})
 package certmanager
 
 import (
@@ -46,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
-	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,12 +19,12 @@ const (
 	DefaultCertValidFor = "1y"
 )
 
-// DefaultTLSSecretName is the Secret name used for Orkestra's auto-generated TLS bundle.
-var DefaultTLSSecretName = konfig.DefaultInternalTLSName()
+// DefaultTLSSecretName is the Secret name used for Inrun's auto-generated TLS bundle.
+var DefaultTLSSecretName = config.DefaultInternalTLSName()
 
-// CertificateSpec describes the TLS certificate Orkestra should generate and store.
+// CertificateSpec describes the TLS certificate Inrun should generate and store.
 type CertificateSpec struct {
-	// ServiceName is the Kubernetes Service that will serve the certificate (e.g. "orkestra").
+	// ServiceName is the Kubernetes Service that will serve the certificate (e.g. "inrun").
 	ServiceName string
 	// Namespace is the namespace where the Service and Secret live.
 	Namespace string
@@ -129,7 +88,7 @@ func (m *k8sManager) EnsureCertificate(ctx context.Context, spec CertificateSpec
 	}
 
 	// 3. Prepare the secret object
-	secretLabels := orklabels.WithDeletionProtection(spec.BaseLabels)
+	secretLabels := labels.WithDeletionProtection(spec.BaseLabels)
 	secretLabels["app.kubernetes.io/component"] = "tls"
 
 	secret := &corev1.Secret{
@@ -138,7 +97,7 @@ func (m *k8sManager) EnsureCertificate(ctx context.Context, spec CertificateSpec
 			Namespace: spec.Namespace,
 			Labels:    secretLabels,
 			Annotations: map[string]string{
-				"orkestra.orkspace.io/generated-at": time.Now().UTC().Format(time.RFC3339),
+				"inrun.dev/generated-at": time.Now().UTC().Format(time.RFC3339),
 			},
 		},
 		Type: corev1.SecretTypeTLS,

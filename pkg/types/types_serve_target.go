@@ -121,7 +121,7 @@ func (c *CRDEntry) LookupTarget(name string) *ServeTargetConfig {
 //
 // Fields from the same key in multiple sources are merged in this order:
 // spec fields → label fields → annotation fields. In practice, the platform
-// team should not declare the same key in more than one source; ork validate
+// team should not declare the same key in more than one source; inrun validate
 // catches this.
 func (c *CRDEntry) AllServeFields() map[string]ServeFieldConfig {
 	if c.Serve == nil {

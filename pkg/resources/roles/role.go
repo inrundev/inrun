@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,7 +79,7 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 }
 
 // Apply creates or updates a Role using Server-Side Apply.
-// Sends only the fields Orkestra owns; k8s-injected defaults are invisible.
+// Sends only the fields Inrun owns; k8s-injected defaults are invisible.
 func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedRoleSpec) error {
 	namespace := shared.ResolveNamespace(owner, spec.Namespace)
 	if err := shared.SleepIfNeeded(spec.Sleep); err != nil {
@@ -96,7 +96,7 @@ func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, 
 
 	if _, err = kube.Clientset().RbacV1().Roles(namespace).Patch(
 		ctx, spec.Name, k8stypes.ApplyPatchType, body,
-		metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
+		metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
 	); err != nil {
 		return fmt.Errorf("role.Apply: %w", err)
 	}
@@ -154,7 +154,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 		}
 		return err
 	}
-	if existing.Labels[labels.OrkestraOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if existing.Labels[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 	return kube.Clientset().RbacV1().Roles(namespace).Delete(ctx, name, metav1.DeleteOptions{})
@@ -162,7 +162,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 
 // Resolve builds a ResolvedRoleSpec from a RoleTemplateSource.
 // Template expressions must already be evaluated by template.Resolver before calling.
-func Resolve(src orktypes.RoleTemplateSource, ownerName string) ResolvedRoleSpec {
+func Resolve(src types.RoleTemplateSource, ownerName string) ResolvedRoleSpec {
 	spec := ResolvedRoleSpec{
 		Name:          src.Name,
 		Namespace:     src.Namespace,
@@ -194,7 +194,7 @@ func Resolve(src orktypes.RoleTemplateSource, ownerName string) ResolvedRoleSpec
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 func buildRole(owner domain.Object, spec ResolvedRoleSpec, namespace string) *rbacv1.Role {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            spec.Name,

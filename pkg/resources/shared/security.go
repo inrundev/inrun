@@ -4,15 +4,15 @@ package shared
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ResolveContainerSecurityContext resolves a ContainerSecurityContext:
 // if a profile is set it expands to explicit fields; otherwise the block is
 // returned as-is. Returns nil when sc is nil.
-func ResolveContainerSecurityContext(sc *orktypes.ContainerSecurityContext, reg *orktypes.ProfileRegistry) *orktypes.ContainerSecurityContext {
+func ResolveContainerSecurityContext(sc *types.ContainerSecurityContext, reg *types.ProfileRegistry) *types.ContainerSecurityContext {
 	if sc == nil {
 		return nil
 	}
@@ -30,7 +30,7 @@ func ResolveContainerSecurityContext(sc *orktypes.ContainerSecurityContext, reg 
 // ResolvePodSecurityContext resolves a PodSecurityContext:
 // if a profile is set it expands to explicit fields; otherwise the block is
 // returned as-is. Returns nil when ps is nil.
-func ResolvePodSecurityContext(ps *orktypes.PodSecurityContext, reg *orktypes.ProfileRegistry) *orktypes.PodSecurityContext {
+func ResolvePodSecurityContext(ps *types.PodSecurityContext, reg *types.ProfileRegistry) *types.PodSecurityContext {
 	if ps == nil {
 		return nil
 	}
@@ -45,9 +45,9 @@ func ResolvePodSecurityContext(ps *orktypes.PodSecurityContext, reg *orktypes.Pr
 	return ps
 }
 
-// BuildContainerSecurityContext converts an orktypes.ContainerSecurityContext to
+// BuildContainerSecurityContext converts an types.ContainerSecurityContext to
 // a Kubernetes corev1.SecurityContext. Returns nil when sc is nil.
-func BuildContainerSecurityContext(sc *orktypes.ContainerSecurityContext) *corev1.SecurityContext {
+func BuildContainerSecurityContext(sc *types.ContainerSecurityContext) *corev1.SecurityContext {
 	if sc == nil {
 		return nil
 	}
@@ -70,9 +70,9 @@ func BuildContainerSecurityContext(sc *orktypes.ContainerSecurityContext) *corev
 	return k8s
 }
 
-// BuildPodSecurityContext converts an orktypes.PodSecurityContext to a
+// BuildPodSecurityContext converts an types.PodSecurityContext to a
 // Kubernetes corev1.PodSecurityContext. Returns nil when ps is nil.
-func BuildPodSecurityContext(ps *orktypes.PodSecurityContext) *corev1.PodSecurityContext {
+func BuildPodSecurityContext(ps *types.PodSecurityContext) *corev1.PodSecurityContext {
 	if ps == nil {
 		return nil
 	}
@@ -86,7 +86,7 @@ func BuildPodSecurityContext(ps *orktypes.PodSecurityContext) *corev1.PodSecurit
 
 // ApplySecurityContext sets the container security context and pod security context
 // on the given container and pod spec. No-op when both are nil.
-func ApplySecurityContext(container *corev1.Container, pod *corev1.PodSpec, sc *orktypes.ContainerSecurityContext, ps *orktypes.PodSecurityContext) {
+func ApplySecurityContext(container *corev1.Container, pod *corev1.PodSpec, sc *types.ContainerSecurityContext, ps *types.PodSecurityContext) {
 	if sc != nil {
 		container.SecurityContext = BuildContainerSecurityContext(sc)
 	}

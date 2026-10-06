@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/resources/shared"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-const remoteFieldManager = "orkestra-remote"
+const remoteFieldManager = "inrun-remote"
 
 // remoteResource pairs a parsed Kubernetes object with its optional per-resource
 // forceConflict override, extracted from the raw map before SSA.
@@ -54,7 +54,7 @@ func (r *Reconciler) apply(ctx context.Context, owner domain.Object, resources [
 
 		gvr := mapping.Resource
 		if _, ok := allowed[gvr.Group+"/"+gvr.Resource]; !ok {
-			return fmt.Errorf("resource[%d] %q (%s/%s) was not declared in reconcile.remote.managedResources — add it to the katalog before the remote reconciler can create it",
+			return fmt.Errorf("resource[%d] %q (%s/%s) was not declared in reconcile.remote.managedResources — add it to the catalog before the remote reconciler can create it",
 				i, rr.obj.GetName(), gvr.Group, gvr.Resource)
 		}
 
@@ -64,10 +64,10 @@ func (r *Reconciler) apply(ctx context.Context, owner domain.Object, resources [
 	// All resources validated — now apply.
 	ownerRefs := shared.ResolveOwnerReferences(owner)
 	ownerNS := owner.GetNamespace()
-	katalogName, _ := owner.GetAnnotations()[orklabels.AnnotationManagedBy]
+	catalogName, _ := owner.GetAnnotations()[labels.AnnotationManagedBy]
 
 	for i, rr := range targets {
-		if err := applySingleResource(ctx, r.kube, rr, ownerRefs, ownerNS, katalogName); err != nil {
+		if err := applySingleResource(ctx, r.kube, rr, ownerRefs, ownerNS, catalogName); err != nil {
 			return fmt.Errorf("resource[%d] %q: apply failed: %w", i, rr.obj.GetName(), err)
 		}
 	}
@@ -108,14 +108,14 @@ func applySingleResource(
 	rr remoteResource,
 	ownerRefs []metav1.OwnerReference,
 	ownerNS string,
-	katalogName string,
+	catalogName string,
 ) error {
 	u := rr.obj
 
 	// Management labels and annotations — same invariants as the standard reconcile path.
-	mgr := orklabels.NewManager(orklabels.Config{})
+	mgr := labels.NewManager(labels.Config{})
 	mgr.EnsureManagedLabel(u)
-	mgr.EnsureManagedAnnotations(u, katalogName)
+	mgr.EnsureManagedAnnotations(u, catalogName)
 
 	// Owner reference: same-namespace only.
 	resNS := u.GetNamespace()

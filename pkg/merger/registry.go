@@ -1,9 +1,9 @@
 // pkg/merger/registry.go
 //
-// Registry Katalog imports (imports.registry:) — authoring-time only, same
+// Registry Catalog imports (imports.registry:) — authoring-time only, same
 // reasoning as helm.go: the runtime and gateway only ever read the
-// katalog.yaml key from a ConfigMap, already fully merged by
-// `ork generate bundle` with no imports left to resolve. See registry_stub.go
+// catalog.yaml key from a ConfigMap, already fully merged by
+// `inrun generate bundle` with no imports left to resolve. See registry_stub.go
 // for what those two builds get instead.
 
 //go:build !runtime && !gateway
@@ -19,11 +19,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/logger"
-	pkgregistry "github.com/orkspace/orkestra/pkg/registry"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/logger"
+	pkgregistry "github.com/inrundev/inrun/pkg/registry"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content/file"
@@ -34,21 +34,28 @@ import (
 
 const orasPullTimeout = 2 * time.Minute
 
-// knownPatternFiles is the complete set of files a pattern may contain.
-// All are attempted during Git pulls; presence is validated after pull
-// by validatePatternStructure using the kind-specific required/optional rules.
-var knownPatternFiles = []string{
-	pkgregistry.FileKatalog,
-	pkgregistry.FileMotif,
-	pkgregistry.FileCRD,
-	pkgregistry.FileReadme,
-	pkgregistry.FileCR,
-	pkgregistry.FileE2E,
-	pkgregistry.FileSimulate,
-	pkgregistry.FileGoMod,
-	pkgregistry.FileGoSum,
-	pkgregistry.FileMakefile,
-}
+// knownPatternFiles is every path a pattern file may have, at the root or in
+// its group directory. All are attempted during Git pulls; presence is
+// validated after pull by validatePatternStructure using the kind-specific
+// required/optional rules.
+var knownPatternFiles = func() []string {
+	var out []string
+	for _, f := range []string{
+		pkgregistry.FileCatalog,
+		pkgregistry.FileModule,
+		pkgregistry.FileCRD,
+		pkgregistry.FileReadme,
+		pkgregistry.FileCR,
+		pkgregistry.FileE2E,
+		pkgregistry.FileSimulate,
+		pkgregistry.FileGoMod,
+		pkgregistry.FileGoSum,
+		pkgregistry.FileMakefile,
+	} {
+		out = append(out, pkgregistry.PatternFilePaths(f)...)
+	}
+	return out
+}()
 
 // loadRegistrySource loads a single registry pattern entry.
 //
@@ -57,9 +64,9 @@ var knownPatternFiles = []string{
 //  2. Determine pull method: OCI or Git
 //  3. Pull pattern to a temp directory
 //  4. Validate pattern structure based on detected kind
-//  5. Load katalog.yaml or komposer.yaml based on UseKomposer
+//  5. Load catalog.yaml or stack.yaml based on UseStack
 //  6. Parse and return the CRD entries
-func (m *Merger) loadRegistrySource(src orktypes.RegistrySource) (map[string]orktypes.CRDEntry, error) {
+func (m *Merger) loadRegistrySource(src types.RegistrySource) (map[string]types.CRDEntry, error) {
 	cleanURL, version := src.ResolvedURL()
 
 	logger.Debug().
@@ -93,14 +100,14 @@ func (m *Merger) loadRegistrySource(src orktypes.RegistrySource) (map[string]ork
 			cleanURL, version, src.SourceFile(), err)
 	}
 
-	doc, err := parseKatalogDoc(data, sourcePath)
+	doc, err := parseCatalogDoc(data, sourcePath)
 	if err != nil {
 		return nil, fmt.Errorf("registry %q@%s: parsing %s: %w",
 			cleanURL, version, src.SourceFile(), err)
 	}
 	if doc == nil {
 		return nil, fmt.Errorf(
-			"registry %q@%s: %s is not a valid Katalog or Komposer document",
+			"registry %q@%s: %s is not a valid Catalog or Stack document",
 			cleanURL, version, src.SourceFile(),
 		)
 	}
@@ -121,30 +128,30 @@ func (m *Merger) loadRegistrySource(src orktypes.RegistrySource) (map[string]ork
 	registryRef := fmt.Sprintf("%s@%s", cleanURL, version)
 
 	switch doc.Kind {
-	case konfig.KatalogKind():
-		if src.UseKomposer {
+	case config.CatalogKind():
+		if src.UseStack {
 			return nil, fmt.Errorf(
-				"registry %q@%s: useKomposer is true but komposer.yaml contains kind %q — "+
-					"check the upstream pattern's komposer.yaml",
+				"registry %q@%s: useStack is true but stack.yaml contains kind %q — "+
+					"check the upstream pattern's stack.yaml",
 				cleanURL, version, doc.Kind,
 			)
 		}
-		entries, err := m.loadKatalog(sourcePath, doc)
+		entries, err := m.loadCatalog(sourcePath, doc)
 		if err != nil {
 			return nil, err
 		}
 		stampRegistryRef(entries, registryRef)
 		return entries, nil
 
-	case konfig.KomposerKind():
-		if !src.UseKomposer {
+	case config.StackKind():
+		if !src.UseStack {
 			return nil, fmt.Errorf(
-				"registry %q@%s: useKomposer is false but katalog.yaml contains kind %q — "+
-					"set useKomposer: true to load the upstream Komposer, or check the pattern structure",
+				"registry %q@%s: useStack is false but catalog.yaml contains kind %q — "+
+					"set useStack: true to load the upstream Stack, or check the pattern structure",
 				cleanURL, version, doc.Kind,
 			)
 		}
-		entries, err := m.loadKomposer(sourcePath, doc)
+		entries, err := m.loadStack(sourcePath, doc)
 		if err != nil {
 			return nil, err
 		}
@@ -155,13 +162,13 @@ func (m *Merger) loadRegistrySource(src orktypes.RegistrySource) (map[string]ork
 		return nil, fmt.Errorf(
 			"registry %q@%s: %s has unexpected kind %q — expected %q or %q",
 			cleanURL, version, src.SourceFile(), doc.Kind,
-			konfig.KatalogKind(), konfig.KomposerKind(),
+			config.CatalogKind(), config.StackKind(),
 		)
 	}
 }
 
 // stampRegistryRef sets RegistryRef on every entry in the map.
-func stampRegistryRef(entries map[string]orktypes.CRDEntry, ref string) {
+func stampRegistryRef(entries map[string]types.CRDEntry, ref string) {
 	for name, entry := range entries {
 		entry.RegistryRef = ref
 		entries[name] = entry
@@ -175,7 +182,7 @@ func (m *Merger) pullPattern(
 	oci bool,
 	auth *utils.FileAuth,
 ) (tmpDir string, cleanup func(), err error) {
-	tmpDir, err = os.MkdirTemp("", "orkestra-registry-*")
+	tmpDir, err = os.MkdirTemp("", "inrun-registry-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("creating temp dir: %w", err)
 	}
@@ -204,7 +211,7 @@ func (m *Merger) pullOCIPattern(url, version, tmpDir string, auth *utils.FileAut
 	ociRef = fmt.Sprintf("%s:%s", ociRef, version)
 
 	// Serve from local cache when available — avoids a network round-trip on
-	// every ork validate/template/simulate after ork pull.
+	// every inrun validate/template/simulate after inrun pull.
 	if pkgRef, err := pkgregistry.Resolve(ociRef); err == nil {
 		if cacheDir, err := pkgRef.CachePath(); err == nil && pkgRef.IsCached() {
 			logger.Debug().
@@ -270,7 +277,7 @@ func orasPull(ref, dst string, auth *utils.FileAuth) error {
 
 	if auth != nil {
 		repo.Client = &orasauth.Client{
-			ClientID: "orkestra",
+			ClientID: "inrun",
 			Credential: func(ctx context.Context, registry string) (orasauth.Credential, error) {
 				switch strings.ToLower(auth.Type) {
 				case "basic":
@@ -292,11 +299,11 @@ func orasPull(ref, dst string, auth *utils.FileAuth) error {
 		}
 	} else {
 		// No explicit auth — fall back to Docker credential store (~/.docker/config.json).
-		// This mirrors pkg/registry.Client.remoteRepo so `ork pull -f`
-		// and `ork pull <url>` use the same credential source.
+		// This mirrors pkg/registry.Client.remoteRepo so `inrun pull -f`
+		// and `inrun pull <url>` use the same credential source.
 		if store, err := credentials.NewStoreFromDocker(credentials.StoreOptions{}); err == nil {
 			repo.Client = &orasauth.Client{
-				ClientID:   "orkestra",
+				ClientID:   "inrun",
 				Cache:      orasauth.DefaultCache,
 				Credential: credentials.Credential(store),
 			}
@@ -344,7 +351,7 @@ func (m *Merger) pullGitHubPattern(url, version, tmpDir string, auth *utils.File
 		if err != nil {
 			continue // file not present in this pattern — validated after pull
 		}
-		if err := os.WriteFile(filepath.Join(tmpDir, filename), data, 0644); err != nil {
+		if err := writePatternFile(tmpDir, filename, data); err != nil {
 			return fmt.Errorf("writing %q: %w", filename, err)
 		}
 	}
@@ -359,7 +366,7 @@ func (m *Merger) pullGitLabPattern(url, version, tmpDir string, auth *utils.File
 		if err != nil {
 			continue
 		}
-		if err := os.WriteFile(filepath.Join(tmpDir, filename), data, 0644); err != nil {
+		if err := writePatternFile(tmpDir, filename, data); err != nil {
 			return fmt.Errorf("writing %q: %w", filename, err)
 		}
 	}
@@ -368,7 +375,7 @@ func (m *Merger) pullGitLabPattern(url, version, tmpDir string, auth *utils.File
 
 // pullGenericGitPattern clones the repository and copies all known pattern files.
 func pullGenericGitPattern(url, version, tmpDir string, auth *utils.FileAuth) error {
-	cloneDir, err := os.MkdirTemp("", "orkestra-clone-*")
+	cloneDir, err := os.MkdirTemp("", "inrun-clone-*")
 	if err != nil {
 		return fmt.Errorf("creating clone dir: %w", err)
 	}
@@ -384,7 +391,7 @@ func pullGenericGitPattern(url, version, tmpDir string, auth *utils.FileAuth) er
 		if err != nil {
 			continue
 		}
-		if err := os.WriteFile(filepath.Join(tmpDir, filename), data, 0644); err != nil {
+		if err := writePatternFile(tmpDir, filename, data); err != nil {
 			return fmt.Errorf("copying %q: %w", filename, err)
 		}
 	}
@@ -392,28 +399,28 @@ func pullGenericGitPattern(url, version, tmpDir string, auth *utils.FileAuth) er
 	return nil
 }
 
-// pullMotifFromGit fetches only motif.yaml from a Git host.
-// Used for standalone Motif repos (not full patterns).
-func (m *Merger) pullMotifFromGit(url, version, tmpDir string, auth *utils.FileAuth) error {
+// pullModuleFromGit fetches only module.yaml from a Git host.
+// Used for standalone Module repos (not full patterns).
+func (m *Merger) pullModuleFromGit(url, version, tmpDir string, auth *utils.FileAuth) error {
 	var rawURL string
 	switch {
 	case isGitHubURL(url):
-		rawURL = githubRawURL(url, version, "motif.yaml")
+		rawURL = githubRawURL(url, version, "module.yaml")
 	case isGitLabURL(url):
-		rawURL = gitlabRawURL(url, version, "motif.yaml")
+		rawURL = gitlabRawURL(url, version, "module.yaml")
 	default:
-		return m.fetchMotifFromGenericGit(url, version, tmpDir, auth)
+		return m.fetchModuleFromGenericGit(url, version, tmpDir, auth)
 	}
 
 	data, err := utils.LoadFileWithAuth(rawURL, auth)
 	if err != nil {
-		return fmt.Errorf("fetching motif.yaml from %s@%s: %w", url, version, err)
+		return fmt.Errorf("fetching module.yaml from %s@%s: %w", url, version, err)
 	}
-	return os.WriteFile(filepath.Join(tmpDir, "motif.yaml"), data, 0644)
+	return os.WriteFile(filepath.Join(tmpDir, "module.yaml"), data, 0644)
 }
 
-func (m *Merger) fetchMotifFromGenericGit(url, version, tmpDir string, auth *utils.FileAuth) error {
-	cloneDir, err := os.MkdirTemp("", "orkestra-motif-clone-*")
+func (m *Merger) fetchModuleFromGenericGit(url, version, tmpDir string, auth *utils.FileAuth) error {
+	cloneDir, err := os.MkdirTemp("", "inrun-module-clone-*")
 	if err != nil {
 		return fmt.Errorf("creating clone dir: %w", err)
 	}
@@ -424,11 +431,11 @@ func (m *Merger) fetchMotifFromGenericGit(url, version, tmpDir string, auth *uti
 		return err
 	}
 
-	data, err := readLocal(filepath.Join(cloneDir, "motif.yaml"))
+	data, err := readLocal(filepath.Join(cloneDir, "module.yaml"))
 	if err != nil {
-		return fmt.Errorf("motif.yaml not found in repository %s@%s", url, version)
+		return fmt.Errorf("module.yaml not found in repository %s@%s", url, version)
 	}
-	return os.WriteFile(filepath.Join(tmpDir, "motif.yaml"), data, 0644)
+	return os.WriteFile(filepath.Join(tmpDir, "module.yaml"), data, 0644)
 }
 
 // ── Pattern validation ────────────────────────────────────────────────────────
@@ -436,8 +443,8 @@ func (m *Merger) fetchMotifFromGenericGit(url, version, tmpDir string, auth *uti
 // validatePatternStructure validates that dir contains a well-formed pattern.
 // Kind is auto-detected; required files are determined by the pattern kind.
 //
-// Katalog patterns require only katalog.yaml (crd.yaml, README.md, cr.yaml are optional).
-// Motif patterns require only motif.yaml.
+// Catalog patterns require only catalog.yaml (crd.yaml, README.md, cr.yaml are optional).
+// Module patterns require only module.yaml.
 func validatePatternStructure(dir, url, version string) error {
 	_, _, _, err := pkgregistry.ValidatePatternDirectory(dir)
 	if err != nil {
@@ -453,7 +460,7 @@ func (m *Merger) resolveRegistryURL(srcURL string) (string, error) {
 		return srcURL, nil
 	}
 
-	env := os.Getenv("ORK_REGISTRY")
+	env := os.Getenv("INRUN_REGISTRY")
 	if env != "" {
 		return env, nil
 	}
@@ -465,13 +472,13 @@ func (m *Merger) resolveRegistryURL(srcURL string) (string, error) {
 	return "", fmt.Errorf(
 		"no registry URL configured for this source.\n\n" +
 			"Set the registry URL using one of:\n" +
-			"  1. ORK_REGISTRY environment variable:\n" +
-			"       export ORK_REGISTRY=https://github.com/myorg/orkestra-registry\n\n" +
+			"  1. INRUN_REGISTRY environment variable:\n" +
+			"       export INRUN_REGISTRY=https://github.com/myorg/inrun-registry\n\n" +
 			"  2. Explicit url in the source block:\n" +
 			"       imports:\n" +
 			"         registry:\n" +
-			"           - url: https://github.com/myorg/orkestra-registry\n" +
-			"             katalog:\n" +
+			"           - url: https://github.com/myorg/inrun-registry\n" +
+			"             catalog:\n" +
 			"               website:\n" +
 			"                 branch: main",
 	)
@@ -515,9 +522,19 @@ func injectAuthIntoURL(rawURL string, auth *utils.FileAuth) string {
 
 // ── Auth resolution ───────────────────────────────────────────────────────────
 
-func resolveRegistryAuth(auth *orktypes.FileSourceAuth) (*utils.FileAuth, error) {
+func resolveRegistryAuth(auth *types.FileSourceAuth) (*utils.FileAuth, error) {
 	if auth == nil {
 		return nil, nil
 	}
 	return auth.Resolve()
+}
+
+// writePatternFile writes a pulled pattern file under dir, creating its group
+// directory when the path has one.
+func writePatternFile(dir, rel string, data []byte) error {
+	dst := filepath.Join(dir, rel)
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0644)
 }

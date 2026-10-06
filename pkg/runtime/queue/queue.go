@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/logger"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -87,7 +87,7 @@ func NewWorkqueue(name string) *Workqueue {
 	}
 }
 
-// Queue is the TypedRateLimitingInterface used by all orkestra operators.
+// Queue is the TypedRateLimitingInterface used by all inrun operators.
 // It is an interface that rate limits items being added to the queue.
 //
 // https://pkg.go.dev/k8s.io/client-go@v0.36.1/util/workqueue#TypedRateLimitingInterface
@@ -127,10 +127,10 @@ func (q *Workqueue) SetQueueDepth(n int) {
 	q.maxDepth.Store(int32(n))
 }
 
-// Methods to implement the komponent interface
-var _ domain.Komponent = (*Workqueue)(nil)
+// Methods to implement the component interface
+var _ domain.Component = (*Workqueue)(nil)
 
-// Start is called by orkestra.Start() after all komoonents are registered
+// Start is called by inrun.Start() after all komoonents are registered
 func (q *Workqueue) Start(ctx context.Context) error {
 	logger.Debug().Str("name", q.name).Msg("workqueue started")
 	q.started.Store(true)
@@ -138,11 +138,11 @@ func (q *Workqueue) Start(ctx context.Context) error {
 }
 
 // Started returns true if default workqueue has started
-// Used by orkestra for status check
+// Used by inrun for status check
 func (q *Workqueue) Started() bool { return q.started.Load() }
 
 // Shutdown drains the default workqueue
-// This is called by orkestra.Shutdown() for graceful degradation
+// This is called by inrun.Shutdown() for graceful degradation
 func (q *Workqueue) Shutdown(ctx context.Context) {
 	if q.queue != nil {
 		q.queue.ShutDown()

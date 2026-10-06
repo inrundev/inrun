@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Orkestra CLI installer
+# Inrun CLI installer
 #
 # Usage:
-#   curl -sSL https://get.orkestra.sh | bash
+#   curl -sSL https://get.inrun.dev | bash
 #
 # Environment variables:
-#   ORK_VERSION         — pin a specific version tag (default: latest release)
-#   ORK_INSTALL_DIR     — install directory (default: ~/.orkestra/bin)
-#   ORK_SKIP_CC         — skip Control Center binary (default: false)
-#   ORK_SKIP_COMPLETION — skip shell completion setup (default: false)
+#   INRUN_VERSION         — pin a specific version tag (default: latest release)
+#   INRUN_INSTALL_DIR     — install directory (default: ~/.inrun/bin)
+#   INRUN_SKIP_CONSOLE         — skip Console binary (default: false)
+#   INRUN_SKIP_COMPLETION — skip shell completion setup (default: false)
 #
 # 1. Add the binary name to BINARIES.
 # 2. If it should be skippable, add a case entry in component_skipped().
@@ -20,15 +20,15 @@ set -euo pipefail
 
 # Config
 
-REPO="orkspace/orkestra"
-INSTALL_DIR="${ORK_INSTALL_DIR:-${HOME}/.orkestra/bin}"
-VERSION="${ORK_VERSION:-}"
-SKIP_CC="${ORK_SKIP_CC:-false}"
-SKIP_COMPLETION="${ORK_SKIP_COMPLETION:-false}"
+REPO="inrundev/inrun"
+INSTALL_DIR="${INRUN_INSTALL_DIR:-${HOME}/.inrun/bin}"
+VERSION="${INRUN_VERSION:-}"
+SKIP_CC="${INRUN_SKIP_CONSOLE:-false}"
+SKIP_COMPLETION="${INRUN_SKIP_COMPLETION:-false}"
 
-# All Orkestra CLI binaries, in install order.
+# All Inrun CLI binaries, in install order.
 # To add a new binary, append it here.
-BINARIES=("ork" "orkcc")
+BINARIES=("inrun" "inrun-console")
 
 # Colours
 
@@ -39,10 +39,10 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-info()    { echo -e "${BLUE}[orkestra]${RESET} $*"; }
-success() { echo -e "${GREEN}[orkestra]${RESET} $*"; }
-warn()    { echo -e "${YELLOW}[orkestra]${RESET} $*"; }
-error()   { echo -e "${RED}[orkestra]${RESET} $*" >&2; }
+info()    { echo -e "${BLUE}[inrun]${RESET} $*"; }
+success() { echo -e "${GREEN}[inrun]${RESET} $*"; }
+warn()    { echo -e "${YELLOW}[inrun]${RESET} $*"; }
+error()   { echo -e "${RED}[inrun]${RESET} $*" >&2; }
 fatal()   { error "$*"; exit 1; }
 
 # Banner
@@ -102,7 +102,7 @@ resolve_version() {
         | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
 
     if [[ -z "${tag}" ]]; then
-        fatal "Could not resolve latest version. Check your network or set ORK_VERSION explicitly."
+        fatal "Could not resolve latest version. Check your network or set INRUN_VERSION explicitly."
     fi
 
     echo "${tag}"
@@ -115,7 +115,7 @@ resolve_version() {
 component_skipped() {
     local binary="$1"
     case "${binary}" in
-        orkcc) [[ "${SKIP_CC}" == "true" ]] ;;
+        inrun-console) [[ "${SKIP_CC}" == "true" ]] ;;
         *)     return 1 ;;
     esac
 }
@@ -215,7 +215,7 @@ setup_path() {
     fi
 
     echo "" >> "${profile_file}"
-    echo "# Orkestra CLI" >> "${profile_file}"
+    echo "# Inrun CLI" >> "${profile_file}"
     echo "${export_line}" >> "${profile_file}"
 
     info "Added ${INSTALL_DIR} to PATH in ${profile_file}"
@@ -226,7 +226,7 @@ setup_path() {
 
 install_completion() {
     if [[ "${SKIP_COMPLETION}" == "true" ]]; then
-        info "Skipping shell completion (ORK_SKIP_COMPLETION=true)"
+        info "Skipping shell completion (INRUN_SKIP_COMPLETION=true)"
         return
     fi
 
@@ -237,16 +237,16 @@ install_completion() {
         bash)
             local dir="${HOME}/.bash_completion.d"
             mkdir -p "${dir}"
-            info "Installing bash completion → ${dir}/ork"
-            "${INSTALL_DIR}/ork" completion bash > "${dir}/ork" 2>/dev/null || true
+            info "Installing bash completion → ${dir}/inrun"
+            "${INSTALL_DIR}/inrun" completion bash > "${dir}/inrun" 2>/dev/null || true
 
             local rc="${HOME}/.bashrc"
-            local source_line="source ${dir}/ork"
+            local source_line="source ${dir}/inrun"
             if [[ -f "${rc}" ]] && grep -qF "${source_line}" "${rc}"; then
                 :
             else
                 echo "" >> "${rc}"
-                echo "# Orkestra CLI completion" >> "${rc}"
+                echo "# Inrun CLI completion" >> "${rc}"
                 echo "${source_line}" >> "${rc}"
             fi
             ;;
@@ -254,7 +254,7 @@ install_completion() {
             local dir="${HOME}/.zsh/completions"
             mkdir -p "${dir}"
             info "Installing zsh completion → ${dir}/_ork"
-            "${INSTALL_DIR}/ork" completion zsh > "${dir}/_ork" 2>/dev/null || true
+            "${INSTALL_DIR}/inrun" completion zsh > "${dir}/_ork" 2>/dev/null || true
 
             local rc="${ZDOTDIR:-${HOME}}/.zshrc"
             local fpath_line="fpath=(${dir} \$fpath)"
@@ -262,7 +262,7 @@ install_completion() {
                 :
             else
                 echo "" >> "${rc}"
-                echo "# Orkestra CLI completion" >> "${rc}"
+                echo "# Inrun CLI completion" >> "${rc}"
                 echo "${fpath_line}" >> "${rc}"
                 echo "autoload -U compinit && compinit" >> "${rc}"
             fi
@@ -270,13 +270,13 @@ install_completion() {
         fish)
             local dir="${HOME}/.config/fish/completions"
             mkdir -p "${dir}"
-            info "Installing fish completion → ${dir}/ork.fish"
-            "${INSTALL_DIR}/ork" completion fish > "${dir}/ork.fish" 2>/dev/null || true
+            info "Installing fish completion → ${dir}/inrun.fish"
+            "${INSTALL_DIR}/inrun" completion fish > "${dir}/inrun.fish" 2>/dev/null || true
             # fish auto-loads from this directory — no rc change needed
             ;;
         *)
             warn "Shell '${shell_name}' not recognised — skipping completion."
-            warn "Run 'ork completion <shell>' to generate it manually."
+            warn "Run 'inrun completion <shell>' to generate it manually."
             return
             ;;
     esac
@@ -304,13 +304,13 @@ print_summary() {
 
     echo
     echo -e "  ${BOLD}Get started:${RESET}"
-    echo -e "    ork init my-operator             Scaffold a new operator"
-    echo -e "    ork validate     Validate a Katalog"
-    echo -e "    ork run           Start the operator runtime"
-    echo -e "    ork push name:v1 ./dir  Push a pattern to the registry"
+    echo -e "    inrun init my-operator             Scaffold a new operator"
+    echo -e "    inrun validate     Validate a Catalog"
+    echo -e "    inrun           Start the operator runtime"
+    echo -e "    inrun push name:v1 ./dir  Push a pattern to the registry"
     echo
-    echo -e "  ${BOLD}Control Center:${RESET}"
-    echo -e "    ork control                Start the web UI (port 8081)"
+    echo -e "  ${BOLD}Console:${RESET}"
+    echo -e "    inrun console                Start the web UI (port 8081)"
     echo
     echo -e "  ${BOLD}Documentation:${RESET}"
     echo -e "    https://github.com/${REPO}"

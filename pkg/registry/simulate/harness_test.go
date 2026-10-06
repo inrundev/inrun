@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/merger"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/merger"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -17,9 +17,9 @@ const uniqueTestCRD = `
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: websites.testground.orkestra.io
+  name: websites.testground.inrun.dev
 spec:
-  group: testground.orkestra.io
+  group: testground.inrun.dev
   names:
     kind: Website
     plural: websites
@@ -41,9 +41,9 @@ spec:
                   type: string
 `
 
-const uniqueTestKatalog = `
-apiVersion: orkestra.orkspace.io/v1
-kind: Katalog
+const uniqueTestCatalog = `
+apiVersion: inrun.dev/v1
+kind: Catalog
 metadata:
   name: unique-operator-harness-test
   author: claude
@@ -54,7 +54,7 @@ spec:
   crds:
     website:
       apiTypes:
-        group: testground.orkestra.io
+        group: testground.inrun.dev
         version: v1alpha1
         kind: Website
         plural: websites
@@ -69,39 +69,39 @@ spec:
               action: deny
 `
 
-// writeUniqueTestKatalog materializes the katalog+CRD fixture used by both
+// writeUniqueTestCatalog materializes the catalog+CRD fixture used by both
 // TestRun_OperatorUnique_* tests into a temp dir, matching what
-// merger.New/katalog.BuildExpanded expect on disk.
-func writeUniqueTestKatalog(t *testing.T) string {
+// merger.New/catalog.BuildExpanded expect on disk.
+func writeUniqueTestCatalog(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "crd.yaml"), []byte(uniqueTestCRD), 0o644); err != nil {
 		t.Fatalf("writing crd.yaml: %v", err)
 	}
-	katalogPath := filepath.Join(dir, "katalog.yaml")
-	if err := os.WriteFile(katalogPath, []byte(uniqueTestKatalog), 0o644); err != nil {
-		t.Fatalf("writing katalog.yaml: %v", err)
+	catalogPath := filepath.Join(dir, "catalog.yaml")
+	if err := os.WriteFile(catalogPath, []byte(uniqueTestCatalog), 0o644); err != nil {
+		t.Fatalf("writing catalog.yaml: %v", err)
 	}
-	return katalogPath
+	return catalogPath
 }
 
-func loadUniqueTestKatalog(t *testing.T) *katalog.Katalog {
+func loadUniqueTestCatalog(t *testing.T) *catalog.Catalog {
 	t.Helper()
-	katalogPath := writeUniqueTestKatalog(t)
-	m := merger.New(katalogPath)
+	catalogPath := writeUniqueTestCatalog(t)
+	m := merger.New(catalogPath)
 	if err := m.Merge(); err != nil {
-		t.Fatalf("merging katalog: %v", err)
+		t.Fatalf("merging catalog: %v", err)
 	}
-	kat, err := pipeline.BuildExpanded(konfig.NewDefaultKonfig(), m)
+	kat, err := pipeline.BuildExpanded(config.NewDefaultConfig(), m)
 	if err != nil {
-		t.Fatalf("building katalog: %v", err)
+		t.Fatalf("building catalog: %v", err)
 	}
 	return kat
 }
 
 func websiteCR(name, domain string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": "testground.orkestra.io/v1alpha1",
+		"apiVersion": "testground.inrun.dev/v1alpha1",
 		"kind":       "Website",
 		"metadata": map[string]interface{}{
 			"name":      name,
@@ -118,7 +118,7 @@ func websiteCR(name, domain string) *unstructured.Unstructured {
 // UniquenessChecker → validation.rules) when no other instance shares the
 // field value.
 func TestRun_OperatorUnique_NoDuplicate(t *testing.T) {
-	kat := loadUniqueTestKatalog(t)
+	kat := loadUniqueTestCatalog(t)
 	cr := websiteCR("site-a", "a.example.com")
 
 	result, err := Run(context.Background(), kat, "website", cr, 1, RunOptions{})
@@ -139,7 +139,7 @@ func TestRun_OperatorUnique_NoDuplicate(t *testing.T) {
 // into the fake dynamic client and makes operator: unique correctly deny —
 // not a checker that trivially always passes because nothing was seeded.
 func TestRun_OperatorUnique_Duplicate(t *testing.T) {
-	kat := loadUniqueTestKatalog(t)
+	kat := loadUniqueTestCatalog(t)
 	cr := websiteCR("site-b", "shared.example.com")
 	existing := websiteCR("site-a", "shared.example.com")
 

@@ -6,7 +6,7 @@ import (
 )
 
 // baseline is a minimal controller-runtime reconciler matching the pattern
-// that ork migrate targets — embedded client, ctrl.Request signature, req.NamespacedName.
+// that inrun migrate targets — embedded client, ctrl.Request signature, req.NamespacedName.
 const baseline = `package controller
 
 import (
@@ -64,7 +64,7 @@ func TestRewrite_SignatureChange(t *testing.T) {
 	src := string(res.Source)
 
 	if !strings.Contains(src, "Reconcile(ctx context.Context, req domain.Request) (domain.Result, error)") {
-		t.Error("expected Orkestra signature: Reconcile(ctx context.Context, req domain.Request) (domain.Result, error)")
+		t.Error("expected Inrun signature: Reconcile(ctx context.Context, req domain.Request) (domain.Result, error)")
 	}
 	if strings.Contains(src, "ctrl.Request") {
 		t.Error("ctrl.Request should be removed")
@@ -190,8 +190,8 @@ func TestRewrite_StatusUpdateFlagged(t *testing.T) {
 
 	src := string(res.Source)
 
-	if !strings.Contains(src, "TODO(ork migrate)") {
-		t.Error("expected TODO(ork migrate) for r.Status().Update()")
+	if !strings.Contains(src, "TODO(inrun migrate)") {
+		t.Error("expected TODO(inrun migrate) for r.Status().Update()")
 	}
 	hasWarning := false
 	for _, w := range res.Warnings {
@@ -299,8 +299,8 @@ func (r *WebAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if !strings.Contains(out, "func NewWebAppReconciler(kube kubeclient.Interface)") {
 		t.Error("expected ToClient constructor to be injected")
 	}
-	if !strings.Contains(out, "orkadapter.ToClient(kube)") {
-		t.Error("expected orkadapter.ToClient in constructor")
+	if !strings.Contains(out, "adapter.ToClient(kube)") {
+		t.Error("expected adapter.ToClient in constructor")
 	}
 	if !strings.Contains(out, "domain.ReconcilerFrom") {
 		t.Error("expected domain.ReconcilerFrom in constructor")
@@ -316,15 +316,15 @@ func (r *WebAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		t.Error("expected ctrl import to be kept in toclient mode")
 	}
 
-	// Orkestra imports must be injected (not just TODO comments).
-	if !strings.Contains(out, `"github.com/orkspace/orkestra/domain"`) {
+	// Inrun imports must be injected (not just TODO comments).
+	if !strings.Contains(out, `"github.com/inrundev/inrun/domain"`) {
 		t.Error("expected domain import to be injected")
 	}
-	if !strings.Contains(out, `"github.com/orkspace/orkestra/pkg/kubeclient"`) {
+	if !strings.Contains(out, `"github.com/inrundev/inrun/pkg/kubeclient"`) {
 		t.Error("expected kubeclient import to be injected")
 	}
-	if !strings.Contains(out, `"github.com/orkspace/orkestra/pkg/kubeclient/orkadapter"`) {
-		t.Error("expected orkadapter import to be injected")
+	if !strings.Contains(out, `"github.com/inrundev/inrun/pkg/kubeclient/adapter"`) {
+		t.Error("expected adapter import to be injected")
 	}
 
 	// Mode recorded.
@@ -346,7 +346,7 @@ func (r *MyReconciler) DoSomething() {}
 	}
 }
 
-func TestGenerate_KatalogContainsConstructor(t *testing.T) {
+func TestGenerate_CatalogContainsConstructor(t *testing.T) {
 	res := &Result{
 		ReceiverType: "WebAppReconciler",
 		PkgName:      "controller",
@@ -354,17 +354,17 @@ func TestGenerate_KatalogContainsConstructor(t *testing.T) {
 	files := Generate(res, Options{
 		ModulePath:   "github.com/example/webapp-operator",
 		OperatorName: "webapp-operator",
-		OrkVersion:   "v0.8.0",
+		InrunVersion: "v0.8.0",
 	})
 
-	if !strings.Contains(files.Katalog, "function: NewWebAppReconciler") {
-		t.Error("katalog.yaml should contain constructor function name")
+	if !strings.Contains(files.Catalog, "function: NewWebAppReconciler") {
+		t.Error("catalog.yaml should contain constructor function name")
 	}
-	if !strings.Contains(files.Katalog, "default: false") {
-		t.Error("katalog.yaml should have default: false for constructor")
+	if !strings.Contains(files.Catalog, "default: false") {
+		t.Error("catalog.yaml should have default: false for constructor")
 	}
 	if !strings.Contains(files.GoMod, "v0.8.0") {
-		t.Error("go.mod should contain Orkestra version")
+		t.Error("go.mod should contain Inrun version")
 	}
 }
 
@@ -414,28 +414,28 @@ func (r *WebAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		t.Errorf("Primary.Alias = %q, want demov1alpha1", p.Alias)
 	}
 
-	// katalog.yaml should use the detected values
+	// catalog.yaml should use the detected values
 	files := Generate(res, Options{
 		ModulePath:   "github.com/example/webapp-operator",
 		OperatorName: "webapp-operator",
 	})
-	if !strings.Contains(files.Katalog, "kind: WebApp") {
-		t.Error("katalog should contain kind: WebApp from For()")
+	if !strings.Contains(files.Catalog, "kind: WebApp") {
+		t.Error("catalog should contain kind: WebApp from For()")
 	}
-	if !strings.Contains(files.Katalog, "object: WebApp") {
-		t.Error("katalog should contain object: WebApp")
+	if !strings.Contains(files.Catalog, "object: WebApp") {
+		t.Error("catalog should contain object: WebApp")
 	}
-	if !strings.Contains(files.Katalog, "objectList: WebAppList") {
-		t.Error("katalog should contain objectList: WebAppList")
+	if !strings.Contains(files.Catalog, "objectList: WebAppList") {
+		t.Error("catalog should contain objectList: WebAppList")
 	}
-	if !strings.Contains(files.Katalog, "version: v1alpha1") {
-		t.Error("katalog should contain version: v1alpha1")
+	if !strings.Contains(files.Catalog, "version: v1alpha1") {
+		t.Error("catalog should contain version: v1alpha1")
 	}
-	if !strings.Contains(files.Katalog, "location: github.com/example/operator/api/v1alpha1") {
-		t.Error("katalog should contain the detected location")
+	if !strings.Contains(files.Catalog, "location: github.com/example/operator/api/v1alpha1") {
+		t.Error("catalog should contain the detected location")
 	}
-	if !strings.Contains(files.Katalog, "alias: demov1alpha1") {
-		t.Error("katalog should contain alias: demov1alpha1")
+	if !strings.Contains(files.Catalog, "alias: demov1alpha1") {
+		t.Error("catalog should contain alias: demov1alpha1")
 	}
 }
 
@@ -495,7 +495,7 @@ func (r *WebAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 }
 
-func TestGenerate_KatalogWithOwnsWatches(t *testing.T) {
+func TestGenerate_CatalogWithOwnsWatches(t *testing.T) {
 	res := &Result{
 		ReceiverType: "WebAppReconciler",
 		PkgName:      "controller",
@@ -512,17 +512,17 @@ func TestGenerate_KatalogWithOwnsWatches(t *testing.T) {
 		OperatorName: "webapp-operator",
 	})
 
-	if !strings.Contains(files.Katalog, "kind: Deployment") {
-		t.Error("katalog should contain Deployment from Owns()")
+	if !strings.Contains(files.Catalog, "kind: Deployment") {
+		t.Error("catalog should contain Deployment from Owns()")
 	}
-	if !strings.Contains(files.Katalog, "kind: Service") {
-		t.Error("katalog should contain Service from Owns()")
+	if !strings.Contains(files.Catalog, "kind: Service") {
+		t.Error("catalog should contain Service from Owns()")
 	}
-	if !strings.Contains(files.Katalog, "watch:") {
-		t.Error("katalog should contain watch: block from Watches()")
+	if !strings.Contains(files.Catalog, "watch:") {
+		t.Error("catalog should contain watch: block from Watches()")
 	}
-	if !strings.Contains(files.Katalog, "kind: Config") {
-		t.Error("katalog should contain Config in watch: block")
+	if !strings.Contains(files.Catalog, "kind: Config") {
+		t.Error("catalog should contain Config in watch: block")
 	}
 }
 

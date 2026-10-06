@@ -1,18 +1,18 @@
-# https://orkestra.sh/docs/reference/schema/e2e/
-apiVersion: orkestra.orkspace.io/v1
+# https://inrun.dev/docs/reference/schema/e2e/
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: deletion-protection-e2e
   description: Verify that protected CRDs cannot be deleted while the operator is running
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd-protected.yaml
   cr: ./cr-app.yaml
 
   cluster:
     provider: kind
-    name: ork-e2e
+    name: inrun-e2e
     reuse: false
 
   setup:
@@ -40,7 +40,7 @@ spec:
       after: cr-applied
       timeout: 30s
       commands:
-        - run: kubectl delete crd apps.security.orkestra.io
+        - run: kubectl delete crd apps.security.inrun.dev
           exitCode: 1
           outputContains: "denied the request"
 
@@ -48,7 +48,7 @@ spec:
       after: cr-applied
       timeout: 30s
       commands:
-        - run: kubectl delete crd logstreams.security.orkestra.io --ignore-not-found
+        - run: kubectl delete crd logstreams.security.inrun.dev --ignore-not-found
           exitCode: 0
 
     # The housekeeper watches the ValidatingWebhookConfiguration and recreates
@@ -65,19 +65,19 @@ spec:
               apiVersion: v1
               kind: ConfigMap
               metadata:
-                name: orkestra-katalog
-                namespace: orkestra-system
+                name: inrun-catalog
+                namespace: inrun-system
                 labels:
-                  app.kubernetes.io/name: orkestra
-                  app.kubernetes.io/tag: orkestra-internal
+                  app.kubernetes.io/name: inrun
+                  app.kubernetes.io/tag: inrun-internal
               data:
-                katalog.yaml: |
-                  apiVersion: orkestra.orkspace.io/v1
-                  kind: Katalog
+                catalog.yaml: |
+                  apiVersion: inrun.dev/v1
+                  kind: Catalog
                   metadata:
                     name: deletion-protection
                   gateway:
-                    endpoint: http://orkestra-gateway:8080
+                    endpoint: http://inrun-gateway:8080
                   security:
                     deletionProtection:
                       enabled: false
@@ -87,15 +87,15 @@ spec:
                     crds:
                       app:
                         apiTypes:
-                          group: security.orkestra.io
+                          group: security.inrun.dev
                           version: v1alpha1
                           kind: App
                           plural: apps
 
         restart:
           - kind: Deployment
-            name: orkestra-gateway
-            namespace: orkestra-system
+            name: inrun-gateway
+            namespace: inrun-system
 
     - name: Cleanup verified — CRs and CRDs deleted after webhook removal
       after: cr-deleted

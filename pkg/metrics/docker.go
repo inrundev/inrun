@@ -19,7 +19,7 @@ import (
 
 var dockerOperationsTotal = promauto.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "orkestra_docker_operations_total",
+		Name: "inrun_docker_operations_total",
 		Help: "Total number of Docker operations performed by the reconciler.",
 	},
 	[]string{"crd", "operation", "image", "result"},
@@ -27,7 +27,7 @@ var dockerOperationsTotal = promauto.NewCounterVec(
 
 var dockerOperationDuration = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
-		Name:    "orkestra_docker_operation_duration_seconds",
+		Name:    "inrun_docker_operation_duration_seconds",
 		Help:    "Duration of Docker operations.",
 		Buckets: prometheus.DefBuckets,
 	},
@@ -36,7 +36,7 @@ var dockerOperationDuration = promauto.NewHistogramVec(
 
 var dockerOperationErrors = promauto.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "orkestra_docker_operation_errors_total",
+		Name: "inrun_docker_operation_errors_total",
 		Help: "Total number of Docker operation errors, labelled by error type.",
 	},
 	[]string{"crd", "operation", "image", "error_type"},

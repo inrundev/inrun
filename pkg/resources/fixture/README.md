@@ -10,9 +10,9 @@ This fixture uses a typed Go hook to call every resource package in a single rec
 
 ## What this is
 
-This directory is a **standalone Go module** (`go.mod`) — a minimal typed Orkestra operator that imports `github.com/orkspace/orkestra-resource-probe` for its CRD types and hook implementation. The hook exercises all 23 resource packages in one reconcile loop.
+This directory is a **standalone Go module** (`go.mod`) — a minimal typed Inrun operator that imports `github.com/inrundev/inrun-resource-probe` for its CRD types and hook implementation. The hook exercises all 23 resource packages in one reconcile loop.
 
-The standard `ork` CLI does not know about `ResourceProbe`. You must build a custom binary first.
+The standard `inrun` CLI does not know about `ResourceProbe`. You must build a custom binary first.
 
 ## Coverage
 
@@ -52,19 +52,19 @@ make registry
 make build
 ```
 
-`make registry` runs `ork generate registry --file katalog.yaml` to produce the type registry and entrypoint that includes `ResourceProbe`. `make build` compiles a custom `ork` binary with it. The standard `ork` cannot run this fixture without this step.
+`make registry` runs `inrun generate registry --file catalog.yaml` to produce the type registry and entrypoint that includes `ResourceProbe`. `make build` compiles a custom `inrun` binary with it. The standard `inrun` cannot run this fixture without this step.
 
 ### Step 2 — Verify in-memory
 
 ```bash
-ork simulate -f pkg/resources/fixture/simulate.yaml
+inrun simulate -f pkg/resources/fixture/simulate.yaml
 ```
 
 Fast — no cluster needed. Exercises the reconciler logic against a fake API server.
 
 ### Step 3 — Full cluster verification
 
-`e2e.yaml` references `values.yaml` which sets the runtime image to `ghcr.io/orkspace/orkestra/pkg/resources/fixture:latest`. To use a locally built image instead:
+`e2e.yaml` references `values.yaml` which sets the runtime image to `ghcr.io/inrundev/inrun/pkg/resources/fixture:latest`. To use a locally built image instead:
 
 ```bash
 make docker push IMAGE_REPO=yourregistry/resource-probe IMAGE_TAG=latest
@@ -73,7 +73,7 @@ make docker push IMAGE_REPO=yourregistry/resource-probe IMAGE_TAG=latest
 Then run e2e:
 
 ```bash
-ork e2e -f pkg/resources/fixture/e2e.yaml --workers 3 \
+inrun e2e -f pkg/resources/fixture/e2e.yaml --workers 3 \
   --set runtime.image.repository=yourregistry/resource-probe \
   --set runtime.image.tag=latest
 ```
@@ -81,15 +81,15 @@ ork e2e -f pkg/resources/fixture/e2e.yaml --workers 3 \
 Or with the default published image (no `--set` needed):
 
 ```bash
-ork e2e -f pkg/resources/fixture/e2e.yaml --workers 3
+inrun e2e -f pkg/resources/fixture/e2e.yaml --workers 3
 ```
 
-Creates a kind cluster, installs Orkestra with the resource-probe runtime, applies the CR, asserts all resources, and tears down.
+Creates a kind cluster, installs Inrun with the resource-probe runtime, applies the CR, asserts all resources, and tears down.
 
 To reuse an existing cluster during iteration:
 
 ```bash
-ork e2e -f pkg/resources/fixture/e2e.yaml --use-current
+inrun e2e -f pkg/resources/fixture/e2e.yaml --use-current
 ```
 
 ## Adding a new resource type
@@ -98,4 +98,4 @@ ork e2e -f pkg/resources/fixture/e2e.yaml --use-current
 2. Add a row to the coverage table above.
 3. Add a `create` op to `simulate.yaml` for the new resource type.
 4. Add a `resources:` assertion to `e2e/01-resources.yaml`.
-5. Run `ork simulate` locally before opening the PR.
+5. Run `inrun simulate` locally before opening the PR.

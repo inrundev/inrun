@@ -45,7 +45,7 @@ Keywords: keywordA, keywordB, shared, multi-note
 
 ## Keyword guidance
 
-`Keywords:` lines are parsed by the catalog generator and power `ork notes search`. They are **not** shown in the rendered docs — they exist purely for discovery.
+`Keywords:` lines are parsed by the note list generator and power `inrun notes search`. They are **not** shown in the rendered docs — they exist purely for discovery.
 
 **Rules:**
 - Place `Keywords:` immediately after the note description, before the code block.

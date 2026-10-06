@@ -1,0 +1,14 @@
+apiVersion: inrun.dev/v1
+kind: Stack
+metadata:
+  name: args-demo
+  description: >
+    Composes the hooks and constructor args examples into a single operator.
+    01-hooks: BlockchainApp — runtime injects args into hooks automatically.
+    02-constructor: BlockchainNode — constructor calls ScopedFor explicitly.
+
+imports:
+  files:
+    - 01-hooks/catalog.yaml
+    - 02-constructor/catalog.yaml
+    - 03-hooks-targets/catalog.yaml

@@ -4,12 +4,12 @@ package observe
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/runtime/informer"
-	"github.com/orkspace/orkestra/pkg/runtime/queue"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/runtime/informer"
+	"github.com/inrundev/inrun/pkg/runtime/queue"
+	"github.com/inrundev/inrun/pkg/types"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -31,12 +31,12 @@ var eventGVK = schema.GroupVersionKind{
 // eventOptions contains the stable runtime context for EventEntry matching
 // and enqueueing for one primary CRD.
 type eventOptions struct {
-	entries map[string]orktypes.EventEntry
-	crd     orktypes.CRDEntry
+	entries map[string]types.EventEntry
+	crd     types.CRDEntry
 	queue   *queue.Workqueue
 }
 
-func (o *Observer) observeEvents(ctx context.Context, crd orktypes.CRDEntry) {
+func (o *Observer) observeEvents(ctx context.Context, crd types.CRDEntry) {
 	entries := crd.EventEntries()
 	if len(entries) == 0 {
 		return
@@ -85,21 +85,21 @@ func (o *Observer) startEventInformer(ctx context.Context, opts eventOptions) {
 			if !localInf.HasSynced() {
 				return
 			}
-			o.handleEvent(ctx, opts, obj, orktypes.ObserveEventCreate)
+			o.handleEvent(ctx, opts, obj, types.ObserveEventCreate)
 		},
 
 		UpdateFunc: func(_, obj interface{}) {
 			if !localInf.HasSynced() {
 				return
 			}
-			o.handleEvent(ctx, opts, obj, orktypes.ObserveEventUpdate)
+			o.handleEvent(ctx, opts, obj, types.ObserveEventUpdate)
 		},
 
 		DeleteFunc: func(obj interface{}) {
 			if !localInf.HasSynced() {
 				return
 			}
-			o.handleEvent(ctx, opts, obj, orktypes.ObserveEventDelete)
+			o.handleEvent(ctx, opts, obj, types.ObserveEventDelete)
 		},
 	})
 
@@ -114,7 +114,7 @@ func (o *Observer) startEventInformer(ctx context.Context, opts eventOptions) {
 		Msg("observe: event informer started")
 }
 
-func (o *Observer) handleEvent(ctx context.Context, opts eventOptions, obj interface{}, on orktypes.ObserveEvent) {
+func (o *Observer) handleEvent(ctx context.Context, opts eventOptions, obj interface{}, on types.ObserveEvent) {
 	event, ok := domain.ToUnstructured(obj)
 	if !ok {
 		return
@@ -129,7 +129,7 @@ func (o *Observer) handleEvent(ctx context.Context, opts eventOptions, obj inter
 	}
 }
 
-func (o *Observer) handleMatchingEvent(ctx context.Context, opts eventOptions, name string, entry orktypes.EventEntry, event *unstructured.Unstructured) {
+func (o *Observer) handleMatchingEvent(ctx context.Context, opts eventOptions, name string, entry types.EventEntry, event *unstructured.Unstructured) {
 	// Reuse WatchEntry routing semantics to resolve the primary CR key(s).
 	// The Event itself remains the observed secondary object.
 	watch := entry.ToWatchEntry(opts.crd)

@@ -1,6 +1,6 @@
 # pkg/profiles/fixture
 
-Living integration fixture for Orkestra profiles.
+Living integration fixture for Inrun profiles.
 
 ## Why this exists
 
@@ -10,19 +10,19 @@ Apply a CR, run the operator, and inspect the child resources directly on the cl
 
 ---
 
-## Katalogs
+## Catalogs
 
-All katalogs use the same `ProfileProbe` CRD. One CRD is enough to probe every profile family.
+All catalogs use the same `ProfileProbe` CRD. One CRD is enough to probe every profile family.
 
 | File | Profiles covered |
 |---|---|
-| `katalog-resource.yaml` | tiny, small, medium, large, burst, steady, compute-heavy, memory-heavy |
-| `katalog-security.yaml` | baseline, restricted, hardened (container + pod security) |
-| `katalog-probes.yaml` | fast, standard, patient, slow-start |
-| `katalog-autoscale.yaml` | burst, steady, batch, latency-sensitive, cost-optimized |
-| `katalog-hpa.yaml` | web, api, latency-sensitive, batch, cost-optimized (HPA behavior) |
-| `katalog-pdb.yaml` | zero-downtime, rolling, relaxed (PDB disruption budget) |
-| `katalog-rolling.yaml` | safe, fast, blue-green (Deployment/StatefulSet/ReplicaSet rolling update) |
+| `catalog-resource.yaml` | tiny, small, medium, large, burst, steady, compute-heavy, memory-heavy |
+| `catalog-security.yaml` | baseline, restricted, hardened (container + pod security) |
+| `catalog-probes.yaml` | fast, standard, patient, slow-start |
+| `catalog-autoscale.yaml` | burst, steady, batch, latency-sensitive, cost-optimized |
+| `catalog-hpa.yaml` | web, api, latency-sensitive, batch, cost-optimized (HPA behavior) |
+| `catalog-pdb.yaml` | zero-downtime, rolling, relaxed (PDB disruption budget) |
+| `catalog-rolling.yaml` | safe, fast, blue-green (Deployment/StatefulSet/ReplicaSet rolling update) |
 
 ---
 
@@ -31,15 +31,15 @@ All katalogs use the same `ProfileProbe` CRD. One CRD is enough to probe every p
 ```bash
 cd pkg/profiles/fixture
 
-# Run the katalog for the profile family you want to verify.
-# crdFile and crFiles are embedded — Orkestra applies the CRD and CR automatically:
-ork run -f katalog-resource.yaml    # resource profiles
-ork run -f katalog-security.yaml   # security profiles
-ork run -f katalog-probes.yaml     # probe profiles
-ork run -f katalog-autoscale.yaml  # autoscale profiles
-ork run -f katalog-hpa.yaml        # HPA behavior profiles
-ork run -f katalog-pdb.yaml        # PDB disruption budget profiles
-ork run -f katalog-rolling.yaml    # rolling update strategy profiles
+# Run the catalog for the profile family you want to verify.
+# crdFile and crFiles are embedded — Inrun applies the CRD and CR automatically:
+inrun -f catalog-resource.yaml    # resource profiles
+inrun -f catalog-security.yaml   # security profiles
+inrun -f catalog-probes.yaml     # probe profiles
+inrun -f catalog-autoscale.yaml  # autoscale profiles
+inrun -f catalog-hpa.yaml        # HPA behavior profiles
+inrun -f catalog-pdb.yaml        # PDB disruption budget profiles
+inrun -f catalog-rolling.yaml    # rolling update strategy profiles
 
 # Inspect child Deployments:
 kubectl get deployments -o yaml | grep -A 10 "resources:"
@@ -105,7 +105,7 @@ kubectl get hpa my-probe-cost-hpa -o jsonpath='{.spec.metrics[0].resource.target
 
 ## Adding a profile
 
-When you add a profile name to any family, add a deployment entry to the matching katalog file:
+When you add a profile name to any family, add a deployment entry to the matching catalog file:
 
 ```yaml
 - name: "{{ .metadata.name }}-xlarge"
@@ -116,4 +116,4 @@ When you add a profile name to any family, add a deployment entry to the matchin
   reconcile: true
 ```
 
-Run `ork run -f katalog-resource.yaml` and verify the Deployment's resource block matches the definition in `pkg/profiles/resource.go`.
+Run `inrun -f catalog-resource.yaml` and verify the Deployment's resource block matches the definition in `pkg/profiles/resource.go`.

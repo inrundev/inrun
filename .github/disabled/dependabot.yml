@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # Root module — ork CLI + core packages
+  # Root module — inrun CLI + core packages
   - package-ecosystem: gomod
     directory: /
     schedule:
@@ -16,9 +16,9 @@ updates:
       k8s:
         patterns: ["k8s.io/*", "sigs.k8s.io/*"]
 
-  # Control center — separate module
+  # Console — separate module
   - package-ecosystem: gomod
-    directory: /cmd/controlcenter
+    directory: /cmd/console
     schedule:
       interval: weekly
       day: monday

@@ -1,8 +1,8 @@
 package types
 
 import (
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
 )
 
 // NewReconcilerFunc is the constructor signature every custom reconciler must match.

@@ -10,12 +10,12 @@ import (
 // Autoscale metrics
 //
 // These expose the autoscaler's behavior per operatorBox.
-// Scrapable via /metrics. Visible in the Control Center per CRD panel.
+// Scrapable via /metrics. Visible in the Console per CRD panel.
 // ─────────────────────────────────────────────────────────────────────────────
 
 var autoscaleOverrideActiveGauge = promauto.NewGaugeVec(
 	prometheus.GaugeOpts{
-		Name: "orkestra_autoscale_override_active",
+		Name: "inrun_autoscale_override_active",
 		Help: "1 when an autoscale override is currently applied to this CRD, 0 otherwise.",
 	},
 	[]string{"crd"},
@@ -23,7 +23,7 @@ var autoscaleOverrideActiveGauge = promauto.NewGaugeVec(
 
 var autoscaleWorkersGauge = promauto.NewGaugeVec(
 	prometheus.GaugeOpts{
-		Name: "orkestra_autoscale_workers_current",
+		Name: "inrun_autoscale_workers_current",
 		Help: "Current effective worker count for this CRD (baseline or override).",
 	},
 	[]string{"crd"},
@@ -31,7 +31,7 @@ var autoscaleWorkersGauge = promauto.NewGaugeVec(
 
 var autoscaleOverridesTotal = promauto.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "orkestra_autoscale_overrides_total",
+		Name: "inrun_autoscale_overrides_total",
 		Help: "Total number of times an autoscale override was applied for this CRD.",
 	},
 	[]string{"crd"},
@@ -39,7 +39,7 @@ var autoscaleOverridesTotal = promauto.NewCounterVec(
 
 var autoscaleRestoresTotal = promauto.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "orkestra_autoscale_restores_total",
+		Name: "inrun_autoscale_restores_total",
 		Help: "Total number of times the baseline was restored for this CRD.",
 	},
 	[]string{"crd"},

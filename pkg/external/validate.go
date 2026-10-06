@@ -3,13 +3,13 @@ package external
 import (
 	"fmt"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // ValidateCalls checks a list of ExternalCallSpecs for name uniqueness and semantic correctness.
-// Called from pkg/katalog during ork validate.
-func ValidateCalls(crdName, location string, calls []orktypes.ExternalCallSpec) error {
+// Called from pkg/catalog during inrun validate.
+func ValidateCalls(crdName, location string, calls []types.ExternalCallSpec) error {
 	seen := make(map[string]bool, len(calls))
 	for i, call := range calls {
 		loc := fmt.Sprintf("CRD %q: %s[%d]", crdName, location, i)
@@ -28,7 +28,7 @@ func ValidateCalls(crdName, location string, calls []orktypes.ExternalCallSpec) 
 }
 
 // ValidateCall checks a single ExternalCallSpec for semantic correctness.
-func ValidateCall(location string, call orktypes.ExternalCallSpec) error {
+func ValidateCall(location string, call types.ExternalCallSpec) error {
 	// protocol must be a known value
 	if err := validateProtocol(location, call.Protocol); err != nil {
 		return err
@@ -41,46 +41,46 @@ func ValidateCall(location string, call orktypes.ExternalCallSpec) error {
 
 	// protocol-specific field rules
 	switch call.Protocol {
-	case orktypes.ProtocolHTTP, "":
+	case types.ProtocolHTTP, "":
 		if err := validateHTTPCall(location, call); err != nil {
 			return err
 		}
-	case orktypes.ProtocolPrometheus:
+	case types.ProtocolPrometheus:
 		if call.Query == "" {
 			return fmt.Errorf("%s: query is required for protocol: prometheus", location)
 		}
 		if call.Body != "" || call.Method != "" || len(call.Headers) > 0 || call.ExpectedStatus != 0 {
 			return fmt.Errorf("%s: body, method, headers, and expectedStatus are HTTP-only fields", location)
 		}
-	case orktypes.ProtocolRedis:
+	case types.ProtocolRedis:
 		if call.Query == "" {
 			return fmt.Errorf("%s: query is required for protocol: redis (e.g. \"GET mykey\")", location)
 		}
 		if call.Body != "" || call.Method != "" || len(call.Headers) > 0 || call.ExpectedStatus != 0 {
 			return fmt.Errorf("%s: body, method, headers, and expectedStatus are HTTP-only fields", location)
 		}
-	case orktypes.ProtocolPostgres:
+	case types.ProtocolPostgres:
 		if call.Query == "" {
 			return fmt.Errorf("%s: query is required for protocol: postgres", location)
 		}
 		if call.Body != "" || call.Method != "" || len(call.Headers) > 0 || call.ExpectedStatus != 0 {
 			return fmt.Errorf("%s: body, method, headers, and expectedStatus are HTTP-only fields", location)
 		}
-	case orktypes.ProtocolMongo:
+	case types.ProtocolMongo:
 		if call.Query == "" {
 			return fmt.Errorf("%s: query is required for protocol: mongo (e.g. \"mydb.mycollection\")", location)
 		}
 		if call.Body != "" || call.Method != "" || len(call.Headers) > 0 || call.ExpectedStatus != 0 {
 			return fmt.Errorf("%s: body, method, headers, and expectedStatus are HTTP-only fields", location)
 		}
-	case orktypes.ProtocolKafka:
+	case types.ProtocolKafka:
 		if call.Query == "" {
 			return fmt.Errorf("%s: query is required for protocol: kafka (e.g. \"group/topic\" or \"@topic\")", location)
 		}
 		if call.Body != "" || call.Method != "" || len(call.Headers) > 0 || call.ExpectedStatus != 0 {
 			return fmt.Errorf("%s: body, method, headers, and expectedStatus are HTTP-only fields", location)
 		}
-		// case orktypes.ProtocolGRPC, orktypes.ProtocolNATS, orktypes.ProtocolMQTT:
+		// case types.ProtocolGRPC, types.ProtocolNATS, types.ProtocolMQTT:
 		// 	if call.Body != "" || call.Method != "" || len(call.Headers) > 0 || call.ExpectedStatus != 0 {
 		// 		return fmt.Errorf("%s: body, method, headers, and expectedStatus are HTTP-only fields", location)
 		// 	}
@@ -110,18 +110,18 @@ func ValidateCall(location string, call orktypes.ExternalCallSpec) error {
 	return nil
 }
 
-func validateProtocol(location string, p orktypes.ExternalProtocol) error {
+func validateProtocol(location string, p types.ExternalProtocol) error {
 	switch p {
-	case "", orktypes.ProtocolHTTP, orktypes.ProtocolPrometheus,
-		orktypes.ProtocolRedis, orktypes.ProtocolPostgres,
-		orktypes.ProtocolMongo, orktypes.ProtocolKafka:
-		// orktypes.ProtocolGRPC, orktypes.ProtocolNATS, orktypes.ProtocolMQTT — reserved for future support
+	case "", types.ProtocolHTTP, types.ProtocolPrometheus,
+		types.ProtocolRedis, types.ProtocolPostgres,
+		types.ProtocolMongo, types.ProtocolKafka:
+		// types.ProtocolGRPC, types.ProtocolNATS, types.ProtocolMQTT — reserved for future support
 		return nil
 	}
 	return fmt.Errorf("%s: unknown protocol %q — valid values: http, prometheus, redis, postgres, mongo, kafka", location, p)
 }
 
-func validateHTTPCall(location string, call orktypes.ExternalCallSpec) error {
+func validateHTTPCall(location string, call types.ExternalCallSpec) error {
 	if call.Method != "" {
 		switch call.Method {
 		case "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD":
@@ -138,7 +138,7 @@ func validateHTTPCall(location string, call orktypes.ExternalCallSpec) error {
 	return nil
 }
 
-func validateAuth(location string, auth *orktypes.ExternalAuth) error {
+func validateAuth(location string, auth *types.ExternalAuth) error {
 	hasSecretRef := auth.SecretRef != nil
 	hasEnv := auth.Env != ""
 	if !hasSecretRef && !hasEnv {

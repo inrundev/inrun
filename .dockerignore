@@ -3,11 +3,11 @@ extensions/
 unknown/
 _runtime_*/
 example-crds/
-orkestra-demo
-ork.md
-ork.yaml
+inrun-demo
+inrun.md
+inrun.yaml
 reviews/
-orkestra-certs/
+inrun-certs/
 coverage.out/
 coverage
 node_modules/

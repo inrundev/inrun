@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -45,7 +45,7 @@ func ExtractTagVersion(ref string) string {
 
 // helper to persist metadata.version into the primary file
 // dir: directory containing the primary file
-// primaryFile: filename (e.g., "motif.yaml" or "katalog.yaml")
+// primaryFile: filename (e.g., "module.yaml" or "catalog.yaml")
 // newVersion: version string to write into metadata.version
 // uses WriteFileAndFormat so the file is formatted after the change.
 func PersistMetadataVersion(dir, primaryFile, newVersion string) error {

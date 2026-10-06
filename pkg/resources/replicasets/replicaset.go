@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/profiles"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -63,7 +63,7 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 }
 
 // Apply creates or updates a ReplicaSet using Server-Side Apply.
-// Sends only the fields Orkestra owns; k8s-injected defaults are invisible.
+// Sends only the fields Inrun owns; k8s-injected defaults are invisible.
 func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedReplicaSetSpec) error {
 	if err := validateSpec(spec); err != nil {
 		return fmt.Errorf("replicaset.Apply: invalid spec: %w", err)
@@ -84,7 +84,7 @@ func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, 
 
 	if _, err = kube.Clientset().AppsV1().ReplicaSets(namespace).Patch(
 		ctx, spec.Name, k8stypes.ApplyPatchType, body,
-		metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
+		metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
 	); err != nil {
 		return fmt.Errorf("replicaset.Apply: %w", err)
 	}
@@ -144,7 +144,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 		return err
 	}
 
-	if existing.Labels[labels.OrkestraOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if existing.Labels[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 
@@ -153,7 +153,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 }
 
 // Resolve builds a ResolvedReplicaSetSpec from a ReplicaSetTemplateSource.
-func Resolve(src orktypes.ReplicaSetTemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedReplicaSetSpec {
+func Resolve(src types.ReplicaSetTemplateSource, ownerName string, reg *types.ProfileRegistry) ResolvedReplicaSetSpec {
 	spec := ResolvedReplicaSetSpec{
 		Name:            src.Name,
 		Image:           src.Image,
@@ -170,6 +170,10 @@ func Resolve(src orktypes.ReplicaSetTemplateSource, ownerName string, reg *orkty
 		VolumeMounts:    src.VolumeMounts,
 		Sleep:           src.Sleep,
 		ForceConflict:   src.ForceConflict,
+
+		ServiceAccountName: src.ServiceAccountName,
+		NodeSelector:       src.NodeSelector,
+		ImagePullSecrets:   src.ImagePullSecrets,
 	}
 
 	if spec.Name == "" {
@@ -192,18 +196,15 @@ func Resolve(src orktypes.ReplicaSetTemplateSource, ownerName string, reg *orkty
 	for k, v := range src.Annotations {
 		spec.Annotations[k] = v
 	}
-	for _, a := range src.NodeSelector {
-		spec.NodeSelector[a] = a
-	}
 
-	spec.Env = []orktypes.EnvVar(src.Env)
+	spec.Env = []types.EnvVar(src.Env)
 
 	if src.RollingUpdate != nil && src.RollingUpdate.Profile != "" {
 		expansion, err := profiles.ApplyRollingUpdateProfile(src.RollingUpdate.Profile, reg)
 		if err != nil {
 			logger.Warn().Str("profile", src.RollingUpdate.Profile).Err(err).Msg("unknown rolling update profile — skipping")
 		} else {
-			spec.RollingUpdate = &orktypes.RollingUpdateBehavior{
+			spec.RollingUpdate = &types.RollingUpdateBehavior{
 				MaxSurge:       expansion.MaxSurge,
 				MaxUnavailable: expansion.MaxUnavailable,
 			}
@@ -219,7 +220,7 @@ func Resolve(src orktypes.ReplicaSetTemplateSource, ownerName string, reg *orkty
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 func buildReplicaSet(owner domain.Object, spec ResolvedReplicaSetSpec, namespace string) *appsv1.ReplicaSet {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 	logger.Debug().
 		Interface("env", spec.Env).
 		Interface("envFrom", spec.EnvFrom).
@@ -245,7 +246,7 @@ func buildReplicaSet(owner domain.Object, spec ResolvedReplicaSetSpec, namespace
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"orkestra-owner": owner.GetName(),
+					"inrun-owner": owner.GetName(),
 				},
 			},
 			Template: corev1.PodTemplateSpec{

@@ -1,13 +1,13 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: intent-accept
   description: >
     Asserts that a play-built PlatformResource CR reaches steady state at cycle 2
     and produces the expected finalizer and status updates in cycle 1.
-    Run via: ork serve play -f <katalog> --token control-center -i primary.yaml --simulate-config simulate-accept.yaml
+    Run via: inrun serve play -f <catalog> --token console -i primary.yaml --simulate-config simulate-accept.yaml
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   cr: ""
   cycles: 5
   skipExternal: true

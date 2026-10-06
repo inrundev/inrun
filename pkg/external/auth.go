@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/orkspace/orkestra/pkg/secrets"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/secrets"
+	"github.com/inrundev/inrun/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -14,8 +14,8 @@ import (
 // Returns the credential string and the header name to inject it into (HTTP only).
 // header defaults to "Authorization"; produces "Bearer <credential>".
 // cs may be nil when secretRef is not used.
-// secretRef.namespace is required — validated at ork validate time, never defaulted here.
-func ResolveAuth(ctx context.Context, auth *orktypes.ExternalAuth, cs kubernetes.Interface) (credential, header string, err error) {
+// secretRef.namespace is required — validated at inrun validate time, never defaulted here.
+func ResolveAuth(ctx context.Context, auth *types.ExternalAuth, cs kubernetes.Interface) (credential, header string, err error) {
 	if auth == nil {
 		return "", "", nil
 	}

@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: reconcilerprobes.reconciler.orkestra.io
+  name: reconcilerprobes.reconciler.inrun.dev
 spec:
-  group: reconciler.orkestra.io
+  group: reconciler.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -56,9 +56,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: reconcilersuites.reconciler.orkestra.io
+  name: reconcilersuites.reconciler.inrun.dev
 spec:
-  group: reconciler.orkestra.io
+  group: reconciler.inrun.dev
   scope: Namespaced
   names:
     plural: reconcilersuites

@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	apiv1 "github.com/orkspace/orkestra-args-hooks-targets/api/v1alpha1"
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orkdeploy "github.com/orkspace/orkestra/pkg/resources/deployments"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
+	apiv1 "github.com/inrundev/inrun-args-hooks-targets/api/v1alpha1"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/resources/deployments"
+	"github.com/inrundev/inrun/pkg/template"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // BlockchainAppWithTargetsReconciler is the per-target constructor reconciler
 // for the BlockchainAppWithTargets CRD. It reads featureEnabled from args
-// (declared in katalog serve.target.<name>.operatorBox.reconciler.constructor.args)
+// (declared in catalog serve.target.<name>.operatorBox.reconciler.constructor.args)
 // rather than calling a live feature-flag endpoint.
 type BlockchainAppWithTargetsReconciler struct {
 	kube kubeclient.Interface
@@ -40,7 +40,7 @@ func (r *BlockchainAppWithTargetsReconciler) Reconcile(ctx context.Context, req 
 		return domain.Result{}, nil
 	}
 
-	resolver, err := orktmpl.NewResolver(ctx, app)
+	resolver, err := template.NewResolver(ctx, app)
 	if err != nil {
 		return domain.Result{}, fmt.Errorf("building resolver: %w", err)
 	}
@@ -58,17 +58,17 @@ func (r *BlockchainAppWithTargetsReconciler) Reconcile(ctx context.Context, req 
 		replicas = 1
 	}
 
-	spec := orkdeploy.ResolvedDeploymentSpec{
+	spec := deployments.ResolvedDeploymentSpec{
 		Name:      app.Name,
 		Namespace: app.Namespace,
 		Image:     app.Spec.Image,
 		Replicas:  replicas,
 		Annotations: map[string]string{
 			"feature.demo/v2-enabled": annotation,
-			"orkestra.io/target":      "v2-ctor",
+			"inrun.dev/target":        "v2-ctor",
 		},
 	}
-	if err := orkdeploy.Apply(ctx, kube, app, spec); err != nil {
+	if err := deployments.Apply(ctx, kube, app, spec); err != nil {
 		return domain.Result{}, fmt.Errorf("blockchainappwithtargets deployment: %w", err)
 	}
 

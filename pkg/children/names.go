@@ -1,8 +1,8 @@
 package children
 
 import (
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // resolvedChildName holds a resolved (non-template) name and namespace
@@ -16,7 +16,7 @@ type resolvedChildName struct {
 // resolveName resolves a name and namespace from raw template strings.
 // Returns false when the name is empty or unresolvable — indicating a resource
 // whose name depends on a field the CR does not have.
-func resolveName(resolver *orktmpl.Resolver, rawName, rawNamespace string) (resolvedChildName, bool) {
+func resolveName(resolver *template.Resolver, rawName, rawNamespace string) (resolvedChildName, bool) {
 	name, err := resolver.Resolve(rawName)
 	if err != nil || name == "" {
 		return resolvedChildName{}, false
@@ -29,7 +29,7 @@ func resolveName(resolver *orktmpl.Resolver, rawName, rawNamespace string) (reso
 // Conditions are NOT evaluated here — we read all declared children
 // so status can reference any of them regardless of phase.
 // Conditions only gate creation in run_*.go.
-func deploymentNames(resolver *orktmpl.Resolver, srcs []orktypes.DeploymentTemplateSource) []resolvedChildName {
+func deploymentNames(resolver *template.Resolver, srcs []types.DeploymentTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachDeployments(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -40,7 +40,7 @@ func deploymentNames(resolver *orktmpl.Resolver, srcs []orktypes.DeploymentTempl
 	return names
 }
 
-func statefulSetNames(resolver *orktmpl.Resolver, srcs []orktypes.StatefulSetTemplateSource) []resolvedChildName {
+func statefulSetNames(resolver *template.Resolver, srcs []types.StatefulSetTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachStatefulSets(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -51,7 +51,7 @@ func statefulSetNames(resolver *orktmpl.Resolver, srcs []orktypes.StatefulSetTem
 	return names
 }
 
-func replicaSetNames(resolver *orktmpl.Resolver, srcs []orktypes.ReplicaSetTemplateSource) []resolvedChildName {
+func replicaSetNames(resolver *template.Resolver, srcs []types.ReplicaSetTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachReplicaSets(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -62,7 +62,7 @@ func replicaSetNames(resolver *orktmpl.Resolver, srcs []orktypes.ReplicaSetTempl
 	return names
 }
 
-func serviceNames(resolver *orktmpl.Resolver, srcs []orktypes.ServiceTemplateSource) []resolvedChildName {
+func serviceNames(resolver *template.Resolver, srcs []types.ServiceTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachServices(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -73,7 +73,7 @@ func serviceNames(resolver *orktmpl.Resolver, srcs []orktypes.ServiceTemplateSou
 	return names
 }
 
-func secretNames(resolver *orktmpl.Resolver, srcs []orktypes.SecretTemplateSource) []resolvedChildName {
+func secretNames(resolver *template.Resolver, srcs []types.SecretTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachSecrets(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -84,7 +84,7 @@ func secretNames(resolver *orktmpl.Resolver, srcs []orktypes.SecretTemplateSourc
 	return names
 }
 
-func configMapNames(resolver *orktmpl.Resolver, srcs []orktypes.ConfigMapTemplateSource) []resolvedChildName {
+func configMapNames(resolver *template.Resolver, srcs []types.ConfigMapTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachConfigMaps(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -95,7 +95,7 @@ func configMapNames(resolver *orktmpl.Resolver, srcs []orktypes.ConfigMapTemplat
 	return names
 }
 
-func jobNames(resolver *orktmpl.Resolver, srcs []orktypes.JobTemplateSource) []resolvedChildName {
+func jobNames(resolver *template.Resolver, srcs []types.JobTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachJobs(resolver, srcs)
 	var names []resolvedChildName
 	for _, src := range expanded {
@@ -109,7 +109,7 @@ func jobNames(resolver *orktmpl.Resolver, srcs []orktypes.JobTemplateSource) []r
 	return names
 }
 
-func cronJobNames(resolver *orktmpl.Resolver, srcs []orktypes.CronJobTemplateSource) []resolvedChildName {
+func cronJobNames(resolver *template.Resolver, srcs []types.CronJobTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachCronJobs(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -120,7 +120,7 @@ func cronJobNames(resolver *orktmpl.Resolver, srcs []orktypes.CronJobTemplateSou
 	return names
 }
 
-func podNames(resolver *orktmpl.Resolver, srcs []orktypes.PodTemplateSource) []resolvedChildName {
+func podNames(resolver *template.Resolver, srcs []types.PodTemplateSource) []resolvedChildName {
 	names := make([]resolvedChildName, 0, len(srcs))
 	for _, s := range srcs {
 		if n, ok := resolveName(resolver, s.Name, s.Namespace); ok {
@@ -130,7 +130,7 @@ func podNames(resolver *orktmpl.Resolver, srcs []orktypes.PodTemplateSource) []r
 	return names
 }
 
-func serviceAccountNames(resolver *orktmpl.Resolver, srcs []orktypes.ServiceAccountTemplateSource) []resolvedChildName {
+func serviceAccountNames(resolver *template.Resolver, srcs []types.ServiceAccountTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachServiceAccounts(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -141,7 +141,7 @@ func serviceAccountNames(resolver *orktmpl.Resolver, srcs []orktypes.ServiceAcco
 	return names
 }
 
-func namespaceNames(resolver *orktmpl.Resolver, srcs []orktypes.NamespaceTemplateSource) []resolvedChildName {
+func namespaceNames(resolver *template.Resolver, srcs []types.NamespaceTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachNamespaces(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -152,7 +152,7 @@ func namespaceNames(resolver *orktmpl.Resolver, srcs []orktypes.NamespaceTemplat
 	return names
 }
 
-func ingressNames(resolver *orktmpl.Resolver, srcs []orktypes.IngressTemplateSource) []resolvedChildName {
+func ingressNames(resolver *template.Resolver, srcs []types.IngressTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachIngresses(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -163,7 +163,7 @@ func ingressNames(resolver *orktmpl.Resolver, srcs []orktypes.IngressTemplateSou
 	return names
 }
 
-func hpaNames(resolver *orktmpl.Resolver, srcs []orktypes.HPATemplateSource) []resolvedChildName {
+func hpaNames(resolver *template.Resolver, srcs []types.HPATemplateSource) []resolvedChildName {
 	expanded := ExpandForEachHPAs(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -174,7 +174,7 @@ func hpaNames(resolver *orktmpl.Resolver, srcs []orktypes.HPATemplateSource) []r
 	return names
 }
 
-func pvcNames(resolver *orktmpl.Resolver, srcs []orktypes.PVCTemplateSource) []resolvedChildName {
+func pvcNames(resolver *template.Resolver, srcs []types.PVCTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachPVCs(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -185,7 +185,7 @@ func pvcNames(resolver *orktmpl.Resolver, srcs []orktypes.PVCTemplateSource) []r
 	return names
 }
 
-func networkPolicyNames(resolver *orktmpl.Resolver, srcs []orktypes.NetworkPolicyTemplateSource) []resolvedChildName {
+func networkPolicyNames(resolver *template.Resolver, srcs []types.NetworkPolicyTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachNetworkPolicies(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -196,7 +196,7 @@ func networkPolicyNames(resolver *orktmpl.Resolver, srcs []orktypes.NetworkPolic
 	return names
 }
 
-func resourceQuotaNames(resolver *orktmpl.Resolver, srcs []orktypes.ResourceQuotaTemplateSource) []resolvedChildName {
+func resourceQuotaNames(resolver *template.Resolver, srcs []types.ResourceQuotaTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachResourceQuotas(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -207,7 +207,7 @@ func resourceQuotaNames(resolver *orktmpl.Resolver, srcs []orktypes.ResourceQuot
 	return names
 }
 
-func limitRangeNames(resolver *orktmpl.Resolver, srcs []orktypes.LimitRangeTemplateSource) []resolvedChildName {
+func limitRangeNames(resolver *template.Resolver, srcs []types.LimitRangeTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachLimitRanges(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -218,7 +218,7 @@ func limitRangeNames(resolver *orktmpl.Resolver, srcs []orktypes.LimitRangeTempl
 	return names
 }
 
-func clusterRoleNames(resolver *orktmpl.Resolver, srcs []orktypes.ClusterRoleTemplateSource) []resolvedChildName {
+func clusterRoleNames(resolver *template.Resolver, srcs []types.ClusterRoleTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachClusterRoles(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -229,7 +229,7 @@ func clusterRoleNames(resolver *orktmpl.Resolver, srcs []orktypes.ClusterRoleTem
 	return names
 }
 
-func clusterRoleBindingNames(resolver *orktmpl.Resolver, srcs []orktypes.ClusterRoleBindingTemplateSource) []resolvedChildName {
+func clusterRoleBindingNames(resolver *template.Resolver, srcs []types.ClusterRoleBindingTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachClusterRoleBindings(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {
@@ -240,7 +240,7 @@ func clusterRoleBindingNames(resolver *orktmpl.Resolver, srcs []orktypes.Cluster
 	return names
 }
 
-func pvNames(resolver *orktmpl.Resolver, srcs []orktypes.PVTemplateSource) []resolvedChildName {
+func pvNames(resolver *template.Resolver, srcs []types.PVTemplateSource) []resolvedChildName {
 	expanded := ExpandForEachPVs(resolver, srcs)
 	names := make([]resolvedChildName, 0, len(expanded))
 	for _, s := range expanded {

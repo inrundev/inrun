@@ -1,6 +1,6 @@
 package children
 
-import orktypes "github.com/orkspace/orkestra/pkg/types"
+import "github.com/inrundev/inrun/pkg/types"
 
 // resolveEnrichmentTarget returns the canonical built-in name for a given
 // enrichment identifier (name, plural, shorthand, alias). Returns "" if unknown.
@@ -17,7 +17,7 @@ func resolveEnrichmentTarget(s string) string {
 // and all equivalent identifiers (plural, shorthands, aliases) are checked.
 // This allows users to write "cj" instead of "cronjob" or "hpas" instead of
 // "horizontalpodautoscaler" and still match enrichers that check by canonical.
-func enrichmentEnabled(s string, crd orktypes.CRDEntry) bool {
+func enrichmentEnabled(s string, crd types.CRDEntry) bool {
 	// Fast path — user wrote exactly what the enricher checks (most common case).
 	if crd.ShouldEnrich(s) {
 		return true

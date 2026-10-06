@@ -14,14 +14,14 @@ import (
 //
 // Alert on this metric to detect namespace policy violations:
 //
-//	alert: OrkestraNamespaceViolation
-//	expr:  increase(orkestra_namespace_protection_blocked_total[5m]) > 0
+//	alert: InrunNamespaceViolation
+//	expr:  increase(inrun_namespace_protection_blocked_total[5m]) > 0
 //
 // ─────────────────────────────────────────────────────────────────────────────
 var namespaceProtectionBlocked = promauto.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "orkestra_namespace_protection_blocked_total",
-		Help: "Number of CREATE/UPDATE requests blocked by Orkestra's namespace protection webhook.",
+		Name: "inrun_namespace_protection_blocked_total",
+		Help: "Number of CREATE/UPDATE requests blocked by Inrun's namespace protection webhook.",
 	},
 	[]string{"resource"},
 )

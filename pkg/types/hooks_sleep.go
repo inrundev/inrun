@@ -13,7 +13,7 @@ type SleepEntry struct {
 	Phase        string // "onCreate", "onReconcile", "onDelete"
 	Resource     string // e.g., "Deployment", "Service", "Job"
 	ResourceName string // template name field if available (may be Empty()
-	Duration     string // raw duration string as written in the katalog
+	Duration     string // raw duration string as written in the catalog
 }
 
 // tiny interfaces used by CollectSleepEntries to avoid a large type switch.
@@ -102,7 +102,7 @@ func extractSleep(res interface{}) (string, bool) {
 }
 
 // GetSleep returns the optional artificial delay configured for this resource.
-// When non-empty, Orkestra injects the delay at the start of each reconcile
+// When non-empty, Inrun injects the delay at the start of each reconcile
 // for latency simulation, autoscale testing, or chaos engineering scenarios.
 //
 // GetName returns the template's name field when available. These small

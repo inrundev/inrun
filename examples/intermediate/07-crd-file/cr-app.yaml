@@ -1,8 +1,0 @@
-apiVersion: crdfile.orkestra.io/v1alpha1
-kind: App
-metadata:
-  name: my-app
-  namespace: default
-spec:
-  image: nginx:stable-alpine
-  replicas: 1

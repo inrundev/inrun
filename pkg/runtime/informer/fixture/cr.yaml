@@ -1,4 +1,4 @@
-apiVersion: informer.orkestra.io/v1alpha1
+apiVersion: informer.inrun.dev/v1alpha1
 kind: InformerProbe
 metadata:
   name: probe-allowed

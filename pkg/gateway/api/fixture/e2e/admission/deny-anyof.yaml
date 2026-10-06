@@ -5,7 +5,7 @@ expect:
     commands:
       - run: |
           kubectl apply -f - <<'EOF'
-          apiVersion: gateway.fixture.orkestra.io/v1alpha1
+          apiVersion: gateway.fixture.inrun.dev/v1alpha1
           kind: PlatformResource
           metadata:
             name: app-no-repo
@@ -24,7 +24,7 @@ expect:
     commands:
       - run: |
           kubectl apply -f - <<'EOF'
-          apiVersion: gateway.fixture.orkestra.io/v1alpha1
+          apiVersion: gateway.fixture.inrun.dev/v1alpha1
           kind: PlatformResource
           metadata:
             name: monitoring-no-repo
@@ -44,7 +44,7 @@ expect:
     kubectl:
       apply:
         - inline: |
-            apiVersion: gateway.fixture.orkestra.io/v1alpha1
+            apiVersion: gateway.fixture.inrun.dev/v1alpha1
             kind: PlatformResource
             metadata:
               name: platform-monitor
@@ -74,7 +74,7 @@ expect:
     kubectl:
       apply:
         - inline: |
-            apiVersion: gateway.fixture.orkestra.io/v1alpha1
+            apiVersion: gateway.fixture.inrun.dev/v1alpha1
             kind: PlatformResource
             metadata:
               name: cert-no-repo

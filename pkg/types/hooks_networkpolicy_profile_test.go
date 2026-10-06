@@ -3,16 +3,16 @@ package types_test
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func crdWithNetworkPolicyOnCreate(nps ...orktypes.NetworkPolicyTemplateSource) orktypes.CRDEntry {
-	return orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnCreate: &orktypes.HookTemplates{
+func crdWithNetworkPolicyOnCreate(nps ...types.NetworkPolicyTemplateSource) types.CRDEntry {
+	return types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnCreate: &types.HookTemplates{
 					NetworkPolicies: nps,
 				},
 			},
@@ -21,17 +21,17 @@ func crdWithNetworkPolicyOnCreate(nps ...orktypes.NetworkPolicyTemplateSource) o
 }
 
 func TestCollectNetworkPolicyProfileEntries_Empty(t *testing.T) {
-	c := orktypes.CRDEntry{}
+	c := types.CRDEntry{}
 	assert.Empty(t, c.CollectNetworkPolicyProfileEntries())
 }
 
 func TestCollectNetworkPolicyProfileEntries_NoProfile(t *testing.T) {
-	c := crdWithNetworkPolicyOnCreate(orktypes.NetworkPolicyTemplateSource{Name: "allow"})
+	c := crdWithNetworkPolicyOnCreate(types.NetworkPolicyTemplateSource{Name: "allow"})
 	assert.Empty(t, c.CollectNetworkPolicyProfileEntries())
 }
 
 func TestCollectNetworkPolicyProfileEntries_ProfileReturned(t *testing.T) {
-	c := crdWithNetworkPolicyOnCreate(orktypes.NetworkPolicyTemplateSource{
+	c := crdWithNetworkPolicyOnCreate(types.NetworkPolicyTemplateSource{
 		Name:    "default",
 		Profile: "deny-all",
 	})
@@ -44,10 +44,10 @@ func TestCollectNetworkPolicyProfileEntries_ProfileReturned(t *testing.T) {
 }
 
 func TestCollectNetworkPolicyProfileEntries_Mixed_Ingress(t *testing.T) {
-	c := crdWithNetworkPolicyOnCreate(orktypes.NetworkPolicyTemplateSource{
+	c := crdWithNetworkPolicyOnCreate(types.NetworkPolicyTemplateSource{
 		Name:    "np",
 		Profile: "deny-all",
-		Ingress: []orktypes.NetworkPolicyIngressRule{{}},
+		Ingress: []types.NetworkPolicyIngressRule{{}},
 	})
 	entries := c.CollectNetworkPolicyProfileEntries()
 	require.Len(t, entries, 1)
@@ -55,10 +55,10 @@ func TestCollectNetworkPolicyProfileEntries_Mixed_Ingress(t *testing.T) {
 }
 
 func TestCollectNetworkPolicyProfileEntries_Mixed_Egress(t *testing.T) {
-	c := crdWithNetworkPolicyOnCreate(orktypes.NetworkPolicyTemplateSource{
+	c := crdWithNetworkPolicyOnCreate(types.NetworkPolicyTemplateSource{
 		Name:    "np",
 		Profile: "allow-dns-egress",
-		Egress:  []orktypes.NetworkPolicyEgressRule{{}},
+		Egress:  []types.NetworkPolicyEgressRule{{}},
 	})
 	entries := c.CollectNetworkPolicyProfileEntries()
 	require.Len(t, entries, 1)
@@ -66,7 +66,7 @@ func TestCollectNetworkPolicyProfileEntries_Mixed_Egress(t *testing.T) {
 }
 
 func TestCollectNetworkPolicyProfileEntries_Mixed_PolicyTypes(t *testing.T) {
-	c := crdWithNetworkPolicyOnCreate(orktypes.NetworkPolicyTemplateSource{
+	c := crdWithNetworkPolicyOnCreate(types.NetworkPolicyTemplateSource{
 		Name:        "np",
 		Profile:     "deny-all",
 		PolicyTypes: []string{"Ingress"},
@@ -77,7 +77,7 @@ func TestCollectNetworkPolicyProfileEntries_Mixed_PolicyTypes(t *testing.T) {
 }
 
 func TestCollectNetworkPolicyProfileEntries_TemplateExpr(t *testing.T) {
-	c := crdWithNetworkPolicyOnCreate(orktypes.NetworkPolicyTemplateSource{
+	c := crdWithNetworkPolicyOnCreate(types.NetworkPolicyTemplateSource{
 		Profile: "{{ .Spec.Profile }}",
 	})
 	entries := c.CollectNetworkPolicyProfileEntries()
@@ -86,11 +86,11 @@ func TestCollectNetworkPolicyProfileEntries_TemplateExpr(t *testing.T) {
 }
 
 func TestCollectNetworkPolicyProfileEntries_OnReconcile(t *testing.T) {
-	c := orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnReconcile: &orktypes.HookTemplates{
-					NetworkPolicies: []orktypes.NetworkPolicyTemplateSource{
+	c := types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnReconcile: &types.HookTemplates{
+					NetworkPolicies: []types.NetworkPolicyTemplateSource{
 						{Name: "np", Profile: "allow-same-namespace"},
 					},
 				},

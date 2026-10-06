@@ -35,7 +35,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.ORK_PUBLISH_PAT }}
+          password: ${{ secrets.INRUN_PUBLISH_PAT }}
 
       - name: Extract metadata
         id: meta
@@ -53,22 +53,22 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ork-amd64
-            ork-arm64
+            inrun-amd64
+            inrun-arm64
           key: linux-binaries-runtime-${{ hashFiles('go.sum', '**/*.go', 'cmd/**/*.go') }}
 
       - name: Build Linux binaries (if cache miss)
         if: steps.cache-binaries.outputs.cache-hit != 'true'
         run: |
           DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          LDFLAGS="-X github.com/orkspace/orkestra/pkg/version.Version=${{ github.ref_name }} -X github.com/orkspace/orkestra/pkg/version.Commit=${{ github.sha }} -X github.com/orkspace/orkestra/pkg/version.Date=$DATE"
+          LDFLAGS="-X github.com/inrundev/inrun/pkg/version.Version=${{ github.ref_name }} -X github.com/inrundev/inrun/pkg/version.Commit=${{ github.sha }} -X github.com/inrundev/inrun/pkg/version.Date=$DATE"
           for arch in amd64 arm64; do
-            echo "Building ork-$arch"
+            echo "Building inrun-$arch"
             GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build \
               -tags runtime \
               -trimpath \
               -ldflags="-s -w $LDFLAGS" \
-              -o ork-$arch ./cmd/orkestra
+              -o inrun-$arch ./cmd/inrun
           done
 
       - name: Build and push runtime image
@@ -113,7 +113,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.ORK_PUBLISH_PAT }}
+          password: ${{ secrets.INRUN_PUBLISH_PAT }}
 
       - name: Extract metadata
         id: meta
@@ -131,22 +131,22 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ork-amd64
-            ork-arm64
+            inrun-amd64
+            inrun-arm64
           key: linux-binaries-gateway-${{ hashFiles('go.sum', '**/*.go', 'cmd/**/*.go') }}
 
       - name: Build Linux binaries (if cache miss)
         if: steps.cache-binaries.outputs.cache-hit != 'true'
         run: |
           DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          LDFLAGS="-X github.com/orkspace/orkestra/pkg/version.Version=${{ github.ref_name }} -X github.com/orkspace/orkestra/pkg/version.Commit=${{ github.sha }} -X github.com/orkspace/orkestra/pkg/version.Date=$DATE"
+          LDFLAGS="-X github.com/inrundev/inrun/pkg/version.Version=${{ github.ref_name }} -X github.com/inrundev/inrun/pkg/version.Commit=${{ github.sha }} -X github.com/inrundev/inrun/pkg/version.Date=$DATE"
           for arch in amd64 arm64; do
-            echo "Building ork-gateway-$arch"
+            echo "Building inrun-gateway-$arch"
             GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build \
               -tags gateway \
               -trimpath \
               -ldflags="-s -w $LDFLAGS" \
-              -o ork-$arch ./cmd/orkestra
+              -o inrun-$arch ./cmd/inrun
           done
 
       - name: Build and push gateway image
@@ -170,8 +170,8 @@ jobs:
           echo "## Gateway Image" >> "$GITHUB_STEP_SUMMARY"
           echo "\`ghcr.io/${{ inputs.repository }}-gateway:${{ inputs.image_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
 
-  build-controlcenter:
-    name: Build and Push Control Center
+  build-console:
+    name: Build and Push Console
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -191,13 +191,13 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.ORK_PUBLISH_PAT }}
+          password: ${{ secrets.INRUN_PUBLISH_PAT }}
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ inputs.repository }}-cc
+          images: ghcr.io/${{ inputs.repository }}-console
           tags: |
             type=semver,pattern={{version}},value=${{ inputs.image_tag }}
             type=semver,pattern={{major}}.{{minor}},value=${{ inputs.image_tag }}
@@ -209,29 +209,29 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            cmd/controlcenter/orkcc-amd64
-            cmd/controlcenter/orkcc-arm64
-          key: linux-binaries-cc-${{ hashFiles('go.sum', 'cmd/controlcenter/**/*.go') }}
+            cmd/console/inrun-console-amd64
+            cmd/console/inrun-console-arm64
+          key: linux-binaries-console-${{ hashFiles('go.sum', 'cmd/console/**/*.go') }}
 
       - name: Build Linux binaries (if cache miss)
         if: steps.cache-binaries.outputs.cache-hit != 'true'
         run: |
           DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          LDFLAGS="-X github.com/orkspace/orkestra-cc/version.Version=${{ github.ref_name }} -X github.com/orkspace/orkestra-cc/version.Commit=${{ github.sha }} -X github.com/orkspace/orkestra-cc/version.Date=$DATE"
-          cd ./cmd/controlcenter
+          LDFLAGS="-X github.com/inrundev/inrun/console/version.Version=${{ github.ref_name }} -X github.com/inrundev/inrun/console/version.Commit=${{ github.sha }} -X github.com/inrundev/inrun/console/version.Date=$DATE"
+          cd ./cmd/console
           for arch in amd64 arm64; do
-            echo "Building orkcc-$arch"
+            echo "Building inrun-console-$arch"
             GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build \
               -trimpath \
               -ldflags="-s -w $LDFLAGS" \
-              -o orkcc-$arch .
+              -o inrun-console-$arch .
           done
 
-      - name: Build and push control center image
+      - name: Build and push console image
         uses: docker/build-push-action@v7
         with:
-          context: cmd/controlcenter
-          file: cmd/controlcenter/Dockerfile
+          context: cmd/console
+          file: cmd/console/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -245,8 +245,8 @@ jobs:
 
       - name: Write image summary
         run: |
-          echo "## Control Center Image" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`ghcr.io/${{ inputs.repository }}-cc:${{ inputs.image_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Console Image" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`ghcr.io/${{ inputs.repository }}-console:${{ inputs.image_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
 
   build-devserver:
     name: Build and Push Dev Server
@@ -269,7 +269,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.ORK_PUBLISH_PAT }}
+          password: ${{ secrets.INRUN_PUBLISH_PAT }}
 
       - name: Extract metadata
         id: meta
@@ -285,21 +285,21 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            ork-amd64
-            ork-arm64
+            inrun-amd64
+            inrun-arm64
           key: linux-binaries-devserver-${{ hashFiles('go.sum', 'pkg/devserver/**/*.go', 'cmd/devserver/**/*.go') }}
 
       - name: Build Linux binaries (if cache miss)
         if: steps.cache-binaries.outputs.cache-hit != 'true'
         run: |
           DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          LDFLAGS="-X github.com/orkspace/orkestra/pkg/version.Version=${{ github.ref_name }} -X github.com/orkspace/orkestra/pkg/version.Commit=${{ github.sha }} -X github.com/orkspace/orkestra/pkg/version.Date=$DATE"
+          LDFLAGS="-X github.com/inrundev/inrun/pkg/version.Version=${{ github.ref_name }} -X github.com/inrundev/inrun/pkg/version.Commit=${{ github.sha }} -X github.com/inrundev/inrun/pkg/version.Date=$DATE"
           for arch in amd64 arm64; do
-            echo "Building ork-devserver-$arch"
+            echo "Building inrun-devserver-$arch"
             GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build \
               -trimpath \
               -ldflags="-s -w $LDFLAGS" \
-              -o ork-$arch ./cmd/devserver
+              -o inrun-$arch ./cmd/devserver
           done
 
       - name: Build and push dev server image

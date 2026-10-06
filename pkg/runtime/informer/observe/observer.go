@@ -4,18 +4,18 @@ package observe
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/runtime/informer"
-	"github.com/orkspace/orkestra/pkg/runtime/queue"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/runtime/informer"
+	"github.com/inrundev/inrun/pkg/runtime/queue"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // Dependencies are the runtime services required by secondary observers.
 //
 // Supplied at construction time by the runtime constructor when New() is called.
 type Dependencies struct {
-	Katalog       domain.Katalog
+	Catalog       domain.Catalog
 	Kube          *kubeclient.Kubeclient
 	Informer      *informer.Factory
 	QueueRegistry *queue.QueueRegistry
@@ -50,12 +50,12 @@ func New(deps Dependencies) *Observer {
 //   - operatorBox.observe.events
 //
 // Observers are started immediately against ctx.
-func (o *Observer) Observe(ctx context.Context, crd orktypes.CRDEntry) {
+func (o *Observer) Observe(ctx context.Context, crd types.CRDEntry) {
 	o.observeWatches(ctx, crd)
 	o.observeEvents(ctx, crd)
 }
 
-func (o *Observer) queueFor(crd orktypes.CRDEntry) (*queue.Workqueue, bool) {
+func (o *Observer) queueFor(crd types.CRDEntry) (*queue.Workqueue, bool) {
 	if o.deps.QueueRegistry == nil {
 		return nil, false
 	}

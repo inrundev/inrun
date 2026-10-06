@@ -106,7 +106,7 @@ secrets:
       apiKey: "{{ randomHex 32 }}"
 ```
 
-When the Secret's `generated-at` annotation is older than `90d`, Orkestra deletes it and re-creates it with a fresh value. The random note is evaluated again during re-creation.
+When the Secret's `generated-at` annotation is older than `90d`, Inrun deletes it and re-creates it with a fresh value. The random note is evaluated again during re-creation.
 
 ---
 

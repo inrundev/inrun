@@ -1,9 +1,0 @@
-apiVersion: demo.orkestra.io/v1
-kind: Service
-metadata:
-  name: my-service
-  namespace: default
-spec:
-  image: nginx:1.25
-  port: 8080
-  replicas: 2

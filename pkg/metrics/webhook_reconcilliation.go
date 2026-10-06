@@ -16,14 +16,14 @@ import (
 //
 // Example alert:
 //
-//	alert: OrkestraWebhookReconciliationStalled
-//	expr:  increase(orkestra_webhook_reconciliations_total[10m]) == 0
+//	alert: InrunWebhookReconciliationStalled
+//	expr:  increase(inrun_webhook_reconciliations_total[10m]) == 0
 //
 // ─────────────────────────────────────────────────────────────────────────────
 var webhookReconciliations = promauto.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "orkestra_webhook_reconciliations_total",
-		Help: "Number of webhook reconciliation cycles performed by Orkestra.",
+		Name: "inrun_webhook_reconciliations_total",
+		Help: "Number of webhook reconciliation cycles performed by Inrun.",
 	},
 	[]string{"type"},
 )
@@ -45,13 +45,13 @@ func RecordWebhookReconciled(webhookType string) {
 //
 // Alert on this metric to detect reconciliation drift or API instability.
 //
-//	alert: OrkestraWebhookReconciliationErrors
-//	expr:  increase(orkestra_webhook_reconciliation_failures_total[5m]) > 0
+//	alert: InrunWebhookReconciliationErrors
+//	expr:  increase(inrun_webhook_reconciliation_failures_total[5m]) > 0
 //
 // ─────────────────────────────────────────────────────────────────────────────
 var webhookReconciliationFailures = promauto.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "orkestra_webhook_reconciliation_failures_total",
+		Name: "inrun_webhook_reconciliation_failures_total",
 		Help: "Number of webhook reconciliation failures.",
 	},
 	[]string{"type"},

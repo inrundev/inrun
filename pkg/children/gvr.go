@@ -6,9 +6,9 @@ import (
 )
 
 // ── Child resource GVRs ───────────────────────────────────────────────────
-// These are the GVRs for every resource type the OrkestraRegistry creates.
+// These are the GVRs for every resource type the InrunRegistry creates.
 // Used to read back child resources after reconcile completes.
-// When you add a new resource, make it available here to be read by Orkestra.
+// When you add a new resource, make it available here to be read by Inrun.
 
 var (
 	DeploymentGVR              = gvrOrPanic("deployment")
@@ -42,11 +42,11 @@ var (
 )
 
 // gvrOrPanic is a small helper for static initialization.
-// Built-ins are guaranteed to exist in katalog.builtInRegistry.
+// Built-ins are guaranteed to exist in catalog.builtInRegistry.
 func gvrOrPanic(kind string) schema.GroupVersionResource {
 	gvr, ok := GVRForBuiltIn(kind)
 	if !ok {
-		panic("katalog: built-in kind not found: " + kind)
+		panic("catalog: built-in kind not found: " + kind)
 	}
 	return gvr
 }

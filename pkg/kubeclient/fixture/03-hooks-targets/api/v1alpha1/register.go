@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	GroupVersion  = schema.GroupVersion{Group: "demo.orkestra.io", Version: "v1alpha1"}
+	GroupVersion  = schema.GroupVersion{Group: "demo.inrun.dev", Version: "v1alpha1"}
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
 	AddToScheme   = SchemeBuilder.AddToScheme
 )

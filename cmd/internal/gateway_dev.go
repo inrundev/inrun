@@ -4,7 +4,7 @@
 // (Gateway API + intake webhooks) without TLS or a live cluster. Admission and
 // conversion webhooks are skipped; a warning is printed at startup.
 //
-// Included in dev builds (make ork). Excluded from production gateway builds.
+// Included in dev builds (make inrun). Excluded from production gateway builds.
 
 //go:build !runtime && !gateway
 
@@ -13,40 +13,39 @@ package internal
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	apigateway "github.com/orkspace/orkestra/pkg/gateway/api"
-	"github.com/orkspace/orkestra/pkg/gateway/api/intake"
-	"github.com/orkspace/orkestra/pkg/health"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/katalog/pipeline"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/merger"
-	ork "github.com/orkspace/orkestra/pkg/orkestra"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/catalog/pipeline"
+	"github.com/inrundev/inrun/pkg/config"
+	apigateway "github.com/inrundev/inrun/pkg/gateway/api"
+	"github.com/inrundev/inrun/pkg/health"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/merger"
+	"github.com/inrundev/inrun/pkg/process"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
-// KonductGatewayDev starts a local HTTP-only gateway.
+// RunGatewayDev starts a local HTTP-only gateway.
 //
-// TLS, WebhookServer, and /katalog routes that depend on webhook state are all
+// TLS, WebhookServer, and /catalog routes that depend on webhook state are all
 // omitted. The Gateway API (POST /api/v1/apply, GET /api/v1/resources/, etc.)
 // and intake webhooks run on the plain HTTP health port — identical to the
 // in-cluster API surface, with no certificate setup required.
-func KonductGatewayDev(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context) {
+func RunGatewayDev(kfg *config.Config, m *merger.Merger, ctx context.Context) {
 
-	// ── 1. Instance + Katalog ─────────────────────────────────────────────────
-	kfg.SetInstance(konfig.Gateway())
+	// ── 1. Instance + Catalog ─────────────────────────────────────────────────
+	kfg.SetInstance(config.Gateway())
 
-	kat := pipeline.NewKatalog(kfg, m)
+	kat := pipeline.NewCatalog(kfg, m)
 
 	if registryURL := kfg.RegistryConfig().RegistryURL; registryURL != "" {
 		m.SetRegistryURL(registryURL)
-		logger.Info().Str("registry", registryURL).Msg("registry URL configured from ORK_REGISTRY")
+		logger.Info().Str("registry", registryURL).Msg("registry URL configured from INRUN_REGISTRY")
 	}
 
 	// ── 2. Scheme + Kubeclient ────────────────────────────────────────────────
-	scheme, err := katalog.NewSchemeRegistry(kat)
+	scheme, err := catalog.NewSchemeRegistry(kat)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to build scheme registry")
 	}
@@ -70,27 +69,19 @@ func KonductGatewayDev(kfg *konfig.Konfig, m *merger.Merger, ctx context.Context
 		logger.Fatal().Err(apiErr).Msg("gateway API setup failed")
 	}
 
-	intakeSrv, intakeErr := intake.NewIntakeServer(ctx, kat, kube, clusters, kfg.Cluster().Namespace())
-	if intakeErr != nil {
-		logger.Fatal().Err(intakeErr).Msg("gateway webhooks setup failed")
-	}
-
 	if api != nil {
 		api.Register(hs)
-		if intakeSrv != nil {
-			intakeSrv.Register(hs, kat.Notes)
-		}
 	}
 
 	// ── 5. Start ──────────────────────────────────────────────────────────────
-	komponents := []domain.Komponent{hs, kube}
+	components := []domain.Component{hs, kube}
 
-	o := ork.NewOrkestra(
+	o := process.New(
 		kfg.RunningInstance(),
-		kfg.Katalog().ShutdownGracePeriod(),
-		kfg.Ork().LogLevel(),
+		kfg.Catalog().ShutdownGracePeriod(),
+		kfg.Inrun().LogLevel(),
 	)
-	o.Register(komponents)
+	o.Register(components)
 
 	go func() {
 		if err := o.Start(ctx); err != nil {

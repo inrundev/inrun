@@ -1,4 +1,4 @@
-apiVersion: demo.orkestra.io/v1alpha1
+apiVersion: demo.inrun.dev/v1alpha1
 kind: Website
 metadata:
   name: hello-website

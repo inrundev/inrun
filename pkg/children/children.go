@@ -1,48 +1,15 @@
-// Package children reads and enriches child Kubernetes resources that are
-// declared in a Katalog's operatorBox. It is the bridge between the template
-// resolver (which holds the owner CR's fields) and the Kubernetes API (which
-// holds the live state of every child resource).
-//
-// The single entry point is [ReadChildren]. It:
-//  1. Merges onCreate and onReconcile template declarations.
-//  2. For each declared resource type, reads the live objects from Kubernetes.
-//  3. Applies enrichment layers (pods, endpoints, warnings, PV).
-//  4. Returns a structured map injected into the template resolver under "children".
-//
-// # File layout
-//
-//   - children.go   — this file; package doc and ReadChildren entry point
-//   - read.go       — readResourceGroup, firstValue, mergeTemplates
-//   - names.go      — name resolution (resolvedChildName, *Names helpers)
-//   - foreach.go    — forEach expansion for all built-in resource types
-//   - foreach_customresources.go — forEach expansion for custom resources
-//   - enrich_pods.go         — _pods enrichment and pod summary building
-//   - enrich_endpoints.go    — _endpoints enrichment
-//   - enrich_warnings.go     — _warnings enrichment (workload + pod events)
-//   - enrich_pvc.go          — _pv enrichment for PersistentVolumeClaims
-//   - enrich_pv.go           — _pvc enrichment for PersistentVolumes
-//   - enrich_replicasets.go  — _owner for ReplicaSets; _replicaSets for Deployments
-//   - enrich_cronjobs.go     — _activeJobs, _lastJob, _lastSuccessfulJob for CronJobs
-//   - enrich_statefulsets.go — _pvcs for StatefulSets
-//   - enrich_storageclass.go — _storageClass for PersistentVolumeClaims
-//   - enrich_service_pods.go — _backingPods for Services
-//   - enrich_ingress.go      — _loadBalancerIPs, _tlsSecrets for Ingresses
-//   - enrich_node.go         — _node for Pods
-//   - enrich_hpa.go          — _currentMetrics, _scaleTarget for HPAs
-//
-// See docs/ for a progressive walkthrough of each layer.
 package children
 
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
-// ReadChildren reads all child resources declared in the Katalog's onCreate
+// ReadChildren reads all child resources declared in the Catalog's onCreate
 // templates and returns a structured map for use in status field expressions.
 //
 // The returned map is injected into the template resolver under the "children"
@@ -69,8 +36,8 @@ func ReadChildren(
 	ctx context.Context,
 	kube kubeclient.Interface,
 	obj domain.Object,
-	resolver *orktmpl.Resolver,
-	crd orktypes.CRDEntry,
+	resolver *template.Resolver,
+	crd types.CRDEntry,
 ) map[string]interface{} {
 	children := map[string]interface{}{}
 
@@ -102,7 +69,7 @@ func ReadChildren(
 		m := readResourceGroup(ctx, kube, obj, resolver, DeploymentGVR, dNames)
 		// Deployments do not directly own pods — their ReplicaSets do.
 		// Filtering by ownerKind=ReplicaSet excludes Job pods that share the
-		// same orkestra-owner label but have a different immediate controller.
+		// same inrun-owner label but have a different immediate controller.
 		enrichGroupWithPods(ctx, kube, m, crd, "ReplicaSet")
 		enrichGroupWithReplicaSets(ctx, kube, m, crd)
 		enrichGroupWithWarnings(ctx, kube, m, crd, "Deployment")
@@ -354,7 +321,7 @@ func applySecondPhaseEnrichments(
 	ctx context.Context,
 	kube kubeclient.Interface,
 	children map[string]interface{},
-	crd orktypes.CRDEntry,
+	crd types.CRDEntry,
 ) {
 	if m, ok := children["deployments"].(map[string]interface{}); ok {
 		enrichGroupWithPods(ctx, kube, m, crd, "ReplicaSet")

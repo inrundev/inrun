@@ -1,4 +1,4 @@
-apiVersion: net.demo.orkestra.io/v1alpha1
+apiVersion: net.demo.inrun.dev/v1alpha1
 kind: TrafficPolicy
 metadata:
   name: api-traffic
@@ -8,7 +8,7 @@ spec:
   timeout: 30s
   retries: "3"
 ---
-apiVersion: net.demo.orkestra.io/v1alpha1
+apiVersion: net.demo.inrun.dev/v1alpha1
 kind: VirtualService
 metadata:
   name: api-virtual-service
@@ -18,7 +18,7 @@ spec:
   port: "8080"
   upstream: api-backend
 ---
-apiVersion: net.demo.orkestra.io/v1alpha1
+apiVersion: net.demo.inrun.dev/v1alpha1
 kind: Backend
 metadata:
   name: api-backend
@@ -28,7 +28,7 @@ spec:
   replicas: 2
   port: 8080
 ---
-apiVersion: net.demo.orkestra.io/v1alpha1
+apiVersion: net.demo.inrun.dev/v1alpha1
 kind: HealthCheck
 metadata:
   name: api-health
@@ -39,7 +39,7 @@ spec:
   interval: 15s
   timeout: 5s
 ---
-apiVersion: net.demo.orkestra.io/v1alpha1
+apiVersion: net.demo.inrun.dev/v1alpha1
 kind: RateLimit
 metadata:
   name: api-rate-limit
@@ -49,7 +49,7 @@ spec:
   window: 1m
   burst: "200"
 ---
-apiVersion: net.demo.orkestra.io/v1alpha1
+apiVersion: net.demo.inrun.dev/v1alpha1
 kind: CircuitBreaker
 metadata:
   name: api-circuit-breaker
@@ -60,7 +60,7 @@ spec:
   cooldown: 30s
   halfOpenRequests: "5"
 ---
-apiVersion: net.demo.orkestra.io/v1alpha1
+apiVersion: net.demo.inrun.dev/v1alpha1
 kind: TLSPolicy
 metadata:
   name: api-tls

@@ -17,9 +17,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/metrics"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/metrics"
+	"github.com/inrundev/inrun/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -41,14 +41,14 @@ type AutoscaleTarget interface {
 type Autoscaler struct {
 	cs         kubernetes.Interface
 	crdKind    string
-	spec       *orktypes.AutoscaleSpec
-	baseline   orktypes.AutoscaleBaseline
+	spec       *types.AutoscaleSpec
+	baseline   types.AutoscaleBaseline
 	target     AutoscaleTarget
 	metrics    *AutoMetrics
-	crossDecls []orktypes.CrossCRDDeclaration
+	crossDecls []types.CrossCRDDeclaration
 
 	// state — not exported, not persisted
-	state orktypes.AutoscaleState
+	state types.AutoscaleState
 }
 
 // NewAutoscaler constructs an Autoscaler for one operatorbox.
@@ -59,11 +59,11 @@ type Autoscaler struct {
 func NewAutoscaler(
 	cs kubernetes.Interface,
 	crdKind string,
-	spec *orktypes.AutoscaleSpec,
-	baseline orktypes.AutoscaleBaseline,
+	spec *types.AutoscaleSpec,
+	baseline types.AutoscaleBaseline,
 	target AutoscaleTarget,
 	metrics *AutoMetrics,
-	crossDecls []orktypes.CrossCRDDeclaration,
+	crossDecls []types.CrossCRDDeclaration,
 ) *Autoscaler {
 	return &Autoscaler{
 		cs:         cs,
@@ -73,7 +73,7 @@ func NewAutoscaler(
 		target:     target,
 		metrics:    metrics,
 		crossDecls: crossDecls,
-		state: orktypes.AutoscaleState{
+		state: types.AutoscaleState{
 			CronWindowsOpenAt: make(map[string]time.Time),
 		},
 	}
@@ -147,7 +147,7 @@ func (a *Autoscaler) evaluate(ctx context.Context) {
 // data map so NavigateDotPath resolves them as normal dot-paths.
 func (a *Autoscaler) conditionsMet(_ context.Context) bool {
 	data := a.buildConditionData()
-	return orktypes.EvaluateConditions(data, a.spec.Conditions.When, a.spec.Conditions.Or, nil)
+	return types.EvaluateConditions(data, a.spec.Conditions.When, a.spec.Conditions.Or, nil)
 }
 
 // buildConditionData returns the data map passed to EvaluateConditions.
@@ -164,7 +164,7 @@ func (a *Autoscaler) buildConditionData() map[string]interface{} {
 	all := append(a.spec.Conditions.Or, a.spec.Conditions.When...)
 	for _, cond := range all {
 		// Cross-metric resolution
-		if orktypes.IsCrossMetricField(cond.Field) {
+		if types.IsCrossMetricField(cond.Field) {
 			src := cond.Source
 			if src == nil {
 				src = a.crossSourceFor(cond.Field)
@@ -177,7 +177,7 @@ func (a *Autoscaler) buildConditionData() map[string]interface{} {
 
 		// Cron window state — tick and inject so EvaluateOneCond reads persisted state
 		if cond.Cron != "" {
-			open := orktypes.TickCronWindow(a.state.CronWindowsOpenAt, cond.Cron, cond.Duration.Duration, a.spec.EffectiveInterval(), now)
+			open := types.TickCronWindow(a.state.CronWindowsOpenAt, cond.Cron, cond.Duration.Duration, a.spec.EffectiveInterval(), now)
 			injectCronWindowValue(data, cond.Cron, open)
 		}
 	}
@@ -234,8 +234,8 @@ func injectCrossMetricValue(data map[string]interface{}, field, val string) {
 // Only entries with a direct endpoint or type: metrics are considered — entries
 // with type: cr, health, events, etc. are for different data and are skipped.
 // Used as a fallback when a condition's own source: block is absent.
-func (a *Autoscaler) crossSourceFor(field string) *orktypes.CrossSource {
-	cf := orktypes.ParseCrossField(field)
+func (a *Autoscaler) crossSourceFor(field string) *types.CrossSource {
+	cf := types.ParseCrossField(field)
 	if cf == nil {
 		return nil
 	}
@@ -254,7 +254,7 @@ func (a *Autoscaler) crossSourceFor(field string) *orktypes.CrossSource {
 		}
 		// Only use sources that can resolve metrics: a raw endpoint (any shape)
 		// or an ONCOP host entry typed as metrics.
-		if decl.Source.Endpoint != "" || decl.Source.Protocol == orktypes.ONCOPMetrics {
+		if decl.Source.Endpoint != "" || decl.Source.Protocol == types.ONCOPMetrics {
 			return decl.Source
 		}
 	}

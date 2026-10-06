@@ -1,6 +1,6 @@
 # 09 — Kubernetes Notes
 
-Kubernetes notes safely navigate the unstructured objects that Orkestra exposes through the template context — especially child resources available under `.children.*` and cross-CRD observations under `.cross.*`.
+Kubernetes notes safely navigate the unstructured objects that Inrun exposes through the template context — especially child resources available under `.children.*` and cross-CRD observations under `.cross.*`.
 
 ## What these notes operate on
 
@@ -65,7 +65,7 @@ Return the `metadata.annotations` map. Returns an empty map if absent.
 Keywords: kubernetes, metadata, annotations, map, tags
 
 ```yaml
-# value: "{{ mapGet (annotations .children.deployment) \"orkestra.io/phase\" }}"
+# value: "{{ mapGet (annotations .children.deployment) \"inrun.dev/phase\" }}"
 ```
 
 ---
@@ -81,7 +81,7 @@ Keywords: kubernetes, label, metadata, get, string, access, selector
 # → "my-app"
 
 # Drive logic from a label without a spec field:
-# value: '{{ getLabel . "orkestra.io/resource-profile" | default "medium" }}'
+# value: '{{ getLabel . "inrun.dev/resource-profile" | default "medium" }}'
 ```
 
 ---

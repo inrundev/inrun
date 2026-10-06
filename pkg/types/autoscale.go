@@ -124,7 +124,7 @@ type AutoscaleState struct {
 // interval is the evaluation tick period — used to detect fires between ticks.
 // When duration is zero, interval is used as the window length.
 //
-// This is the general-purpose cron window tracker. Any part of Orkestra that
+// This is the general-purpose cron window tracker. Any part of Inrun that
 // needs cron-gated behaviour (autoscaler, future job runner, etc.) can bring
 // its own map[string]time.Time and call this on each evaluation tick.
 func TickCronWindow(windows map[string]time.Time, cronExpr string, duration, interval time.Duration, now time.Time) bool {

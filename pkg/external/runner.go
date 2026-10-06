@@ -1,17 +1,14 @@
-// Package external executes declarative external calls and injects results
-// into the resolver context under .external.<name>.
-// Used by both the reconciler (at reconcile time) and the gateway webhook (at admission time).
 package external
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/metrics"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/metrics"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -28,10 +25,10 @@ import (
 func Run(
 	ctx context.Context,
 	gvk string,
-	resolver *orktmpl.Resolver,
-	calls []orktypes.ExternalCallSpec,
+	resolver *template.Resolver,
+	calls []types.ExternalCallSpec,
 	cs kubernetes.Interface,
-) (*orktmpl.Resolver, error) {
+) (*template.Resolver, error) {
 	if len(calls) == 0 {
 		return resolver, nil
 	}
@@ -40,7 +37,7 @@ func Run(
 	results := make(map[string]interface{}, len(calls))
 
 	for i, call := range calls {
-		if !orktypes.EvaluateConditions(resolver.Data(), call.Conditions, call.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), call.Conditions, call.Or, resolver.TemplateEvaluator()) {
 			results[call.Name] = skippedResult(call.Protocol)
 			log.Debug().
 				Str("call", call.Name).
@@ -134,9 +131,9 @@ func Run(
 
 // skippedResult returns the zero-value result for a skipped call.
 // HTTP uses status/body/error/called; non-HTTP uses result/raw/error/called.
-func skippedResult(protocol orktypes.ExternalProtocol) map[string]interface{} {
+func skippedResult(protocol types.ExternalProtocol) map[string]interface{} {
 	switch protocol {
-	case "", orktypes.ProtocolHTTP:
+	case "", types.ProtocolHTTP:
 		return map[string]interface{}{
 			"status": "",
 			"body":   "",

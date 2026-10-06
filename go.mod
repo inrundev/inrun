@@ -1,4 +1,4 @@
-module github.com/orkspace/orkestra
+module github.com/inrundev/inrun
 
 go 1.26.6
 
@@ -36,7 +36,7 @@ require (
 	oras.land/oras-go/v2 v2.6.2
 	// controller-runtime is used in three places:
 	//   - tests/integration/ (envtest)
-	//   - pkg/registry/simulate/harness_envtest.go (ork simulate --envtest: real
+	//   - pkg/registry/simulate/harness_envtest.go (inrun simulate --envtest: real
 	//     kube-apiserver + etcd via envtest.Environment, auto-download support)
 	//   - pkg/kubeclient for compatibility so Reconcile() from controller-runtime.
 	// 	   works without modification.

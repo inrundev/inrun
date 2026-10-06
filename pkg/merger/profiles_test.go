@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-const katalogWithProfilesYAML = `apiVersion: orkestra.orkspace.io/v1
-kind: Katalog
+const catalogWithProfilesYAML = `apiVersion: inrun.dev/v1
+kind: Catalog
 metadata:
   name: profiled
 profiles:
@@ -24,11 +24,11 @@ spec:
         group: example.io
 `
 
-// TestKatalog_InlineProfiles_ForwardedToToProfiles verifies that profiles:
-// declared directly in a Katalog are returned by ToProfiles() after Merge().
-func TestKatalog_InlineProfiles_ForwardedToToProfiles(t *testing.T) {
+// TestCatalog_InlineProfiles_ForwardedToToProfiles verifies that profiles:
+// declared directly in a Catalog are returned by ToProfiles() after Merge().
+func TestCatalog_InlineProfiles_ForwardedToToProfiles(t *testing.T) {
 	dir := t.TempDir()
-	path := writeTempKatalog(t, dir, "katalog.yaml", katalogWithProfilesYAML)
+	path := writeTempCatalog(t, dir, "catalog.yaml", catalogWithProfilesYAML)
 
 	m := New(path)
 	if err := m.Merge(); err != nil {
@@ -47,46 +47,46 @@ func TestKatalog_InlineProfiles_ForwardedToToProfiles(t *testing.T) {
 	}
 }
 
-// TestKomposer_InlineProfiles_MergedWithKatalogProfiles verifies that a Komposer
-// can add profiles with names that do not conflict with imported Katalog profiles,
+// TestStack_InlineProfiles_MergedWithCatalogProfiles verifies that a Stack
+// can add profiles with names that do not conflict with imported Catalog profiles,
 // and that both sets appear in ToProfiles().
-func TestKomposer_InlineProfiles_MergedWithKatalogProfiles(t *testing.T) {
+func TestStack_InlineProfiles_MergedWithCatalogProfiles(t *testing.T) {
 	dir := t.TempDir()
-	katalogPath := writeTempKatalog(t, dir, "katalog.yaml", katalogWithProfilesYAML)
+	catalogPath := writeTempCatalog(t, dir, "catalog.yaml", catalogWithProfilesYAML)
 
-	// Komposer declares a profile with a different name — no conflict.
-	komposer := "apiVersion: orkestra.orkspace.io/v1\nkind: Komposer\nmetadata:\n  name: k\nprofiles:\n  reconciler:\n    - name: batch\n      workers: 5\nimports:\n  files:\n    - url: " + katalogPath + "\n"
-	komposerPath := writeTempKatalog(t, dir, "komposer.yaml", komposer)
+	// Stack declares a profile with a different name — no conflict.
+	stack := "apiVersion: inrun.dev/v1\nkind: Stack\nmetadata:\n  name: k\nprofiles:\n  reconciler:\n    - name: batch\n      workers: 5\nimports:\n  files:\n    - url: " + catalogPath + "\n"
+	stackPath := writeTempCatalog(t, dir, "stack.yaml", stack)
 
-	m := New(komposerPath)
+	m := New(stackPath)
 	if err := m.Merge(); err != nil {
 		t.Fatalf("Merge() error: %v", err)
 	}
 
 	profiles := m.ToProfiles()
 	if _, ok := profiles.LookupReconciler("fast"); !ok {
-		t.Error("expected katalog profile 'fast' to pass through")
+		t.Error("expected catalog profile 'fast' to pass through")
 	}
 	if _, ok := profiles.LookupReconciler("slow"); !ok {
-		t.Error("expected katalog profile 'slow' to pass through")
+		t.Error("expected catalog profile 'slow' to pass through")
 	}
 	if _, ok := profiles.LookupReconciler("batch"); !ok {
-		t.Error("expected Komposer profile 'batch'")
+		t.Error("expected Stack profile 'batch'")
 	}
 }
 
-// TestKomposer_InlineProfiles_ConflictErrors verifies that a Komposer declaring
-// a profile with the same name as one from an imported Katalog returns an error.
+// TestStack_InlineProfiles_ConflictErrors verifies that a Stack declaring
+// a profile with the same name as one from an imported Catalog returns an error.
 // Unlike notes, profiles use conflict-detection rather than last-wins.
-func TestKomposer_InlineProfiles_ConflictErrors(t *testing.T) {
+func TestStack_InlineProfiles_ConflictErrors(t *testing.T) {
 	dir := t.TempDir()
-	katalogPath := writeTempKatalog(t, dir, "katalog.yaml", katalogWithProfilesYAML)
+	catalogPath := writeTempCatalog(t, dir, "catalog.yaml", catalogWithProfilesYAML)
 
-	// 'fast' is also declared in the Katalog — this must error.
-	komposer := "apiVersion: orkestra.orkspace.io/v1\nkind: Komposer\nmetadata:\n  name: k\nprofiles:\n  reconciler:\n    - name: fast\n      workers: 99\nimports:\n  files:\n    - url: " + katalogPath + "\n"
-	komposerPath := writeTempKatalog(t, dir, "komposer.yaml", komposer)
+	// 'fast' is also declared in the Catalog — this must error.
+	stack := "apiVersion: inrun.dev/v1\nkind: Stack\nmetadata:\n  name: k\nprofiles:\n  reconciler:\n    - name: fast\n      workers: 99\nimports:\n  files:\n    - url: " + catalogPath + "\n"
+	stackPath := writeTempCatalog(t, dir, "stack.yaml", stack)
 
-	m := New(komposerPath)
+	m := New(stackPath)
 	err := m.Merge()
 	if err == nil {
 		t.Fatal("expected conflict error for duplicate profile name 'fast', got nil")

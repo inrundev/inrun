@@ -1,6 +1,6 @@
 clusters:
   - name: staging
-    context: kind-ork-bt-2
+    context: kind-inrun-bt-2
 
   - name: prod
-    context: kind-ork-bt-3
+    context: kind-inrun-bt-3

@@ -1,7 +1,7 @@
 # Exercises: deny when — cert workload missing spec.domain.
 # Expected: rejected, "spec.domain is required for cert workloads".
 # The or rule (repoURL) does NOT fire — workloadType is cert, not app/monitoring.
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: PlatformResource
 metadata:
   name: cert-no-domain

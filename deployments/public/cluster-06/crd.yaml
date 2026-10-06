@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: trafficpolicies.net.demo.orkestra.io
+  name: trafficpolicies.net.demo.inrun.dev
 spec:
-  group: net.demo.orkestra.io
+  group: net.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -23,9 +23,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: virtualservices.net.demo.orkestra.io
+  name: virtualservices.net.demo.inrun.dev
 spec:
-  group: net.demo.orkestra.io
+  group: net.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -45,9 +45,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: backends.net.demo.orkestra.io
+  name: backends.net.demo.inrun.dev
 spec:
-  group: net.demo.orkestra.io
+  group: net.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -67,9 +67,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: healthchecks.net.demo.orkestra.io
+  name: healthchecks.net.demo.inrun.dev
 spec:
-  group: net.demo.orkestra.io
+  group: net.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -89,9 +89,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: ratelimits.net.demo.orkestra.io
+  name: ratelimits.net.demo.inrun.dev
 spec:
-  group: net.demo.orkestra.io
+  group: net.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -111,9 +111,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: circuitbreakers.net.demo.orkestra.io
+  name: circuitbreakers.net.demo.inrun.dev
 spec:
-  group: net.demo.orkestra.io
+  group: net.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -133,9 +133,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: tlspolicies.net.demo.orkestra.io
+  name: tlspolicies.net.demo.inrun.dev
 spec:
-  group: net.demo.orkestra.io
+  group: net.demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true

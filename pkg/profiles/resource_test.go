@@ -3,8 +3,8 @@ package profiles_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func TestResourceProfiles(t *testing.T) {
@@ -58,8 +58,8 @@ func TestResourceProfiles(t *testing.T) {
 }
 
 func TestResourceProfileUserDefined(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		Resources: []orktypes.ResourceProfileDef{
+	reg := types.ProfileRegistry{
+		Resources: []types.ResourceProfileDef{
 			{
 				Name:     "gpu-worker",
 				Requests: map[string]string{"cpu": "4", "memory": "8Gi"},
@@ -81,8 +81,8 @@ func TestResourceProfileUserDefined(t *testing.T) {
 }
 
 func TestResourceProfileUserDefinedOverridesBuiltIn(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		Resources: []orktypes.ResourceProfileDef{
+	reg := types.ProfileRegistry{
+		Resources: []types.ResourceProfileDef{
 			{
 				Name:     "small",
 				Requests: map[string]string{"cpu": "999m", "memory": "999Mi"},

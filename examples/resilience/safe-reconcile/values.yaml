@@ -1,4 +1,0 @@
-runtime:
-  image:
-    repository: ghcr.io/myorg/safe-reconcile-demo
-    tag: 1.0.0

@@ -5,7 +5,7 @@
 // the full k8s.io/api module where it isn't needed.
 //
 // The Kubernetes API server sends an AdmissionReview to /validate and /mutate.
-// Orkestra reads the Request, evaluates rules from the Katalog, and writes
+// Inrun reads the Request, evaluates rules from the Catalog, and writes
 // the Response. The API server reads the Response and either stores the object
 // (allowed) or rejects it (denied).
 package webhook
@@ -38,7 +38,7 @@ type AdmissionRequest struct {
 	DryRun    *bool                       `json:"dryRun,omitempty"`
 }
 
-// AdmissionResponse is what Orkestra writes in reply to an AdmissionRequest.
+// AdmissionResponse is what Inrun writes in reply to an AdmissionRequest.
 type AdmissionResponse struct {
 	UID       string           `json:"uid"`
 	Allowed   bool             `json:"allowed"`
@@ -57,7 +57,7 @@ type AdmissionResponse struct {
 // entries instead: this is what the real Kubernetes API server relays into
 // any client's error response (metav1.Status.Details), which is how
 // pkg/gateway/api's ApplyResponse.Violations gets populated for the
-// Gateway API — used by the Control Center form and any other client that
+// Gateway API — used by the Console form and any other client that
 // wants to show a field-focused error instead of the raw kubectl-style string.
 type AdmissionStatus struct {
 	Message string                `json:"message"`

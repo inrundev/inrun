@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -114,7 +114,7 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 }
 
 // Apply creates or updates a Secret using Server-Side Apply.
-// Sends only the fields Orkestra owns; k8s-injected defaults are invisible.
+// Sends only the fields Inrun owns; k8s-injected defaults are invisible.
 func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedSecretSpec) error {
 	if err := validateSpec(spec); err != nil {
 		return fmt.Errorf("secret.Apply: invalid spec: %w", err)
@@ -140,7 +140,7 @@ func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, 
 
 	if _, err = kube.Clientset().CoreV1().Secrets(namespace).Patch(
 		ctx, spec.Name, k8stypes.ApplyPatchType, body,
-		metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
+		metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
 	); err != nil {
 		return fmt.Errorf("secret.Apply: %w", err)
 	}
@@ -192,7 +192,7 @@ func Delete(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 // Idempotent — skips namespaces where the Secret already exists.
 // This is the power pattern: one declaration copies to N namespaces automatically.
 //
-// Example Katalog declaration:
+// Example Catalog declaration:
 //
 //	onCreate:
 //	  secrets:
@@ -266,7 +266,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 		return err
 	}
 	// Only delete if we own it
-	if existing.Labels[labels.OrkestraOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if existing.Labels[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 	return kube.Clientset().CoreV1().Secrets(namespace).
@@ -275,7 +275,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 
 // Resolve builds a ResolvedSecretSpec from a SecretTemplateSource.
 // Template expressions must already be evaluated by template.Resolver before calling.
-func Resolve(src orktypes.SecretTemplateSource, ownerName string) ResolvedSecretSpec {
+func Resolve(src types.SecretTemplateSource, ownerName string) ResolvedSecretSpec {
 	spec := ResolvedSecretSpec{
 		Name:          src.Name,
 		Namespace:     src.Namespace,
@@ -342,7 +342,7 @@ func resolveData(
 }
 
 func buildSecret(owner domain.Object, spec ResolvedSecretSpec, namespace string, data map[string][]byte, stringData map[string]string) *corev1.Secret {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 	secretType := corev1.SecretTypeOpaque
 	switch strings.ToLower(spec.Type) {
 	case "kubernetes.io/tls":

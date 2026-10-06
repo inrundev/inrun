@@ -8,14 +8,14 @@ import "strings"
 // These declarations control policy enforcement at two points:
 //
 //   1. Admission time  — when ENABLE_ADMISSION_WEBHOOK=true, the API server calls
-//      Orkestra's /validate and /mutate endpoints synchronously during
+//      Inrun's /validate and /mutate endpoints synchronously during
 //      kubectl apply. The CR is rejected or mutated before storage.
 //
 //   2. Reconcile time  — the same rules run inside the reconcile loop for
 //      CRs that existed before the webhook was enabled, and as drift
 //      correction for any rule violations that appear after admission.
 //
-// Both enforcement points read from the same Katalog declaration. There
+// Both enforcement points read from the same Catalog declaration. There
 // is no duplication — declare once, enforce everywhere.
 //
 // Example:
@@ -214,7 +214,7 @@ type ValidationRule struct {
 	// rule on a spec field can do the same (e.g. wrapping it in a format
 	// check like isValidGitRepository) instead of comparing it directly.
 	// Neither is itself a valid display name. When set, violations report
-	// Link instead of Field as the offending field — the Control Center (or
+	// Link instead of Field as the offending field — the Console (or
 	// any Gateway API client) matches it directly against the form field it
 	// rendered for that serve entry, no guessing at the expression required.
 	//
@@ -222,7 +222,7 @@ type ValidationRule struct {
 	// exact serve.fields / serve.labels and serve.annotations key itself, never resolved
 	// against the CR the way Field/Value/Message can be.
 	//
-	// Validated at katalog-load time: must match a key declared in
+	// Validated at catalog-load time: must match a key declared in
 	// serve.fields, serve.labels, or .annotations
 	// for this CRD. Linking a spec field whose Field is already exactly
 	// "spec.<name>" is an error, though — at that point Field already is a
@@ -289,7 +289,7 @@ func ValidationRulesFor(rules []ValidationRule, field string) []ValidationRule {
 
 // ValidationConfig holds all validation rules for a CRD.
 type ValidationConfig struct {
-	// Include is a path (relative to the katalog file) to a YAML file whose
+	// Include is a path (relative to the catalog file) to a YAML file whose
 	// top-level value is a list of ValidationRule entries. Expanded at load
 	// time — included rules come first, inline rules append after.
 	Include string `yaml:"include,omitempty" json:"include,omitempty"`
@@ -483,7 +483,7 @@ type MutationRule struct {
 
 // MutationConfig holds all mutation rules for a CRD.
 type MutationConfig struct {
-	// Include is a path (relative to the katalog file) to a YAML file whose
+	// Include is a path (relative to the catalog file) to a YAML file whose
 	// top-level value is a list of MutationRule entries. Expanded at load
 	// time — included rules come first, inline rules append after.
 	Include string `yaml:"include,omitempty" json:"include,omitempty"`
@@ -686,7 +686,7 @@ func (c *MutationConfig) HasMetricsField(nr NoteRegistry) bool {
 // ── AdmissionWebhookConfig ────────────────────────────────────────────────
 
 // AdmissionWebhookConfig is the per-CRD admission webhook control block.
-// Declared under spec.crds[].webhooks in the Katalog.
+// Declared under spec.crds[].webhooks in the Catalog.
 //
 // Example:
 //

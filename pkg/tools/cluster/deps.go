@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 const (

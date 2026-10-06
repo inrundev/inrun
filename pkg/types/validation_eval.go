@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/pkg/logger"
 )
 
 // TemplateResolver resolves a Go-template expression string against CR data
@@ -190,7 +190,7 @@ func ResolveValidationOp(r ValidationRule) (ConditionOperator, string) {
 
 // RuleTypeLabel returns a short string identifying a ValidationRule's
 // effective comparison for use as a low-cardinality metric label. Prefers
-// the shorthand name the katalog author actually wrote (e.g. "min", "max")
+// the shorthand name the catalog author actually wrote (e.g. "min", "max")
 // over the operator it resolves to (min resolves to ConditionGte, not a
 // distinct "min" operator), since that's the more actionable label for
 // "which rule type is causing the most friction" alerting.
@@ -275,7 +275,7 @@ func EvaluateValidationRule(data map[string]interface{}, resolver TemplateResolv
 	}
 
 	// displayField is shown in violation messages and is what UI clients
-	// (the Control Center IDP form) match back to the field they rendered.
+	// (the Console IDP form) match back to the field they rendered.
 	// rule.Link overrides it when set — see ValidationRule.Link. Otherwise
 	// it's the original expression: when field is a template, the resolved
 	// value is the result of the expression directly (not a CR path), so we

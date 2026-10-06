@@ -4,8 +4,8 @@ package informer
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/logger"
 )
 
 // handleEvent resolves the GVK from the informer event and routes the object
@@ -61,7 +61,7 @@ func (f *Factory) handleUpdate(
 	<-f.ready
 
 	// Skip enqueue when only status or metadata (annotations, labels) changed —
-	// i.e. generation is unchanged. Prevents Orkestra's own status/annotation
+	// i.e. generation is unchanged. Prevents Inrun's own status/annotation
 	// patches from re-triggering the reconciler in a tight loop.
 	//
 	// Exception: resync. client-go calls UpdateFunc with the same object as both
@@ -74,7 +74,7 @@ func (f *Factory) handleUpdate(
 	newGen := domain.ExtractGeneration(newObj)
 	if oldGen != 0 && oldGen == newGen {
 		if domain.ExtractResourceVersion(oldObj) != domain.ExtractResourceVersion(newObj) {
-			// RV changed but gen didn't — Orkestra status/annotation patch. Skip.
+			// RV changed but gen didn't — Inrun status/annotation patch. Skip.
 			return
 		}
 		// Same RV — resync. Allow through.

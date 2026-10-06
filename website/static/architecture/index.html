@@ -454,7 +454,6 @@
   <div class="callers-row">
     <div class="caller-chip">CI pipeline<span class="chip-sub">OIDC token · polls pollUrl</span></div>
     <div class="caller-chip">Browser · Control Center<span class="chip-sub">form generated from serve declaration</span></div>
-    <div class="caller-chip">Webhook intake<span class="chip-sub">GitHub · GitLab · Slack · generic</span></div>
     <div class="caller-chip">curl · SDK<span class="chip-sub">flat intent · no apiVersion · no kind</span></div>
     <div class="caller-chip">kubectl · GitOps<span class="chip-sub">Flux · ArgoCD · direct CR apply</span></div>
   </div>
@@ -468,7 +467,7 @@
         <span class="plane-name">Intent Plane</span>
         <span class="plane-sub"> · Gateway · self-service · auth · translation · provenance</span>
       </div>
-      <span class="test-badge">ork serve play · ork gate · ork webhook play</span>
+      <span class="test-badge">ork serve play · ork gate</span>
     </div>
     <div class="plane-body">
       <div class="pipeline">
@@ -615,11 +614,6 @@
         </div>
         <div class="test-tool-desc" style="margin-bottom:0.6rem;">Admission rules against a CR you provide directly. Reproduces webhook denials locally.</div>
 
-        <div class="test-tool">
-          <code>ork webhook play</code>
-          <span class="no-cluster">no cluster</span>
-        </div>
-        <div class="test-tool-desc">Webhook intake — branch filters, watch patterns, content fetch, full delivery chain.</div>
       </div>
 
       <div class="test-col">

@@ -3,13 +3,13 @@ package labels_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/labels"
+	"github.com/inrundev/inrun/pkg/labels"
 )
 
 func TestWithDeletionProtection(t *testing.T) {
 	base := map[string]string{
-		"app.kubernetes.io/name": "orkestra",
-		"app.kubernetes.io/tag":  "orkestra-internal",
+		"app.kubernetes.io/name": "inrun",
+		"app.kubernetes.io/tag":  "inrun-internal",
 	}
 
 	got := labels.WithDeletionProtection(base)

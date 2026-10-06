@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -27,7 +27,7 @@ import (
 //	called  — "true"
 type redisClient struct{}
 
-func (c *redisClient) Fetch(ctx context.Context, spec orktypes.ExternalCallSpec, resolvedURL, resolvedQuery, _, credential string) (map[string]interface{}, error) {
+func (c *redisClient) Fetch(ctx context.Context, spec types.ExternalCallSpec, resolvedURL, resolvedQuery, _, credential string) (map[string]interface{}, error) {
 	if resolvedQuery == "" {
 		return errorResult("redis: query: is required (e.g. \"GET mykey\")"), nil
 	}

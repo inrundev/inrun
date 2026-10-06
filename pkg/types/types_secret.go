@@ -3,7 +3,7 @@ package types
 
 // ── Secret ─────────────────────────────────────────────────────────────────────
 
-// SecretTemplateSource declares one Secret to be managed by Orkestra.
+// SecretTemplateSource declares one Secret to be managed by Inrun.
 //
 // Secret data values are static — template expressions are not evaluated
 // in Secret data entries. For dynamic configuration, use a custom Go hook.
@@ -44,7 +44,7 @@ type SecretTemplateSource struct {
 	Annotations map[string]string `yaml:"annotations,omitempty" json:"annotations,omitempty"`
 
 	// FromSecret — name of an existing Secret to copy data from.
-	// Orkestra reads this at reconcile time — copies stay in sync with the source.
+	// Inrun reads this at reconcile time — copies stay in sync with the source.
 	FromSecret string `yaml:"fromSecret,omitempty" json:"fromSecret,omitempty" validate:"omitempty"`
 
 	// FromNamespace — namespace where FromSecret lives.
@@ -107,7 +107,7 @@ type SecretTemplateSource struct {
 	// RotateAfter declares a time-based rotation threshold.
 	// When set alongside once: true, the Secret is recreated when its age
 	// exceeds this duration. The creation time is tracked via the annotation:
-	//   orkestra.orkspace.io/generated-at: "2026-04-06T08:00:00Z"
+	//   inrun.dev/generated-at: "2026-04-06T08:00:00Z"
 	//
 	// Supported formats: 30s, 5m, 12h, 90d, 1y
 	// Days (d) and years (y) are extensions beyond Go's standard duration format.
@@ -125,7 +125,7 @@ type SecretTemplateSource struct {
 	// When set, the data: block is ignored — the Secret is created as type
 	// kubernetes.io/tls with fields: tls.crt, tls.key, ca.crt
 	//
-	// Default Secret name when name is empty: "orkestra-tls"
+	// Default Secret name when name is empty: "inrun-tls"
 	// Default validFor when empty: same as rotateAfter, or "1y"
 	//
 	// Example:

@@ -3,13 +3,13 @@ package http
 import (
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/children"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/children"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 )
 
 // childrenMap is the children payload injected into prepared: type → name → raw object.
@@ -101,7 +101,7 @@ func (r *Reconciler) listChildren(owner domain.Object) childrenMap {
 }
 
 // isOwnedBy reports whether obj has an owner reference pointing to ownerUID.
-func isOwnedBy(obj metav1.Object, ownerUID types.UID) bool {
+func isOwnedBy(obj metav1.Object, ownerUID k8stypes.UID) bool {
 	for _, ref := range obj.GetOwnerReferences() {
 		if ref.UID == ownerUID {
 			return true
@@ -165,6 +165,6 @@ func (r *Reconciler) childrenEnabled() bool {
 
 // childrenConfig returns the effective children config.
 // Always call childrenEnabled() first — this panics if injection is disabled.
-func (r *Reconciler) childrenConfig() *orktypes.RemotePayloadChildrenConfig {
+func (r *Reconciler) childrenConfig() *types.RemotePayloadChildrenConfig {
 	return r.decl.Payload.EffectiveChildren()
 }

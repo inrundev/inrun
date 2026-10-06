@@ -1,56 +1,3 @@
-// Package webhook implements Orkestra's admission and conversion webhook surface
-// as a domain.Komponent that can be registered and managed alongside other
-// runtime components.
-//
-// # Stats key design
-//
-// Per-CRD stats (admission, conversion, deletion-protection, namespace-protection)
-// are keyed by "group/version/resource" — the canonical GVR string. This is the
-// merge key used by the control center when combining the runtime and gateway
-// /katalog responses.
-//
-// Conversion stats require a secondary lookup map (gvkToGVRKey) because the
-// conversion webhook handler receives objects identified by apiVersion+kind, not
-// by their resource plural. Using the full GVK ("group/version/Kind") as the key
-// — rather than just "Kind" — avoids a collision when two CRD entries share the
-// same kind name but differ by version (e.g. cronjob-v1 and cronjob-v2 both have
-// kind: CronJob). Keying by kind alone would cause the second entry in the
-// initialization loop to overwrite the first, so all recorded conversions would
-// land on whichever version happened to be iterated last.
-//
-// # Responsibility
-//
-// The webhook package owns everything required to operate Kubernetes admission
-// and conversion webhooks:
-//
-//   - TLS HTTPS server that handles /validate, /mutate, /convert,
-//     /deletion-protection, /namespace-protection, and /strict-mode-protection
-//   - Webhook configuration registration and reconciliation with the API server
-//   - All HTTP handlers for admission review processing
-//   - Periodic controller that keeps webhook configurations in sync with the Katalog
-//
-// The health package (pkg/health) handles only HTTP health and readiness probes.
-// This package handles only the HTTPS webhook surface.
-//
-// # TLS
-//
-// TLS certificates are provisioned by cmd/internal.ensureSecurity before Start()
-// is called. The certificate file paths are read from konfig.Security().Webhooks
-// after ensureSecurity writes them there. WebhookServer never generates its own
-// certificates — that is the caller's responsibility.
-//
-// # Lifecycle
-//
-// WebhookServer implements domain.Komponent:
-//
-//	New(kubeClient, katalog, konfig)
-//	  → Start(ctx)    — validate TLS, register endpoints, start HTTPS server,
-//	                    register webhook configs, start controller
-//	  → Shutdown(ctx) — stop HTTPS server, clean up webhook configs on shutdown
-//
-// All registration and reconciliation errors are logged and non-fatal. The HTTPS
-// server starts only when at least one webhook capability is declared in the Katalog.
-// When no capabilities are declared, Start() is a no-op.
 package webhook
 
 import (
@@ -61,17 +8,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/health"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/health"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/utils"
 	"k8s.io/client-go/kubernetes"
 )
 
-var _ domain.Komponent = (*WebhookServer)(nil)
+var _ domain.Component = (*WebhookServer)(nil)
 
 // certManagerIface is the subset of certmanager.Manager that WebhookServer needs
 // for TLS secret cleanup on graceful shutdown.
@@ -79,12 +26,12 @@ type certManagerIface interface {
 	DeleteCertificateAndSecret(ctx context.Context, namespace, secretName string) error
 }
 
-// WebhookServer is Orkestra's HTTPS admission and conversion webhook surface.
+// WebhookServer is Inrun's HTTPS admission and conversion webhook surface.
 // It owns the HTTPS server, all webhook handlers, registration, and the
 // housekeeper that reconciles configurations with the API server.
 //
-// Created via NewWebhookServer and registered as a domain.Komponent in
-// cmd/internal/runtime_konstructor.go. It starts after the HealthServer so that
+// Created via NewWebhookServer and registered as a domain.Component in
+// cmd/internal/runtime_construct.go. It starts after the HealthServer so that
 // /ready is live before webhook registration runs.
 type WebhookServer struct {
 	name string
@@ -108,12 +55,12 @@ type WebhookServer struct {
 	// Webhook registration options passed to registration functions.
 	hookReg WebhookRegistrationOptions
 
-	// Declarative enablement flags resolved from Katalog + konfig.
+	// Declarative enablement flags resolved from Catalog + config.
 	webhooksEnabled  bool // admission (validation + mutation)
 	convEnabled      bool // CRD conversion
 	conversionWindow int  // rolling window size for conversion stats
 
-	// Runtime protection state — set in Start() based on Katalog.
+	// Runtime protection state — set in Start() based on Catalog.
 	deletionProtection  atomic.Bool
 	namespaceProtection atomic.Bool
 	strictMode          atomic.Bool
@@ -121,26 +68,26 @@ type WebhookServer struct {
 	// Kubernetes client for webhook configuration registration.
 	kubeClient kubernetes.Interface
 
-	// Katalog drives all conditional behavior.
-	katalog *katalog.Katalog
+	// Catalog drives all conditional behavior.
+	catalog *catalog.Catalog
 
-	// Registries — populated from Katalog at construction time.
-	conversionRegistry katalog.ConversionRegistry
-	admissionRegistry  katalog.AdmissionRegistry
+	// Registries — populated from Catalog at construction time.
+	conversionRegistry catalog.ConversionRegistry
+	admissionRegistry  catalog.AdmissionRegistry
 
 	// Stats — per-CRD maps keyed by GVR string ("group/version/resource").
-	// Pre-populated from the Katalog in NewWebhookServer so each CRD gets its
-	// own counters. infraProtectionStats covers self-protection and Orkestra
+	// Pre-populated from the Catalog in NewWebhookServer so each CRD gets its
+	// own counters. infraProtectionStats covers self-protection and Inrun
 	// infra resources (Deployment, Service, etc.) that have no CRD GVR.
 	admissionStats  map[string]*health.AdmissionStats
 	conversionStats map[string]*health.ConversionStats
 	protectionStats map[string]*health.DeletionProtectionStats
 	namespaceStats  map[string]*health.NamespaceProtectionStats
-	infraProtStats  *health.DeletionProtectionStats // webhook self + Orkestra infra
+	infraProtStats  *health.DeletionProtectionStats // webhook self + Inrun infra
 	strictModeStats *health.DeletionProtectionStats // process-global; strict mode is not per-CRD
 	webhookStats    *health.WebhookStats
 
-	// Reverse-lookup tables built from the Katalog for handlers that identify
+	// Reverse-lookup tables built from the Catalog for handlers that identify
 	// the target CRD by name/kind rather than GVR.
 	crdNameToGVRKey map[string]string // "plural.group" → "group/version/resource"
 	gvkToGVRKey     map[string]string // "group/version/Kind" → "group/version/resource"
@@ -171,8 +118,8 @@ type WebhookServer struct {
 	certSecretName      string
 	certSecretNamespace string
 
-	// Full konfig for namespace access during shutdown cleanup.
-	konfig *konfig.Konfig
+	// Full config for namespace access during shutdown cleanup.
+	config *config.Config
 
 	// tokenReloader is called by the housekeeper when an Gateway API token secret
 	// goes missing. Set via SetTokenReloader from the APIServer.
@@ -187,18 +134,18 @@ type certSecretBundle struct {
 }
 
 // NewWebhookServer constructs a WebhookServer and resolves all declarative
-// webhook behavior from the Katalog and Konfig. No I/O is performed — Start()
+// webhook behavior from the Catalog and Config. No I/O is performed — Start()
 // activates servers, registration, and reconciliation.
-func NewWebhookServer(kubeClient kubernetes.Interface, kat *katalog.Katalog, kfg *konfig.Konfig) *WebhookServer {
+func NewWebhookServer(kubeClient kubernetes.Interface, kat *catalog.Catalog, kfg *config.Config) *WebhookServer {
 	admissionFailurePolicy := admissionv1FailurePolicyType(kat.WebhooksFailurePolicy())
 
 	hookReg := WebhookRegistrationOptions{
-		FailurePolicy:          admissionFailurePolicy,
-		Port:                   kfg.HTTPSPortInt32(),
-		ServiceName:            kat.WebhooksServiceName(),
-		ServiceNamespace:       kfg.Cluster().Namespace(),
-		TLSCertFile:            kfg.Security().Webhooks.TLSCert,
-		OrkestraResourceLabels: labels.OrkestraResourceLabels(),
+		FailurePolicy:       admissionFailurePolicy,
+		Port:                kfg.HTTPSPortInt32(),
+		ServiceName:         kat.WebhooksServiceName(),
+		ServiceNamespace:    kfg.Cluster().Namespace(),
+		TLSCertFile:         kfg.Security().Webhooks.TLSCert,
+		InrunResourceLabels: labels.InrunResourceLabels(),
 	}
 
 	convWindow := kat.ConversionWindow()
@@ -206,8 +153,8 @@ func NewWebhookServer(kubeClient kubernetes.Interface, kat *katalog.Katalog, kfg
 	ws := &WebhookServer{
 		name:               "webhook server",
 		kubeClient:         kubeClient,
-		katalog:            kat,
-		konfig:             kfg,
+		catalog:            kat,
+		config:             kfg,
 		httpsPort:          kfg.HTTPSPort(),
 		tlsCert:            kfg.Security().Webhooks.TLSCert,
 		tlsKey:             kfg.Security().Webhooks.TLSKey,
@@ -229,8 +176,8 @@ func NewWebhookServer(kubeClient kubernetes.Interface, kat *katalog.Katalog, kfg
 		gvkToGVRKey:        make(map[string]string),
 	}
 
-	// Pre-populate per-CRD stat instances and reverse-lookup tables from the Katalog.
-	// Every CRD gets its own counters so the gateway /katalog can return accurate
+	// Pre-populate per-CRD stat instances and reverse-lookup tables from the Catalog.
+	// Every CRD gets its own counters so the gateway /catalog can return accurate
 	// per-CRD breakdowns without mixing traffic across resources.
 	// Must use Enabled() — raw Spec.CRDs entries have GroupVersionResource unset.
 	for _, crd := range kat.Enabled() {
@@ -298,7 +245,7 @@ func crdGVKKey(group, version, kind string) string {
 // ── Per-CRD stat accessors ────────────────────────────────────────────────────
 // These helpers return the per-CRD stats instance for a given GVR key.
 // A nil-safe fallback is created on first miss (defensive; should not occur for
-// CRDs declared in the Katalog).
+// CRDs declared in the Catalog).
 
 func (ws *WebhookServer) admissionStatsFor(gvrKey string) *health.AdmissionStats {
 	if s, ok := ws.admissionStats[gvrKey]; ok {
@@ -337,7 +284,7 @@ func (ws *WebhookServer) namespaceStatsFor(gvrKey string) *health.NamespaceProte
 }
 
 // SetCertManager provides the cert manager for TLS secret cleanup on graceful shutdown.
-// Set only when Orkestra generated self-signed certificates (certMgr == nil when the
+// Set only when Inrun generated self-signed certificates (certMgr == nil when the
 // user provided explicit TLS_CERT/TLS_KEY).
 func (ws *WebhookServer) SetCertManager(m certManagerIface) {
 	ws.certMgr = m
@@ -351,7 +298,7 @@ func (ws *WebhookServer) SetTokenReloader(fn func(ctx context.Context) error) {
 }
 
 // SetCertBundle stores the TLS bundle and Secret coordinates so the housekeeper can
-// restore the Secret if it is deleted during a rollout. Only called when Orkestra
+// restore the Secret if it is deleted during a rollout. Only called when Inrun
 // generated the certificates (not when the user provides TLS_CERT/TLS_KEY).
 func (ws *WebhookServer) SetCertBundle(certPEM, keyPEM, caPEM []byte, secretName, namespace string) {
 	ws.certSecretData = &certSecretBundle{
@@ -367,15 +314,15 @@ func (ws *WebhookServer) SetCertBundle(certPEM, keyPEM, caPEM []byte, secretName
 // launches the HTTPS server, performs best-effort webhook registration with the
 // API server, and starts the reconciliation controller.
 //
-// Start is a no-op when no webhook capabilities are declared in the Katalog or
+// Start is a no-op when no webhook capabilities are declared in the Catalog or
 // when the process is not running inside a Kubernetes cluster.
 func (ws *WebhookServer) Start(ctx context.Context) error {
 	ws.ctx, ws.cancel = context.WithCancel(ctx)
 	ws.started.Store(true)
 
-	kat := ws.katalog
+	kat := ws.catalog
 
-	// Resolve protection state from the Katalog.
+	// Resolve protection state from the Catalog.
 	if kat.IsDeletionProtectionEnabled() && kat.DeletionProtectionGVRs() != nil {
 		ws.deletionProtection.Store(true)
 	}
@@ -511,7 +458,7 @@ func (ws *WebhookServer) Start(ctx context.Context) error {
 				logger.Info().
 					Str("config", deletionProtectionWebhookConfigName).
 					Int("rules", len(dpGVRs)).
-					Int("protected", len(ws.katalog.DeletionProtectedCRDNames())).
+					Int("protected", len(ws.catalog.DeletionProtectedCRDNames())).
 					Msg("deletion protection webhook registered")
 			}
 		}()
@@ -574,7 +521,7 @@ func (ws *WebhookServer) Start(ctx context.Context) error {
 }
 
 // Shutdown gracefully stops the HTTPS server and performs declarative cleanup
-// of webhook configurations as declared in the Katalog.
+// of webhook configurations as declared in the Catalog.
 func (ws *WebhookServer) Shutdown(ctx context.Context) {
 	if ws.cancel != nil {
 		ws.cancel()
@@ -588,7 +535,7 @@ func (ws *WebhookServer) Shutdown(ctx context.Context) {
 		logger.Error().Err(err).Msg("webhook HTTPS server shutdown error")
 	}
 
-	kat := ws.katalog
+	kat := ws.catalog
 
 	// Cleanup admission webhook.
 	cleanupOpts := WebhookCleanupOptions{}
@@ -638,9 +585,9 @@ func (ws *WebhookServer) Shutdown(ctx context.Context) {
 			kat.NamespaceProtectionCleanupOnShutdown() ||
 			kat.DeletionProtectionCleanupOnShutdown()
 
-	if ws.certMgr != nil && shouldCleanupTLS && ws.konfig != nil {
-		ns := ws.konfig.Cluster().Namespace()
-		if err := ws.certMgr.DeleteCertificateAndSecret(ctx, ns, konfig.DefaultInternalTLSName()); err != nil {
+	if ws.certMgr != nil && shouldCleanupTLS && ws.config != nil {
+		ns := ws.config.Cluster().Namespace()
+		if err := ws.certMgr.DeleteCertificateAndSecret(ctx, ns, config.DefaultInternalTLSName()); err != nil {
 			logger.Error().Err(err).Msg("tls secret cleanup error")
 		} else {
 			logger.Info().Str("namespace", ns).Msg("tls secret removed on shutdown")
@@ -654,9 +601,9 @@ func (ws *WebhookServer) Name() string { return ws.name }
 // Started reports whether Start() has been called.
 func (ws *WebhookServer) Started() bool { return ws.started.Load() }
 
-// ── Stats getters — used by BuildGatewayKatalogHandler ───────────────────────
+// ── Stats getters — used by BuildGatewayCatalogHandler ───────────────────────
 // All stat getters are keyed by GVR string ("group/version/resource") so the
-// gateway /katalog handler can serve accurate per-CRD breakdowns.
+// gateway /catalog handler can serve accurate per-CRD breakdowns.
 
 // AdmissionStatsFor returns the admission stats for the CRD identified by gvrKey.
 // Returns nil when no stats exist for that key (CRD has no admission webhooks).
@@ -680,7 +627,7 @@ func (ws *WebhookServer) NamespaceStatsFor(gvrKey string) *health.NamespaceProte
 }
 
 // InfraProtectionStats returns the process-level deletion-protection stats that
-// cover the webhook configuration itself and Orkestra infra resources (Deployment,
+// cover the webhook configuration itself and Inrun infra resources (Deployment,
 // Service, etc.) — events not attributable to a specific CRD GVR.
 func (ws *WebhookServer) InfraProtectionStats() *health.DeletionProtectionStats {
 	return ws.infraProtStats

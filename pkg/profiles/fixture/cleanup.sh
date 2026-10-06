@@ -6,4 +6,4 @@ echo "Cleaning up profile-probe fixture..."
 kubectl delete -f cr.yaml --ignore-not-found
 kubectl delete -f crd.yaml --ignore-not-found
 
-echo "Done. Stop 'ork run' with Ctrl+C if still running."
+echo "Done. Stop 'inrun' with Ctrl+C if still running."

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -22,7 +22,7 @@ func readResourceGroup(
 	ctx context.Context,
 	kube kubeclient.Interface,
 	obj domain.Object,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	gvr schema.GroupVersionResource,
 	names []resolvedChildName,
 ) map[string]interface{} {
@@ -82,8 +82,8 @@ func readCustomResourceGroup(
 	ctx context.Context,
 	kube kubeclient.Interface,
 	obj domain.Object,
-	resolver *orktmpl.Resolver,
-	srcs []orktypes.CustomResourceTemplateSource,
+	resolver *template.Resolver,
+	srcs []types.CustomResourceTemplateSource,
 ) map[string]interface{} {
 	result := map[string]interface{}{}
 
@@ -146,7 +146,7 @@ func readCustomResourceGroup(
 
 // readEndpointSlicesForServices lists the EndpointSlice for each declared Service
 // using the kubernetes.io/service-name label. The result is keyed by service name
-// so templates can reference {{ .children.endpointslice }} for single-service katalogs.
+// so templates can reference {{ .children.endpointslice }} for single-service catalogs.
 func readEndpointSlicesForServices(
 	ctx context.Context,
 	kube kubeclient.Interface,
@@ -196,8 +196,8 @@ func firstValue(m map[string]interface{}) interface{} {
 
 // mergeTemplates merges onCreate and onReconcile templates into one set.
 // We read back resources declared in either block — both produce child resources.
-func mergeTemplates(operatorBox *orktypes.OperatorBoxConfig) orktypes.HookTemplates {
-	t := orktypes.HookTemplates{}
+func mergeTemplates(operatorBox *types.OperatorBoxConfig) types.HookTemplates {
+	t := types.HookTemplates{}
 	if onCreate := operatorBox.EffectiveOnCreate(); onCreate != nil {
 		t.Deployments = append(t.Deployments, onCreate.Deployments...)
 		t.ReplicaSets = append(t.ReplicaSets, onCreate.ReplicaSets...)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // HPAProfile is a named HPA scaling behavior preset.
@@ -33,13 +33,13 @@ type HPAProfileResult struct {
 	CPUTarget int32
 
 	// Behavior is the fully-expanded behavior block with Profile cleared.
-	Behavior orktypes.HPABehavior
+	Behavior types.HPABehavior
 }
 
 // ApplyHPAProfile expands a named HPA profile into a CPUTarget and behavior block.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyHPAProfile(name string, reg *orktypes.ProfileRegistry) (HPAProfileResult, error) {
+func ApplyHPAProfile(name string, reg *types.ProfileRegistry) (HPAProfileResult, error) {
 	if reg != nil {
 		if def, found := reg.LookupHPA(name); found {
 			r := HPAProfileResult{}
@@ -60,19 +60,19 @@ func ApplyHPAProfile(name string, reg *orktypes.ProfileRegistry) (HPAProfileResu
 	case HPAWeb:
 		return HPAProfileResult{
 			CPUTarget: 70,
-			Behavior: orktypes.HPABehavior{
-				ScaleUp: &orktypes.HPAScalingRules{
+			Behavior: types.HPABehavior{
+				ScaleUp: &types.HPAScalingRules{
 					StabilizationWindowSeconds: 0,
 					SelectPolicy:               "Max",
-					Policies: []orktypes.HPAScalingPolicy{
+					Policies: []types.HPAScalingPolicy{
 						{Type: "Percent", Value: 100, PeriodSeconds: 15},
 						{Type: "Pods", Value: 4, PeriodSeconds: 15},
 					},
 				},
-				ScaleDown: &orktypes.HPAScalingRules{
+				ScaleDown: &types.HPAScalingRules{
 					StabilizationWindowSeconds: 300,
 					SelectPolicy:               "Min",
-					Policies: []orktypes.HPAScalingPolicy{
+					Policies: []types.HPAScalingPolicy{
 						{Type: "Percent", Value: 10, PeriodSeconds: 60},
 					},
 				},
@@ -82,19 +82,19 @@ func ApplyHPAProfile(name string, reg *orktypes.ProfileRegistry) (HPAProfileResu
 	case HPAAPI:
 		return HPAProfileResult{
 			CPUTarget: 60,
-			Behavior: orktypes.HPABehavior{
-				ScaleUp: &orktypes.HPAScalingRules{
+			Behavior: types.HPABehavior{
+				ScaleUp: &types.HPAScalingRules{
 					StabilizationWindowSeconds: 0,
 					SelectPolicy:               "Max",
-					Policies: []orktypes.HPAScalingPolicy{
+					Policies: []types.HPAScalingPolicy{
 						{Type: "Percent", Value: 100, PeriodSeconds: 15},
 						{Type: "Pods", Value: 4, PeriodSeconds: 15},
 					},
 				},
-				ScaleDown: &orktypes.HPAScalingRules{
+				ScaleDown: &types.HPAScalingRules{
 					StabilizationWindowSeconds: 600,
 					SelectPolicy:               "Min",
-					Policies: []orktypes.HPAScalingPolicy{
+					Policies: []types.HPAScalingPolicy{
 						{Type: "Percent", Value: 5, PeriodSeconds: 60},
 					},
 				},
@@ -104,19 +104,19 @@ func ApplyHPAProfile(name string, reg *orktypes.ProfileRegistry) (HPAProfileResu
 	case HPALatencySensitive:
 		return HPAProfileResult{
 			CPUTarget: 50,
-			Behavior: orktypes.HPABehavior{
-				ScaleUp: &orktypes.HPAScalingRules{
+			Behavior: types.HPABehavior{
+				ScaleUp: &types.HPAScalingRules{
 					StabilizationWindowSeconds: 0,
 					SelectPolicy:               "Max",
-					Policies: []orktypes.HPAScalingPolicy{
+					Policies: []types.HPAScalingPolicy{
 						{Type: "Percent", Value: 200, PeriodSeconds: 15},
 						{Type: "Pods", Value: 10, PeriodSeconds: 15},
 					},
 				},
-				ScaleDown: &orktypes.HPAScalingRules{
+				ScaleDown: &types.HPAScalingRules{
 					StabilizationWindowSeconds: 900,
 					SelectPolicy:               "Min",
-					Policies: []orktypes.HPAScalingPolicy{
+					Policies: []types.HPAScalingPolicy{
 						{Type: "Percent", Value: 5, PeriodSeconds: 120},
 					},
 				},
@@ -126,18 +126,18 @@ func ApplyHPAProfile(name string, reg *orktypes.ProfileRegistry) (HPAProfileResu
 	case HPABatch:
 		return HPAProfileResult{
 			CPUTarget: 80,
-			Behavior: orktypes.HPABehavior{
-				ScaleUp: &orktypes.HPAScalingRules{
+			Behavior: types.HPABehavior{
+				ScaleUp: &types.HPAScalingRules{
 					StabilizationWindowSeconds: 30,
 					SelectPolicy:               "Max",
-					Policies: []orktypes.HPAScalingPolicy{
+					Policies: []types.HPAScalingPolicy{
 						{Type: "Percent", Value: 100, PeriodSeconds: 60},
 					},
 				},
-				ScaleDown: &orktypes.HPAScalingRules{
+				ScaleDown: &types.HPAScalingRules{
 					StabilizationWindowSeconds: 120,
 					SelectPolicy:               "Min",
-					Policies: []orktypes.HPAScalingPolicy{
+					Policies: []types.HPAScalingPolicy{
 						{Type: "Percent", Value: 50, PeriodSeconds: 60},
 					},
 				},
@@ -147,18 +147,18 @@ func ApplyHPAProfile(name string, reg *orktypes.ProfileRegistry) (HPAProfileResu
 	case HPACostOptimized:
 		return HPAProfileResult{
 			CPUTarget: 80,
-			Behavior: orktypes.HPABehavior{
-				ScaleUp: &orktypes.HPAScalingRules{
+			Behavior: types.HPABehavior{
+				ScaleUp: &types.HPAScalingRules{
 					StabilizationWindowSeconds: 180,
 					SelectPolicy:               "Min",
-					Policies: []orktypes.HPAScalingPolicy{
+					Policies: []types.HPAScalingPolicy{
 						{Type: "Percent", Value: 25, PeriodSeconds: 60},
 					},
 				},
-				ScaleDown: &orktypes.HPAScalingRules{
+				ScaleDown: &types.HPAScalingRules{
 					StabilizationWindowSeconds: 60,
 					SelectPolicy:               "Max",
-					Policies: []orktypes.HPAScalingPolicy{
+					Policies: []types.HPAScalingPolicy{
 						{Type: "Percent", Value: 50, PeriodSeconds: 60},
 					},
 				},

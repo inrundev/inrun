@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // httpProtocolClient wraps executeHTTPCall for the ProtocolClient interface.
@@ -12,7 +12,7 @@ import (
 // returns a Go error. The runner reads entry["error"] and enforces continueOnError.
 type httpProtocolClient struct{}
 
-func (c *httpProtocolClient) Fetch(ctx context.Context, spec orktypes.ExternalCallSpec, resolvedURL, _, resolvedBody, credential string) (map[string]interface{}, error) {
+func (c *httpProtocolClient) Fetch(ctx context.Context, spec types.ExternalCallSpec, resolvedURL, _, resolvedBody, credential string) (map[string]interface{}, error) {
 	authHeader := "Authorization"
 	if spec.Auth != nil && spec.Auth.Header != "" {
 		authHeader = spec.Auth.Header

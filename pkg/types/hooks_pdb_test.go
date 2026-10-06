@@ -3,16 +3,16 @@ package types_test
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func crdWithPDBOnCreate(pdbs ...orktypes.PDBTemplateSource) orktypes.CRDEntry {
-	return orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnCreate: &orktypes.HookTemplates{
+func crdWithPDBOnCreate(pdbs ...types.PDBTemplateSource) types.CRDEntry {
+	return types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnCreate: &types.HookTemplates{
 					PodDisruptionBudgets: pdbs,
 				},
 			},
@@ -21,27 +21,27 @@ func crdWithPDBOnCreate(pdbs ...orktypes.PDBTemplateSource) orktypes.CRDEntry {
 }
 
 func TestCollectPDBProfileEntries_Empty(t *testing.T) {
-	c := orktypes.CRDEntry{}
+	c := types.CRDEntry{}
 	assert.Empty(t, c.CollectPDBProfileEntries())
 }
 
 func TestCollectPDBProfileEntries_NoBehavior(t *testing.T) {
-	c := crdWithPDBOnCreate(orktypes.PDBTemplateSource{Name: "pdb"})
+	c := crdWithPDBOnCreate(types.PDBTemplateSource{Name: "pdb"})
 	assert.Empty(t, c.CollectPDBProfileEntries())
 }
 
 func TestCollectPDBProfileEntries_BehaviorNoProfile(t *testing.T) {
-	c := crdWithPDBOnCreate(orktypes.PDBTemplateSource{
+	c := crdWithPDBOnCreate(types.PDBTemplateSource{
 		Name:     "pdb",
-		Behavior: &orktypes.PDBBehavior{},
+		Behavior: &types.PDBBehavior{},
 	})
 	assert.Empty(t, c.CollectPDBProfileEntries())
 }
 
 func TestCollectPDBProfileEntries_ProfileReturned(t *testing.T) {
-	c := crdWithPDBOnCreate(orktypes.PDBTemplateSource{
+	c := crdWithPDBOnCreate(types.PDBTemplateSource{
 		Name:     "my-pdb",
-		Behavior: &orktypes.PDBBehavior{Profile: "zero-downtime"},
+		Behavior: &types.PDBBehavior{Profile: "zero-downtime"},
 	})
 	entries := c.CollectPDBProfileEntries()
 	require.Len(t, entries, 1)
@@ -52,9 +52,9 @@ func TestCollectPDBProfileEntries_ProfileReturned(t *testing.T) {
 }
 
 func TestCollectPDBProfileEntries_Mixed_MinAvailable(t *testing.T) {
-	c := crdWithPDBOnCreate(orktypes.PDBTemplateSource{
+	c := crdWithPDBOnCreate(types.PDBTemplateSource{
 		Name: "pdb",
-		Behavior: &orktypes.PDBBehavior{
+		Behavior: &types.PDBBehavior{
 			Profile:      "rolling",
 			MinAvailable: "1",
 		},
@@ -65,9 +65,9 @@ func TestCollectPDBProfileEntries_Mixed_MinAvailable(t *testing.T) {
 }
 
 func TestCollectPDBProfileEntries_Mixed_MaxUnavailable(t *testing.T) {
-	c := crdWithPDBOnCreate(orktypes.PDBTemplateSource{
+	c := crdWithPDBOnCreate(types.PDBTemplateSource{
 		Name: "pdb",
-		Behavior: &orktypes.PDBBehavior{
+		Behavior: &types.PDBBehavior{
 			Profile:        "relaxed",
 			MaxUnavailable: "1",
 		},
@@ -78,8 +78,8 @@ func TestCollectPDBProfileEntries_Mixed_MaxUnavailable(t *testing.T) {
 }
 
 func TestCollectPDBProfileEntries_TemplateExpr(t *testing.T) {
-	c := crdWithPDBOnCreate(orktypes.PDBTemplateSource{
-		Behavior: &orktypes.PDBBehavior{Profile: "{{ .Spec.PDBProfile }}"},
+	c := crdWithPDBOnCreate(types.PDBTemplateSource{
+		Behavior: &types.PDBBehavior{Profile: "{{ .Spec.PDBProfile }}"},
 	})
 	entries := c.CollectPDBProfileEntries()
 	require.Len(t, entries, 1)
@@ -87,12 +87,12 @@ func TestCollectPDBProfileEntries_TemplateExpr(t *testing.T) {
 }
 
 func TestCollectPDBProfileEntries_OnReconcile(t *testing.T) {
-	c := orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnReconcile: &orktypes.HookTemplates{
-					PodDisruptionBudgets: []orktypes.PDBTemplateSource{
-						{Name: "pdb", Behavior: &orktypes.PDBBehavior{Profile: "relaxed"}},
+	c := types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnReconcile: &types.HookTemplates{
+					PodDisruptionBudgets: []types.PDBTemplateSource{
+						{Name: "pdb", Behavior: &types.PDBBehavior{Profile: "relaxed"}},
 					},
 				},
 			},

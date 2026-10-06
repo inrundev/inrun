@@ -1,9 +1,0 @@
-apiVersion: rkguide.demo/v1
-kind: WebApp
-metadata:
-  name: my-app
-  namespace: default
-spec:
-  image: ghcr.io/orkspace/orkestra-dev-server:0.7.5
-  port: 9999
-  replicas: 1

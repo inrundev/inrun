@@ -4,10 +4,10 @@ package types
 // RuntimeConfig governs the operatorBox as a long-lived entity, not a single reconcile cycle.
 // Covers autoscaling the worker pool, finalizer lifecycle, namespace guards, and deletion protection.
 type RuntimeConfig struct {
-	// Finalizers is the per-CRD finalizer list. Falls back to the Katalog-level finalizer.
+	// Finalizers is the per-CRD finalizer list. Falls back to the Catalog-level finalizer.
 	Finalizers []string `yaml:"finalizers,omitempty" json:"finalizers,omitempty" validate:"omitempty"`
 
-	// RemoveFinalizers strips all Orkestra finalizers from this CRD's CRs. Testing only.
+	// RemoveFinalizers strips all Inrun finalizers from this CRD's CRs. Testing only.
 	RemoveFinalizers bool `yaml:"removeFinalizers,omitempty" json:"removeFinalizers,omitempty"`
 
 	// DeletionProtection overrides the global deletion protection policy for this CRD.
@@ -48,7 +48,7 @@ type CleanupConfig struct {
 	Or []Condition `yaml:"or,omitempty" json:"or,omitempty"`
 
 	// DeleteAfter is an optional grace period between the condition being met and
-	// the actual deletion. Orkestra annotates the CR with the first-met timestamp
+	// the actual deletion. Inrun annotates the CR with the first-met timestamp
 	// and re-evaluates on the next reconcile cycle. Zero means delete immediately.
 	DeleteAfter Duration `yaml:"deleteAfter,omitempty" json:"deleteAfter,omitempty"`
 }

@@ -1,7 +1,7 @@
-# https://orkestra.sh/docs/reference/schema/e2e/
-# This file is the source of truth for documentation/reference/schema/04-e2e/08-complete-example.md
-# Run `make ork` to regenerate that page after any change here.
-apiVersion: orkestra.orkspace.io/v1
+# https://inrun.dev/docs/reference/schema/e2e/
+# This file is the source of truth for docs/reference/schema/04-e2e/08-complete-example.md
+# Run `make inrun` to regenerate that page after any change here.
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: e2e-probe
@@ -10,17 +10,17 @@ metadata:
     Every subcommand supported by kubectl: must have at least one checkpoint here.
     When you add a new subcommand, add a checkpoint that exercises it.
     Two CRs run in parallel from cr.yaml:
-      my-probe-server — orkestra-dev-server on port 9999 (port-forward, JSON assertions)
+      my-probe-server — inrun-dev-server on port 9999 (port-forward, JSON assertions)
       my-probe-exec   — nginx:alpine on port 80 (exec via sh)
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./cr.yaml
 
   cluster:
     provider: kind
-    name: ork-e2e-probe
+    name: inrun-e2e-probe
     reuse: false
 
   expect:
@@ -114,16 +114,16 @@ spec:
       timeout: 60s
       kubectl:
         logs:
-          - labelSelector: orkestra-owner=my-probe-server
+          - labelSelector: inrun-owner=my-probe-server
             namespace: default
             outputContains: "autoscale-metrics"
-          - labelSelector: orkestra-owner=my-probe-exec
+          - labelSelector: inrun-owner=my-probe-exec
             namespace: default
             outputContains: "Configuration complete"
           - leaderElection:
-              lease: orkestra-konductor
-              namespace: orkestra-system
-            outputContains: "became konductor"
+              lease: inrun-leader
+              namespace: inrun-system
+            outputContains: "became leader"
 
     # ── kubectl.describe ─────────────────────────────────────────────────────
     - name: Describe shows expected resource state
@@ -146,7 +146,7 @@ spec:
       timeout: 60s
       kubectl:
         exec:
-          - labelSelector: orkestra-owner=my-probe-exec
+          - labelSelector: inrun-owner=my-probe-exec
             namespace: default
             command: [sh, -c, "echo e2e-ready"]
             equals: e2e-ready
@@ -263,7 +263,7 @@ spec:
       timeout: 30s
       kubectl:
         cp:
-          - labelSelector: orkestra-owner=my-probe-exec
+          - labelSelector: inrun-owner=my-probe-exec
             namespace: default
             src: /etc/nginx/nginx.conf
             outputContains: worker_processes
@@ -276,11 +276,11 @@ spec:
         top:
           - kind: pod
             namespace: default
-            labelSelector: orkestra-owner=my-probe-server
+            labelSelector: inrun-owner=my-probe-server
             outputContains: my-probe-server
           - kind: pod
             namespace: default
-            labelSelector: orkestra-owner=my-probe-exec
+            labelSelector: inrun-owner=my-probe-exec
             outputContains: my-probe-exec
 
     # ── commands: (arbitrary shell) ──────────────────────────────────────────
@@ -308,7 +308,7 @@ spec:
 
     # ── kubectl.scale ────────────────────────────────────────────────────────
     # Use a standalone deployment — scaling a reconciled deployment is immediately
-    # undone by the Orkestra reconciler restoring the CR's replica count.
+    # undone by the Inrun reconciler restoring the CR's replica count.
     - name: Scale standalone deployment up to 2 replicas
       after: cr-applied
       timeout: 60s
@@ -397,10 +397,10 @@ spec:
           namespace: default
       # kubectl logs
       logs:
-        - labelSelector: orkestra-owner=my-probe-server
+        - labelSelector: inrun-owner=my-probe-server
           namespace: default
           since: 2m
-        - labelSelector: orkestra-owner=my-probe-exec
+        - labelSelector: inrun-owner=my-probe-exec
           namespace: default
           since: 2m
       # kubectl describe
@@ -421,7 +421,7 @@ spec:
           namespace: default
       # kubectl exec
       exec:
-        - labelSelector: orkestra-owner=my-probe-exec
+        - labelSelector: inrun-owner=my-probe-exec
           namespace: default
           command: [sh, -c, "echo on-failure-exec-ok"]
     commands:

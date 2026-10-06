@@ -72,7 +72,7 @@ type CrossCRDDeclaration struct {
 	//   crd: database
 	CRD string `yaml:"crd" json:"crd"`
 
-	// LabelSelector keys the katalog registry by CRD-entry labelSelector for label-based informer lookup.
+	// LabelSelector keys the catalog registry by CRD-entry labelSelector for label-based informer lookup.
 	LabelSelector Labels `yaml:"labelSelector,omitempty" json:"labelSelector,omitempty"`
 
 	// Selector identifies which CR instance to observe.
@@ -139,7 +139,7 @@ func (d *CrossCRDDeclaration) IsCRDBased() bool {
 }
 
 // HasCRDAndLabelDecl reports whether this cross declaration uses has both CRD and labels.
-// An error enforced by ork validate
+// An error enforced by inrun validate
 func (d *CrossCRDDeclaration) HasCRDAndLabelDecl() bool {
 	if d.Empty() {
 		return false
@@ -177,28 +177,28 @@ func (sel CrossSelector) IsNameBased() bool {
 
 // CrossSource declares how to fetch cross-binary/cluster data for a CRD.
 // If Endpoint is provided, it is used as-is (raw HTTP fetch).
-// If Host is provided, Orkestra constructs the URL based on Type.
+// If Host is provided, Inrun constructs the URL based on Type.
 //
 // Supported Type values:
-//   - "info"    → /katalog/<crd>/cr/<ns>/<name>
-//   - "metrics" → /katalog/<crd>
-//   - "health"  → /katalog/<crd>/health
-//   - "events"  → /katalog/<crd>/cr/<ns>/<name>/events
+//   - "info"    → /catalog/<crd>/cr/<ns>/<name>
+//   - "metrics" → /catalog/<crd>
+//   - "health"  → /catalog/<crd>/health
+//   - "events"  → /catalog/<crd>/cr/<ns>/<name>/events
 //
 // The endpoint must return the same JSON shape as the informer cache path —
-// i.e., the Orkestra CR detail endpoint format.
+// i.e., the Inrun CR detail endpoint format.
 // Namespace is optional; defaults to the CR's namespace when omitted.
 type CrossSource struct {
-	// Endpoint is a fully-qualified URL. If set, Orkestra uses it directly
+	// Endpoint is a fully-qualified URL. If set, Inrun uses it directly
 	// and ignores Host/Protocol/Namespace. Template expressions supported.
 	Endpoint string `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
 
-	// Host is the base URL of a remote Orkestra runtime, e.g.:
-	//   http://orkestra-runtime.loader-system:8080
+	// Host is the base URL of a remote Inrun runtime, e.g.:
+	//   http://inrun-runtime.loader-system:8080
 	// Combined with Type to build the final URL.
 	Host string `yaml:"host,omitempty" json:"host,omitempty"`
 
-	// Protocol selects which Orkestra-native endpoint to call.
+	// Protocol selects which Inrun-native endpoint to call.
 	// One of: "info", "metrics", "health", "events".
 	// Default: "info".
 	Protocol ONCOProtocol `yaml:"protocol,omitempty" json:"protocol,omitempty"`
@@ -226,12 +226,12 @@ type Auth struct {
 	Token string `yaml:"token,omitempty" json:"token,omitempty"`
 
 	// SecretRef locates a Kubernetes Secret whose data key holds a bearer token
-	// Mutually exclusive with Token. ork validate enforces this
+	// Mutually exclusive with Token. inrun validate enforces this
 	SecretRef *APISecretRef `yaml:"secretRef,omitempty" json:"secretRef,omitempty"`
 }
 
 // HasEndpoint reports whether this cross read has endpoint configured
-// for non-orkestra surfaces (operators, APIs)
+// for non-inrun surfaces (operators, APIs)
 func (s *CrossSource) HasEndpoint() bool {
 	if s == nil {
 		return false

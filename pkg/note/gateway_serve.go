@@ -3,7 +3,7 @@ package note
 import (
 	"text/template"
 
-	"github.com/orkspace/orkestra/pkg/labels"
+	"github.com/inrundev/inrun/pkg/labels"
 )
 
 // serveNotes registers notes that read the gateway serve-provenance annotations
@@ -27,7 +27,7 @@ func serveNotes() template.FuncMap {
 	}
 }
 
-// noteGetServeTarget returns the orkestra.orkspace.io/serve-target annotation.
+// noteGetServeTarget returns the inrun.dev/serve-target annotation.
 // Returns "" when the annotation is absent or when obj is not a CR map.
 //
 //	{{ getServeTarget . }}  → "smartapp"
@@ -35,7 +35,7 @@ func noteGetServeTarget(obj interface{}) string {
 	return metaAnnotationField(obj, labels.AnnotationServeTarget)
 }
 
-// noteGetServeAlias returns the orkestra.orkspace.io/serve-alias annotation.
+// noteGetServeAlias returns the inrun.dev/serve-alias annotation.
 // Returns "" when the CR was submitted directly via its primary target (no alias).
 //
 //	{{ getServeAlias . }}  → "public"
@@ -43,7 +43,7 @@ func noteGetServeAlias(obj interface{}) string {
 	return metaAnnotationField(obj, labels.AnnotationServeAlias)
 }
 
-// noteGetServeSource returns the orkestra.orkspace.io/serve-source annotation.
+// noteGetServeSource returns the inrun.dev/serve-source annotation.
 // Returns "" for direct Gateway API calls. Set by webhook integrations.
 // Known values: "github", "gitlab", "slack", "pagerduty", "generic".
 //

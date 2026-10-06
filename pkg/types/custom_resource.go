@@ -8,10 +8,10 @@ import (
 )
 
 // CustomResourceTemplateSource declares one arbitrary Kubernetes resource —
-// any Kind not covered by one of Orkestra's built-in resource types (a
+// any Kind not covered by one of Inrun's built-in resource types (a
 // third-party CRD such as cert-manager's Certificate, or your own CRD).
 // It is schema-agnostic: the spec block is written and applied exactly as
-// declared in the Katalog, with no built-in knowledge of its structure.
+// declared in the Catalog, with no built-in knowledge of its structure.
 // Kubernetes enforces the resource's own CRD schema at apply time.
 //
 // Example:
@@ -48,7 +48,7 @@ type CustomResourceTemplateSource struct {
 
 	// Metadata — name, namespace, labels, and annotations for the resource.
 	// name is required. namespace is required for namespaced CRDs and must be
-	// omitted for cluster-scoped ones; Orkestra determines the correct scope
+	// omitted for cluster-scoped ones; Inrun determines the correct scope
 	// via discovery unless namespaced is set explicitly.
 	//
 	//	metadata:
@@ -60,11 +60,11 @@ type CustomResourceTemplateSource struct {
 
 	// Spec is the conventional spec block for CRDs. It is schema-agnostic and
 	// may contain templated values. Only template syntax is validated by
-	// Orkestra; structural/schema validation is deferred to the API server.
+	// Inrun; structural/schema validation is deferred to the API server.
 	Spec map[string]any `json:"spec,omitempty" yaml:"spec,omitempty"`
 
 	// Status — an initial status block, useful when bootstrapping a resource
-	// that expects one to be present immediately. Orkestra only writes this if
+	// that expects one to be present immediately. Inrun only writes this if
 	// hasStatus resolves to true. Prefer letting the resource's own controller
 	// populate status rather than setting this.
 	Status map[string]any `json:"status,omitempty" yaml:"status,omitempty"`
@@ -140,7 +140,7 @@ type CustomResourceTemplateSource struct {
 }
 
 // CustomResourceMetadata mirrors the small subset of metav1.ObjectMeta that
-// Orkestra needs for templating, identity, and children tracking.
+// Inrun needs for templating, identity, and children tracking.
 //
 // Important notes:
 //   - Name is required after templating. The reconciler will error if Name is empty.
@@ -182,7 +182,7 @@ type CustomResourceMetadata struct {
 }
 
 // IsNamespaced returns whether the declaration intends the resource to be
-// namespaced. It implements Orkestra's defaulting rule: unspecified (nil)
+// namespaced. It implements Inrun's defaulting rule: unspecified (nil)
 // defaults to true (namespaced). Callers should still verify actual CRD scope
 // via discovery before performing API operations.
 func (c *CustomResourceTemplateSource) IsNamespaced() bool {
@@ -196,7 +196,7 @@ func (c *CustomResourceTemplateSource) IsNamespaced() bool {
 	return *c.Metadata.Namespaced
 }
 
-// WithStatus returns whether Orkestra should attempt to write/patch the
+// WithStatus returns whether Inrun should attempt to write/patch the
 // resource's status subresource.
 //
 // Behaviour:

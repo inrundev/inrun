@@ -7,35 +7,35 @@ import (
 	"testing"
 )
 
-func makeKatalogPatternDir(t *testing.T) string {
+func makeCatalogPatternDir(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "katalog.yaml"), []byte("kind: Katalog\n"), 0644); err != nil {
-		t.Fatalf("writing katalog.yaml: %v", err)
+	if err := os.WriteFile(filepath.Join(dir, "catalog.yaml"), []byte("kind: Catalog\n"), 0644); err != nil {
+		t.Fatalf("writing catalog.yaml: %v", err)
 	}
 	return dir
 }
 
-func TestValidatePatternStructure_KatalogOnly_Valid(t *testing.T) {
-	dir := makeKatalogPatternDir(t)
+func TestValidatePatternStructure_CatalogOnly_Valid(t *testing.T) {
+	dir := makeCatalogPatternDir(t)
 	if err := validatePatternStructure(dir, "https://example.com/registry", "v1.0"); err != nil {
-		t.Errorf("katalog.yaml alone must pass: %v", err)
+		t.Errorf("catalog.yaml alone must pass: %v", err)
 	}
 }
 
-func TestValidatePatternStructure_MotifOnly_Valid(t *testing.T) {
+func TestValidatePatternStructure_ModuleOnly_Valid(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "motif.yaml"), []byte("kind: Motif\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "module.yaml"), []byte("kind: Module\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := validatePatternStructure(dir, "https://example.com/registry", "v1.0"); err != nil {
-		t.Errorf("motif.yaml alone must pass: %v", err)
+		t.Errorf("module.yaml alone must pass: %v", err)
 	}
 }
 
 func TestValidatePatternStructure_MissingPrimaryFile(t *testing.T) {
 	dir := t.TempDir()
-	// Only a crd.yaml — no katalog.yaml or motif.yaml
+	// Only a crd.yaml — no catalog.yaml or module.yaml
 	os.WriteFile(filepath.Join(dir, "crd.yaml"), []byte("content"), 0644)
 	if err := validatePatternStructure(dir, "https://example.com/registry", "v1.0"); err == nil {
 		t.Error("missing primary file must return error")

@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkpv "github.com/orkspace/orkestra/pkg/resources/pvs"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/pvs"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunPVs resolves and applies PersistentVolume template declarations.
@@ -18,14 +18,14 @@ import (
 func RunPVs(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.PVTemplateSource,
+	srcs []types.PVTemplateSource,
 	update bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -33,14 +33,14 @@ func RunPVs(
 	}
 
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[name] {
-					if err := orkpv.DeleteIfOwned(ctx, kube, owner, name); err != nil {
+					if err := pvs.DeleteIfOwned(ctx, kube, owner, name); err != nil {
 						return fmt.Errorf("pvs[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -57,18 +57,18 @@ func RunPVs(
 			return fmt.Errorf("pvs[%d]: %w", i, err)
 		}
 
-		spec := orkpv.Resolve(resolved, resolver.OwnerName())
+		spec := pvs.Resolve(resolved, resolver.OwnerName())
 
 		if update {
-			if err := orkpv.Update(ctx, kube, owner, spec); err != nil {
+			if err := pvs.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("pvs[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkpv.Create(ctx, kube, owner, spec); err != nil {
+			if err := pvs.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("pvs[%d].create: %w", i, err)
 			}
 			if src.Reconcile {
-				if err := orkpv.Update(ctx, kube, owner, spec); err != nil {
+				if err := pvs.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("pvs[%d].reconcile: %w", i, err)
 				}
 			}

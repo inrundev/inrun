@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // startupHandler — GET /startup

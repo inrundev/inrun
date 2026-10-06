@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -31,20 +31,20 @@ type ResolvedCustomResourceSpec struct {
 	// Used together with APIVersion to resolve the GVR for dynamic client calls.
 	Kind string `json:"kind" yaml:"kind"`
 
-	// Metadata mirrors the subset of metav1.ObjectMeta Orkestra needs.
+	// Metadata mirrors the subset of metav1.ObjectMeta Inrun needs.
 	// Implementations must ensure metadata.Name is present after templating.
 	// Namespace is required for namespaced CRDs; for cluster-scoped CRDs the
 	// namespace field should be empty. Whether a CRD is namespaced is determined
 	// by discovery/validation and not by this struct alone.
-	Metadata orktypes.CustomResourceMetadata `json:"metadata" yaml:"metadata"`
+	Metadata types.CustomResourceMetadata `json:"metadata" yaml:"metadata"`
 
 	// Spec is the conventional spec block for CRDs. It is schema-agnostic and
 	// may contain templated values. Only template syntax is validated by
-	// Orkestra; structural/schema validation is deferred to the API server.
+	// Inrun; structural/schema validation is deferred to the API server.
 	Spec map[string]any `json:"spec,omitempty" yaml:"spec,omitempty"`
 
 	// Status is allowed in the declaration for convenience (for example when
-	// bootstrapping resources that expect an initial status). Orkestra will
+	// bootstrapping resources that expect an initial status). Inrun will
 	// only attempt to write status if HasStatus() returns true.
 	// Users should prefer letting the controller that owns the CR populate status.
 	Status map[string]any `json:"status,omitempty" yaml:"status,omitempty"`
@@ -77,7 +77,7 @@ type ResolvedCustomResourceSpec struct {
 
 // Create creates the custom resource described by spec if it does not already exist.
 // Idempotent — skips if resource exists. Owner reference set for cascade deletion.
-func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedCustomResourceSpec, labelMgr *orklabels.Manager, shouldProtect bool) error {
+func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedCustomResourceSpec, labelMgr *labels.Manager, shouldProtect bool) error {
 	if err := validateSpec(spec); err != nil {
 		return fmt.Errorf("custom.Create: %w", err)
 	}
@@ -136,7 +136,7 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 
 // Update reconciles an existing custom resource to match the resolved spec.
 // If the resource does not exist, it will be created.
-func Update(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedCustomResourceSpec, labelMgr *orklabels.Manager, shouldProtect bool) error {
+func Update(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedCustomResourceSpec, labelMgr *labels.Manager, shouldProtect bool) error {
 	if err := validateSpec(spec); err != nil {
 		return fmt.Errorf("custom.Update: %w", err)
 	}
@@ -205,14 +205,14 @@ func Update(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 			labelMgr.EnsureDeletionProtectionLabel(updated, shouldProtect)
 		}
 		if desired.Object["spec"] != nil {
-			updated.Object["spec"] = orktmpl.ToJSONSafe(desired.Object["spec"])
+			updated.Object["spec"] = template.ToJSONSafe(desired.Object["spec"])
 		}
 		// Merge other top-level fields from desired (conservative: overwrite)
 		for k, v := range desired.Object {
 			if k == "apiVersion" || k == "kind" || k == "metadata" || k == "spec" || k == "status" {
 				continue
 			}
-			updated.Object[k] = orktmpl.ToJSONSafe(v)
+			updated.Object[k] = template.ToJSONSafe(v)
 		}
 
 		_, err = resourceIfc.Update(ctx, updated, metav1.UpdateOptions{})
@@ -226,13 +226,13 @@ func Update(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 			}
 			updated = latest.DeepCopy()
 			if desired.Object["spec"] != nil {
-				updated.Object["spec"] = orktmpl.ToJSONSafe(desired.Object["spec"])
+				updated.Object["spec"] = template.ToJSONSafe(desired.Object["spec"])
 			}
 			for k, v := range desired.Object {
 				if k == "apiVersion" || k == "kind" || k == "metadata" || k == "spec" || k == "status" {
 					continue
 				}
-				updated.Object[k] = orktmpl.ToJSONSafe(v)
+				updated.Object[k] = template.ToJSONSafe(v)
 			}
 			_, err = resourceIfc.Update(ctx, updated, metav1.UpdateOptions{})
 		}
@@ -250,7 +250,7 @@ func Update(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 }
 
 // DeleteIfOwned deletes the custom resource if it exists and is owned by the given owner.
-// Skips deletion if the resource was created by orkdoctor or if Orkestra is not the owner.
+// Skips deletion if Inrun is not the owner.
 func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface, owner domain.Object, name, namespace, apiVersion, kind string) error {
 	// Build GVK and resolve GVR
 	gvk, err := utils.GVKFromFields(apiVersion, kind)
@@ -271,14 +271,10 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface, owner domain.
 		return fmt.Errorf("custom.DeleteIfOwned: getting %q: %w", name, err)
 	}
 
-	// Skip deletion if created by orkdoctor
 	labelsMap := existing.GetLabels()
-	if labelsMap[orklabels.LabelCreatedBy] == orklabels.CreatedByOrkDoctor {
-		return nil
-	}
 
 	// Only delete if we own it
-	if labelsMap[orklabels.OrkestraOwner] != orklabels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if labelsMap[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 
@@ -308,14 +304,14 @@ func buildUnstructured(spec ResolvedCustomResourceSpec, owner domain.Object, gvk
 		u.SetNamespace(namespace)
 	}
 
-	// Labels: merge user-declared + Orkestra managed orklabels. Copy rather than
+	// Labels: merge user-declared + Inrun managed labels. Copy rather than
 	// mutate spec.Metadata.Labels directly — that map may be shared/reused
 	// (e.g. across forEach expansions of the same source).
 	lbls := make(map[string]string, len(spec.Metadata.Labels)+3)
 	for k, v := range spec.Metadata.Labels {
 		lbls[k] = v
 	}
-	lbls = orklabels.StampOrkestraLabels(lbls, owner.GetName(), owner.GetAnnotations())
+	lbls = labels.StampInrunLabels(lbls, owner.GetName(), owner.GetAnnotations())
 	u.SetLabels(lbls)
 
 	// Annotations: copy for the same reason as Labels above.
@@ -370,7 +366,7 @@ func buildUnstructured(spec ResolvedCustomResourceSpec, owner domain.Object, gvk
 
 // Resolve builds a ResolvedCustomResourceSpec from a CustomResource.
 // Template expressions must already be evaluated by template.Resolver before calling.
-func Resolve(src orktypes.CustomResourceTemplateSource, ownerName string) ResolvedCustomResourceSpec {
+func Resolve(src types.CustomResourceTemplateSource, ownerName string) ResolvedCustomResourceSpec {
 	spec := ResolvedCustomResourceSpec{
 		APIVersion:    src.APIVersion,
 		Kind:          src.Kind,

@@ -1,8 +1,8 @@
 // pkg/merger/helm.go
 //
-// Helm-chart Katalog imports (imports.helm:) — authoring-time only. Neither
-// the runtime nor the gateway binary ever loads a Katalog with a helm:
-// import: production Katalogs are pre-merged (ork generate bundle) into
+// Helm-chart Catalog imports (imports.helm:) — authoring-time only. Neither
+// the runtime nor the gateway binary ever loads a Catalog with a helm:
+// import: production Catalogs are pre-merged (inrun generate bundle) into
 // plain Kubernetes manifests before deployment — see helm_stub.go for what
 // those two builds get instead. Excluding this file from them removes the
 // entire Helm SDK (and its openpgp/containerd transitive dependencies) from
@@ -18,9 +18,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/types"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
@@ -29,9 +29,9 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-// loadHelmSource renders a Helm chart and extracts Katalog CRD definitions.
-// The chart must contain at least one template with kind: Katalog.
-func (m *Merger) loadHelmSource(src orktypes.HelmSource) (map[string]orktypes.CRDEntry, error) {
+// loadHelmSource renders a Helm chart and extracts Catalog CRD definitions.
+// The chart must contain at least one template with kind: Catalog.
+func (m *Merger) loadHelmSource(src types.HelmSource) (map[string]types.CRDEntry, error) {
 	logger.Debug().
 		Str("repo", src.Repo).
 		Str("chart", src.Chart).
@@ -53,7 +53,7 @@ func (m *Merger) loadHelmSource(src orktypes.HelmSource) (map[string]orktypes.CR
 // downloading or cloning if necessary.
 // cleanup is non-nil when a temp directory was created and must be removed.
 // When refresh is true, the local cache is bypassed and the source is fetched fresh.
-func resolveChartPath(src orktypes.HelmSource, refresh bool) (chartPath string, cleanup func(), err error) {
+func resolveChartPath(src types.HelmSource, refresh bool) (chartPath string, cleanup func(), err error) {
 	switch {
 	case isGitURL(src.Repo):
 		// ── Git source ────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ func isGitURL(s string) bool {
 }
 
 // resolveLocalChart validates and returns the local chart path.
-func resolveLocalChart(src orktypes.HelmSource) (string, func(), error) {
+func resolveLocalChart(src types.HelmSource) (string, func(), error) {
 	chartPath := src.Repo
 	if src.Chart != "" {
 		chartPath = filepath.Join(src.Repo, src.Chart)
@@ -122,7 +122,7 @@ func resolveLocalChart(src orktypes.HelmSource) (string, func(), error) {
 // resolveGitChart clones the git repository and returns the chart directory.
 // On a cache hit the clone is skipped entirely. When refresh is true the cache
 // is bypassed and the repo is cloned fresh.
-func resolveGitChart(src orktypes.HelmSource, refresh bool) (string, func(), error) {
+func resolveGitChart(src types.HelmSource, refresh bool) (string, func(), error) {
 	if !refresh {
 		if cached, ok := helmGitCached(src); ok {
 			logger.Debug().Str("repo", src.Repo).Msg("merger: git chart served from cache")
@@ -130,7 +130,7 @@ func resolveGitChart(src orktypes.HelmSource, refresh bool) (string, func(), err
 		}
 	}
 
-	tmpDir, err := os.MkdirTemp("", "orkestra-git-*")
+	tmpDir, err := os.MkdirTemp("", "inrun-git-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("creating temp dir: %w", err)
 	}
@@ -182,7 +182,7 @@ func resolveGitChart(src orktypes.HelmSource, refresh bool) (string, func(), err
 // resolveRemoteChart pulls a chart from a remote Helm repository.
 // On a cache hit the pull is skipped entirely. When refresh is true the cache
 // is bypassed and the chart is pulled fresh.
-func resolveRemoteChart(src orktypes.HelmSource, refresh bool) (string, func(), error) {
+func resolveRemoteChart(src types.HelmSource, refresh bool) (string, func(), error) {
 	if !refresh {
 		if cached, ok := helmRepoCached(src); ok {
 			logger.Debug().Str("repo", src.Repo).Str("chart", src.Chart).Msg("merger: helm chart served from cache")
@@ -194,7 +194,7 @@ func resolveRemoteChart(src orktypes.HelmSource, refresh bool) (string, func(), 
 	cfg := &action.Configuration{}
 
 	repoEntry := &repo.Entry{
-		Name: "orkestra-tmp",
+		Name: "inrun-tmp",
 		URL:  src.Repo,
 	}
 
@@ -207,7 +207,7 @@ func resolveRemoteChart(src orktypes.HelmSource, refresh bool) (string, func(), 
 		return "", nil, fmt.Errorf("downloading repo index from %q: %w", src.Repo, err)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "orkestra-helm-*")
+	tmpDir, err := os.MkdirTemp("", "inrun-helm-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("creating temp dir: %w", err)
 	}
@@ -236,8 +236,8 @@ func resolveRemoteChart(src orktypes.HelmSource, refresh bool) (string, func(), 
 	return cached, func() {}, nil
 }
 
-// renderAndExtract renders a chart from a local path and extracts Katalog CRDs.
-func renderAndExtract(src orktypes.HelmSource, chartPath string) (map[string]orktypes.CRDEntry, error) {
+// renderAndExtract renders a chart from a local path and extracts Catalog CRDs.
+func renderAndExtract(src types.HelmSource, chartPath string) (map[string]types.CRDEntry, error) {
 	settings := cli.New()
 
 	// ── Load value files ──────────────────────────────────────────────────────
@@ -253,7 +253,7 @@ func renderAndExtract(src orktypes.HelmSource, chartPath string) (map[string]ork
 			if err != nil {
 				return nil, fmt.Errorf("fetching remote values %q: %w", resolved, err)
 			}
-			tmp, err := writeTempFile(data, "orkestra-values-*.yaml")
+			tmp, err := writeTempFile(data, "inrun-values-*.yaml")
 			if err != nil {
 				return nil, err
 			}
@@ -282,7 +282,7 @@ func renderAndExtract(src orktypes.HelmSource, chartPath string) (map[string]ork
 	cfg := &action.Configuration{}
 	install := action.NewInstall(cfg)
 	install.DryRun = true
-	install.ReleaseName = "orkestra-render"
+	install.ReleaseName = "inrun-render"
 	install.ClientOnly = true
 	install.IncludeCRDs = true
 
@@ -291,15 +291,15 @@ func renderAndExtract(src orktypes.HelmSource, chartPath string) (map[string]ork
 		return nil, fmt.Errorf("rendering chart %q: %w", src.Chart, err)
 	}
 
-	return extractKatalogCRDs(release.Manifest, src.Chart)
+	return extractCatalogCRDs(release.Manifest, src.Chart)
 }
 
-// renderAndExtract renders a Helm chart and extracts Katalog CRD definitions.
+// renderAndExtract renders a Helm chart and extracts Catalog CRD definitions.
 
-// extractKatalogCRDs parses rendered Helm output and extracts
-// CRD definitions from any template with kind: Katalog.
-func extractKatalogCRDs(manifest, chartName string) (map[string]orktypes.CRDEntry, error) {
-	allCRDs := make(map[string]orktypes.CRDEntry)
+// extractCatalogCRDs parses rendered Helm output and extracts
+// CRD definitions from any template with kind: Catalog.
+func extractCatalogCRDs(manifest, chartName string) (map[string]types.CRDEntry, error) {
+	allCRDs := make(map[string]types.CRDEntry)
 
 	// Split on YAML document separator — one chart renders multiple templates
 	docs := strings.Split(manifest, "\n---\n")
@@ -310,30 +310,30 @@ func extractKatalogCRDs(manifest, chartName string) (map[string]orktypes.CRDEntr
 			continue
 		}
 
-		katalog, err := parseKatalogDoc([]byte(doc), "helm:"+chartName)
+		catalog, err := parseCatalogDoc([]byte(doc), "helm:"+chartName)
 		if err != nil {
-			return nil, err // malformed Katalog — hard error
+			return nil, err // malformed Catalog — hard error
 		}
-		if katalog == nil {
-			continue // not a Katalog — skip
+		if catalog == nil {
+			continue // not a Catalog — skip
 		}
 
-		for name, crd := range katalog.Spec.CRDs {
+		for name, crd := range catalog.Spec.CRDs {
 			crd.Name = name
 			allCRDs[name] = crd
 		}
 
 		logger.Debug().
 			Str("chart", chartName).
-			Int("crds", len(katalog.Spec.CRDs)).
+			Int("crds", len(catalog.Spec.CRDs)).
 			Msg("merger: extracted CRDs from helm template")
 	}
 
 	if len(allCRDs) == 0 {
 		return nil, fmt.Errorf(
-			"chart %q produced no Katalog templates — "+
+			"chart %q produced no Catalog templates — "+
 				"ensure at least one template has kind: %s",
-			chartName, konfig.KatalogKind(),
+			chartName, config.CatalogKind(),
 		)
 	}
 

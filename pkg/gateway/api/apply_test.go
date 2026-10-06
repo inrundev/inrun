@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/registry/simulate"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/registry/simulate"
+	"github.com/inrundev/inrun/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -31,25 +31,25 @@ func appRequestBody(name string) []byte {
 	return body
 }
 
-// appRequestKatalog builds a real, lookup-ready *katalog.Katalog with one
+// appRequestCatalog builds a real, lookup-ready *catalog.Catalog with one
 // serve-enabled "AppRequest" CRD.
-func appRequestKatalog(serveName string) *katalog.Katalog {
-	return katalog.NewFromEntryPointers(map[string]*orktypes.CRDEntry{
+func appRequestCatalog(serveName string) *catalog.Catalog {
+	return catalog.NewFromEntryPointers(map[string]*types.CRDEntry{
 		"apprequest": {
-			APITypes: orktypes.APITypes{
+			APITypes: types.APITypes{
 				Group:   "platform.myorg.io",
 				Version: "v1",
 				Kind:    "AppRequest",
 				Plural:  "apprequests",
 			},
-			Serve: &orktypes.ServeConfig{Enabled: true, Name: serveName},
+			Serve: &types.ServeConfig{Enabled: true, Name: serveName},
 		},
 	})
 }
 
 func TestApplyHandler_MissingName_Rejected(t *testing.T) {
 	kube := simulate.NewFakeKubeclient(runtime.NewScheme())
-	h := applyHandler(kube, &ClusterRegistry{}, appRequestKatalog(""))
+	h := applyHandler(kube, &ClusterRegistry{}, appRequestCatalog(""))
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/apply", bytes.NewReader(appRequestBody("")))
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
@@ -74,7 +74,7 @@ func TestApplyHandler_MissingName_Rejected(t *testing.T) {
 
 func TestApplyHandler_NameSupplied_NotRejected(t *testing.T) {
 	kube := simulate.NewFakeKubeclient(runtime.NewScheme())
-	h := applyHandler(kube, &ClusterRegistry{}, appRequestKatalog(""))
+	h := applyHandler(kube, &ClusterRegistry{}, appRequestCatalog(""))
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/apply", bytes.NewReader(appRequestBody("payments-api")))
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
@@ -91,7 +91,7 @@ func TestApplyHandler_NameSupplied_NotRejected(t *testing.T) {
 
 func TestApplyHandler_SerbeName_ResolvesWithoutClientName(t *testing.T) {
 	kube := simulate.NewFakeKubeclient(runtime.NewScheme())
-	h := applyHandler(kube, &ClusterRegistry{}, appRequestKatalog("resolved-name"))
+	h := applyHandler(kube, &ClusterRegistry{}, appRequestCatalog("resolved-name"))
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/apply", bytes.NewReader(appRequestBody("")))
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
@@ -152,7 +152,7 @@ func TestApplyResponse_JSON(t *testing.T) {
 		Name:       "my-app",
 		Namespace:  "team-payments",
 		Kind:       "PlatformResource",
-		APIVersion: "platform.orkestra.io/v1alpha1",
+		APIVersion: "platform.inrun.dev/v1alpha1",
 		PollURL:    "/api/v1/resources/PlatformResource/team-payments/my-app",
 	}
 	b, err := json.Marshal(resp)

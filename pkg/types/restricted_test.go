@@ -4,11 +4,11 @@ package types_test
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func TestRestrictedNamespaces_IsRestricted(t *testing.T) {
-	r := orktypes.RestrictedNamespaces{
+	r := types.RestrictedNamespaces{
 		"kube-system",
 		"cert-manager",
 		"kube-*",
@@ -47,7 +47,7 @@ func TestRestrictedNamespaces_IsRestricted(t *testing.T) {
 }
 
 func TestRestrictedNamespaces_Empty(t *testing.T) {
-	r := orktypes.RestrictedNamespaces{}
+	r := types.RestrictedNamespaces{}
 	if r.IsRestricted("kube-system") {
 		t.Error("empty restrictions should never match")
 	}
@@ -57,8 +57,8 @@ func TestRestrictedNamespaces_Empty(t *testing.T) {
 }
 
 func TestRestrictedNamespaces_Merge_Deduplication(t *testing.T) {
-	a := orktypes.RestrictedNamespaces{"kube-system", "cert-manager"}
-	b := orktypes.RestrictedNamespaces{"cert-manager", "monitoring"} // cert-manager duplicated
+	a := types.RestrictedNamespaces{"kube-system", "cert-manager"}
+	b := types.RestrictedNamespaces{"cert-manager", "monitoring"} // cert-manager duplicated
 
 	merged := a.Merge(b)
 
@@ -78,10 +78,10 @@ func TestRestrictedNamespaces_Merge_Deduplication(t *testing.T) {
 }
 
 func TestRestrictedNamespaces_Merge_Additive(t *testing.T) {
-	// Komposer-level restrictions
-	platform := orktypes.RestrictedNamespaces{"kube-system", "cert-manager"}
+	// Stack-level restrictions
+	platform := types.RestrictedNamespaces{"kube-system", "cert-manager"}
 	// CRD-level adds more — cannot remove platform restrictions
-	crd := orktypes.RestrictedNamespaces{"monitoring"}
+	crd := types.RestrictedNamespaces{"monitoring"}
 
 	merged := platform.Merge(crd)
 
@@ -94,8 +94,8 @@ func TestRestrictedNamespaces_Merge_Additive(t *testing.T) {
 }
 
 func TestRestrictedNamespaces_Merge_WithWildcards(t *testing.T) {
-	a := orktypes.RestrictedNamespaces{"kube-*"}
-	b := orktypes.RestrictedNamespaces{"*-system"}
+	a := types.RestrictedNamespaces{"kube-*"}
+	b := types.RestrictedNamespaces{"*-system"}
 
 	merged := a.Merge(b)
 

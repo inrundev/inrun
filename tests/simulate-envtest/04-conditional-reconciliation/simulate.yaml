@@ -1,9 +1,9 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: conditional-reconciliation-envtest
   description: >
-    Suite for the kordinator pre-reconcile gate.
+    Suite for the coordinator pre-reconcile gate.
     Two scenarios: gate passes (Deployment created) and gate discards (no Deployment).
 
 imports:

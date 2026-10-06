@@ -34,7 +34,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/note"
+	"github.com/inrundev/inrun/pkg/note"
 	"github.com/robfig/cron/v3"
 )
 

@@ -3,7 +3,7 @@ package children
 import (
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 

@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/profiles"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -63,7 +63,7 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 }
 
 // Apply creates or updates an HPA using Server-Side Apply.
-// Sends only the fields Orkestra owns; k8s-injected defaults are invisible.
+// Sends only the fields Inrun owns; k8s-injected defaults are invisible.
 func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedHPASpec) error {
 	if err := validateSpec(spec); err != nil {
 		return fmt.Errorf("hpa.Apply: invalid spec: %w", err)
@@ -84,7 +84,7 @@ func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, 
 
 	if _, err = kube.Clientset().AutoscalingV2().HorizontalPodAutoscalers(namespace).Patch(
 		ctx, spec.Name, k8stypes.ApplyPatchType, body,
-		metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
+		metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
 	); err != nil {
 		return fmt.Errorf("hpa.Apply: %w", err)
 	}
@@ -143,7 +143,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 		}
 		return err
 	}
-	if existing.Labels[labels.OrkestraOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if existing.Labels[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 	return kube.Clientset().AutoscalingV2().HorizontalPodAutoscalers(namespace).
@@ -152,7 +152,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 
 // Resolve builds a ResolvedHPASpec from an HPATemplateSource.
 // All template expressions must be evaluated before calling here.
-func Resolve(src orktypes.HPATemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedHPASpec {
+func Resolve(src types.HPATemplateSource, ownerName string, reg *types.ProfileRegistry) ResolvedHPASpec {
 	spec := ResolvedHPASpec{
 		Name:           src.Name,
 		Namespace:      src.Namespace,
@@ -214,7 +214,7 @@ func Resolve(src orktypes.HPATemplateSource, ownerName string, reg *orktypes.Pro
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 func buildHPA(owner domain.Object, spec ResolvedHPASpec, namespace string) *autoscalingv2.HorizontalPodAutoscaler {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 	minR := spec.MinReplicas
 
 	hpa := &autoscalingv2.HorizontalPodAutoscaler{
@@ -258,7 +258,7 @@ func buildHPA(owner domain.Object, spec ResolvedHPASpec, namespace string) *auto
 	return hpa
 }
 
-func buildK8sBehavior(b *orktypes.HPABehavior) *autoscalingv2.HorizontalPodAutoscalerBehavior {
+func buildK8sBehavior(b *types.HPABehavior) *autoscalingv2.HorizontalPodAutoscalerBehavior {
 	k8s := &autoscalingv2.HorizontalPodAutoscalerBehavior{}
 
 	if b.ScaleUp != nil {
@@ -270,7 +270,7 @@ func buildK8sBehavior(b *orktypes.HPABehavior) *autoscalingv2.HorizontalPodAutos
 	return k8s
 }
 
-func buildK8sScalingRules(r *orktypes.HPAScalingRules) *autoscalingv2.HPAScalingRules {
+func buildK8sScalingRules(r *types.HPAScalingRules) *autoscalingv2.HPAScalingRules {
 	k8s := &autoscalingv2.HPAScalingRules{}
 
 	sw := r.StabilizationWindowSeconds

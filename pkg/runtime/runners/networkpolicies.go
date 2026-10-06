@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orknp "github.com/orkspace/orkestra/pkg/resources/networkpolicies"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/networkpolicies"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunNetworkPolicies resolves and applies NetworkPolicy template declarations.
@@ -22,15 +22,15 @@ import (
 func RunNetworkPolicies(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.NetworkPolicyTemplateSource,
+	srcs []types.NetworkPolicyTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -42,7 +42,7 @@ func RunNetworkPolicies(
 	}
 
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 		ns, _ := resolver.Resolve(src.Namespace)
@@ -57,7 +57,7 @@ func RunNetworkPolicies(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orknp.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := networkpolicies.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("networkPolicies[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -74,7 +74,7 @@ func RunNetworkPolicies(
 			return fmt.Errorf("networkPolicies[%d]: %w", i, err)
 		}
 
-		spec := orknp.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
+		spec := networkpolicies.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
 
 		if len(resolved.ToNamespaces) > 0 {
 			namespaces, err := resolver.ResolveStringSlice(resolved.ToNamespaces)
@@ -90,11 +90,11 @@ func RunNetworkPolicies(
 				nsSpec := spec
 				nsSpec.Namespace = targetNs
 				if shouldSync {
-					if err := orknp.Update(ctx, kube, owner, nsSpec); err != nil {
+					if err := networkpolicies.Update(ctx, kube, owner, nsSpec); err != nil {
 						return fmt.Errorf("networkPolicies[%d].update namespace=%s: %w", i, targetNs, err)
 					}
 				} else {
-					if err := orknp.Create(ctx, kube, owner, nsSpec); err != nil {
+					if err := networkpolicies.Create(ctx, kube, owner, nsSpec); err != nil {
 						return fmt.Errorf("networkPolicies[%d].create namespace=%s: %w", i, targetNs, err)
 					}
 				}
@@ -103,15 +103,15 @@ func RunNetworkPolicies(
 		}
 
 		if update {
-			if err := orknp.Update(ctx, kube, owner, spec); err != nil {
+			if err := networkpolicies.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("networkPolicies[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orknp.Create(ctx, kube, owner, spec); err != nil {
+			if err := networkpolicies.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("networkPolicies[%d].create: %w", i, err)
 			}
 			if src.Reconcile {
-				if err := orknp.Update(ctx, kube, owner, spec); err != nil {
+				if err := networkpolicies.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("networkPolicies[%d].reconcile: %w", i, err)
 				}
 			}

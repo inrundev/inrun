@@ -36,27 +36,27 @@ on:
         description: 'Container registry base (e.g., ghcr.io/owner)'
         required: false
         type: string
-        default: 'ghcr.io/orkspace'
-      ork:
-        description: 'Shorthand for orkestra (used in helm, namespace, etc.)'
+        default: 'ghcr.io/inrundev'
+      inrun:
+        description: 'Shorthand for inrun (used in helm, namespace, etc.)'
         required: false
         type: string
-        default: 'orkestra'
-      ork_image:
+        default: 'inrun'
+      inrun_image:
         description: 'Runtime image name (without registry)'
         required: false
         type: string
-        default: 'orkestra'
-      orkcc_image:
-        description: 'Control center image name (without registry)'
+        default: 'inrun'
+      inrun-console_image:
+        description: 'Console image name (without registry)'
         required: false
         type: string
-        default: 'orkestra-cc'
+        default: 'inrun-console'
       helm_repo_url:
         description: 'Helm repository URL'
         required: false
         type: string
-        default: 'https://orkspace.github.io/orkestra'
+        default: 'https://inrundev.github.io/inrun'
       helm_chart:
         description: 'Helm chart reference (repo/chart)'
         required: false
@@ -66,7 +66,7 @@ on:
         description: 'Homebrew tap (owner/tap)'
         required: false
         type: string
-        default: 'orkspace/tap'
+        default: 'inrundev/tap'
 
 jobs:
   summary:
@@ -83,7 +83,7 @@ jobs:
           echo "|-----------|--------|" >> "$GITHUB_STEP_SUMMARY"
           icon() { [ "$1" = "success" ] && echo "✅" || ([ "$1" = "skipped" ] && echo "⏭️" || echo "❌"); }
           echo "| Runtime binaries | $(icon ${{ inputs.build_result }}) ${{ inputs.build_result }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Control Center binaries | $(icon ${{ inputs.build_result }}) ${{ inputs.build_result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Console binaries | $(icon ${{ inputs.build_result }}) ${{ inputs.build_result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Example packs | $(icon ${{ inputs.examples_result }}) ${{ inputs.examples_result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Container images | $(icon ${{ inputs.image_result }}) ${{ inputs.image_result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| GPG signing + GitHub Release | $(icon ${{ inputs.release_result }}) ${{ inputs.release_result }} |" >> "$GITHUB_STEP_SUMMARY"
@@ -96,16 +96,16 @@ jobs:
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo '```bash' >> "$GITHUB_STEP_SUMMARY"
             echo "# Install CLI tools (macOS/Linux)" >> "$GITHUB_STEP_SUMMARY"
-            echo "brew tap ${{ inputs.brew_tap }} && brew install ork orkcc" >> "$GITHUB_STEP_SUMMARY"
+            echo "brew tap ${{ inputs.brew_tap }} && brew install inrun inrun-console" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "# Windows users: download ork_windows_amd64.zip and orkcc_windows_amd64.zip from the release assets" >> "$GITHUB_STEP_SUMMARY"
+            echo "# Windows users: download inrun_windows_amd64.zip and inrun-console_windows_amd64.zip from the release assets" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "# Deploy with Helm (Runtime + Control Center)" >> "$GITHUB_STEP_SUMMARY"
-            echo "helm repo add ${{ inputs.ork }} ${{ inputs.helm_repo_url }}" >> "$GITHUB_STEP_SUMMARY"
-            echo "helm install ${{ inputs.ork }} ${{ inputs.helm_chart }} -n ${{ inputs.ork }}-system --create-namespace" >> "$GITHUB_STEP_SUMMARY"
+            echo "# Deploy with Helm (Runtime + Console)" >> "$GITHUB_STEP_SUMMARY"
+            echo "helm repo add ${{ inputs.inrun }} ${{ inputs.helm_repo_url }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "helm install ${{ inputs.inrun }} ${{ inputs.helm_chart }} -n ${{ inputs.inrun }}-system --create-namespace" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "# Run Control Center separately" >> "$GITHUB_STEP_SUMMARY"
-            echo "orkcc -u http://localhost:8080" >> "$GITHUB_STEP_SUMMARY"
+            echo "# Run Console separately" >> "$GITHUB_STEP_SUMMARY"
+            echo "inrun-console -u http://localhost:8080" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
           else
             echo "### ❌ Release ${TAG} had failures — check jobs above" >> "$GITHUB_STEP_SUMMARY"

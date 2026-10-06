@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/runtime/sentinel"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/runtime/sentinel"
 )
 
 // ── FailPolicy ────────────────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ func (g *GateConditions) ExternalCalls() []ExternalCallSpec {
 
 // PreReconcileConfig controls whether an event enters the queue and whether a dequeued
 // item reaches the reconciler. Two gates: enqueueGate fires at the informer before the
-// object enters the queue; reconcileGate fires at the kordinator after dequeue. Events
+// object enters the queue; reconcileGate fires at the coordinator after dequeue. Events
 // that fail either gate are silently dropped — the reconciler is never invoked.
 type PreReconcileConfig struct {
 	// External declares HTTP or gRPC calls made once before either gate is evaluated.
@@ -199,17 +199,17 @@ type PreReconcileConfig struct {
 	// Valid values: SentinelGenerationChanged, SentinelLabelsChanged, SentinelAnnotationsChanged,
 	// SentinelDeletionStarted, SentinelFinalizersChanged and 9more.
 	//
-	// ork validate fails if a sentinel is used in a gate template but not declared
+	// inrun validate fails if a sentinel is used in a gate template but not declared
 	// here, or if a sentinel is used outside the preReconcile context.
 	Sentinels []string `yaml:"sentinels,omitempty" json:"sentinels,omitempty"`
 
 	// EnqueueGate declares informer-level gate conditions evaluated in handleEvent
 	// before the object enters the work queue. When the gate fires the object is
-	// silently dropped — it never reaches the kordinator or reconciler.
-	// No health state change; kordinator is never involved.
+	// silently dropped — it never reaches the coordinator or reconciler.
+	// No health state change; coordinator is never involved.
 	EnqueueGate *GateConditions `yaml:"enqueueGate,omitempty" json:"enqueueGate,omitempty"`
 
-	// ReconcileGate declares kordinator-level gate conditions evaluated after
+	// ReconcileGate declares coordinator-level gate conditions evaluated after
 	// dequeue, before the reconciler is called. When conditions are not met
 	// the item is discarded and CRD health is set to gated.
 	ReconcileGate *GateConditions `yaml:"reconcileGate,omitempty" json:"reconcileGate,omitempty"`
@@ -446,11 +446,11 @@ func (rc *RequeueConfig) Empty() bool {
 func (p *PreReconcileConfig) Empty() bool { return p == nil }
 func (r *ReconcilerConfig) Empty() bool   { return r == nil }
 
-// OperatorBoxConfig is the unit of reconciliation in Orkestra.
+// OperatorBoxConfig is the unit of reconciliation in Inrun.
 //
 // CRDs in, operators out.
 //
-// Each CRD entry in a Katalog gets its own operatorBox:
+// Each CRD entry in a Catalog gets its own operatorBox:
 // an isolated informer, queue, worker pool, reconciler, health state, and metrics —
 // independent of every other CRD in the same process.
 //
@@ -615,7 +615,7 @@ func (c *OperatorBoxConfig) GetEventEntry(eventName string) *EventEntry {
 type HookDeclaration struct {
 	Location string `yaml:"location" json:"location" validate:"required"`
 	Version  string `yaml:"version,omitempty" json:"version,omitempty" validate:"omitempty"`
-	// Fetch: when true, ork generate runs go get <location>@<version>.
+	// Fetch: when true, inrun generate runs go get <location>@<version>.
 	Fetch    bool   `yaml:"fetch,omitempty" json:"fetch,omitempty"`
 	Function string `yaml:"function" json:"function" validate:"required"`
 	Alias    string `yaml:"alias,omitempty" json:"alias,omitempty" validate:"omitempty"`
@@ -640,7 +640,7 @@ type HookDeclaration struct {
 type ConstructorDeclaration struct {
 	Location string `yaml:"location" json:"location" validate:"required"`
 	Version  string `yaml:"version,omitempty" json:"version,omitempty" validate:"omitempty"`
-	// Fetch: when true, ork generate runs go get <location>@<version>.
+	// Fetch: when true, inrun generate runs go get <location>@<version>.
 	Fetch    bool   `yaml:"fetch,omitempty" json:"fetch,omitempty"`
 	Function string `yaml:"function" json:"function" validate:"required"`
 	Alias    string `yaml:"alias,omitempty" json:"alias,omitempty" validate:"omitempty"`

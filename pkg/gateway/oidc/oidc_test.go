@@ -12,7 +12,7 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	josejwt "github.com/go-jose/go-jose/v4/jwt"
 
-	oidcpkg "github.com/orkspace/orkestra/pkg/gateway/oidc"
+	oidcpkg "github.com/inrundev/inrun/pkg/gateway/oidc"
 )
 
 // testKey generates an RSA key pair and returns the private key + a single-key JWKS.
@@ -73,14 +73,14 @@ func TestVerify_ValidToken(t *testing.T) {
 	token := signToken(t, priv, "key1", map[string]interface{}{
 		"iss":        issuer,
 		"sub":        "user:test",
-		"aud":        "orkestra",
+		"aud":        "inrun",
 		"exp":        now.Add(5 * time.Minute).Unix(),
 		"repository": "myorg/payments",
 		"ref":        "refs/heads/main",
 	})
 
 	cache := oidcpkg.NewCache(time.Minute)
-	claims, err := cache.Verify(issuer, issuer, token, "orkestra")
+	claims, err := cache.Verify(issuer, issuer, token, "inrun")
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -99,12 +99,12 @@ func TestVerify_ExpiredToken(t *testing.T) {
 	issuer := srv.URL
 	token := signToken(t, priv, "key1", map[string]interface{}{
 		"iss": issuer,
-		"aud": "orkestra",
+		"aud": "inrun",
 		"exp": time.Now().Add(-1 * time.Minute).Unix(), // already expired
 	})
 
 	cache := oidcpkg.NewCache(time.Minute)
-	_, err := cache.Verify(issuer, issuer, token, "orkestra")
+	_, err := cache.Verify(issuer, issuer, token, "inrun")
 	if err == nil {
 		t.Fatal("expected error for expired token, got nil")
 	}
@@ -116,12 +116,12 @@ func TestVerify_WrongIssuer(t *testing.T) {
 
 	token := signToken(t, priv, "key1", map[string]interface{}{
 		"iss": "https://evil.example.com", // wrong issuer
-		"aud": "orkestra",
+		"aud": "inrun",
 		"exp": time.Now().Add(5 * time.Minute).Unix(),
 	})
 
 	cache := oidcpkg.NewCache(time.Minute)
-	_, err := cache.Verify(srv.URL, srv.URL, token, "orkestra")
+	_, err := cache.Verify(srv.URL, srv.URL, token, "inrun")
 	if err == nil {
 		t.Fatal("expected error for wrong issuer, got nil")
 	}
@@ -139,7 +139,7 @@ func TestVerify_WrongAudience(t *testing.T) {
 	})
 
 	cache := oidcpkg.NewCache(time.Minute)
-	_, err := cache.Verify(issuer, issuer, token, "orkestra")
+	_, err := cache.Verify(issuer, issuer, token, "inrun")
 	if err == nil {
 		t.Fatal("expected error for wrong audience, got nil")
 	}
@@ -153,12 +153,12 @@ func TestVerify_UnknownKey(t *testing.T) {
 	issuer := srv.URL
 	token := signToken(t, priv, "key1", map[string]interface{}{
 		"iss": issuer,
-		"aud": "orkestra",
+		"aud": "inrun",
 		"exp": time.Now().Add(5 * time.Minute).Unix(),
 	})
 
 	cache := oidcpkg.NewCache(time.Minute)
-	_, err := cache.Verify(issuer, issuer, token, "orkestra")
+	_, err := cache.Verify(issuer, issuer, token, "inrun")
 	if err == nil {
 		t.Fatal("expected error for unknown key, got nil")
 	}

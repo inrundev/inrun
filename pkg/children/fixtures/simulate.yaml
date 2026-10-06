@@ -1,11 +1,11 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: children-foreach-sim
   description: Verify forEach expansion — all resource types created from the acme Tenant CR on cycle 1
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   cr: ./cr.yaml
   cycles: 3
 

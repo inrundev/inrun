@@ -1,6 +1,6 @@
 // Package devserver provides a lightweight mock HTTP server for local development.
-// Started via `ork run --dev-server`, it listens on :9999 and serves all endpoints
-// used by the external: and full-stack example katalogs — no real services needed.
+// Started via `inrun --dev-server`, it listens on :9999 and serves all endpoints
+// used by the external: and full-stack example catalogs — no real services needed.
 package devserver
 
 import (
@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/pkg/logger"
 )
 
 const Port = 9999

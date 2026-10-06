@@ -4,7 +4,7 @@ package utils
 import (
 	"fmt"
 
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/pkg/logger"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )

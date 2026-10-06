@@ -1,4 +1,4 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: resource-probe-e2e
@@ -9,7 +9,7 @@ metadata:
     hooks/resource_hooks.go and an assertion to e2e/01-resources.yaml.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./cr.yaml
 
@@ -18,7 +18,7 @@ spec:
 
   cluster:
     provider: kind
-    name: ork-resource-probe
+    name: inrun-resource-probe
     reuse: false
 
   expect:

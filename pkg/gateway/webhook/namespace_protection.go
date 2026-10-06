@@ -1,10 +1,10 @@
 // webhook/namespace_protection.go — /namespace-protection webhook handler.
 //
-// Registered only when security.namespaceProtection.enabled: true in the Katalog.
+// Registered only when security.namespaceProtection.enabled: true in the Catalog.
 // Intercepts CREATE and UPDATE on CRDs that declare allowedNamespaces or
 // restrictedNamespaces, and rejects operations in forbidden namespaces.
 //
-// failurePolicy: Fail — if Orkestra is unreachable, the operation is blocked.
+// failurePolicy: Fail — if Inrun is unreachable, the operation is blocked.
 package webhook
 
 import (
@@ -13,8 +13,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/metrics"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/metrics"
 )
 
 func (ws *WebhookServer) namespaceProtectionHandler(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +71,7 @@ func (ws *WebhookServer) namespaceProtectionHandler(w http.ResponseWriter, r *ht
 			Allowed: false,
 			Status: &AdmissionStatus{
 				Message: fmt.Sprintf(
-					"\n\n[Orkestra Security] Namespace %q is not permitted for this CRD.\n\n"+
+					"\n\n[Inrun Security] Namespace %q is not permitted for this CRD.\n\n"+
 						"To allow this namespace, update the CRD's allowedNamespaces or restrictedNamespaces.\n\n",
 					ns,
 				),

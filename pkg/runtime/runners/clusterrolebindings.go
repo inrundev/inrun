@@ -5,30 +5,30 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkcrb "github.com/orkspace/orkestra/pkg/resources/clusterrolebindings"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/clusterrolebindings"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunClusterRoleBindings resolves and applies ClusterRoleBinding template declarations.
 //
 // ClusterRoleBindings are cluster-scoped — the namespace guard is not applied.
-// Ownership is tracked via the orkestra.io/owner label; auto-GC via
+// Ownership is tracked via the inrun.dev/owner label; auto-GC via
 // OwnerReferences is not possible for cluster-scoped resources.
 func RunClusterRoleBindings(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.ClusterRoleBindingTemplateSource,
+	srcs []types.ClusterRoleBindingTemplateSource,
 	update bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -36,14 +36,14 @@ func RunClusterRoleBindings(
 	}
 
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[name] {
-					if err := orkcrb.DeleteIfOwned(ctx, kube, owner, name); err != nil {
+					if err := clusterrolebindings.DeleteIfOwned(ctx, kube, owner, name); err != nil {
 						return fmt.Errorf("clusterRoleBindings[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -60,18 +60,18 @@ func RunClusterRoleBindings(
 			return fmt.Errorf("clusterRoleBindings[%d]: %w", i, err)
 		}
 
-		spec := orkcrb.Resolve(resolved, resolver.OwnerName())
+		spec := clusterrolebindings.Resolve(resolved, resolver.OwnerName())
 
 		if update {
-			if err := orkcrb.Update(ctx, kube, owner, spec); err != nil {
+			if err := clusterrolebindings.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("clusterRoleBindings[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkcrb.Create(ctx, kube, owner, spec); err != nil {
+			if err := clusterrolebindings.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("clusterRoleBindings[%d].create: %w", i, err)
 			}
 			if src.Reconcile {
-				if err := orkcrb.Update(ctx, kube, owner, spec); err != nil {
+				if err := clusterrolebindings.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("clusterRoleBindings[%d].reconcile: %w", i, err)
 				}
 			}

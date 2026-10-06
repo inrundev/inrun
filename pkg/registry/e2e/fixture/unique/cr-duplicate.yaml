@@ -1,4 +1,4 @@
-apiVersion: testground.orkestra.io/v1alpha1
+apiVersion: testground.inrun.dev/v1alpha1
 kind: Website
 metadata:
   name: site-b

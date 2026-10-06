@@ -1,4 +1,4 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: reconciler-probe-e2e
@@ -6,17 +6,17 @@ metadata:
     Living integration fixture for all reconciler resource types.
     One ReconcilerProbe CR triggers every onCreate block — namespace, serviceaccount,
     configmap, secret, service, cronjob, job, deployment (basic + premium conditional).
-    When you add a new resource type, add a block to katalog.yaml and an assertion
+    When you add a new resource type, add a block to catalog.yaml and an assertion
     to e2e/01-resources.yaml.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./cr-suite.yaml
 
   cluster:
     provider: kind
-    name: ork-reconciler-probe
+    name: inrun-reconciler-probe
     reuse: false
 
   expect:

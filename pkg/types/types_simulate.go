@@ -22,7 +22,7 @@ type SimulateMeta struct {
 }
 
 type SimulateSpec struct {
-	Katalog      string          `yaml:"katalog"`
+	Catalog      string          `yaml:"catalog"`
 	CR           string          `yaml:"cr,omitempty"`
 	CRFiles      []string        `yaml:"crFiles,omitempty"`
 	CRD          string          `yaml:"crd,omitempty"`

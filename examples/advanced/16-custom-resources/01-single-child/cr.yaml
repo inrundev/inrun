@@ -1,9 +1,0 @@
-apiVersion: platform.example.io/v1alpha1
-kind: Workspace
-metadata:
-  name: dev-team
-  namespace: default
-spec:
-  name: "Dev Team Workspace"
-  team: platform-eng
-  encryption: AES256

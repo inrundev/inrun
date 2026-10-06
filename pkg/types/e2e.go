@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// SetupConfig declares prerequisite resources to apply before Orkestra starts.
+// SetupConfig declares prerequisite resources to apply before Inrun starts.
 //
 // Shorthand — a plain list of strings is equivalent to setup.apply:
 //
@@ -47,8 +47,8 @@ type SetupConfig struct {
 	// Applied first, before helm installs, after the CRD is installed.
 	Apply []SetupApplyEntry `yaml:"apply,omitempty"`
 
-	// Helm is an ordered list of Helm charts to install before Orkestra starts.
-	// Executed as helm upgrade --install — not rendered for Katalog extraction.
+	// Helm is an ordered list of Helm charts to install before Inrun starts.
+	// Executed as helm upgrade --install — not rendered for Catalog extraction.
 	Helm []SetupHelmInstall `yaml:"helm,omitempty"`
 
 	// Wait blocks until all listed resources exist and satisfy conditions.
@@ -114,7 +114,7 @@ func (e *SetupApplyEntry) UnmarshalYAML(value *yaml.Node) error {
 }
 
 // SetupHelmInstall installs a Helm chart as a real release into the cluster.
-// Unlike HelmSource (which renders charts to extract Katalog documents),
+// Unlike HelmSource (which renders charts to extract Catalog documents),
 // this runs helm upgrade --install for a prerequisite chart.
 type SetupHelmInstall struct {
 	// Repo is the Helm repository URL. Omit for local chart paths.
@@ -184,7 +184,7 @@ type SetupWait struct {
 }
 
 // E2E is the top-level document type for declarative end-to-end tests.
-// Committed alongside the katalog, it drives `ork e2e` — the same command
+// Committed alongside the catalog, it drives `inrun e2e` — the same command
 // that runs locally, in CI, and inside the GitHub Action.
 type E2E struct {
 	APIVersion string      `yaml:"apiVersion"`
@@ -233,14 +233,14 @@ type E2EMeta struct {
 	Description string `yaml:"description,omitempty"`
 }
 
-// CustomTarget identifies the runtime environment being tested when Orkestra
+// CustomTarget identifies the runtime environment being tested when Inrun
 // is not the operator. Validation rejects values outside the known set.
 type CustomTarget string
 
 const (
 	// CustomTargetKubernetes tests a workload that runs on Kubernetes — an operator,
-	// Helm chart, or raw manifests. Orkestra manages the cluster lifecycle and
-	// assertions; bundle generation and Orkestra helm install/uninstall are skipped.
+	// Helm chart, or raw manifests. Inrun manages the cluster lifecycle and
+	// assertions; bundle generation and Inrun helm install/uninstall are skipped.
 	CustomTargetKubernetes CustomTarget = "kubernetes"
 
 	// CustomTargetContainer tests a container image directly without a cluster.
@@ -252,7 +252,7 @@ const (
 // String implements fmt.Stringer.
 func (t CustomTarget) String() string { return string(t) }
 
-// E2ECustomConfig declares the target runtime when testing non-Orkestra workloads.
+// E2ECustomConfig declares the target runtime when testing non-Inrun workloads.
 type E2ECustomConfig struct {
 	// Target is the runtime environment under test. Supported values: "kubernetes".
 	// "container" is reserved for future use.
@@ -260,13 +260,13 @@ type E2ECustomConfig struct {
 }
 
 type E2ESpec struct {
-	// Core operator spec — the three files that define every Orkestra operator.
+	// Core operator spec — the three files that define every Inrun operator.
 
-	// Katalog is the path to the katalog.yaml file.
+	// Catalog is the path to the catalog.yaml file.
 	// Optional when spec.custom.target is set.
-	Katalog string `yaml:"katalog,omitempty"`
+	Catalog string `yaml:"catalog,omitempty"`
 	// CRD is the path to the CRD YAML file for this operator.
-	// Applied before the bundle and before Orkestra starts.
+	// Applied before the bundle and before Inrun starts.
 	CRD string `yaml:"crd,omitempty"`
 	// CRDFiles is a list of additional CRD YAML files. Applied in declaration order
 	// after CRD. Use when the operator manages multiple custom resource types.
@@ -278,35 +278,35 @@ type E2ESpec struct {
 	CRFiles []string `yaml:"crFiles,omitempty"`
 
 	// Custom declares the target runtime for this e2e test when it is not an
-	// Orkestra-managed operator. Orkestra still owns the cluster lifecycle, setup,
+	// Inrun-managed operator. Inrun still owns the cluster lifecycle, setup,
 	// CR apply, assertions, and cleanup — only the bundle generation and
-	// Orkestra helm install/uninstall are skipped.
+	// Inrun helm install/uninstall are skipped.
 	//
 	// Use this when your operator, Helm chart, or any Kubernetes workload is
 	// installed via setup.helm or is already present in the cluster.
-	// See documentation/reference/schema/04-e2e/05-custom-target.md.
+	// See docs/reference/schema/04-e2e/05-custom-target.md.
 	Custom *E2ECustomConfig `yaml:"custom,omitempty"`
 
-	// Init uses an example pack — for Orkestra's own CI.
+	// Init uses an example pack — for Inrun's own CI.
 	Init *E2EInit `yaml:"init,omitempty"`
 
 	// Cluster controls which cluster to use.
 	Cluster E2ECluster `yaml:"cluster"`
 
-	// Setup declares prerequisite resources to apply before Orkestra starts.
+	// Setup declares prerequisite resources to apply before Inrun starts.
 	// Shorthand: a plain list of strings applies each file (backward compatible).
 	// Struct form adds helm installs and resource waiting.
 	Setup *SetupConfig `yaml:"setup,omitempty"`
 
-	// ValuesFiles is a list of Helm values files passed to the Orkestra chart
+	// ValuesFiles is a list of Helm values files passed to the Inrun chart
 	// installation during e2e. Paths are relative to the e2e.yaml file.
 	// Use this to configure custom runtime images or any other Helm values
 	// without requiring --values flags on the command line — useful when e2e
-	// runs automatically during ork push.
+	// runs automatically during inrun push.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
 
 	// Notes declares user-defined note functions available in when:/or: expressions.
-	// Same syntax as a Katalog notes block — same FuncMap registration, same functions.
+	// Same syntax as a Catalog notes block — same FuncMap registration, same functions.
 	Notes NoteRegistry `yaml:"notes,omitempty"`
 
 	// Expect is the list of expectations to check after each lifecycle event.
@@ -356,7 +356,7 @@ type E2EInit struct {
 type E2ECluster struct {
 	// Provider is the cluster provider — currently only "kind" is supported.
 	Provider string `yaml:"provider"` // default: "kind"
-	// Name is the kind cluster name. Default: "ork-e2e".
+	// Name is the kind cluster name. Default: "inrun-e2e".
 	Name string `yaml:"name"`
 	// Reuse controls whether an existing cluster is reused or recreated.
 	// false (default) — delete and recreate for a clean state.
@@ -416,7 +416,7 @@ type E2EExpectation struct {
 	Kubectl *E2EKubectl `yaml:"kubectl,omitempty"`
 
 	// When / Or gate this expectation using the same []Condition type as
-	// katalog when:/or:. An expectation whose conditions do not pass is
+	// catalog when:/or:. An expectation whose conditions do not pass is
 	// skipped — not failed. Notes declared in spec.notes are available as
 	// template expressions: field: '{{ inBusinessHours }}'.
 	// Empty blocks always pass.
@@ -1049,7 +1049,7 @@ type E2EKubectlPortForward struct {
 	// secret never needs to be written into the YAML file.
 	//
 	//	headers:
-	//	  Authorization: "Bearer ${ORK_CI_TOKEN}"
+	//	  Authorization: "Bearer ${INRUN_CI_TOKEN}"
 	Headers map[string]string `yaml:"headers,omitempty"`
 	// Body is sent as the request body for methods that accept one (POST,
 	// PUT, PATCH). Ignored for GET/HEAD/DELETE. Goes through os.ExpandEnv,

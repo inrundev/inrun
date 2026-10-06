@@ -1,9 +1,0 @@
-apiVersion: orkestra.orkspace.io/v1
-kind: Komposer
-metadata:
-  name: platform-komposer
-  version: 1.0.0
-  description: Tests that policy.minMaturity beta is valid.
-policy:
-  lifecycle:
-    minMaturity: beta

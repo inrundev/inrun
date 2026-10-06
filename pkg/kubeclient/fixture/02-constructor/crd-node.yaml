@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: blockchainnodes.demo.orkestra.io
+  name: blockchainnodes.demo.inrun.dev
 spec:
-  group: demo.orkestra.io
+  group: demo.inrun.dev
   versions:
     - name: v1alpha1
       served: true
@@ -45,7 +45,7 @@ spec:
                   description: >
                     Base URL of the feature-flag service.
                     Local: http://localhost:9999
-                    In-cluster: http://orkestra-dev-server.orkestra-system.svc:9999
+                    In-cluster: http://inrun-dev-server.inrun-system.svc:9999
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

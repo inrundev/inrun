@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,7 +40,7 @@ func TestIsNoteRef(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.field, func(t *testing.T) {
-			assert.Equal(t, tc.want, orktypes.IsNoteRef(tc.field))
+			assert.Equal(t, tc.want, types.IsNoteRef(tc.field))
 		})
 	}
 }
@@ -48,15 +48,15 @@ func TestIsNoteRef(t *testing.T) {
 // ── NoteRefName ───────────────────────────────────────────────────────────────
 
 func TestNoteRefName(t *testing.T) {
-	assert.Equal(t, "inBusinessHours", orktypes.NoteRefName("{{ inBusinessHours }}"))
-	assert.Equal(t, "isBusy", orktypes.NoteRefName("{{isBusy}}"))
-	assert.Equal(t, "myNote", orktypes.NoteRefName("{{  myNote  }}"))
+	assert.Equal(t, "inBusinessHours", types.NoteRefName("{{ inBusinessHours }}"))
+	assert.Equal(t, "isBusy", types.NoteRefName("{{isBusy}}"))
+	assert.Equal(t, "myNote", types.NoteRefName("{{  myNote  }}"))
 }
 
 // ── NoteRegistry.ExpressionFor ────────────────────────────────────────────────
 
 func TestNoteRegistry_ExpressionFor(t *testing.T) {
-	nr := orktypes.NoteRegistry{Functions: []orktypes.UserDefinedNote{
+	nr := types.NoteRegistry{Functions: []types.UserDefinedNote{
 		{Name: "isHealthy", Expression: `{{ eq .health.status "healthy" }}`},
 		{Name: "isBusy", Expression: `{{ gt .metrics.workersBusyPercent 80 }}`},
 	}}
@@ -70,7 +70,7 @@ func TestNoteRegistry_ExpressionFor(t *testing.T) {
 
 func TestNoteRegistry_ContainsInExpression(t *testing.T) {
 	t.Run("direct reference to .health in expression", func(t *testing.T) {
-		nr := orktypes.NoteRegistry{Functions: []orktypes.UserDefinedNote{
+		nr := types.NoteRegistry{Functions: []types.UserDefinedNote{
 			{Name: "isHealthy", Expression: `{{ eq .health.status "healthy" }}`},
 		}}
 		assert.True(t, nr.ContainsInExpression("isHealthy", ".health."))
@@ -78,7 +78,7 @@ func TestNoteRegistry_ContainsInExpression(t *testing.T) {
 	})
 
 	t.Run("transitive — note calls another note that references .health", func(t *testing.T) {
-		nr := orktypes.NoteRegistry{Functions: []orktypes.UserDefinedNote{
+		nr := types.NoteRegistry{Functions: []types.UserDefinedNote{
 			{Name: "isHealthy", Expression: `{{ eq .health.status "healthy" }}`},
 			{Name: "isReady", Expression: `{{ and isHealthy (gt .metrics.readyCount 0) }}`},
 			{Name: "canAccept", Expression: `{{ and isReady (lt .metrics.queueDepth 500) }}`},
@@ -88,14 +88,14 @@ func TestNoteRegistry_ContainsInExpression(t *testing.T) {
 	})
 
 	t.Run("word boundary — note named 'is' does not match inside 'isHealthy'", func(t *testing.T) {
-		nr := orktypes.NoteRegistry{Functions: []orktypes.UserDefinedNote{
+		nr := types.NoteRegistry{Functions: []types.UserDefinedNote{
 			{Name: "is", Expression: `{{ eq .health.status "healthy" }}`},
 			{Name: "isHealthy", Expression: `{{ gt .metrics.workersBusyPercent 80 }}`},
 		}}
 		// canAccept calls isHealthy (whole word), not is (which is a prefix of isHealthy)
 		assert.False(t, nr.ContainsInExpression("isHealthy", ".health."))
 		// "is" is a whole word in a plain expression
-		nr2 := orktypes.NoteRegistry{Functions: []orktypes.UserDefinedNote{
+		nr2 := types.NoteRegistry{Functions: []types.UserDefinedNote{
 			{Name: "is", Expression: `{{ eq .health.status "healthy" }}`},
 			{Name: "outer", Expression: `{{ is }}`},
 		}}
@@ -103,7 +103,7 @@ func TestNoteRegistry_ContainsInExpression(t *testing.T) {
 	})
 
 	t.Run("cycle — mutual recursion does not loop", func(t *testing.T) {
-		nr := orktypes.NoteRegistry{Functions: []orktypes.UserDefinedNote{
+		nr := types.NoteRegistry{Functions: []types.UserDefinedNote{
 			{Name: "alpha", Expression: `{{ beta }}`},
 			{Name: "beta", Expression: `{{ alpha }}`},
 		}}
@@ -111,12 +111,12 @@ func TestNoteRegistry_ContainsInExpression(t *testing.T) {
 	})
 
 	t.Run("note not in registry returns false", func(t *testing.T) {
-		nr := orktypes.NoteRegistry{}
+		nr := types.NoteRegistry{}
 		assert.False(t, nr.ContainsInExpression("unknown", ".health."))
 	})
 
 	t.Run("note composing both .health and .metrics", func(t *testing.T) {
-		nr := orktypes.NoteRegistry{Functions: []orktypes.UserDefinedNote{
+		nr := types.NoteRegistry{Functions: []types.UserDefinedNote{
 			{Name: "combined", Expression: `{{ and (eq .health.status "healthy") (lt .metrics.queueDepth 100) }}`},
 		}}
 		assert.True(t, nr.ContainsInExpression("combined", ".health."))

@@ -1,11 +1,11 @@
 // Package bootstrap provisions least-privilege gateway access on remote clusters.
 //
 // Given a target cluster's kubeconfig context it creates a ServiceAccount,
-// ClusterRole scoped to the katalog's serve-enabled CRDs, ClusterRoleBinding,
+// ClusterRole scoped to the catalog's serve-enabled CRDs, ClusterRoleBinding,
 // and a long-lived token Secret. It then stores the credential in the gateway
 // cluster so the gateway can route applies to the target.
 //
-// The package is generic: Orkestra is the primary consumer, but any tool that
+// The package is generic: Inrun is the primary consumer, but any tool that
 // needs a scoped ServiceAccount + token on a remote cluster can use Bootstrap
 // by setting ClusterEntry.SAName to something other than the default.
 package bootstrap
@@ -18,8 +18,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // RunOptions holds the runtime settings for a bootstrap run.
@@ -44,10 +44,10 @@ type Result struct {
 }
 
 // Cluster provisions gateway access on a target cluster for the given ClusterEntry.
-// When k is non-nil, ClusterRole rules are derived from the katalog's serve-enabled CRDs.
+// When k is non-nil, ClusterRole rules are derived from the catalog's serve-enabled CRDs.
 // When k is nil, rules are taken from entry.Rules. If both are absent, ClusterRole and
 // ClusterRoleBinding are skipped — only the SA and token Secret are provisioned.
-func Cluster(ctx context.Context, k *katalog.Katalog, entry ClusterEntry, opts RunOptions, log func(string)) (*Result, error) {
+func Cluster(ctx context.Context, k *catalog.Catalog, entry ClusterEntry, opts RunOptions, log func(string)) (*Result, error) {
 	if opts.Namespace == "" {
 		opts.Namespace = "default"
 	}
@@ -149,7 +149,7 @@ func connectGateway() (kubernetes.Interface, error) {
 	return cs, nil
 }
 
-func buildClusterRoleRules(k *katalog.Katalog) []rbacv1.PolicyRule {
+func buildClusterRoleRules(k *catalog.Catalog) []rbacv1.PolicyRule {
 	type groupEntry struct{ resources []string }
 	groups := map[string]*groupEntry{}
 	verbs := []string{"get", "list", "watch", "create", "update", "patch", "delete"}

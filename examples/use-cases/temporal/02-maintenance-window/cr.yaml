@@ -1,8 +1,0 @@
-apiVersion: demo.orkestra.io/v1
-kind: Database
-metadata:
-  name: my-db
-  namespace: default
-spec:
-  image: postgres:16
-  readReplicas: 3

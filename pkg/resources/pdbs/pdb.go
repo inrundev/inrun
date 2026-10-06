@@ -8,14 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/profiles"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
 	policyv1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,7 +85,7 @@ func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, 
 
 	if _, err = kube.Clientset().PolicyV1().PodDisruptionBudgets(namespace).Patch(
 		ctx, spec.Name, k8stypes.ApplyPatchType, body,
-		metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
+		metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
 	); err != nil {
 		if errors.IsInvalid(err) {
 			logger.Info().Str("pdb", spec.Name).Msg("pdb selector immutable — delete+recreate")
@@ -151,7 +151,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 		}
 		return err
 	}
-	if existing.Labels[labels.OrkestraOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if existing.Labels[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 	return kube.Clientset().PolicyV1().PodDisruptionBudgets(namespace).
@@ -160,7 +160,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 
 // Resolve builds a ResolvedPDBSpec from a PDBTemplateSource.
 // All template expressions must be evaluated before calling here.
-func Resolve(src orktypes.PDBTemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedPDBSpec {
+func Resolve(src types.PDBTemplateSource, ownerName string, reg *types.ProfileRegistry) ResolvedPDBSpec {
 	spec := ResolvedPDBSpec{
 		Name:           src.Name,
 		Namespace:      src.Namespace,
@@ -206,7 +206,7 @@ func Resolve(src orktypes.PDBTemplateSource, ownerName string, reg *orktypes.Pro
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 func buildPDB(owner domain.Object, spec ResolvedPDBSpec, namespace string) *policyv1.PodDisruptionBudget {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 
 	pdb := &policyv1.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{

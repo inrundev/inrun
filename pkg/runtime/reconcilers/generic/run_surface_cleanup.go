@@ -3,10 +3,10 @@ package generic
 import (
 	"context"
 
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/runtime/runners"
+	"github.com/inrundev/inrun/pkg/intent"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/runtime/runners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,7 +26,7 @@ func (r *Reconciler[PTR]) cleanupPreviousSurface(
 	ctx context.Context,
 	rawObj PTR,
 ) error {
-	target := orktarget.ResolveTargetFromAnnotations(rawObj.GetAnnotations())
+	target := intent.Target(rawObj.GetAnnotations())
 	if target == "" || r.crd.KeepPreviousSurface(target) {
 		return nil
 	}

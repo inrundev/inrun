@@ -1,44 +1,10 @@
-// Package labels provides a stateless label and annotation manager for any
-// Kubernetes object that implements the [domain.Object] interface.
-//
-// # Responsibilities
-//
-// The Manager answers one question per reconcile cycle: given the current
-// Katalog configuration, what labels should this object carry? It then
-// applies the answer in memory. The caller is responsible for persisting the
-// result to the API server (e.g., via kube.PatchLabels).
-//
-// # What the Manager owns
-//
-//   - [Manager.EnsureManagedLabel] — adds "orkestra.orkspace.io/managed: true"
-//     to identify Orkestra-owned resources.
-//   - [Manager.EnsureManagedAnnotations] — adds "managed-by" and "managed-since"
-//     annotations for audit and ownership tracking.
-//   - [Manager.EnsureDeletionProtectionLabel] — adds or removes the
-//     "orkestra.io/deletion-protection: true" label based on the CRD's
-//     effective protection setting.
-//   - [Manager.EnsureStrictModeExemptLabel] — adds or removes the
-//     "orkestra.io/strict-mode-exempt: true" label based on whether the CRD
-//     has opted out of strict-mode enforcement.
-//
-// # What the Manager does not own
-//
-// The Manager performs no API calls and imports no Orkestra internal packages
-// (katalog, reconciler, etc.). All configuration is passed at construction
-// time via [Config]. This keeps the package safe to import from any layer.
-//
-// # Threading
-//
-// Manager is safe to construct per reconcile cycle (it holds no mutable
-// state). Sharing a Manager across goroutines is also safe because all
-// exported methods are pure transformations on the object they receive.
 package labels
 
 import (
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/logger"
 )
 
 // Manager handles label and annotation mutations on domain objects.
@@ -49,7 +15,7 @@ type Manager struct {
 	standalone bool
 
 	// deletionProtectionEnabled controls whether the deletion‑protection label
-	// is applied. This should reflect the global security setting from Katalog.
+	// is applied. This should reflect the global security setting from Catalog.
 	deletionProtectionEnabled bool
 
 	deletionProtectionLabel string
@@ -66,7 +32,7 @@ type Config struct {
 	Standalone bool
 
 	// DeletionProtectionEnabled mirrors the global
-	// security.deletionProtection.enabled setting from the Katalog. When true,
+	// security.deletionProtection.enabled setting from the Catalog. When true,
 	// [Manager.EnsureDeletionProtectionLabel] may add the protection label.
 	DeletionProtectionEnabled bool
 }
@@ -88,10 +54,10 @@ func NewManager(cfg Config) *Manager {
 	return mgr
 }
 
-// EnsureManagedLabel adds the standard Orkestra ownership label to obj if it
+// EnsureManagedLabel adds the standard Inrun ownership label to obj if it
 // is missing or has the wrong value.
 //
-// Label applied: orkestra.orkspace.io/managed = "true"
+// Label applied: inrun.dev/managed = "true"
 //
 // Returns true if the label was absent and has been added; false if it was
 // already present with the correct value (no mutation occurred).
@@ -110,15 +76,15 @@ func (m *Manager) EnsureManagedLabel(obj domain.Object) bool {
 	return true
 }
 
-// EnsureManagedAnnotations adds the standard Orkestra management annotations
+// EnsureManagedAnnotations adds the standard Inrun management annotations
 // to obj if they are absent or empty.
 //
 // Annotations applied:
-//   - orkestra.orkspace.io/managed-by: <operatorName>
-//   - orkestra.orkspace.io/managed-since: <UTC RFC 3339 timestamp>
+//   - inrun.dev/managed-by: <operatorName>
+//   - inrun.dev/managed-since: <UTC RFC 3339 timestamp>
 //
 // Existing values are never overwritten — the managed-since timestamp records
-// the first time Orkestra took ownership and must not drift on subsequent
+// the first time Inrun took ownership and must not drift on subsequent
 // reconciles.
 //
 // Returns true if any annotation was added; false if both were already present.
@@ -146,12 +112,12 @@ func (m *Manager) EnsureManagedAnnotations(obj domain.Object, operatorName strin
 // EnsureDeletionProtectionLabel reconciles the deletion-protection label on obj
 // to match the desired state expressed by shouldHave.
 //
-//   - shouldHave = true  → label is added:   orkestra.io/deletion-protection = "true"
+//   - shouldHave = true  → label is added:   inrun.dev/deletion-protection = "true"
 //   - shouldHave = false → label is removed:  key is deleted from the label map
 //
 // The typical caller logic for shouldHave is:
 //
-//	shouldHave = katalog.IsDeletionProtectionEnabled() && crd.ShouldProtectCRs()
+//	shouldHave = catalog.IsDeletionProtectionEnabled() && crd.ShouldProtectCRs()
 //
 // Returns true if the label map was modified; false if it was already in the
 // desired state. The caller must persist any change via kube.PatchLabels.
@@ -188,7 +154,7 @@ func (m *Manager) EnsureDeletionProtectionLabel(obj domain.Object, shouldHave bo
 // obj to match the effective strict-mode state for this CRD.
 //
 //   - strictModeEnabled = true  → label is removed: key is deleted from the label map
-//   - strictModeEnabled = false → label is added:   orkestra.io/strict-mode-exempt = "true"
+//   - strictModeEnabled = false → label is added:   inrun.dev/strict-mode-exempt = "true"
 //
 // The exemption label signals to the strict-mode admission webhook that this
 // resource is allowed to have its deletion-protection label removed. It is

@@ -21,10 +21,10 @@ type ClusterEntry struct {
 	// Defaults to DefaultSANamespace ("kube-system") when empty.
 	SANamespace string `yaml:"sa-namespace" json:"sa-namespace"`
 	// SAName overrides the ServiceAccount name on the target cluster.
-	// Defaults to DefaultSAName ("orkestra-gateway") when empty.
+	// Defaults to DefaultSAName ("inrun-gateway") when empty.
 	SAName string `yaml:"sa-name" json:"sa-name"`
 	// Rules are the ClusterRole rules to apply on the target cluster.
-	// Used in the generic (non-Orkestra) path. When absent, ClusterRole and
+	// Used in the generic (non-Inrun) path. When absent, ClusterRole and
 	// ClusterRoleBinding are not created — only the SA and token are provisioned.
 	Rules []rbacv1.PolicyRule `yaml:"rules,omitempty" json:"rules,omitempty"`
 }
@@ -33,9 +33,9 @@ type ClusterEntry struct {
 //
 //	clusters:
 //	  - name: staging
-//	    context: kind-ork-multi-2
+//	    context: kind-inrun-multi-2
 //	  - name: prod
-//	    context: kind-ork-multi-3
+//	    context: kind-inrun-multi-3
 //	    sa-namespace: restricted-ns
 type ConfigFile struct {
 	Clusters []ClusterEntry `yaml:"clusters" json:"clusters"`

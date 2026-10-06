@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkcron "github.com/orkspace/orkestra/pkg/resources/cronjobs"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/cronjobs"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunCronJobs resolves and applies CronJob template declarations.
@@ -32,9 +32,9 @@ import (
 func RunCronJobs(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.CronJobTemplateSource,
+	srcs []types.CronJobTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
@@ -44,7 +44,7 @@ func RunCronJobs(
 	// typeOf conditions both targeting {{ .metadata.name }}.
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -57,7 +57,7 @@ func RunCronJobs(
 
 	for i, src := range srcs {
 		// 1. Evaluate conditions BEFORE resolving templates
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		// Early name/ns resolution — needed for guard check and DeleteIfOwned cleanup.
 		name, _ := resolver.Resolve(src.Name)
@@ -76,7 +76,7 @@ func RunCronJobs(
 				// Skip deletion when another declaration with a passing condition
 				// targets the same resource — that path owns the resource.
 				if !activeNames[ns+"/"+name] {
-					if err := orkcron.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := cronjobs.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("cronJobs[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -96,18 +96,18 @@ func RunCronJobs(
 		}
 
 		// 3. Build registry spec and apply
-		spec := orkcron.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
+		spec := cronjobs.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
 
 		if update {
-			if err := orkcron.Update(ctx, kube, owner, spec); err != nil {
+			if err := cronjobs.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("cronjobs[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkcron.Create(ctx, kube, owner, spec); err != nil {
+			if err := cronjobs.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("cronjobs[%d].create: %w", i, err)
 			}
 			if src.Reconcile {
-				if err := orkcron.Update(ctx, kube, owner, spec); err != nil {
+				if err := cronjobs.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("cronjobs[%d].reconcile: %w", i, err)
 				}
 			}

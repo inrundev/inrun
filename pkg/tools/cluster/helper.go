@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 var (
@@ -174,7 +174,7 @@ func (d DeploymentHealthChecker) HasReadyReplicas(ctx context.Context) bool {
 // ── private helpers ───────────────────────────────────────────────────────────
 func crashLoopReason(ctx context.Context) string {
 	out, err := exec.CommandContext(ctx, "kubectl", "get", "pods",
-		"-n", OrkestraNamespace,
+		"-n", InrunNamespace,
 		"-o", `jsonpath={range .items[*]}{.metadata.name}{"\t"}{range .status.containerStatuses[*]}{.state.waiting.reason}{end}{"\n"}{end}`).Output()
 	if err != nil {
 		return ""

@@ -1,7 +1,7 @@
 // pkg/types/types_limitrange.go
 package types
 
-// LimitRangeTemplateSource declares one LimitRange to be managed by Orkestra.
+// LimitRangeTemplateSource declares one LimitRange to be managed by Inrun.
 //
 // Usage patterns:
 //
@@ -62,7 +62,7 @@ type LimitRangeTemplateSource struct {
 	ToNamespaces []string `yaml:"toNamespaces,omitempty" json:"toNamespaces,omitempty"`
 
 	// FromLimitRange — name of an existing LimitRange to copy from.
-	// When set, Orkestra reads this LimitRange at reconcile time and copies its limits.
+	// When set, Inrun reads this LimitRange at reconcile time and copies its limits.
 	FromLimitRange string `yaml:"fromLimitRange,omitempty" json:"fromLimitRange,omitempty"`
 
 	// FromNamespace — namespace where FromLimitRange lives.

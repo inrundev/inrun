@@ -1,8 +1,0 @@
-apiVersion: deps.orkestra.io/v1alpha1
-kind: App
-metadata:
-  name: my-database   # same name — the cross block finds Database by matching name
-  namespace: default
-spec:
-  image: nginx:stable-alpine
-  replicas: 2

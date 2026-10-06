@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -47,7 +47,7 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 }
 
 // Apply creates or updates a PersistentVolume using Server-Side Apply.
-// PVs are cluster-scoped — no namespace arg. Sends only fields Orkestra owns.
+// PVs are cluster-scoped — no namespace arg. Sends only fields Inrun owns.
 func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedPVSpec) error {
 	if err := shared.SleepIfNeeded(spec.Sleep); err != nil {
 		return err
@@ -63,7 +63,7 @@ func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, 
 
 	if _, err = kube.Clientset().CoreV1().PersistentVolumes().Patch(
 		ctx, spec.Name, k8stypes.ApplyPatchType, body,
-		metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
+		metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
 	); err != nil {
 		return fmt.Errorf("pv.Apply: %w", err)
 	}
@@ -103,14 +103,14 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface, owner domain.
 		}
 		return err
 	}
-	if existing.Labels[labels.OrkestraOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if existing.Labels[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 	return kube.Clientset().CoreV1().PersistentVolumes().Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 // Resolve builds a ResolvedPVSpec from a PVTemplateSource.
-func Resolve(src orktypes.PVTemplateSource, ownerName string) ResolvedPVSpec {
+func Resolve(src types.PVTemplateSource, ownerName string) ResolvedPVSpec {
 	spec := ResolvedPVSpec{
 		Name:             src.Name,
 		StorageClassName: src.StorageClassName,
@@ -142,7 +142,7 @@ func Resolve(src orktypes.PVTemplateSource, ownerName string) ResolvedPVSpec {
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 func buildPV(owner domain.Object, spec ResolvedPVSpec) *corev1.PersistentVolume {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 	capacityQty := resource.MustParse(spec.Capacity)
 
 	var accessModes []corev1.PersistentVolumeAccessMode

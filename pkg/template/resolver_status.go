@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ResolveStatusFields evaluates template expressions in declarative status field
@@ -25,7 +25,7 @@ import (
 //
 // Errors in individual field expressions are collected and returned together
 // so the caller sees all problems in one reconcile, not one at a time.
-func (r *Resolver) ResolveStatusFields(fields []orktypes.StatusFieldSpec) (map[string]interface{}, error) {
+func (r *Resolver) ResolveStatusFields(fields []types.StatusFieldSpec) (map[string]interface{}, error) {
 	if len(fields) == 0 {
 		return nil, nil
 	}
@@ -41,7 +41,7 @@ func (r *Resolver) ResolveStatusFields(fields []orktypes.StatusFieldSpec) (map[s
 
 		// ── Evaluate when:/or: conditions ─────────────────────────────────
 		// r.data already includes .children.* if WithChildren was called.
-		if (len(f.When) > 0 || len(f.Or) > 0) && !orktypes.EvaluateConditions(r.data, f.When, f.Or, r.TemplateEvaluator()) {
+		if (len(f.When) > 0 || len(f.Or) > 0) && !types.EvaluateConditions(r.data, f.When, f.Or, r.TemplateEvaluator()) {
 			if f.ClearOnFalse {
 				if err := setNestedStatusField(result, f.Path, ""); err != nil {
 					errs = append(errs, fmt.Sprintf("status.%s: clearOnFalse: %v", f.Path, err))

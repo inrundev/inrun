@@ -8,7 +8,7 @@ Serve provenance notes read the three gateway annotations stamped on every CR th
 
 ### `getServeTarget`
 
-Return the `orkestra.orkspace.io/serve-target` annotation — the serve target name used when the CR was submitted. Returns `""` when the annotation is absent (CR was not submitted via the Gateway API).
+Return the `inrun.dev/serve-target` annotation — the serve target name used when the CR was submitted. Returns `""` when the annotation is absent (CR was not submitted via the Gateway API).
 
 Keywords: serve, gateway, target, annotation, provenance, routing, string
 
@@ -24,7 +24,7 @@ Keywords: serve, gateway, target, annotation, provenance, routing, string
 
 ### `getServeAlias`
 
-Return the `orkestra.orkspace.io/serve-alias` annotation — the alias name used when the CR was submitted, if any. Returns `""` when the primary target was used directly (not an alias).
+Return the `inrun.dev/serve-alias` annotation — the alias name used when the CR was submitted, if any. Returns `""` when the primary target was used directly (not an alias).
 
 Keywords: serve, gateway, alias, annotation, provenance, routing, string
 
@@ -40,7 +40,7 @@ Keywords: serve, gateway, alias, annotation, provenance, routing, string
 
 ### `getServeSource`
 
-Return the `orkestra.orkspace.io/serve-source` annotation — the delivery mechanism that submitted the CR. Returns `""` for direct Gateway API calls. Set by webhook integrations (known values: `github`, `gitlab`, `slack`, `pagerduty`, `generic`).
+Return the `inrun.dev/serve-source` annotation — the delivery mechanism that submitted the CR. Returns `""` for direct Gateway API calls. Set by webhook integrations (known values: `github`, `gitlab`, `slack`, `pagerduty`, `generic`).
 
 Keywords: serve, gateway, source, webhook, annotation, provenance, string
 
@@ -56,7 +56,7 @@ Keywords: serve, gateway, source, webhook, annotation, provenance, string
 
 ### `hasServeTarget`
 
-Report whether the `orkestra.orkspace.io/serve-target` annotation is present and non-empty. Returns `true` for any CR submitted via the Gateway API.
+Report whether the `inrun.dev/serve-target` annotation is present and non-empty. Returns `true` for any CR submitted via the Gateway API.
 
 Keywords: serve, gateway, target, annotation, boolean, presence
 
@@ -73,7 +73,7 @@ when:
 
 ### `hasServeAlias`
 
-Report whether the `orkestra.orkspace.io/serve-alias` annotation is set — i.e., the CR was reached via a named alias rather than the primary target.
+Report whether the `inrun.dev/serve-alias` annotation is set — i.e., the CR was reached via a named alias rather than the primary target.
 
 Keywords: serve, gateway, alias, annotation, boolean, routing
 
@@ -89,7 +89,7 @@ Keywords: serve, gateway, alias, annotation, boolean, routing
 
 ### `hasServeSource`
 
-Report whether the `orkestra.orkspace.io/serve-source` annotation is set — i.e., the CR arrived via a webhook source integration rather than a direct API call.
+Report whether the `inrun.dev/serve-source` annotation is set — i.e., the CR arrived via a webhook source integration rather than a direct API call.
 
 Keywords: serve, gateway, source, webhook, annotation, boolean
 

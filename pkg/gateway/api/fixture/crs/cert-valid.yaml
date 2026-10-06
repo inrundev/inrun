@@ -1,6 +1,6 @@
 # Exercises: cert workload with domain — when: deny rule does NOT fire.
 # The or deny (repoURL required for app/monitoring) also skips — workloadType is cert.
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: PlatformResource
 metadata:
   name: api-tls-cert

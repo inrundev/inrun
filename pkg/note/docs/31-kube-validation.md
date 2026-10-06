@@ -1,6 +1,6 @@
 # 31 — Kubernetes Validation Notes
 
-Kubernetes-standard label and annotation format checks, exposed as notes. Kubernetes already enforces this format at the API server — these notes expose the same check so a `validation.rules` entry can gate on it directly, at admission time, with an Orkestra-native message instead of the API server's raw rejection, and so `ork simulate` (which doesn't run full structural schema validation) can catch it too.
+Kubernetes-standard label and annotation format checks, exposed as notes. Kubernetes already enforces this format at the API server — these notes expose the same check so a `validation.rules` entry can gate on it directly, at admission time, with an Inrun-native message instead of the API server's raw rejection, and so `inrun simulate` (which doesn't run full structural schema validation) can catch it too.
 
 ---
 

@@ -1,7 +1,7 @@
 package bootstrap
 
 const (
-	DefaultSAName      = "orkestra-gateway"
+	DefaultSAName      = "inrun-gateway"
 	DefaultSANamespace = "kube-system"
 )
 
@@ -43,12 +43,12 @@ func CRBName(e ClusterEntry) string { return SAName(e) }
 func TokenSecretName(e ClusterEntry) string { return SAName(e) + "-token" }
 
 // GatewaySecretName returns the name of the credential Secret written on the gateway cluster.
-func GatewaySecretName(e ClusterEntry) string { return "orkestra-" + e.Name }
+func GatewaySecretName(e ClusterEntry) string { return "inrun-" + e.Name }
 
 // Labels returns the standard labels applied to all bootstrap-created resources.
 func Labels() map[string]string {
 	return map[string]string{
-		"app.kubernetes.io/managed-by": "orkestra",
-		"orkestra.orkspace.io/role":    "gateway-cluster-access",
+		"app.kubernetes.io/managed-by": "inrun",
+		"inrun.dev/role":               "gateway-cluster-access",
 	}
 }

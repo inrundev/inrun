@@ -1,5 +1,5 @@
-# https://orkestra.sh/docs/reference/schema/e2e/
-apiVersion: orkestra.orkspace.io/v1
+# https://inrun.dev/docs/reference/schema/e2e/
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: unique-operator-e2e
@@ -10,13 +10,13 @@ metadata:
     kubectl apply time — not just on the next reconcile.
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   crd: ./crd.yaml
   cr: ./cr.yaml
 
   cluster:
     provider: kind
-    name: ork-e2e-unique
+    name: inrun-e2e-unique
     reuse: false
 
   expect:
@@ -66,9 +66,9 @@ spec:
           namespace: default
       logs:
         - leaderElection:
-            lease: orkestra-konductor
-            namespace: orkestra-system
+            lease: inrun-leader
+            namespace: inrun-system
           since: 2m
         - labelSelector: app.kubernetes.io/component=gateway
-          namespace: orkestra-system
+          namespace: inrun-system
           since: 2m

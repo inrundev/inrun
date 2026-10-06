@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Generates documentation/reference/schema/04-e2e/08-complete-example.md
+# Generates docs/reference/schema/04-e2e/08-complete-example.md
 # from pkg/registry/e2e/fixture/e2e.yaml.
 #
 # Run via: make generate-e2e-example
-# Wired into: make ork
+# Wired into: make inrun
 #
 # The fixture is the authoritative source — it exercises every kubectl:
 # subcommand and is validated on every build. The doc page is generated
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 FIXTURE="pkg/registry/e2e/fixture/e2e.yaml"
-OUT="documentation/reference/schema/04-e2e/08-complete-example.md"
+OUT="docs/reference/schema/04-e2e/08-complete-example.md"
 
 if [ ! -f "$FIXTURE" ]; then
   echo "generate-e2e-example: $FIXTURE not found" >&2
@@ -26,7 +26,7 @@ One file that exercises every `expect:` subcommand — `resources`, `commands`,
 and every `kubectl:` subcommand. Use it as the canonical reference for what a
 fully-featured E2E looks like.
 
-Source: [`pkg/registry/e2e/fixture/e2e.yaml`](https://github.com/orkspace/orkestra/blob/main/pkg/registry/e2e/fixture/e2e.yaml)
+Source: [`pkg/registry/e2e/fixture/e2e.yaml`](https://github.com/inrundev/inrun/blob/main/pkg/registry/e2e/fixture/e2e.yaml)
 
 ---
 
@@ -61,10 +61,10 @@ Two CRs run in parallel from `cr.yaml` (multi-document):
 
 | CR | Image | Port | Purpose |
 |---|---|---|---|
-| `my-probe-server` | `ghcr.io/orkspace/orkestra-dev-server:latest` | 9999 | Port-forward and JSON endpoint assertions |
+| `my-probe-server` | `ghcr.io/inrundev/inrun-dev-server:latest` | 9999 | Port-forward and JSON endpoint assertions |
 | `my-probe-exec` | `nginx:alpine` | 80 | Exec assertions — nginx has `sh`, the devserver is distroless |
 
-See [`pkg/registry/e2e/fixture/README.md`](https://github.com/orkspace/orkestra/blob/main/pkg/registry/e2e/fixture/README.md) for
+See [`pkg/registry/e2e/fixture/README.md`](https://github.com/inrundev/inrun/blob/main/pkg/registry/e2e/fixture/README.md) for
 instructions on running this fixture and the rule for adding new subcommands.
 
 ---

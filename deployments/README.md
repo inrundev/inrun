@@ -1,13 +1,22 @@
 # deployments/
 
-Live Orkestra deployments — operators that run continuously and serve real traffic.
+Live deployments. `public/` runs six runtimes in one cluster, each in its own namespace, aggregated by one Console at [cc.inrun.dev](https://cc.inrun.dev).
 
-| Deployment | What it is | Live at |
-|------------|------------|---------|
-| [`public/`](public/README.md) | Six Orkestra runtimes in one cluster, aggregated by a single Control Center. No login — visitors see real operator activity in real time. | [cc.orkestra.sh](https://cc.orkestra.sh) |
+| Runtime | Operator | CRDs | Shows |
+|---------|----------|------|-------|
+| `inrun-system-01` | hello-website | 1 | Deployment + Service from a `Website` CR (also hosts the Console) |
+| `inrun-system-02` | website-with-serviceaccount | 1 | The same, plus a ServiceAccount per instance |
+| `inrun-system-03` | secret-distribution | 1 | Copies a Secret across namespaces from a cluster-scoped CR |
+| `inrun-system-04` | app-platform | 5 | ReplicaSets, generated API keys with 90-day rotation, ConfigMap distribution |
+| `inrun-system-05` | data-platform | 10 | Ingestion to delivery, 30/60-day credential rotation |
+| `inrun-system-06` | network-suite | 7 | Traffic routing, self-signed TLS, 180-day key rotation |
 
----
+Each `cluster-NN/` holds `catalog.yaml`, `crd.yaml` and `cr.yaml`. Runtimes 01 and 02 manage the same CRD and are split by `allowedNamespaces` (`demo-01`, `demo-02`); 04 to 06 own their own API groups.
 
-This is where the website demo lives. When someone opens [cc.orkestra.sh](https://cc.orkestra.sh) from the Orkestra homepage, they are watching these operators reconcile.
+```bash
+cd deployments/public
+make all          # or make cluster-01 … cluster-06
+make clean
+```
 
-New deployments go in their own subdirectory here, following the same structure as `public/`: a `Makefile` for lifecycle operations, one directory per runtime instance, and a `values.yaml` for shared Helm configuration.
+Each target creates the namespace, applies the CRD, applies the RBAC from `inrun generate bundle`, installs via Helm and applies the CR.

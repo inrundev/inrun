@@ -5,16 +5,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/children"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orkcrb "github.com/orkspace/orkestra/pkg/resources/clusterrolebindings"
-	orkcr "github.com/orkspace/orkestra/pkg/resources/clusterroles"
-	orkcust "github.com/orkspace/orkestra/pkg/resources/customresources"
-	orkns "github.com/orkspace/orkestra/pkg/resources/namespaces"
-	orkpv "github.com/orkspace/orkestra/pkg/resources/pvs"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/children"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/resources/clusterrolebindings"
+	"github.com/inrundev/inrun/pkg/resources/clusterroles"
+	"github.com/inrundev/inrun/pkg/resources/customresources"
+	"github.com/inrundev/inrun/pkg/resources/namespaces"
+	"github.com/inrundev/inrun/pkg/resources/pvs"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // DeleteOwnedClusterScopedResources explicitly deletes all cluster-scoped resources declared across
@@ -29,9 +29,9 @@ import (
 func DeleteOwnedClusterScopedResources(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	obj domain.Object,
-	box orktypes.OperatorBoxConfig,
+	box types.OperatorBoxConfig,
 ) error {
 	if err := deleteOwnedNamespaces(ctx, kube, resolver, obj, box); err != nil {
 		return err
@@ -51,11 +51,11 @@ func DeleteOwnedClusterScopedResources(
 func deleteOwnedNamespaces(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	obj domain.Object,
-	box orktypes.OperatorBoxConfig,
+	box types.OperatorBoxConfig,
 ) error {
-	var srcs []orktypes.NamespaceTemplateSource
+	var srcs []types.NamespaceTemplateSource
 	for _, hook := range allHooks(box) {
 		if hook != nil {
 			srcs = append(srcs, hook.Namespaces...)
@@ -66,7 +66,7 @@ func deleteOwnedNamespaces(
 		if name == "" {
 			continue
 		}
-		if err := orkns.DeleteIfOwned(ctx, kube, obj, name); err != nil {
+		if err := namespaces.DeleteIfOwned(ctx, kube, obj, name); err != nil {
 			return fmt.Errorf("namespace[%d] %q: %w", i, name, err)
 		}
 	}
@@ -76,11 +76,11 @@ func deleteOwnedNamespaces(
 func deleteOwnedClusterRoles(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	obj domain.Object,
-	box orktypes.OperatorBoxConfig,
+	box types.OperatorBoxConfig,
 ) error {
-	var srcs []orktypes.ClusterRoleTemplateSource
+	var srcs []types.ClusterRoleTemplateSource
 	for _, hook := range allHooks(box) {
 		if hook != nil {
 			srcs = append(srcs, hook.ClusterRoles...)
@@ -91,7 +91,7 @@ func deleteOwnedClusterRoles(
 		if name == "" {
 			continue
 		}
-		if err := orkcr.DeleteIfOwned(ctx, kube, obj, name); err != nil {
+		if err := clusterroles.DeleteIfOwned(ctx, kube, obj, name); err != nil {
 			return fmt.Errorf("clusterrole[%d] %q: %w", i, name, err)
 		}
 	}
@@ -101,11 +101,11 @@ func deleteOwnedClusterRoles(
 func deleteOwnedClusterRoleBindings(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	obj domain.Object,
-	box orktypes.OperatorBoxConfig,
+	box types.OperatorBoxConfig,
 ) error {
-	var srcs []orktypes.ClusterRoleBindingTemplateSource
+	var srcs []types.ClusterRoleBindingTemplateSource
 	for _, hook := range allHooks(box) {
 		if hook != nil {
 			srcs = append(srcs, hook.ClusterRoleBindings...)
@@ -116,7 +116,7 @@ func deleteOwnedClusterRoleBindings(
 		if name == "" {
 			continue
 		}
-		if err := orkcrb.DeleteIfOwned(ctx, kube, obj, name); err != nil {
+		if err := clusterrolebindings.DeleteIfOwned(ctx, kube, obj, name); err != nil {
 			return fmt.Errorf("clusterrolebinding[%d] %q: %w", i, name, err)
 		}
 	}
@@ -126,11 +126,11 @@ func deleteOwnedClusterRoleBindings(
 func deleteOwnedPersistentVolumes(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	obj domain.Object,
-	box orktypes.OperatorBoxConfig,
+	box types.OperatorBoxConfig,
 ) error {
-	var srcs []orktypes.PVTemplateSource
+	var srcs []types.PVTemplateSource
 	for _, hook := range allHooks(box) {
 		if hook != nil {
 			srcs = append(srcs, hook.PersistentVolumes...)
@@ -141,7 +141,7 @@ func deleteOwnedPersistentVolumes(
 		if name == "" {
 			continue
 		}
-		if err := orkpv.DeleteIfOwned(ctx, kube, obj, name); err != nil {
+		if err := pvs.DeleteIfOwned(ctx, kube, obj, name); err != nil {
 			return fmt.Errorf("persistentvolume[%d] %q: %w", i, name, err)
 		}
 	}
@@ -151,11 +151,11 @@ func deleteOwnedPersistentVolumes(
 func deleteOwnedCustomResources(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	obj domain.Object,
-	box orktypes.OperatorBoxConfig,
+	box types.OperatorBoxConfig,
 ) error {
-	var srcs []orktypes.CustomResourceTemplateSource
+	var srcs []types.CustomResourceTemplateSource
 	for _, hook := range allHooks(box) {
 		if hook != nil {
 			srcs = append(srcs, hook.CustomResource...)
@@ -169,7 +169,7 @@ func deleteOwnedCustomResources(
 		if name == "" {
 			continue
 		}
-		if err := orkcust.DeleteIfOwned(ctx, kube, obj, name, "", src.APIVersion, src.Kind); err != nil {
+		if err := customresources.DeleteIfOwned(ctx, kube, obj, name, "", src.APIVersion, src.Kind); err != nil {
 			return fmt.Errorf("customresource[%d] %q: %w", i, name, err)
 		}
 	}
@@ -177,6 +177,6 @@ func deleteOwnedCustomResources(
 }
 
 // allHooks returns all three lifecycle hook blocks in declaration order.
-func allHooks(box orktypes.OperatorBoxConfig) []*orktypes.HookTemplates {
-	return []*orktypes.HookTemplates{box.EffectiveOnCreate(), box.EffectiveOnReconcile(), box.EffectiveOnDelete()}
+func allHooks(box types.OperatorBoxConfig) []*types.HookTemplates {
+	return []*types.HookTemplates{box.EffectiveOnCreate(), box.EffectiveOnReconcile(), box.EffectiveOnDelete()}
 }

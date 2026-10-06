@@ -11,15 +11,15 @@ import (
 func TestPersistMetadataVersion(t *testing.T) {
 	t.Run("updates existing metadata.version", func(t *testing.T) {
 		dir := t.TempDir()
-		primary := "motif.yaml"
+		primary := "module.yaml"
 		path := filepath.Join(dir, primary)
 
 		orig := `
-kind: Motif
+kind: Module
 metadata:
   name: postgres
   version: v1
-  description: "test motif"
+  description: "test module"
 `
 		if err := os.WriteFile(path, []byte(orig), 0o644); err != nil {
 			t.Fatalf("write primary file: %v", err)
@@ -51,11 +51,11 @@ metadata:
 
 	t.Run("creates metadata and sets version when metadata missing", func(t *testing.T) {
 		dir := t.TempDir()
-		primary := "katalog.yaml"
+		primary := "catalog.yaml"
 		path := filepath.Join(dir, primary)
 
 		orig := `
-kind: Katalog
+kind: Catalog
 spec:
   something: true
 `

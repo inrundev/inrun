@@ -3,15 +3,15 @@ package children
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // enrichGroupWithOwner embeds the controller owner under "_owner" for each
 // resource in the group. A no-op when owner enrichment is not enabled on the CRD.
 // No API call — data comes from metadata.ownerReferences already in the object.
-func enrichGroupWithOwner(_ context.Context, _ kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry) {
+func enrichGroupWithOwner(_ context.Context, _ kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry) {
 	if !enrichmentEnabled("owner", crd) {
 		return
 	}
@@ -59,7 +59,7 @@ func embedSingleOwner(obj map[string]interface{}) {
 // embedded (pointing back to the Deployment) so that replicaSetOwnerName and
 // replicaSetOwnerKind work when the RS is accessed via .children.replicaset.
 // A no-op when replicasets enrichment is not enabled on the CRD.
-func enrichGroupWithReplicaSets(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry) {
+func enrichGroupWithReplicaSets(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry) {
 	if !crd.ShouldEnrich("replicasets") {
 		return
 	}

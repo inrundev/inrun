@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -15,7 +15,7 @@ import (
 // kind is the Kubernetes Kind used to scope the event field selector
 // (involvedObject.kind). Pass "" to skip the kind filter — used for custom
 // resources whose exact kind is not known statically.
-func enrichGroupWithWarnings(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry, kind string) {
+func enrichGroupWithWarnings(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry, kind string) {
 	if !enrichmentEnabled("events", crd) {
 		return
 	}

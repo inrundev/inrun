@@ -15,19 +15,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/children"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/runtime/runners"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/children"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/runtime/runners"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
-// runTemplateReconcile interprets the Katalog's onCreate and onReconcile blocks.
+// runTemplateReconcile interprets the Catalog's onCreate and onReconcile blocks.
 // Returns the enriched resolver so callers (reconcileImpl) can pass cross/external
 // data into patchStatusWithChildren for status field evaluation.
-func (r *Reconciler[PTR]) runTemplateReconcile(ctx context.Context, resolver *orktmpl.Resolver, obj domain.Object, box orktypes.OperatorBoxConfig) (*orktmpl.Resolver, error) {
+func (r *Reconciler[PTR]) runTemplateReconcile(ctx context.Context, resolver *template.Resolver, obj domain.Object, box types.OperatorBoxConfig) (*template.Resolver, error) {
 	kube, ok := kubeclient.FromContext(ctx)
 	if !ok {
 		return resolver, fmt.Errorf("kubeclient not found in context")
@@ -72,12 +72,12 @@ func (r *Reconciler[PTR]) runTemplateReconcile(ctx context.Context, resolver *or
 func (r *Reconciler[PTR]) runResourceGroup(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	obj domain.Object,
-	t *orktypes.HookTemplates,
+	t *types.HookTemplates,
 	update bool,
 ) error {
-	if !orktypes.EvaluateConditions(resolver.Data(), t.When, t.Or, resolver.TemplateEvaluator()) {
+	if !types.EvaluateConditions(resolver.Data(), t.When, t.Or, resolver.TemplateEvaluator()) {
 		return nil
 	}
 
@@ -85,7 +85,7 @@ func (r *Reconciler[PTR]) runResourceGroup(
 	// nil-safe: if CRD has no restrictions, guard is a no-op.
 	guard := r.namespaceGuardFunc()
 
-	labelMgr := orklabels.NewManager(orklabels.Config{
+	labelMgr := labels.NewManager(labels.Config{
 		Standalone:                r.kat.IsStandaloneGateway(),
 		DeletionProtectionEnabled: r.kat.IsDeletionProtectionEnabled(),
 	})
@@ -193,7 +193,7 @@ func (r *Reconciler[PTR]) runResourceGroup(
 }
 
 // runTemplateOnDelete interprets the onDelete block.
-func (r *Reconciler[PTR]) runTemplateOnDelete(ctx context.Context, resolver *orktmpl.Resolver, obj domain.Object, box orktypes.OperatorBoxConfig) error {
+func (r *Reconciler[PTR]) runTemplateOnDelete(ctx context.Context, resolver *template.Resolver, obj domain.Object, box types.OperatorBoxConfig) error {
 	kube, ok := kubeclient.FromContext(ctx)
 	if !ok {
 		return fmt.Errorf("kubeclient not found in context")
@@ -202,7 +202,7 @@ func (r *Reconciler[PTR]) runTemplateOnDelete(ctx context.Context, resolver *ork
 	guard := r.namespaceGuardFunc()
 
 	if t := box.EffectiveOnDelete(); t != nil {
-		if orktypes.EvaluateConditions(resolver.Data(), t.When, t.Or, resolver.TemplateEvaluator()) {
+		if types.EvaluateConditions(resolver.Data(), t.When, t.Or, resolver.TemplateEvaluator()) {
 			if t.Ordered {
 				if err := r.runOrderedDelete(ctx, kube, resolver, obj, t, guard); err != nil {
 					return err

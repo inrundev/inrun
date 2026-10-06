@@ -28,7 +28,7 @@ type RoleRefSpec struct {
 	Kind string `yaml:"kind,omitempty" json:"kind,omitempty"` // Role | ClusterRole
 }
 
-// RoleTemplateSource declares one namespaced Role to be managed by Orkestra.
+// RoleTemplateSource declares one namespaced Role to be managed by Inrun.
 //
 // Example:
 //
@@ -119,7 +119,7 @@ type RoleTemplateSource struct {
 	ForceConflict *bool `yaml:"forceConflict,omitempty" json:"forceConflict,omitempty"`
 }
 
-// RoleBindingTemplateSource declares one RoleBinding to be managed by Orkestra.
+// RoleBindingTemplateSource declares one RoleBinding to be managed by Inrun.
 //
 // Example:
 //
@@ -222,11 +222,11 @@ type RoleBindingTemplateSource struct {
 
 // ── ClusterRole / ClusterRoleBinding ─────────────────────────────────────────
 
-// ClusterRoleTemplateSource declares one cluster-scoped ClusterRole to be managed by Orkestra.
+// ClusterRoleTemplateSource declares one cluster-scoped ClusterRole to be managed by Inrun.
 //
 // ClusterRoles are cluster-scoped — no namespace field. Because Kubernetes cannot
 // auto-GC cluster-scoped resources owned by namespace-scoped CRs, ownership is
-// tracked via the orkestra.io/owner label. Declare cleanup in onDelete if needed.
+// tracked via the inrun.dev/owner label. Declare cleanup in onDelete if needed.
 //
 // Example:
 //
@@ -310,10 +310,10 @@ type ClusterRoleTemplateSource struct {
 	ForceConflict *bool `yaml:"forceConflict,omitempty" json:"forceConflict,omitempty"`
 }
 
-// ClusterRoleBindingTemplateSource declares one cluster-scoped ClusterRoleBinding to be managed by Orkestra.
+// ClusterRoleBindingTemplateSource declares one cluster-scoped ClusterRoleBinding to be managed by Inrun.
 //
 // ClusterRoleBindings are cluster-scoped — no namespace field.
-// Ownership is tracked via the orkestra.io/owner label.
+// Ownership is tracked via the inrun.dev/owner label.
 //
 // Example:
 //

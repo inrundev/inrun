@@ -24,12 +24,12 @@ package observe
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/runtime/informer"
-	"github.com/orkspace/orkestra/pkg/runtime/queue"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/runtime/informer"
+	"github.com/inrundev/inrun/pkg/runtime/queue"
+	"github.com/inrundev/inrun/pkg/types"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -42,14 +42,14 @@ import (
 // outside the options so the options describe the watch itself rather than
 // an individual event.
 type watchOptions struct {
-	entry            orktypes.WatchEntry
+	entry            types.WatchEntry
 	gvr              schema.GroupVersionResource
-	crd              orktypes.CRDEntry
+	crd              types.CRDEntry
 	queue            *queue.Workqueue
 	broadcastAllowed bool
 }
 
-func (o *Observer) observeWatches(ctx context.Context, crd orktypes.CRDEntry) {
+func (o *Observer) observeWatches(ctx context.Context, crd types.CRDEntry) {
 	if !crd.WithWatchEntries() && !crd.WithAnyManagedResources() {
 		return
 	}
@@ -114,7 +114,7 @@ func (o *Observer) observeWatches(ctx context.Context, crd orktypes.CRDEntry) {
 				kind = gvk.Kind
 			}
 		}
-		entry := orktypes.WatchEntry{
+		entry := types.WatchEntry{
 			APIVersion: gvr.Group + "/" + gvr.Version,
 			Kind:       kind,
 		}
@@ -173,7 +173,7 @@ func (o *Observer) startWatchInformer(ctx context.Context, opts watchOptions) {
 				return
 			}
 
-			o.handleWatchEvent(ctx, opts, nil, obj, orktypes.ObserveEventCreate)
+			o.handleWatchEvent(ctx, opts, nil, obj, types.ObserveEventCreate)
 		},
 
 		UpdateFunc: func(oldObj, newObj interface{}) {
@@ -181,7 +181,7 @@ func (o *Observer) startWatchInformer(ctx context.Context, opts watchOptions) {
 				return
 			}
 
-			o.handleWatchEvent(ctx, opts, oldObj, newObj, orktypes.ObserveEventUpdate)
+			o.handleWatchEvent(ctx, opts, oldObj, newObj, types.ObserveEventUpdate)
 		},
 
 		DeleteFunc: func(obj interface{}) {
@@ -189,7 +189,7 @@ func (o *Observer) startWatchInformer(ctx context.Context, opts watchOptions) {
 				return
 			}
 
-			o.handleWatchEvent(ctx, opts, nil, domain.UnwrapCacheTombstone(obj), orktypes.ObserveEventDelete)
+			o.handleWatchEvent(ctx, opts, nil, domain.UnwrapCacheTombstone(obj), types.ObserveEventDelete)
 		},
 	})
 
@@ -202,7 +202,7 @@ func (o *Observer) startWatchInformer(ctx context.Context, opts watchOptions) {
 		inf,
 	)
 
-	// The observer owns the informer lifecycle; Kordinator only asks the
+	// The observer owns the informer lifecycle; Coordinator only asks the
 	// observer to establish secondary observation for the CRD.
 	go inf.Run(ctx.Done())
 
@@ -213,7 +213,7 @@ func (o *Observer) startWatchInformer(ctx context.Context, opts watchOptions) {
 		Msg("observe: watch informer started")
 }
 
-func (o *Observer) handleWatchEvent(ctx context.Context, opts watchOptions, oldObj, newObj interface{}, on orktypes.ObserveEvent) {
+func (o *Observer) handleWatchEvent(ctx context.Context, opts watchOptions, oldObj, newObj interface{}, on types.ObserveEvent) {
 	if !opts.entry.ObserveOn(on.String()) {
 		return
 	}

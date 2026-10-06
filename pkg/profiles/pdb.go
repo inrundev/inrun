@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // PDBProfile is a named PodDisruptionBudget disruption limit preset.
@@ -36,7 +36,7 @@ type PDBProfileResult struct {
 // ApplyPDBProfile expands a named PDB profile into disruption limit values.
 // User-defined profiles in reg are checked first; falls back to built-ins.
 // Returns an error for unknown profile names.
-func ApplyPDBProfile(name string, reg *orktypes.ProfileRegistry) (PDBProfileResult, error) {
+func ApplyPDBProfile(name string, reg *types.ProfileRegistry) (PDBProfileResult, error) {
 	if reg != nil {
 		if def, found := reg.LookupPDB(name); found {
 			return PDBProfileResult{MinAvailable: def.MinAvailable, MaxUnavailable: def.MaxUnavailable}, nil

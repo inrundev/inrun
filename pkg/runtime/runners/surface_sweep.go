@@ -5,13 +5,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // SweepOwnedNamespacedResources deletes all namespace-scoped resources in ns
-// whose orkestra-owner label matches ownerKey. Used for surface-switch cleanup
+// whose inrun-owner label matches ownerKey. Used for surface-switch cleanup
 // where template-based deletion cannot work: when a spec field that drove a
 // forEach declaration is removed before cleanup runs (e.g. spec.regions is
 // cleared when switching away from a regional target), ExpandForEach produces
@@ -26,7 +26,7 @@ func SweepOwnedNamespacedResources(
 	ns string,
 ) error {
 	cs := kube.Clientset()
-	sel := labels.OrkestraOwner + "=" + ownerKey
+	sel := labels.InrunOwner + "=" + ownerKey
 	opts := metav1.ListOptions{LabelSelector: sel}
 	dopts := metav1.DeleteOptions{}
 
@@ -150,7 +150,7 @@ func SweepOwnedNamespacedResources(
 }
 
 // SweepOwnedClusterScopedResources deletes all cluster-scoped resources whose
-// orkestra-owner label matches ownerKey. Mirrors SweepOwnedNamespacedResources
+// inrun-owner label matches ownerKey. Mirrors SweepOwnedNamespacedResources
 // but operates on cluster-scoped types that Kubernetes GC does not cascade.
 func SweepOwnedClusterScopedResources(
 	ctx context.Context,
@@ -158,7 +158,7 @@ func SweepOwnedClusterScopedResources(
 	ownerKey string,
 ) error {
 	cs := kube.Clientset()
-	sel := labels.OrkestraOwner + "=" + ownerKey
+	sel := labels.InrunOwner + "=" + ownerKey
 	opts := metav1.ListOptions{LabelSelector: sel}
 	dopts := metav1.DeleteOptions{}
 

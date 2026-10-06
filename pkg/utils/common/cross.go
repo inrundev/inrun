@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/secrets"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/secrets"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
 )
@@ -19,7 +19,7 @@ const crossMetricHTTPTimeout = 5 * time.Second
 
 // ResolveCrossToken resolves cross declaration token from either plan token or SecretRef.
 // Used by autoscaler and reconciler packages currently
-func ResolveCrossToken(ctx context.Context, cs kubernetes.Interface, s *orktypes.CrossSource) (string, error) {
+func ResolveCrossToken(ctx context.Context, cs kubernetes.Interface, s *types.CrossSource) (string, error) {
 	if !s.HasAuth() {
 		return "", nil
 	}
@@ -31,18 +31,18 @@ func ResolveCrossToken(ctx context.Context, cs kubernetes.Interface, s *orktypes
 
 }
 
-// FetchCrossMetricHTTP calls the remote operator's /katalog/{crd} endpoint and
+// FetchCrossMetricHTTP calls the remote operator's /catalog/{crd} endpoint and
 // extracts the named metric from the "metrics" key in the JSON response.
 // This mirrors how readCross uses source.endpoint for CR observation.
-// func FetchCrossMetricHTTP(ctx context.Context, cs kubernetes.Interface, source *orktypes.CrossSource, endpoint string) (map[string]interface{}, bool)
-// FetchCrossMetricHTTP calls the remote operator's /katalog/{crd} endpoint and
+// func FetchCrossMetricHTTP(ctx context.Context, cs kubernetes.Interface, source *types.CrossSource, endpoint string) (map[string]interface{}, bool)
+// FetchCrossMetricHTTP calls the remote operator's /catalog/{crd} endpoint and
 // extracts the named metric from the "metrics" key in the JSON response.
 // This mirrors how readCross uses source.endpoint for CR observation.
 
-// fetchCrossViaHTTP fetches a CR's detail from an Orkestra CR endpoint.
-// The endpoint should be the /katalog/{crd}/cr/{namespace}/{name} URL
-// which is already built and running on every Orkestra instance.
-func FetchCrossViaHTTP(ctx context.Context, cs kubernetes.Interface, source *orktypes.CrossSource) ([]byte, map[string]interface{}) {
+// fetchCrossViaHTTP fetches a CR's detail from an Inrun CR endpoint.
+// The endpoint should be the /catalog/{crd}/cr/{namespace}/{name} URL
+// which is already built and running on every Inrun instance.
+func FetchCrossViaHTTP(ctx context.Context, cs kubernetes.Interface, source *types.CrossSource) ([]byte, map[string]interface{}) {
 	if ctx == context.TODO() {
 		ctx = context.Background()
 	}
@@ -96,7 +96,7 @@ func FetchCrossViaHTTP(ctx context.Context, cs kubernetes.Interface, source *ork
 }
 
 // ResolveResourceMetricFromObject extracts the raw metrics payload from the
-// orkestra.orkspace.io/cross-metric annotation on a CR object map.
+// inrun.dev/cross-metric annotation on a CR object map.
 // This annotation is stamped by the runtime
 // Returns nil when the annotation is absent or unparseable.
 // Used by both the gateway to inject .metrics into
@@ -106,7 +106,7 @@ func ResolveResourceMetricFromObject(obj map[string]interface{}) map[string]inte
 }
 
 // ResolveResourceHealthFromObject extracts the raw health payload from the
-// orkestra.orkspace.io/health annotation on a CR object map.
+// inrun.dev/health annotation on a CR object map.
 // This annotation is stamped by the runtime
 // Returns nil when the annotation is absent or unparseable.
 // Used by both the gateway to inject .health into

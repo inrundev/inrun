@@ -15,15 +15,15 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/event"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator/contract"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
-	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/generic"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/event"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator/contract"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator/prepare"
+	"github.com/inrundev/inrun/pkg/runtime/reconcilers/generic"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/rs/zerolog/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	envtestBinDir = ".ork/envtest-bins"
+	envtestBinDir = ".inrun/envtest-bins"
 	// DefaultEnvtestK8sVersion is the Kubernetes version used when --envtest-version
 	// is not set. "1.32" (two components) resolves to the latest stable 1.32.x patch
 	// from the controller-runtime release index. The setup-envtest "1.32.x" wildcard
@@ -50,9 +50,9 @@ const (
 // against a real SharedIndexInformer watching the envtest API server.
 //
 // crdPaths must contain at least one CRD YAML — set via spec.crd / spec.crdFiles.
-// Binaries are auto-downloaded to ~/.ork/envtest-bins on first run; KUBEBUILDER_ASSETS
+// Binaries are auto-downloaded to ~/.inrun/envtest-bins on first run; KUBEBUILDER_ASSETS
 // overrides this.
-func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
+func RunWithEnvtest(ctx context.Context, kat *catalog.Catalog, crdName string,
 	cr *unstructured.Unstructured, maxCycles int, opts RunOptions, crdPaths []string, k8sVersion string) (*Result, error) {
 
 	prev := log.Logger
@@ -72,7 +72,7 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 		ErrorIfCRDPathMissing: true,
 	}
 
-	// Respect KUBEBUILDER_ASSETS; otherwise auto-download to ~/.ork/envtest-bins.
+	// Respect KUBEBUILDER_ASSETS; otherwise auto-download to ~/.inrun/envtest-bins.
 	if assets := os.Getenv("KUBEBUILDER_ASSETS"); assets != "" {
 		env.BinaryAssetsDirectory = assets
 	} else {
@@ -95,15 +95,11 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 
 	crdEntry, ok := kat.CRDEntry(crdName)
 	if !ok {
-		return nil, fmt.Errorf("CRD %q not found in Katalog", crdName)
+		return nil, fmt.Errorf("CRD %q not found in Catalog", crdName)
 	}
-	if crdEntry.WithRemoteDecl() {
-		return nil, ErrRemoteReconciler
-	}
-
 	result := &Result{}
 	box := effectiveOperatorBox(crdEntry, cr, opts.Target)
-	for _, phase := range []*orktypes.HookTemplates{
+	for _, phase := range []*types.HookTemplates{
 		box.EffectiveOnCreate(),
 		box.EffectiveOnReconcile(),
 		box.EffectiveOnDelete(),
@@ -111,7 +107,7 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 		if phase == nil {
 			continue
 		}
-		filtered, skipped := orktypes.FilterSimulatable(*phase)
+		filtered, skipped := types.FilterSimulatable(*phase)
 		*phase = filtered
 		result.Notes = append(result.Notes, skipped...)
 	}
@@ -140,7 +136,22 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	// loopKube methods (AdvanceCycle, OpsForCycle, etc.) work correctly.
 	recKube := &managedKube{Interface: realKube, shared: shared}
 
-	// Apply the CR to the real API server before the loop starts.
+	// Apply the CRD's setup objects (e.g. a remote reconciler's token Secret),
+	// then the CR, to the real API server before the loop starts.
+	setup, err := setupObjects(&crdEntry)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range setup {
+		res, err := kubeclient.ResourceFor(recKube, obj)
+		if err != nil {
+			return nil, fmt.Errorf("setup %s %s: %w", obj.GetKind(), obj.GetName(), err)
+		}
+		if _, err := res.Create(ctx, obj, metav1.CreateOptions{}); err != nil {
+			return nil, fmt.Errorf("setup %s %s: %w", obj.GetKind(), obj.GetName(), err)
+		}
+	}
+
 	gvr := crdEntry.GVR()
 	crData, err := json.Marshal(cr.Object)
 	if err != nil {
@@ -174,10 +185,10 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	}
 
 	newObjFn := func() domain.Object { return &unstructured.Unstructured{} }
-	if objFactory, ok := orktypes.ObjectRegistry[gvk]; ok {
+	if objFactory, ok := types.ObjectRegistry[gvk]; ok {
 		if _, ok := objFactory().(domain.Object); ok {
 			newObjFn = func() domain.Object {
-				return orktypes.ObjectRegistry[gvk]().(domain.Object)
+				return types.ObjectRegistry[gvk]().(domain.Object)
 			}
 		}
 	}
@@ -208,11 +219,11 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	}
 
 	var hookBinder domain.AnyReconcileHooks
-	if fn, ok := orktypes.HookRegistry[gvk]; ok {
+	if fn, ok := types.HookRegistry[gvk]; ok {
 		hookBinder = fn()
 	}
 
-	peerRegistry := kordinator.NewKordinatorRegistry()
+	peerRegistry := coordinator.NewCoordinatorRegistry()
 	for _, peerName := range kat.CRDNames() {
 		if peerName == crdEntry.Name {
 			continue
@@ -237,7 +248,13 @@ func RunWithEnvtest(ctx context.Context, kat *katalog.Katalog, crdName string,
 	}
 
 	var r domain.Reconciler
-	if factoryFn, ok := orktypes.ReconcilerRegistry[gvk]; ok {
+	if crdEntry.WithRemoteDecl() {
+		r, err = newRemoteReconciler(&crdEntry, recKube.WithInformer(inf), outsidePodNamespace)
+		if err != nil {
+			return nil, err
+		}
+		result.Notes = append(result.Notes, remoteNote)
+	} else if factoryFn, ok := types.ReconcilerRegistry[gvk]; ok {
 		r = factoryFn(recKube.WithInformer(inf).WithEventRecorder(event.Discard()))
 	} else {
 		r = generic.New(

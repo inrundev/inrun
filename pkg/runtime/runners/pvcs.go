@@ -5,27 +5,27 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkpvc "github.com/orkspace/orkestra/pkg/resources/pvcs"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/pvcs"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunPVCs resolves and applies PersistentVolumeClaim template declarations.
 func RunPVCs(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.PVCTemplateSource,
+	srcs []types.PVCTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -37,7 +37,7 @@ func RunPVCs(
 	}
 
 	for i, src := range srcs {
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		name, _ := resolver.Resolve(src.Name)
 		ns, _ := resolver.Resolve(src.Namespace)
@@ -52,7 +52,7 @@ func RunPVCs(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orkpvc.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := pvcs.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("pvcs[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -69,18 +69,18 @@ func RunPVCs(
 			return fmt.Errorf("pvcs[%d]: %w", i, err)
 		}
 
-		spec := orkpvc.Resolve(resolved, resolver.OwnerName())
+		spec := pvcs.Resolve(resolved, resolver.OwnerName())
 
 		if update {
-			if err := orkpvc.Update(ctx, kube, owner, spec); err != nil {
+			if err := pvcs.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("pvcs[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkpvc.Create(ctx, kube, owner, spec); err != nil {
+			if err := pvcs.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("pvcs[%d].create: %w", i, err)
 			}
 			if src.Reconcile {
-				if err := orkpvc.Update(ctx, kube, owner, spec); err != nil {
+				if err := pvcs.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("pvcs[%d].reconcile: %w", i, err)
 				}
 			}

@@ -1,8 +1,0 @@
-apiVersion: demo.orkestra.io/v1
-kind: WorkerService
-metadata:
-  name: my-worker
-  namespace: default
-spec:
-  image: nginx:1.25
-  port: 8080

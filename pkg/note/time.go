@@ -6,7 +6,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 	"github.com/robfig/cron/v3"
 )
 
@@ -117,7 +117,7 @@ func noteTimeUntil(s string) string {
 //
 // Primary use: declarative rotation checks in when: conditions.
 //
-//	{{ isExpired (index .metadata.annotations "orkestra.orkspace.io/generated-at") "30d" }}
+//	{{ isExpired (index .metadata.annotations "inrun.dev/generated-at") "30d" }}
 //	→ true when the annotation timestamp is more than 30 days old
 func noteIsExpired(timestamp interface{}, duration string) bool {
 	t, ok := parseTime(fmt.Sprint(timestamp))

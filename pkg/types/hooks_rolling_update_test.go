@@ -3,16 +3,16 @@ package types_test
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func crdWithDeploymentOnCreate(deps ...orktypes.DeploymentTemplateSource) orktypes.CRDEntry {
-	return orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnCreate: &orktypes.HookTemplates{
+func crdWithDeploymentOnCreate(deps ...types.DeploymentTemplateSource) types.CRDEntry {
+	return types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnCreate: &types.HookTemplates{
 					Deployments: deps,
 				},
 			},
@@ -21,27 +21,27 @@ func crdWithDeploymentOnCreate(deps ...orktypes.DeploymentTemplateSource) orktyp
 }
 
 func TestCollectRollingUpdateProfileEntries_Empty(t *testing.T) {
-	c := orktypes.CRDEntry{}
+	c := types.CRDEntry{}
 	assert.Empty(t, c.CollectRollingUpdateProfileEntries())
 }
 
 func TestCollectRollingUpdateProfileEntries_NoRollingUpdate(t *testing.T) {
-	c := crdWithDeploymentOnCreate(orktypes.DeploymentTemplateSource{Name: "app"})
+	c := crdWithDeploymentOnCreate(types.DeploymentTemplateSource{Name: "app"})
 	assert.Empty(t, c.CollectRollingUpdateProfileEntries())
 }
 
 func TestCollectRollingUpdateProfileEntries_RollingUpdateNoProfile(t *testing.T) {
-	c := crdWithDeploymentOnCreate(orktypes.DeploymentTemplateSource{
+	c := crdWithDeploymentOnCreate(types.DeploymentTemplateSource{
 		Name:          "app",
-		RollingUpdate: &orktypes.RollingUpdateBehavior{},
+		RollingUpdate: &types.RollingUpdateBehavior{},
 	})
 	assert.Empty(t, c.CollectRollingUpdateProfileEntries())
 }
 
 func TestCollectRollingUpdateProfileEntries_ProfileReturned(t *testing.T) {
-	c := crdWithDeploymentOnCreate(orktypes.DeploymentTemplateSource{
+	c := crdWithDeploymentOnCreate(types.DeploymentTemplateSource{
 		Name:          "app",
-		RollingUpdate: &orktypes.RollingUpdateBehavior{Profile: "safe"},
+		RollingUpdate: &types.RollingUpdateBehavior{Profile: "safe"},
 	})
 	entries := c.CollectRollingUpdateProfileEntries()
 	require.Len(t, entries, 1)
@@ -52,9 +52,9 @@ func TestCollectRollingUpdateProfileEntries_ProfileReturned(t *testing.T) {
 }
 
 func TestCollectRollingUpdateProfileEntries_Mixed_MaxSurge(t *testing.T) {
-	c := crdWithDeploymentOnCreate(orktypes.DeploymentTemplateSource{
+	c := crdWithDeploymentOnCreate(types.DeploymentTemplateSource{
 		Name: "app",
-		RollingUpdate: &orktypes.RollingUpdateBehavior{
+		RollingUpdate: &types.RollingUpdateBehavior{
 			Profile:  "fast",
 			MaxSurge: "2",
 		},
@@ -65,9 +65,9 @@ func TestCollectRollingUpdateProfileEntries_Mixed_MaxSurge(t *testing.T) {
 }
 
 func TestCollectRollingUpdateProfileEntries_Mixed_MaxUnavailable(t *testing.T) {
-	c := crdWithDeploymentOnCreate(orktypes.DeploymentTemplateSource{
+	c := crdWithDeploymentOnCreate(types.DeploymentTemplateSource{
 		Name: "app",
-		RollingUpdate: &orktypes.RollingUpdateBehavior{
+		RollingUpdate: &types.RollingUpdateBehavior{
 			Profile:        "blue-green",
 			MaxUnavailable: "0",
 		},
@@ -78,8 +78,8 @@ func TestCollectRollingUpdateProfileEntries_Mixed_MaxUnavailable(t *testing.T) {
 }
 
 func TestCollectRollingUpdateProfileEntries_TemplateExpr(t *testing.T) {
-	c := crdWithDeploymentOnCreate(orktypes.DeploymentTemplateSource{
-		RollingUpdate: &orktypes.RollingUpdateBehavior{Profile: "{{ .Spec.DeployProfile }}"},
+	c := crdWithDeploymentOnCreate(types.DeploymentTemplateSource{
+		RollingUpdate: &types.RollingUpdateBehavior{Profile: "{{ .Spec.DeployProfile }}"},
 	})
 	entries := c.CollectRollingUpdateProfileEntries()
 	require.Len(t, entries, 1)
@@ -87,12 +87,12 @@ func TestCollectRollingUpdateProfileEntries_TemplateExpr(t *testing.T) {
 }
 
 func TestCollectRollingUpdateProfileEntries_StatefulSet(t *testing.T) {
-	c := orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnCreate: &orktypes.HookTemplates{
-					StatefulSets: []orktypes.StatefulSetTemplateSource{
-						{Name: "db", RollingUpdate: &orktypes.RollingUpdateBehavior{Profile: "safe"}},
+	c := types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnCreate: &types.HookTemplates{
+					StatefulSets: []types.StatefulSetTemplateSource{
+						{Name: "db", RollingUpdate: &types.RollingUpdateBehavior{Profile: "safe"}},
 					},
 				},
 			},
@@ -105,12 +105,12 @@ func TestCollectRollingUpdateProfileEntries_StatefulSet(t *testing.T) {
 }
 
 func TestCollectRollingUpdateProfileEntries_OnReconcile(t *testing.T) {
-	c := orktypes.CRDEntry{
-		OperatorBox: &orktypes.OperatorBoxConfig{
-			Reconcile: &orktypes.ReconcileConfig{
-				OnReconcile: &orktypes.HookTemplates{
-					Deployments: []orktypes.DeploymentTemplateSource{
-						{Name: "app", RollingUpdate: &orktypes.RollingUpdateBehavior{Profile: "fast"}},
+	c := types.CRDEntry{
+		OperatorBox: &types.OperatorBoxConfig{
+			Reconcile: &types.ReconcileConfig{
+				OnReconcile: &types.HookTemplates{
+					Deployments: []types.DeploymentTemplateSource{
+						{Name: "app", RollingUpdate: &types.RollingUpdateBehavior{Profile: "fast"}},
 					},
 				},
 			},

@@ -1,12 +1,12 @@
-# https://orkestra.sh/docs/reference/schema/e2e/
-apiVersion: orkestra.orkspace.io/v1
+# https://inrun.dev/docs/reference/schema/e2e/
+apiVersion: inrun.dev/v1
 kind: E2E
 metadata:
   name: webhook-protection-suite
   description: >
     Gateway webhook regression suite — admission webhooks (validation +
     mutation), deletion protection, and namespace restriction enforcement.
-    Runs all three in the same cluster. Adapted from examples/security/.
+    Runs all three in the same cluster.
 
 imports:
   - ./admission/e2e.yaml

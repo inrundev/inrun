@@ -1,9 +1,0 @@
-apiVersion: allopt.demo.orkestra.io/v1alpha1
-kind: ConstructorApp
-metadata:
-  name: my-constructor-app
-  namespace: default
-spec:
-  image: nginx:1.25
-  replicas: 2
-  port: 8080

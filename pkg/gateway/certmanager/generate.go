@@ -10,7 +10,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ type BundleOpts struct {
 // pattern for a Kubernetes Service. The CN and all DNS SANs are derived from
 // svcName and namespace — no manual SAN list required.
 //
-// Use this for all Orkestra-managed in-cluster certs. Use GenerateTLSBundle
+// Use this for all Inrun-managed in-cluster certs. Use GenerateTLSBundle
 // directly when custom SANs are needed (e.g. ingress, workload secrets).
 func GenerateClusterBundle(svcName, namespace string, opts BundleOpts) (*TLSBundle, error) {
 	validFor := opts.ValidFor
@@ -80,8 +80,8 @@ func GenerateTLSBundle(commonName string, dnsNames []string, validFor string) (*
 	caTemplate := &x509.Certificate{
 		SerialNumber: randomSerial(),
 		Subject: pkix.Name{
-			CommonName:   "orkestra-ca",
-			Organization: []string{"Orkestra"},
+			CommonName:   "inrun-ca",
+			Organization: []string{"Inrun"},
 		},
 		NotBefore:             time.Now().Add(-5 * time.Minute), // clock skew tolerance
 		NotAfter:              time.Now().Add(validity + 24*time.Hour),
@@ -110,7 +110,7 @@ func GenerateTLSBundle(commonName string, dnsNames []string, validFor string) (*
 		SerialNumber: randomSerial(),
 		Subject: pkix.Name{
 			CommonName:   commonName,
-			Organization: []string{"Orkestra"},
+			Organization: []string{"Inrun"},
 		},
 		DNSNames:    dnsNames,
 		NotBefore:   time.Now().Add(-5 * time.Minute),

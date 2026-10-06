@@ -9,7 +9,7 @@ than depending on the example pack.
 ## Run
 
 ```sh
-ork e2e pkg/gateway/webhook/fixture/protection/e2e.yaml
+inrun e2e pkg/gateway/webhook/fixture/protection/e2e.yaml
 ```
 
 Or each webhook individually — see the README in each subdirectory.

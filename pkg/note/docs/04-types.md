@@ -4,7 +4,7 @@ Type notes inspect and convert the runtime Go types of values in the CR. Because
 
 ## Why runtime types matter
 
-A CR field declared as `type: object` in the CRD schema can arrive as either a string or a map depending on how the user wrote their YAML. Type notes let a single Katalog handle both:
+A CR field declared as `type: object` in the CRD schema can arrive as either a string or a map depending on how the user wrote their YAML. Type notes let a single Catalog handle both:
 
 ```yaml
 spec:

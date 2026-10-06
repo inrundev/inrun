@@ -1,9 +1,0 @@
-apiVersion: resilience.demo.orkestra.io/v1alpha1
-kind: BlockchainApp
-metadata:
-  name: my-chain
-  namespace: default
-spec:
-  image: "myorg/blockchain-node:v1.0.0"
-  replicas: 2
-  port: 8545

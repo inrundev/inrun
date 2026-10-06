@@ -28,12 +28,12 @@ const (
 	ServeOpAll ServeOperation = "*"
 )
 
-// serveValidOperations is the authoritative set used by ork validate and ork serve.
+// serveValidOperations is the authoritative set used by inrun validate and inrun serve.
 var serveValidOperations = []string{
 	ServeOpGet, ServeOpList, ServeOpCreate, ServeOpUpdate, ServeOpDelete, ServeOpAll,
 }
 
-// serveValidClasses is the authoritative set used by ork serve
+// serveValidClasses is the authoritative set used by inrun serve
 var serveValidClasses = []string{
 	ServeClassSchema, ServeClassResources,
 }
@@ -60,13 +60,13 @@ const (
 //  3. No access when both are empty.
 //
 // When global is non-empty, class-specific lists must be subsets of it.
-// ork validate enforces this. When global is empty, each class list is
+// inrun validate enforces this. When global is empty, each class list is
 // fully independent — fine-grained mode.
 //
 // Example — one token, two different access levels:
 //
 //	permissions:
-//	  schema:    [get]              # can browse the catalog
+//	  schema:    [get]              # can browse the service list
 //	  resources: [create, update]   # can create and update CRs
 //
 // Example — global with a narrower schema:

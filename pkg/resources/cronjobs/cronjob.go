@@ -8,14 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -69,7 +69,7 @@ type ResolvedCronJobSpec struct {
 	Labels map[string]string
 
 	// Resources — CPU and memory requests/limits. nil means no limits set.
-	Resources *orktypes.ResourceRequirements
+	Resources *types.ResourceRequirements
 
 	// ImagePullSecrets is an optional list of references to secrets in the same namespace to use
 	// for pulling any of the images used by this PodSpec.
@@ -77,10 +77,10 @@ type ResolvedCronJobSpec struct {
 	ImagePullSecrets []string
 
 	// SecurityContext — container-level security settings.
-	SecurityContext *orktypes.ContainerSecurityContext
+	SecurityContext *types.ContainerSecurityContext
 
 	// PodSecurity — pod-level security settings.
-	PodSecurity *orktypes.PodSecurityContext
+	PodSecurity *types.PodSecurityContext
 
 	// Sleep injects an artificial delay into the reconcile of this resource.
 	// Useful for autoscale testing, latency simulation, and chaos engineering.
@@ -135,7 +135,7 @@ func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object,
 }
 
 // Apply creates or updates a CronJob using Server-Side Apply.
-// Sends only the fields Orkestra owns; k8s-injected defaults are invisible.
+// Sends only the fields Inrun owns; k8s-injected defaults are invisible.
 func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedCronJobSpec) error {
 	if err := validateSpec(spec); err != nil {
 		return fmt.Errorf("cronjob.Apply: %w", err)
@@ -156,7 +156,7 @@ func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, 
 
 	if _, err = kube.Clientset().BatchV1().CronJobs(namespace).Patch(
 		ctx, spec.Name, k8stypes.ApplyPatchType, body,
-		metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
+		metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
 	); err != nil {
 		return fmt.Errorf("cronjob.Apply: %w", err)
 	}
@@ -215,7 +215,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 		}
 		return fmt.Errorf("cronjob.DeleteIfOwned: getting %q: %w", name, err)
 	}
-	if existing.Labels[labels.OrkestraOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if existing.Labels[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 	return kube.Clientset().BatchV1().CronJobs(namespace).
@@ -225,7 +225,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 // Resolve builds a ResolvedCronJobSpec from a CronJobTemplateSource.
 // All template expressions in src must already have been evaluated by
 // template.Resolver — Resolve only performs type conversion and defaults.
-func Resolve(src orktypes.CronJobTemplateSource, ownerName string, reg *orktypes.ProfileRegistry) ResolvedCronJobSpec {
+func Resolve(src types.CronJobTemplateSource, ownerName string, reg *types.ProfileRegistry) ResolvedCronJobSpec {
 	spec := ResolvedCronJobSpec{
 		Name:            src.Name,
 		Namespace:       src.Namespace,
@@ -300,7 +300,7 @@ func Resolve(src orktypes.CronJobTemplateSource, ownerName string, reg *orktypes
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 func buildCronJob(owner domain.Object, spec ResolvedCronJobSpec, namespace string) *batchv1.CronJob {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 	cj := &batchv1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            spec.Name,

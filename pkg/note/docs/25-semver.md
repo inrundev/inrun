@@ -1,6 +1,6 @@
 # 25 — Semver Notes
 
-Parse, compare, and manipulate semantic version strings in Katalog templates. Useful for conditional logic based on operator image versions, library versions in CR specs, or version fields propagated through status.
+Parse, compare, and manipulate semantic version strings in Catalog templates. Useful for conditional logic based on operator image versions, library versions in CR specs, or version fields propagated through status.
 
 All notes return a safe zero value (`""`, `0`, `false`) for invalid input — never an error.
 

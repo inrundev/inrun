@@ -1,9 +1,0 @@
-apiVersion: demo.orkestra.io/v1
-kind: Website
-metadata:
-  name: my-website-default
-  namespace: default
-spec:
-  image: nginx:1.25
-  port: 8080
-  # replicas intentionally omitted — default note supplies 1

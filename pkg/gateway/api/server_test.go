@@ -5,16 +5,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
-// serverKat returns a *katalog.Katalog with the Gateway API enabled and one
+// serverKat returns a *catalog.Catalog with the Gateway API enabled and one
 // serve-enabled CRD, so Register() actually registers routes.
-func serverKat() *katalog.Katalog {
-	kat := newKat(map[string]*orktypes.CRDEntry{"app": appCRD()})
-	kat.Gateway = &orktypes.GatewayConfig{
-		API: &orktypes.GatewayAPIConfig{Enabled: true},
+func serverKat() *catalog.Catalog {
+	kat := newKat(map[string]*types.CRDEntry{"app": appCRD()})
+	kat.Gateway = &types.GatewayConfig{
+		API: &types.GatewayAPIConfig{Enabled: true},
 	}
 	return kat
 }

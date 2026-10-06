@@ -19,7 +19,7 @@ import (
 // external: protocol: prometheus calls that target the operator's own metrics.
 //
 // Supported: bare metric names (go_goroutines) and label-filtered selectors
-// ({__name__="go_goroutines", job="orkestra"}).
+// ({__name__="go_goroutines", job="inrun"}).
 // Unsupported: PromQL functions (rate, sum, etc.) — return empty vector.
 func (h *HealthServer) registerQueryHandler() {
 	h.mux.HandleFunc("/api/v1/query", h.queryHandler)

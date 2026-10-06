@@ -1,9 +1,9 @@
 package shared
 
 import (
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -30,7 +30,7 @@ func ToPullSecrets(names []string) []corev1.LocalObjectReference {
 	return out
 }
 
-// ResolveOwnerReferences returns the common ownership reference for orkestra-managed resources.
+// ResolveOwnerReferences returns the common ownership reference for inrun-managed resources.
 func ResolveOwnerReferences(owner domain.Object) []metav1.OwnerReference {
 	apiVersion := ""
 	kind := ""

@@ -1,17 +1,3 @@
-// Package labels defines all label, annotation, and finalizer constants used by
-// the Orkestra control plane. These identifiers form the contract between the
-// runtime, admission webhooks, generators, CLI tooling, and developer-created
-// workloads.
-//
-// Nothing in this package performs logic — it only provides:
-//   - stable label keys
-//   - stable annotation keys
-//   - stable finalizer keys
-//   - helpers for constructing label sets
-//   - selectors used by the admission webhooks
-//
-// This package is intentionally dependency‑free and safe to import from any
-// layer of the system (runtime, CLI, generators, komposers, motifs, etc.).
 package labels
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,19 +11,19 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // DeletionProtectionLabel marks resources that must not be deleted. Any object
 // carrying:
 //
-//	orkestra.io/deletion-protection=true
+//	inrun.dev/deletion-protection=true
 //
 // will be matched by the deletion‑protection admission webhook. This protects
-// both Orkestra control‑plane resources and developer‑opt‑in resources.
+// both Inrun control‑plane resources and developer‑opt‑in resources.
 const (
-	DeletionProtectionLabel = "orkestra.io/deletion-protection"
+	DeletionProtectionLabel = "inrun.dev/deletion-protection"
 	// DeletionProtectionValue is the label value that enables protection.
 	DeletionProtectionValue = "true"
 
 	// StrictModeExemptKey is the label that exempts a resource from strict‑mode
 	// enforcement. When present with value "true", the resource's deletion‑protection
 	// label can be removed even if strictMode is enabled.
-	StrictModeExemptKey   = "orkestra.io/strict-mode-exempt"
+	StrictModeExemptKey   = "inrun.dev/strict-mode-exempt"
 	StrictModeExemptValue = "true"
 )
 
@@ -64,48 +50,48 @@ func DeletionProtectionSelector() *metav1.LabelSelector {
 
 //
 // ────────────────────────────────────────────────────────────────────────────────
-//   Orkestra Control‑Plane Labels
+//   Inrun Control‑Plane Labels
 // ────────────────────────────────────────────────────────────────────────────────
 //
-// These labels are applied to every Orkestra control‑plane resource (Deployment,
+// These labels are applied to every Inrun control‑plane resource (Deployment,
 // Service, ServiceAccount, ClusterRole, ClusterRoleBinding, webhook configs,
 // TLS Secret). They allow the runtime and admission webhooks to identify the
 // operator’s own components.
 //
 
-var orkestraResourceLabels = map[string]string{
-	"app.kubernetes.io/name": "orkestra",
-	"app.kubernetes.io/tag":  "orkestra-internal",
+var inrunResourceLabels = map[string]string{
+	"app.kubernetes.io/name": "inrun",
+	"app.kubernetes.io/tag":  "inrun-internal",
 	DeletionProtectionLabel:  DeletionProtectionValue,
 }
 
-// OrkestraBaseLabels returns a copy of the standard Orkestra control‑plane
-// labels. Useful for generators and CLI commands that do not load Konfig.
-func OrkestraBaseLabels() map[string]string {
-	out := make(map[string]string, len(orkestraResourceLabels))
-	for k, v := range orkestraResourceLabels {
+// InrunBaseLabels returns a copy of the standard Inrun control‑plane
+// labels. Useful for generators and CLI commands that do not load Config.
+func InrunBaseLabels() map[string]string {
+	out := make(map[string]string, len(inrunResourceLabels))
+	for k, v := range inrunResourceLabels {
 		out[k] = v
 	}
 	return out
 }
 
-// OrkestraResourceLabels returns the internal label map used for control‑plane
+// InrunResourceLabels returns the internal label map used for control‑plane
 // resources. Callers must treat the returned map as read‑only.
-func OrkestraResourceLabels() map[string]string {
-	return orkestraResourceLabels
+func InrunResourceLabels() map[string]string {
+	return inrunResourceLabels
 }
 
-// OrkestraResourceSelector matches exactly the Orkestra control‑plane resources.
+// InrunResourceSelector matches exactly the Inrun control‑plane resources.
 // This is used by the admission webhook for mutation/validation of operator
 // components (not for deletion protection — that uses DeletionProtectionSelector).
-var orkestraResourceSelector = &metav1.LabelSelector{
-	MatchLabels: orkestraResourceLabels,
+var inrunResourceSelector = &metav1.LabelSelector{
+	MatchLabels: inrunResourceLabels,
 }
 
-// OrkestraResourceSelector returns the selector for Orkestra control‑plane
+// InrunResourceSelector returns the selector for Inrun control‑plane
 // resources.
-func OrkestraResourceSelector() *metav1.LabelSelector {
-	return orkestraResourceSelector
+func InrunResourceSelector() *metav1.LabelSelector {
+	return inrunResourceSelector
 }
 
 //
@@ -114,28 +100,21 @@ func OrkestraResourceSelector() *metav1.LabelSelector {
 // ────────────────────────────────────────────────────────────────────────────────
 //
 
-// Managed marks resources that Orkestra actively manages.
+// Managed marks resources that Inrun actively manages.
 const (
-	ManagedKey = "orkestra.orkspace.io/managed"
+	ManagedKey = "inrun.dev/managed"
 
 	// ManagedValue is always "true".
 	ManagedValue = "true"
 
-	// OrkestraOwner identifies which CR owns a generated resource. Used by
+	// InrunOwner identifies which CR owns a generated resource. Used by
 	// reconcile loops to determine whether a resource should be updated or deleted.
-	OrkestraOwner = "orkestra-owner"
+	InrunOwner = "inrun-owner"
 
-	// OrkestraServeTarget records the effective serve surface (alias → target)
+	// InrunServeTarget records the effective serve surface (alias → target)
 	// that was active when a child resource was created. Used to detect orphaned
 	// resources after a surface switch and clean them up on the next reconcile.
-	OrkestraServeTarget = "orkestra-serve-target"
-
-	// LabelCreatedBy identifies the creator of a resource.
-	LabelCreatedBy = "app.kubernetes.io/createdBy"
-
-	// CreatedByOrkDoctor marks resources created by orkdoctor. These are excluded
-	// from cleanup logic even if ownership matches.
-	CreatedByOrkDoctor = "orkdoctor"
+	InrunServeTarget = "inrun-serve-target"
 
 	//
 	// ────────────────────────────────────────────────────────────────────────────────
@@ -143,10 +122,10 @@ const (
 	// ────────────────────────────────────────────────────────────────────────────────
 	//
 
-	// AnnotationManagedBy identifies which Orkestra operator instance manages a CR.
-	AnnotationManagedBy = "orkestra.orkspace.io/managed-by"
-	// AnnotationManagedSince records when Orkestra first took ownership of a CR.
-	AnnotationManagedSince = "orkestra.orkspace.io/managed-since"
+	// AnnotationManagedBy identifies which Inrun operator instance manages a CR.
+	AnnotationManagedBy = "inrun.dev/managed-by"
+	// AnnotationManagedSince records when Inrun first took ownership of a CR.
+	AnnotationManagedSince = "inrun.dev/managed-since"
 
 	//
 	// ────────────────────────────────────────────────────────────────────────────────
@@ -154,23 +133,23 @@ const (
 	// ────────────────────────────────────────────────────────────────────────────────
 	//
 
-	// FinalizerOrkestra ensures cleanup runs before a CR is removed.
-	FinalizerOrkestra = "orkestra.orkspace.io/finalizer"
+	// FinalizerInrun ensures cleanup runs before a CR is removed.
+	FinalizerInrun = "inrun.dev/finalizer"
 
 	// CleanupFinalizer ensures cluster-scoped GC runs before a CR is removed.
-	CleanupFinalizer = "orkestra.orkspace.io/cleanup"
+	CleanupFinalizer = "inrun.dev/cleanup"
 
 	//
 	// AnnotationCrossMetrics stores the raw metrics payload submitted as a JSON-encoded string.
 	// Injected by the Runtime and used by the Gateway so the admission webhook can make it
 	// available as .metrics in validation.rules — enabling metrics-level gating.
-	AnnotationCrossMetrics = "orkestra.orkspace.io/cross-metrics"
+	AnnotationCrossMetrics = "inrun.dev/cross-metrics"
 
 	// AnnotationHealth stores the raw health payload submitted as a JSON-encoded string.
 	// Injected by the Runtime and used by the Gateway so the admission webhook can make it
 	//  available as .health in validation.rules —
 	// enabling health-level gating.
-	AnnotationHealth = "orkestra.orkspace.io/health"
+	AnnotationHealth = "inrun.dev/health"
 
 	// ────────────────────────────────────────────────────────────────────────────────
 	//   Serve Provenance Annotations
@@ -182,42 +161,42 @@ const (
 
 	// AnnotationServeTarget records the serve target used by the caller.
 	// Example: "smartapp"
-	AnnotationServeTarget = "orkestra.orkspace.io/serve-target"
+	AnnotationServeTarget = "inrun.dev/serve-target"
 
 	// AnnotationServeAlias records the alias used by the caller, when the
 	// request arrived through a named alias rather than the primary target.
 	// Empty when the primary target was used directly.
 	// Example: "public", "internal", "v2"
-	AnnotationServeAlias = "orkestra.orkspace.io/serve-alias"
+	AnnotationServeAlias = "inrun.dev/serve-alias"
 
 	// AnnotationServeSource identifies the delivery mechanism.
 	// Empty for direct Gateway API calls. Set by webhook handlers.
 	// Values: "github", "gitlab", "slack", "pagerduty", "generic"
-	AnnotationServeSource = "orkestra.orkspace.io/serve-source"
+	AnnotationServeSource = "inrun.dev/serve-source"
 
 	// AnnotationServeIntent stores the raw intent payload submitted by the caller
 	// as a JSON-encoded string. Injected by the Gateway API in target mode so the
 	// admission webhook can make it available as .request in validation.rules —
 	// enabling intent-level gates that fire on the caller's vocabulary before any
 	// field translation has occurred.
-	AnnotationServeIntent = "orkestra.orkspace.io/serve-intent"
+	AnnotationServeIntent = "inrun.dev/serve-intent"
 
 	// AnnotationServeSelectorTarget records the target that was matched by field selector.
 	// Set by the gateway when a full CR is routed via fieldSelector.
 	// Example: "kitchen"
-	AnnotationServeSelectorTarget = "orkestra.orkspace.io/serve-selector-target"
+	AnnotationServeSelectorTarget = "inrun.dev/serve-selector-target"
 
 	// AnnotationServeSelector records the field selector that caused routing.
 	// Set by the gateway when a full CR is routed via fieldSelector.
 	// Value is a JSON-encoded map of field paths to values.
 	// Example: '{"spec.mealPlan":"dinner","spec.kitchenConfig":"standard"}'
-	AnnotationServeSelector = "orkestra.orkspace.io/serve-selector"
+	AnnotationServeSelector = "inrun.dev/serve-selector"
 
 	// AnnotationLastSurface records the serve surface (target name) that was active
 	// on the last successful reconcile of a CR. Written by the reconciler after
 	// surface orphan cleanup so that the next reconcile can detect a surface switch
 	// and clean up resources from the previous surface.
-	AnnotationLastSurface = "orkestra.orkspace.io/last-surface"
+	AnnotationLastSurface = "inrun.dev/last-surface"
 )
 
 // EffectiveOwnerKey returns the ownership identity to stamp on child resources
@@ -240,27 +219,27 @@ func EffectiveOwnerKey(ownerName string, ownerAnnotations map[string]string) str
 	return ownerName
 }
 
-// StampOrkestraLabels stamps all Orkestra system ownership labels onto lbls.
+// StampInrunLabels stamps all Inrun system ownership labels onto lbls.
 // Consolidates the managed, owner, and serve-target labels into one call so
 // every child resource is stamped consistently from its build* function.
 // ownerAnnotations may be nil (e.g. direct kubectl apply — no serve-target set).
 //
-// OrkestraOwner encodes the surface identity via EffectiveOwnerKey so that
+// InrunOwner encodes the surface identity via EffectiveOwnerKey so that
 // resources from different serve surfaces carry distinct labels. This enables
 // precise orphan detection when a CR switches targets.
-func StampOrkestraLabels(lbls map[string]string, ownerName string, ownerAnnotations map[string]string) map[string]string {
+func StampInrunLabels(lbls map[string]string, ownerName string, ownerAnnotations map[string]string) map[string]string {
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
 	lbls[ManagedKey] = ManagedValue
-	lbls[OrkestraOwner] = EffectiveOwnerKey(ownerName, ownerAnnotations)
+	lbls[InrunOwner] = EffectiveOwnerKey(ownerName, ownerAnnotations)
 	if ownerAnnotations != nil {
 		target := ownerAnnotations[AnnotationServeAlias]
 		if target == "" {
 			target = ownerAnnotations[AnnotationServeTarget]
 		}
 		if target != "" {
-			lbls[OrkestraServeTarget] = target
+			lbls[InrunServeTarget] = target
 		}
 	}
 	return lbls

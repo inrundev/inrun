@@ -1,9 +1,0 @@
-apiVersion: demo.orkestra.io/v1
-kind: Workload
-metadata:
-  name: my-service-default
-  namespace: default
-spec:
-  image: nginx
-  port: 8080
-  # tag intentionally omitted — fullImage note supplies "latest"

@@ -3,19 +3,19 @@ package types
 
 import "strings"
 
-// RestrictedNamespaces declares namespaces where Orkestra will not create
+// RestrictedNamespaces declares namespaces where Inrun will not create
 // child resources, regardless of what a CR spec requests.
 //
 // Applies before onCreate/onReconcile templates and before Go hooks run.
 // The restriction is on child resources only — not on the CR itself.
 //
 // Supported at all three levels:
-//   Komposer level — applies to all CRDs in the Komposer
-//   Katalog level  — applies to all CRDs in the Katalog
+//   Stack level — applies to all CRDs in the Stack
+//   Catalog level  — applies to all CRDs in the Catalog
 //   CRD level      — applies to this specific CRD
 //
 // Rules from all three levels are merged — more specific levels add to,
-// not replace, less specific levels. A namespace restricted at the Komposer
+// not replace, less specific levels. A namespace restricted at the Stack
 // level cannot be un-restricted at the CRD level. This is intentional:
 // platform-wide restrictions are non-negotiable.
 //
@@ -42,7 +42,7 @@ func (r RestrictedNamespaces) IsRestricted(namespace string) bool {
 }
 
 // Merge combines two RestrictedNamespaces sets, deduplicating entries.
-// Used when merging Komposer-level and CRD-level restrictions.
+// Used when merging Stack-level and CRD-level restrictions.
 // Since restrictions are additive, a namespace restricted at any level
 // is restricted at all levels — more specific levels cannot remove restrictions.
 func (r RestrictedNamespaces) Merge(other RestrictedNamespaces) RestrictedNamespaces {

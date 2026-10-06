@@ -131,7 +131,7 @@ func setupWithManagerReplacements(fset *token.FileSet, f *ast.File) ([]replaceme
 		reps = append(reps, replacement{
 			start: off(fset, setupFn.Pos()),
 			end:   off(fset, setupFn.End()),
-			text: "// SetupWithManager removed — Orkestra provides the informer, workqueue,\n" +
+			text: "// SetupWithManager removed — Inrun provides the informer, workqueue,\n" +
 				"// worker pool, leader election, panic recovery, and metrics.\n" +
 				"// Delete this file's main.go and scheme registration too.",
 		})

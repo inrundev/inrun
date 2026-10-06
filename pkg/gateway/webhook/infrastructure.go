@@ -7,7 +7,7 @@
 // them after startup:
 //
 //  1. Namespace labels — the deletion-protection webhook uses ObjectSelector to
-//     narrow to labeled resources. Removing the orkestra.io/deletion-protection
+//     narrow to labeled resources. Removing the inrun.dev/deletion-protection
 //     label from the operator namespace means the webhook no longer intercepts
 //     deletion attempts against the namespace itself. The safety ticker catches
 //     this at the normal reconcile cadence.
@@ -29,9 +29,9 @@ import (
 	"encoding/json"
 	"time"
 
-	orklabels "github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/metrics"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/metrics"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -59,7 +59,7 @@ type ConversionCRDPatchFn func(ctx context.Context, crdName, caBundle64, storage
 
 // SetConversionCRDPatcher provides the housekeeper with the function it needs to
 // re-patch CRD conversion webhooks. Called from cmd/internal after the kubeclient
-// and katalog are available.
+// and catalog are available.
 func (ws *WebhookServer) SetConversionCRDPatcher(fn ConversionCRDPatchFn) {
 	ws.patchConversionCRD = fn
 }
@@ -73,7 +73,7 @@ func (ws *WebhookServer) SetCRDWatcher(w CRDWatcher) {
 
 // ── Namespace label reconciler ─────────────────────────────────────────────────
 
-// reconcileNamespaceLabels ensures the operator namespace carries the Orkestra
+// reconcileNamespaceLabels ensures the operator namespace carries the Inrun
 // resource labels required for the deletion-protection webhook's ObjectSelector.
 // No-op when deletion protection is not enabled.
 func (ws *WebhookServer) reconcileNamespaceLabels() {
@@ -104,7 +104,7 @@ func (ws *WebhookServer) reconcileNamespaceLabels() {
 		return
 	}
 
-	required := orklabels.OrkestraResourceLabels()
+	required := labels.InrunResourceLabels()
 	if labelsPresent(ns.Labels, required) {
 		return // already correct — no write needed, no MODIFIED event
 	}
@@ -148,13 +148,13 @@ func labelsPresent(current, required map[string]string) bool {
 }
 
 // operatorNamespace returns the namespace the operator is running in.
-// Uses certSecretNamespace when certs were auto-generated; falls back to konfig.
+// Uses certSecretNamespace when certs were auto-generated; falls back to config.
 func (ws *WebhookServer) operatorNamespace() string {
 	if ws.certSecretNamespace != "" {
 		return ws.certSecretNamespace
 	}
-	if ws.konfig != nil {
-		return ws.konfig.Cluster().Namespace()
+	if ws.config != nil {
+		return ws.config.Cluster().Namespace()
 	}
 	return ""
 }
@@ -168,7 +168,7 @@ func (ws *WebhookServer) reconcileCRDConversionWebhooks() {
 	if !ws.convEnabled {
 		return
 	}
-	if ws.patchConversionCRD == nil || ws.katalog == nil {
+	if ws.patchConversionCRD == nil || ws.catalog == nil {
 		return
 	}
 
@@ -191,7 +191,7 @@ func (ws *WebhookServer) reconcileCRDConversionWebhooks() {
 	ctx, cancel := context.WithTimeout(context.Background(), highTimeout)
 	defer cancel()
 
-	for _, crd := range ws.katalog.EnabledCRDs() {
+	for _, crd := range ws.catalog.EnabledCRDs() {
 		if !crd.UpdateCRDCaBundle() {
 			continue
 		}
@@ -220,11 +220,11 @@ func (ws *WebhookServer) reconcileCRDConversionWebhooks() {
 //
 // No-op when no CRD watcher is set or conversion is not enabled.
 func (ws *WebhookServer) watchConversionCRDs(ctx context.Context, trigger chan<- struct{}) {
-	if ws.crdWatcher == nil || !ws.convEnabled || ws.katalog == nil {
+	if ws.crdWatcher == nil || !ws.convEnabled || ws.catalog == nil {
 		return
 	}
 
-	for _, crd := range ws.katalog.EnabledCRDs() {
+	for _, crd := range ws.catalog.EnabledCRDs() {
 		if !crd.UpdateCRDCaBundle() {
 			continue
 		}

@@ -3,7 +3,7 @@ package types
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
-// ServiceTemplateSource declares one Service to be managed by Orkestra.
+// ServiceTemplateSource declares one Service to be managed by Inrun.
 //
 // Example:
 //

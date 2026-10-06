@@ -3,20 +3,20 @@ package children
 import (
 	"reflect"
 
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // ExpandForEachCustomResources expands any CustomResource entries that declare a ForEach.
 // It returns a new slice with expanded items. Items without ForEach are copied verbatim.
-func ExpandForEachCustomResources(resolver *orktmpl.Resolver, srcs []orktypes.CustomResourceTemplateSource) []orktypes.CustomResourceTemplateSource {
+func ExpandForEachCustomResources(resolver *template.Resolver, srcs []types.CustomResourceTemplateSource) []types.CustomResourceTemplateSource {
 	// Fast path: nothing to do
-	if !anyHasForEach(len(srcs), func(i int) *orktypes.ForEachSpec { return srcs[i].ForEach }) {
+	if !anyHasForEach(len(srcs), func(i int) *types.ForEachSpec { return srcs[i].ForEach }) {
 		return srcs
 	}
 
-	var result []orktypes.CustomResourceTemplateSource
+	var result []types.CustomResourceTemplateSource
 	for _, src := range srcs {
 		// If no ForEach on this item, keep as-is
 		if src.ForEach == nil {
@@ -89,7 +89,7 @@ func ExpandForEachCustomResources(resolver *orktmpl.Resolver, srcs []orktypes.Cu
 
 // resolveMapTemplates walks a map[string]any and returns a new map with any string
 // values passed through the item resolver. It recurses into nested maps and slices.
-func resolveMapTemplates(ir *orktmpl.Resolver, in map[string]any) map[string]any {
+func resolveMapTemplates(ir *template.Resolver, in map[string]any) map[string]any {
 	out := make(map[string]any, len(in))
 	for k, v := range in {
 		out[k] = resolveValueTemplates(ir, v)
@@ -99,7 +99,7 @@ func resolveMapTemplates(ir *orktmpl.Resolver, in map[string]any) map[string]any
 
 // resolveValueTemplates resolves a single value. If it's a string, run through resolver.
 // If it's a map[string]any, recurse. If it's a slice, resolve each element. Otherwise return as-is.
-func resolveValueTemplates(ir *orktmpl.Resolver, v any) any {
+func resolveValueTemplates(ir *template.Resolver, v any) any {
 	switch vv := v.(type) {
 	case string:
 		rv, _ := ir.Resolve(vv)
@@ -110,7 +110,7 @@ func resolveValueTemplates(ir *orktmpl.Resolver, v any) any {
 		// (resolve_customresources.go) — without it, a forEach-expanded
 		// custom resource's numeric/boolean/JSON fields would be submitted
 		// as literal strings instead of native types.
-		if orktypes.IsTemplate(vv) {
+		if types.IsTemplate(vv) {
 			return utils.TryCoerceString(rv)
 		}
 		return rv

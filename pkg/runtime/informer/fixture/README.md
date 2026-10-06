@@ -11,6 +11,6 @@ status is never set.
 No gateway required.
 
 ```bash
-ork simulate -f pkg/runtime/informer/fixture/simulate.yaml
-ork e2e     -f pkg/runtime/informer/fixture/e2e.yaml
+inrun simulate -f pkg/runtime/informer/fixture/simulate.yaml
+inrun e2e     -f pkg/runtime/informer/fixture/e2e.yaml
 ```

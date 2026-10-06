@@ -73,13 +73,13 @@ func (in *WebAppList) DeepCopyObject() runtime.Object {
 }
 
 var GroupVersionKind = schema.GroupVersionKind{
-	Group:   "migration.demo.orkestra.io",
+	Group:   "migration.demo.inrun.dev",
 	Version: "v1alpha1",
 	Kind:    "WebApp",
 }
 
 var SchemeGroupVersion = schema.GroupVersion{
-	Group:   "migration.demo.orkestra.io",
+	Group:   "migration.demo.inrun.dev",
 	Version: "v1alpha1",
 }
 

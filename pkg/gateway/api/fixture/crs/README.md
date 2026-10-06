@@ -47,10 +47,10 @@ kubectl apply -f pkg/gateway/fixture/crd.yaml
 kubectl apply -f pkg/gateway/fixture/setup.yaml
 ```
 
-### Step 2 — start Orkestra with the gateway fixture
+### Step 2 — start Inrun with the gateway fixture
 
 ```bash
-ork run -f pkg/gateway/fixture/katalog.yaml
+inrun -f pkg/gateway/fixture/catalog.yaml
 ```
 
 ### Step 3 — apply the test CRs
@@ -81,5 +81,5 @@ kubectl apply -f pkg/gateway/fixture/crs/monitoring-missing-repo.yaml
 ### Full cluster e2e (all scenarios automated)
 
 ```bash
-ork e2e -f pkg/gateway/fixture/e2e.yaml
+inrun e2e -f pkg/gateway/fixture/e2e.yaml
 ```

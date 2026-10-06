@@ -1,4 +1,4 @@
-apiVersion: resources.orkestra.io/v1alpha1
+apiVersion: resources.inrun.dev/v1alpha1
 kind: ResourceProbe
 metadata:
   name: probe

@@ -1,9 +1,0 @@
-apiVersion: demo.orkestra.io/v1alpha1
-kind: Website
-metadata:
-  name: hello-website
-  namespace: default
-spec:
-  image: nginx:1.25
-  replicas: 1
-  port: 80

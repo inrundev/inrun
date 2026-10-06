@@ -7,10 +7,10 @@ import (
 
 	"errors"
 
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -155,7 +155,7 @@ func (f *Factory) WaitForCacheSync(ctx context.Context) bool {
 }
 
 // Status returns a summary of all informers and their sync state.
-// Used by the health server /katalog endpoint.
+// Used by the health server /catalog endpoint.
 func (f *Factory) Status() string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
@@ -231,9 +231,9 @@ func (f *Factory) IsMissing(key string) bool {
 	return ok
 }
 
-// ── Komponent ─────────────────────────────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────
 
-var _ domain.Komponent = (*Factory)(nil)
+var _ domain.Component = (*Factory)(nil)
 
 func (f *Factory) Started() bool { return f.started.Load() }
 

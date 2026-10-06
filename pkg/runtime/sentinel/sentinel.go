@@ -1,14 +1,6 @@
-// Package sentinel computes event-time sentinel values for preReconcile gates.
-//
-// Sentinels are computed in the informer's UpdateFunc by comparing oldObj and
-// newObj. The result is carried through QueueItem.SentinelMap so both
-// enqueueGate and reconcileGate can share the same preReconcile resolver
-// without oldObj being available at dequeue time.
-//
-// This package is the canonical home for sentinel names. pkg/types imports it
-// for the typed Sentinel constants; pkg/runtime/informer imports it for Compute.
-// The package itself imports only stdlib and k8s apimachinery so neither
-// direction creates an import cycle.
+// Package sentinel names the observable metadata changes of a Kubernetes
+// object as boolean sentinels and computes them on informer updates. It
+// imports only the standard library and apimachinery so pkg/types can use it.
 package sentinel
 
 import (

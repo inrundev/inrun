@@ -1,13 +1,14 @@
-// pkg/version/version.go
+// Package version reports the build's version, commit and date, injected
+// with -ldflags. String gives the full form and Short just the version.
 package version
 
 import "fmt"
 
 // These variables are set at build time via ldflags:
 //
-//	-X github.com/orkspace/orkestra/pkg/version.Version=v1.0.0
-//	-X github.com/orkspace/orkestra/pkg/version.Commit=abc1234
-//	-X github.com/orkspace/orkestra/pkg/version.Date=2026-03-19T10:00:00Z
+//	-X github.com/inrundev/inrun/pkg/version.Version=v1.0.0
+//	-X github.com/inrundev/inrun/pkg/version.Commit=abc1234
+//	-X github.com/inrundev/inrun/pkg/version.Date=2026-03-19T10:00:00Z
 var (
 	Version = "dev"
 	Commit  = "none"

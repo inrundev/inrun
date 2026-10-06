@@ -3,9 +3,9 @@ package http
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/domain"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -13,14 +13,14 @@ import (
 
 func newReconcilerForTest(endpoint string) *Reconciler {
 	return &Reconciler{
-		decl: &orktypes.RemoteReconcilerDeclaration{
+		decl: &types.RemoteReconcilerDeclaration{
 			Endpoint: endpoint,
 		},
 	}
 }
 
 func reqWithResolver(data map[string]interface{}) domain.Request {
-	resolver := orktmpl.NewResolverFromMap(data)
+	resolver := template.NewResolverFromMap(data)
 	return domain.Request{
 		Prepared: &domain.PreparedRequest{Context: resolver},
 	}
@@ -49,7 +49,7 @@ func TestResolveArgs_NoArgs(t *testing.T) {
 
 func TestResolveArgs_StaticPassThrough(t *testing.T) {
 	r := &Reconciler{
-		decl: &orktypes.RemoteReconcilerDeclaration{
+		decl: &types.RemoteReconcilerDeclaration{
 			Endpoint: "http://svc/reconcile",
 			Args:     map[string]interface{}{"env": "prod", "replicas": 3},
 		},
@@ -61,7 +61,7 @@ func TestResolveArgs_StaticPassThrough(t *testing.T) {
 
 func TestResolveArgs_TemplateCoercion(t *testing.T) {
 	r := &Reconciler{
-		decl: &orktypes.RemoteReconcilerDeclaration{
+		decl: &types.RemoteReconcilerDeclaration{
 			Endpoint: "http://svc/reconcile",
 			Args: map[string]interface{}{
 				"replicas": `{{ index . "replicas" }}`,
@@ -202,10 +202,10 @@ func TestResolveResources_MixedForms(t *testing.T) {
 
 func TestApplyObjectExclusions_RemovesPaths(t *testing.T) {
 	r := &Reconciler{
-		decl: &orktypes.RemoteReconcilerDeclaration{
+		decl: &types.RemoteReconcilerDeclaration{
 			Endpoint: "http://svc/reconcile",
-			Payload: &orktypes.RemotePayloadConfig{
-				Object: &orktypes.RemotePayloadObjectConfig{
+			Payload: &types.RemotePayloadConfig{
+				Object: &types.RemotePayloadObjectConfig{
 					Exclude: []string{"metadata.managedFields", "metadata.annotations"},
 				},
 			},
@@ -238,7 +238,7 @@ func TestApplyObjectExclusions_NoExclusions_ReturnsOriginalMap(t *testing.T) {
 
 func TestApplyObjectExclusions_DoesNotMutateOriginal(t *testing.T) {
 	r := &Reconciler{
-		decl: &orktypes.RemoteReconcilerDeclaration{
+		decl: &types.RemoteReconcilerDeclaration{
 			Endpoint: "http://svc/reconcile",
 		},
 	}
@@ -256,10 +256,10 @@ func TestApplyObjectExclusions_DoesNotMutateOriginal(t *testing.T) {
 
 func TestApplyChildrenConfig_ResourcesFilter(t *testing.T) {
 	r := &Reconciler{
-		decl: &orktypes.RemoteReconcilerDeclaration{
-			Payload: &orktypes.RemotePayloadConfig{
-				Children: &orktypes.RemotePayloadChildrenConfig{
-					Resources: map[string]*orktypes.RemotePayloadChildrenResourceConfig{
+		decl: &types.RemoteReconcilerDeclaration{
+			Payload: &types.RemotePayloadConfig{
+				Children: &types.RemotePayloadChildrenConfig{
+					Resources: map[string]*types.RemotePayloadChildrenResourceConfig{
 						"deployment": {},
 					},
 				},
@@ -277,9 +277,9 @@ func TestApplyChildrenConfig_ResourcesFilter(t *testing.T) {
 
 func TestApplyChildrenConfig_RootExcludeStripsPath(t *testing.T) {
 	r := &Reconciler{
-		decl: &orktypes.RemoteReconcilerDeclaration{
-			Payload: &orktypes.RemotePayloadConfig{
-				Children: &orktypes.RemotePayloadChildrenConfig{
+		decl: &types.RemoteReconcilerDeclaration{
+			Payload: &types.RemotePayloadConfig{
+				Children: &types.RemotePayloadChildrenConfig{
 					Exclude: []string{"metadata.managedFields"},
 				},
 			},
@@ -304,11 +304,11 @@ func TestApplyChildrenConfig_RootExcludeStripsPath(t *testing.T) {
 
 func TestApplyChildrenConfig_PerResourceExcludeOverridesRoot(t *testing.T) {
 	r := &Reconciler{
-		decl: &orktypes.RemoteReconcilerDeclaration{
-			Payload: &orktypes.RemotePayloadConfig{
-				Children: &orktypes.RemotePayloadChildrenConfig{
+		decl: &types.RemoteReconcilerDeclaration{
+			Payload: &types.RemotePayloadConfig{
+				Children: &types.RemotePayloadChildrenConfig{
 					Exclude: []string{"metadata.managedFields"},
-					Resources: map[string]*orktypes.RemotePayloadChildrenResourceConfig{
+					Resources: map[string]*types.RemotePayloadChildrenResourceConfig{
 						"deployment": {Exclude: []string{"spec.template.metadata.annotations"}},
 						"service":    nil, // uses root exclude
 					},
@@ -347,7 +347,7 @@ func TestApplyChildrenConfig_PerResourceExcludeOverridesRoot(t *testing.T) {
 func TestResolveArgs_NilPrepared_FallsBack(t *testing.T) {
 	raw := map[string]interface{}{"env": "{{ .spec.env }}"}
 	r := &Reconciler{
-		decl: &orktypes.RemoteReconcilerDeclaration{
+		decl: &types.RemoteReconcilerDeclaration{
 			Endpoint: "http://svc/reconcile",
 			Args:     raw,
 		},

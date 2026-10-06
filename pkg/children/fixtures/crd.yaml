@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: tenants.test.orkestra.io
+  name: tenants.test.inrun.dev
 spec:
-  group: test.orkestra.io
+  group: test.inrun.dev
   names:
     kind: Tenant
     plural: tenants
@@ -41,9 +41,9 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: tenantplans.test.orkestra.io
+  name: tenantplans.test.inrun.dev
 spec:
-  group: test.orkestra.io
+  group: test.inrun.dev
   names:
     kind: TenantPlan
     plural: tenantplans

@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -40,7 +40,7 @@ type ServeApplyConfig struct {
 // ─── HasOverride methods ─────────────────────────────────────────────────────
 
 // HasOverride reports whether the ServeConfig has any override fields set.
-// Used to avoid unnecessary config blocks in the Katalog.
+// Used to avoid unnecessary config blocks in the Catalog.
 func (s *ServeConfig) HasOverride() bool {
 	if s == nil || s.Apply == nil || s.Apply.Overrides == nil {
 		return false

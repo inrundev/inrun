@@ -13,13 +13,13 @@ import (
 // any changes to the reconciler body.
 //
 // ctrl.Result.RequeueAfter is forwarded to domain.Result so migrated operators
-// that return precise per-object requeue timing have that honored by Orkestra's queue.
+// that return precise per-object requeue timing have that honored by Inrun's queue.
 //
 // Usage:
 //
 //	func NewMyReconciler(kube kubeclient.Interface) domain.Reconciler {
 //	    return domain.ReconcilerFrom(&MyReconciler{
-//	        Client: orkadapter.ToClient(kube),
+//	        Client: adapter.ToClient(kube),
 //	    })
 //	}
 func ReconcilerFrom(r reconcile.Reconciler) Reconciler {

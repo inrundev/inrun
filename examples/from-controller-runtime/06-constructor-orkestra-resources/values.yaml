@@ -1,4 +1,0 @@
-runtime:
-  image:
-    repository: ghcr.io/myorg/webapp-constructor-ork
-    tag: 1.0.0

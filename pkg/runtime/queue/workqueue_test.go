@@ -113,7 +113,7 @@ func TestQueueRegistry_StartSetsStartedFlag(t *testing.T) {
 func TestQueueRegistry_RegisterAndRetrieve(t *testing.T) {
 	r := NewQueueRegistry()
 
-	gvk := "demo.orkestra.io/v1alpha1, Kind=Website"
+	gvk := "demo.inrun.dev/v1alpha1, Kind=Website"
 	r.Register(gvk, nil)
 
 	q, ok := r.For(gvk)
@@ -131,7 +131,7 @@ func TestQueueRegistry_ForUnregisteredGVK(t *testing.T) {
 
 func TestQueueRegistry_DepthOfRegisteredQueue(t *testing.T) {
 	r := NewQueueRegistry()
-	gvk := "demo.orkestra.io/v1alpha1, Kind=Website"
+	gvk := "demo.inrun.dev/v1alpha1, Kind=Website"
 	r.Register(gvk, nil)
 
 	depth := r.Depth(gvk)

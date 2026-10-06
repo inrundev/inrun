@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# setup-kind.sh — create or delete a kind cluster for Orkestra development
+# setup-kind.sh — create or delete a kind cluster for Inrun development
 #
 # Usage:
-#   ./setup-kind.sh            # create cluster named "orkestra-playground"
+#   ./setup-kind.sh            # create cluster named "inrun-playground"
 #   ./setup-kind.sh create     # same as above
 #   ./setup-kind.sh delete     # delete cluster
 #   ./setup-kind.sh <name>     # create cluster with given name
@@ -11,12 +11,12 @@
 # Behavior:
 # - Ensures `kind` is installed via `go install sigs.k8s.io/kind@v0.31.0` if missing.
 # - Ensures the directory containing the installed binary is on PATH for the session.
-# - Default cluster name: ork estra-playground
+# - Default cluster name: inrun estra-playground
 # - Exits non-zero on failure.
 
 set -euo pipefail
 
-DEFAULT_NAME="orkestra-playground"
+DEFAULT_NAME="inrun-playground"
 KIND_MODULE="sigs.k8s.io/kind@v0.31.0"
 
 # Resolve GOBIN or GOPATH/bin fallback

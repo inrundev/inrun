@@ -1,0 +1,13 @@
+apiVersion: inrun.dev/v1
+kind: Module
+metadata:
+  version: v1
+
+inputs:
+  - name: image
+    required: true
+
+resources:
+  deployments:
+    - name: app
+      image: "{{ index .inputs \"image\" }}"

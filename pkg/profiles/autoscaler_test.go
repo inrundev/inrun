@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
-func baseline(workers, queue int, resync time.Duration) orktypes.AutoscaleBaseline {
-	return orktypes.AutoscaleBaseline{
+func baseline(workers, queue int, resync time.Duration) types.AutoscaleBaseline {
+	return types.AutoscaleBaseline{
 		Workers:  workers,
 		MaxDepth: queue,
 		Resync:   resync,
@@ -20,7 +20,7 @@ func TestAutoscalerProfiles(t *testing.T) {
 	tests := []struct {
 		name           string
 		profile        string
-		baseline       orktypes.AutoscaleBaseline
+		baseline       types.AutoscaleBaseline
 		expectErr      bool
 		expectWorkers  int
 		expectQueue    int

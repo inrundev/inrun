@@ -1,8 +1,0 @@
-apiVersion: security.orkestra.io/v1alpha1
-kind: LogStream
-metadata:
-  name: my-logs
-  namespace: default
-spec:
-  endpoint: "https://logs.example.com/ingest"
-  format: json

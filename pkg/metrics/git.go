@@ -22,7 +22,7 @@ import (
 
 var gitOperationsTotal = promauto.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "orkestra_git_operations_total",
+		Name: "inrun_git_operations_total",
 		Help: "Total number of Git operations performed by the reconciler.",
 	},
 	[]string{"crd", "operation", "repo", "result"},
@@ -30,7 +30,7 @@ var gitOperationsTotal = promauto.NewCounterVec(
 
 var gitOperationDuration = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
-		Name:    "orkestra_git_operation_duration_seconds",
+		Name:    "inrun_git_operation_duration_seconds",
 		Help:    "Duration of Git operations.",
 		Buckets: prometheus.DefBuckets,
 	},
@@ -39,7 +39,7 @@ var gitOperationDuration = promauto.NewHistogramVec(
 
 var gitOperationErrors = promauto.NewCounterVec(
 	prometheus.CounterOpts{
-		Name: "orkestra_git_operation_errors_total",
+		Name: "inrun_git_operation_errors_total",
 		Help: "Total number of Git operation errors, labelled by error type.",
 	},
 	[]string{"crd", "operation", "repo", "error_type"},

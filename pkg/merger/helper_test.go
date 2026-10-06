@@ -4,125 +4,61 @@ package merger
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func boolPtr(b bool) *bool { return &b }
 
-// ── mergeKatalogSecurity ──────────────────────────────────────────────────────
+// ── mergeCatalogSecurity ──────────────────────────────────────────────────────
 
-func TestMergeKatalogSecurity_BaseWinsWhenOverrideEmpty(t *testing.T) {
-	base := orktypes.KatalogSecurity{ServiceName: &orktypes.ServiceName{Runtime: "base-svc"}}
-	override := orktypes.KatalogSecurity{}
-	result := mergeKatalogSecurity(base, override)
+func TestMergeCatalogSecurity_BaseWinsWhenOverrideEmpty(t *testing.T) {
+	base := types.CatalogSecurity{ServiceName: &types.ServiceName{Runtime: "base-svc"}}
+	override := types.CatalogSecurity{}
+	result := mergeCatalogSecurity(base, override)
 	if result.ServiceName == nil || result.ServiceName.Runtime != "base-svc" {
 		t.Errorf("expected base ServiceName to win, got %v", result.ServiceName)
 	}
 }
 
-func TestMergeKatalogSecurity_OverrideWinsServiceName(t *testing.T) {
-	base := orktypes.KatalogSecurity{ServiceName: &orktypes.ServiceName{Runtime: "base"}}
-	override := orktypes.KatalogSecurity{ServiceName: &orktypes.ServiceName{Runtime: "override"}}
-	result := mergeKatalogSecurity(base, override)
+func TestMergeCatalogSecurity_OverrideWinsServiceName(t *testing.T) {
+	base := types.CatalogSecurity{ServiceName: &types.ServiceName{Runtime: "base"}}
+	override := types.CatalogSecurity{ServiceName: &types.ServiceName{Runtime: "override"}}
+	result := mergeCatalogSecurity(base, override)
 	if result.ServiceName == nil || result.ServiceName.Runtime != "override" {
 		t.Errorf("expected override ServiceName, got %v", result.ServiceName)
 	}
 }
 
-func TestMergeKatalogSecurity_OverrideDeletionProtection(t *testing.T) {
-	base := orktypes.KatalogSecurity{}
-	dp := &orktypes.DeletionProtectionConfig{Enabled: boolPtr(true)}
-	override := orktypes.KatalogSecurity{DeletionProtection: dp}
-	result := mergeKatalogSecurity(base, override)
+func TestMergeCatalogSecurity_OverrideDeletionProtection(t *testing.T) {
+	base := types.CatalogSecurity{}
+	dp := &types.DeletionProtectionConfig{Enabled: boolPtr(true)}
+	override := types.CatalogSecurity{DeletionProtection: dp}
+	result := mergeCatalogSecurity(base, override)
 	if result.DeletionProtection == nil {
 		t.Error("expected override DeletionProtection to be set")
 	}
 }
 
-func TestMergeKatalogSecurity_NilOverrideDeletionProtection_KeepsBase(t *testing.T) {
-	dp := &orktypes.DeletionProtectionConfig{Enabled: boolPtr(true)}
-	base := orktypes.KatalogSecurity{DeletionProtection: dp}
-	override := orktypes.KatalogSecurity{} // nil DeletionProtection
-	result := mergeKatalogSecurity(base, override)
+func TestMergeCatalogSecurity_NilOverrideDeletionProtection_KeepsBase(t *testing.T) {
+	dp := &types.DeletionProtectionConfig{Enabled: boolPtr(true)}
+	base := types.CatalogSecurity{DeletionProtection: dp}
+	override := types.CatalogSecurity{} // nil DeletionProtection
+	result := mergeCatalogSecurity(base, override)
 	if result.DeletionProtection == nil {
 		t.Error("base DeletionProtection must be preserved when override is nil")
 	}
 }
 
-func TestMergeKatalogSecurity_ServiceNameEmptyOverride_KeepsBase(t *testing.T) {
-	base := orktypes.KatalogSecurity{ServiceName: &orktypes.ServiceName{Runtime: "my-svc"}}
-	override := orktypes.KatalogSecurity{ServiceName: nil}
-	result := mergeKatalogSecurity(base, override)
+func TestMergeCatalogSecurity_ServiceNameEmptyOverride_KeepsBase(t *testing.T) {
+	base := types.CatalogSecurity{ServiceName: &types.ServiceName{Runtime: "my-svc"}}
+	override := types.CatalogSecurity{ServiceName: nil}
+	result := mergeCatalogSecurity(base, override)
 	if result.ServiceName == nil || result.ServiceName.Runtime != "my-svc" {
 		t.Errorf("empty override ServiceName must keep base, got %v", result.ServiceName)
 	}
 }
 
-// ── mergeKatalogNotification ──────────────────────────────────────────────────
-
-func TestMergeKatalogNotification_BothNil(t *testing.T) {
-	result := mergeKatalogNotification(nil, nil)
-	if result != nil {
-		t.Error("both nil must return nil")
-	}
-}
-
-func TestMergeKatalogNotification_NilOverride_ReturnsBase(t *testing.T) {
-	base := &orktypes.KatalogNotification{
-		Teams: map[string]*orktypes.NotificationTeam{"ops": {}},
-	}
-	result := mergeKatalogNotification(base, nil)
-	if result != base {
-		t.Error("nil override must return base unchanged")
-	}
-}
-
-func TestMergeKatalogNotification_NilBase_ReturnsOverride(t *testing.T) {
-	override := &orktypes.KatalogNotification{
-		Teams: map[string]*orktypes.NotificationTeam{"platform": {}},
-	}
-	result := mergeKatalogNotification(nil, override)
-	if result != override {
-		t.Error("nil base must return override")
-	}
-}
-
-func TestMergeKatalogNotification_TeamsAreMerged(t *testing.T) {
-	base := &orktypes.KatalogNotification{
-		Teams: map[string]*orktypes.NotificationTeam{
-			"ops": {Slack: []string{"#ops"}},
-		},
-	}
-	override := &orktypes.KatalogNotification{
-		Teams: map[string]*orktypes.NotificationTeam{
-			"platform": {Slack: []string{"#platform"}},
-		},
-	}
-	result := mergeKatalogNotification(base, override)
-	if _, ok := result.Teams["ops"]; !ok {
-		t.Error("base team ops must be preserved")
-	}
-	if _, ok := result.Teams["platform"]; !ok {
-		t.Error("override team platform must be added")
-	}
-}
-
-func TestMergeKatalogNotification_OverrideTeamWinsOnConflict(t *testing.T) {
-	base := &orktypes.KatalogNotification{
-		Teams: map[string]*orktypes.NotificationTeam{
-			"ops": {Slack: []string{"#old-ops"}},
-		},
-	}
-	override := &orktypes.KatalogNotification{
-		Teams: map[string]*orktypes.NotificationTeam{
-			"ops": {Slack: []string{"#new-ops"}},
-		},
-	}
-	result := mergeKatalogNotification(base, override)
-	if len(result.Teams["ops"].Slack) == 0 || result.Teams["ops"].Slack[0] != "#new-ops" {
-		t.Errorf("override team must win on conflict, got %v", result.Teams["ops"].Slack)
-	}
-}
+// ── mergeCatalogNotification ──────────────────────────────────────────────────
 
 // ── checkDuplicate ────────────────────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-apiVersion: profiles.orkestra.io/v1alpha1
+apiVersion: profiles.inrun.dev/v1alpha1
 kind: ProfileProbeBurst
 metadata:
   name: my-probe

@@ -3,7 +3,7 @@ package note
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/labels"
+	"github.com/inrundev/inrun/pkg/labels"
 )
 
 // cr builds a minimal CR map with the given annotations set.

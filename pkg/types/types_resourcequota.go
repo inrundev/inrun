@@ -1,7 +1,7 @@
 // pkg/types/types_resourcequota.go
 package types
 
-// ResourceQuotaTemplateSource declares one ResourceQuota to be managed by Orkestra.
+// ResourceQuotaTemplateSource declares one ResourceQuota to be managed by Inrun.
 //
 // Usage patterns:
 //
@@ -56,7 +56,7 @@ type ResourceQuotaTemplateSource struct {
 	ToNamespaces []string `yaml:"toNamespaces,omitempty" json:"toNamespaces,omitempty"`
 
 	// FromResourceQuota — name of an existing ResourceQuota to copy from.
-	// When set, Orkestra reads this ResourceQuota at reconcile time and copies its hard limits.
+	// When set, Inrun reads this ResourceQuota at reconcile time and copies its hard limits.
 	FromResourceQuota string `yaml:"fromResourceQuota,omitempty" json:"fromResourceQuota,omitempty"`
 
 	// FromNamespace — namespace where FromResourceQuota lives.

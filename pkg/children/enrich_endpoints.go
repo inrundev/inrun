@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // enrichGroupWithEndpoints embeds _endpoints into each service map.
 // Reads the EndpointSlice for each service and embeds IP:port pairs.
 // A no-op when endpoint enrichment is not enabled on the CRD.
-func enrichGroupWithEndpoints(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry) {
+func enrichGroupWithEndpoints(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry) {
 	if !enrichmentEnabled("endpoints", crd) {
 		return
 	}

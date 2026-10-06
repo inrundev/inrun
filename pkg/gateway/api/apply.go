@@ -26,15 +26,15 @@ import (
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 
-	orktarget "github.com/orkspace/orkestra/pkg/intent/target"
-	"github.com/orkspace/orkestra/pkg/katalog"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils/common"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/intent"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils/common"
 )
 
 // ApplyResponse is returned for every POST /api/v1/apply request.
@@ -150,9 +150,9 @@ func scopedDynamic(kube kubeclient.Interface, capture *warningCapture) dynamic.I
 func applyHandler(
 	kube kubeclient.Interface,
 	clusters *ClusterRegistry,
-	kat *katalog.Katalog,
+	kat *catalog.Catalog,
 ) http.HandlerFunc {
-	var notes orktypes.NoteRegistry
+	var notes types.NoteRegistry
 	if !kat.Empty() {
 		notes = kat.UserNotes()
 	}
@@ -185,7 +185,7 @@ func applyHandler(
 
 		var (
 			obj       *unstructured.Unstructured
-			crd       *orktypes.CRDEntry
+			crd       *types.CRDEntry
 			alias     string // non-empty when caller used an alias
 			gvr       schema.GroupVersionResource
 			patchBody []byte
@@ -225,7 +225,7 @@ func applyHandler(
 				return
 			}
 
-			built, err := orktarget.BuildCRFromTarget(raw, crd, notes)
+			built, err := intent.Build(raw, crd, notes)
 			if err != nil {
 				writeJSON(w, http.StatusBadRequest, ApplyResponse{
 					Message: err.Error(),
@@ -387,7 +387,7 @@ func applyHandler(
 		}
 
 		patchOpts := metav1.PatchOptions{
-			FieldManager: konfig.FieldManagerGateway,
+			FieldManager: config.FieldManagerGateway,
 			Force:        boolPtr(overwrite),
 		}
 		if dryRun {
@@ -402,13 +402,13 @@ func applyHandler(
 			effectiveKube := targets[0].kube
 
 			if crd != nil {
-				op := orktypes.ServeOpCreate
+				op := types.ServeOpCreate
 				existing, probeErr := effectiveKube.DynamicClient().
 					Resource(gvr).
 					Namespace(obj.GetNamespace()).
 					Get(r.Context(), obj.GetName(), metav1.GetOptions{})
 				if probeErr == nil {
-					op = orktypes.ServeOpUpdate
+					op = types.ServeOpUpdate
 					ann := existing.GetAnnotations()
 					storedSurface := ann[labels.AnnotationServeAlias]
 					if storedSurface == "" {
@@ -454,7 +454,7 @@ func applyHandler(
 					}
 				}
 
-				allowed, reason := crd.TokenAllowedFor(alias, tokenName, op, obj.GetNamespace(), orktypes.ServeClassResources)
+				allowed, reason := crd.TokenAllowedFor(alias, tokenName, op, obj.GetNamespace(), types.ServeClassResources)
 				if !allowed {
 					msg := reason.Message(tokenName, op, obj.GetKind(), obj.GetNamespace())
 					writeJSON(w, http.StatusForbidden, ApplyResponse{
@@ -496,7 +496,7 @@ func applyHandler(
 				return
 			}
 
-			resolver := orktmpl.NewResolverFromMap(raw).WithUserNotes(notes)
+			resolver := template.NewResolverFromMap(raw).WithUserNotes(notes)
 			pollURL := resolvePollURL(result.GetKind(), result.GetNamespace(), result.GetName(), crd.GetServePollingConfig(), resolver)
 			writeJSON(w, http.StatusOK, ApplyResponse{
 				Accepted:   true,
@@ -517,20 +517,20 @@ func applyHandler(
 		if incomingSurface == "" && crd != nil {
 			incomingSurface = crd.ServeTarget()
 		}
-		resolver := orktmpl.NewResolverFromMap(raw).WithUserNotes(notes)
+		resolver := template.NewResolverFromMap(raw).WithUserNotes(notes)
 
 		var clusterResults []ClusterApplyResult
 		for _, t := range targets {
 			cr := ClusterApplyResult{Cluster: t.name}
 
 			if crd != nil {
-				op := orktypes.ServeOpCreate
+				op := types.ServeOpCreate
 				existing, probeErr := t.kube.DynamicClient().
 					Resource(gvr).
 					Namespace(obj.GetNamespace()).
 					Get(r.Context(), obj.GetName(), metav1.GetOptions{})
 				if probeErr == nil {
-					op = orktypes.ServeOpUpdate
+					op = types.ServeOpUpdate
 					ann := existing.GetAnnotations()
 					storedSurface := ann[labels.AnnotationServeAlias]
 					if storedSurface == "" {
@@ -546,7 +546,7 @@ func applyHandler(
 					}
 				}
 
-				allowed, reason := crd.TokenAllowedFor(alias, tokenName, op, obj.GetNamespace(), orktypes.ServeClassResources)
+				allowed, reason := crd.TokenAllowedFor(alias, tokenName, op, obj.GetNamespace(), types.ServeClassResources)
 				if !allowed {
 					cr.Message = reason.Message(tokenName, op, obj.GetKind(), obj.GetNamespace())
 					clusterResults = append(clusterResults, cr)
@@ -616,8 +616,8 @@ func applyHandler(
 // the CRD — the submitted spec fields are the resolver data source.
 func resolveServeMeta(
 	obj *unstructured.Unstructured,
-	crd *orktypes.CRDEntry,
-	notes orktypes.NoteRegistry,
+	crd *types.CRDEntry,
+	notes types.NoteRegistry,
 ) error {
 	if crd.Serve == nil {
 		return nil
@@ -639,7 +639,7 @@ func resolveServeMeta(
 			data["annotations"] = annotations
 		}
 	}
-	resolver := orktmpl.NewResolverFromMap(data).WithUserNotes(notes)
+	resolver := template.NewResolverFromMap(data).WithUserNotes(notes)
 
 	if crd.HasServeName() {
 		name, err := resolver.Resolve(crd.Serve.Name)

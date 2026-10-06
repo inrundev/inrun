@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	apiv1 "github.com/orkspace/orkestra-args-hooks/api/v1alpha1"
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orkdeploy "github.com/orkspace/orkestra/pkg/resources/deployments"
+	apiv1 "github.com/inrundev/inrun-args-hooks/api/v1alpha1"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/resources/deployments"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// BlockchainAppHooks returns the hook implementation registered in the Katalog.
+// BlockchainAppHooks returns the hook implementation registered in the Catalog.
 func BlockchainAppHooks() domain.AnyReconcileHooks {
 	return domain.ReconcileHooks[*apiv1.BlockchainApp]{OnReconcile: onBlockchainAppReconcile}
 }
@@ -22,10 +22,10 @@ func onBlockchainAppReconcile(ctx context.Context, obj *apiv1.BlockchainApp) err
 		return fmt.Errorf("kubeclient not in context")
 	}
 
-	// Both values come from the Katalog — not from the CR spec.
+	// Both values come from the Catalog — not from the CR spec.
 	// inBusinessHours: computed from a user-defined note (world state).
 	// featureEnabled:  result of an external HTTP call the runtime made,
-	//                  but only when inBusinessHours was true (see katalog.yaml when:).
+	//                  but only when inBusinessHours was true (see catalog.yaml when:).
 	// The hook binary never changes when the schedule or flag endpoint changes.
 	inBusinessHours := kube.Args().String("inBusinessHours") == "true"
 	featureEnabled := kube.Args().String("featureEnabled") == "true"
@@ -40,7 +40,7 @@ func onBlockchainAppReconcile(ctx context.Context, obj *apiv1.BlockchainApp) err
 		replicas = 1
 	}
 
-	spec := orkdeploy.ResolvedDeploymentSpec{
+	spec := deployments.ResolvedDeploymentSpec{
 		Name:      obj.Name,
 		Namespace: obj.Namespace,
 		Image:     obj.Spec.Image,
@@ -49,7 +49,7 @@ func onBlockchainAppReconcile(ctx context.Context, obj *apiv1.BlockchainApp) err
 			"feature.demo/v2-enabled": annotation,
 		},
 	}
-	if err := orkdeploy.Apply(ctx, kube, obj, spec); err != nil {
+	if err := deployments.Apply(ctx, kube, obj, spec); err != nil {
 		return fmt.Errorf("blockchainapp deployment: %w", err)
 	}
 

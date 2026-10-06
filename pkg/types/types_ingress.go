@@ -3,7 +3,7 @@ package types
 
 // ── Ingress ───────────────────────────────────────────────────────────────────
 
-// IngressTemplateSource declares one Ingress to be managed by Orkestra.
+// IngressTemplateSource declares one Ingress to be managed by Inrun.
 //
 // Example:
 //
@@ -53,7 +53,7 @@ type IngressTemplateSource struct {
 	// Annotations applied to Ingress metadata. Values support template expressions.
 	Annotations Labels `yaml:"annotations,omitempty" json:"annotations,omitempty"`
 
-	// TLS — optional TLS configuration. When tls.create is true, Orkestra
+	// TLS — optional TLS configuration. When tls.create is true, Inrun
 	// generates a self-signed TLS Secret before creating the Ingress.
 	//
 	//	tls:
@@ -121,7 +121,7 @@ type IngressTemplateSource struct {
 }
 
 // IngressTLSSpec configures TLS for an Ingress resource.
-// When Create is true, Orkestra generates a kubernetes.io/tls Secret before
+// When Create is true, Inrun generates a kubernetes.io/tls Secret before
 // the Ingress is applied so the Ingress can reference it immediately.
 type IngressTLSSpec struct {
 	// Create — when true, create a TLS secret and populate ingress.spec.tls.

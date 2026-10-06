@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // FileSource represents one file source entry.
@@ -17,7 +17,7 @@ import (
 //
 //	files:
 //	  - ./simple/path.yaml               # simple form
-//	  - url: https://private/katalog.yaml # authenticated form
+//	  - url: https://private/catalog.yaml # authenticated form
 //	    auth:
 //	      type: bearer
 //	      fromEnv: MY_TOKEN
@@ -33,7 +33,7 @@ type FileSource struct {
 
 // FileSourceAuth declares how to authenticate when fetching a remote source.
 // All credential values are resolved from environment variables at load time —
-// credentials never appear as literal values in the Katalog YAML.
+// credentials never appear as literal values in the Catalog YAML.
 type FileSourceAuth struct {
 	// Type — authentication scheme.
 	// Supported values: "bearer", "github", "basic"
@@ -56,12 +56,12 @@ type FileSourceAuth struct {
 // or a struct with url and auth fields.
 //
 // Plain string:
-//   - ./path/to/katalog.yaml
-//   - https://public.url/katalog.yaml
+//   - ./path/to/catalog.yaml
+//   - https://public.url/catalog.yaml
 //   - $ENV_VAR
 //
 // Struct with auth:
-//   - url: https://private.url/katalog.yaml
+//   - url: https://private.url/catalog.yaml
 //     auth:
 //     type: github
 //     fromEnv: GITHUB_TOKEN

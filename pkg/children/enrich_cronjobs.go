@@ -4,15 +4,15 @@ import (
 	"context"
 	"sort"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // enrichGroupWithCronJobChildren embeds job references under "_activeJobs",
 // "_lastJob", and "_lastSuccessfulJob" for each CronJob in the group.
 // A no-op when cronjob enrichment is not enabled on the CRD.
-func enrichGroupWithCronJobChildren(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry) {
+func enrichGroupWithCronJobChildren(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry) {
 	if !enrichmentEnabled("cronjob", crd) {
 		return
 	}

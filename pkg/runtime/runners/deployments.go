@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkdeploy "github.com/orkspace/orkestra/pkg/resources/deployments"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/deployments"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunDeployments resolves and applies Deployment template declarations.
@@ -24,15 +24,15 @@ import (
 func RunDeployments(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.DeploymentTemplateSource,
+	srcs []types.DeploymentTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -46,7 +46,7 @@ func RunDeployments(
 	for i, src := range srcs {
 
 		// 1. Evaluate conditions BEFORE resolving templates
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		// Early name/ns resolution — needed for guard check and DeleteIfOwned cleanup.
 		// ResolveDeploymentTemplate resolves these again internally — intentional, cheap.
@@ -73,7 +73,7 @@ func RunDeployments(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orkdeploy.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := deployments.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("deployments[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -87,20 +87,20 @@ func RunDeployments(
 			return fmt.Errorf("deployments[%d]: %w", i, err)
 		}
 
-		spec := orkdeploy.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
+		spec := deployments.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
 
 		if update {
-			if err := orkdeploy.Update(ctx, kube, owner, spec); err != nil {
+			if err := deployments.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("deployments[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkdeploy.Create(ctx, kube, owner, spec); err != nil {
+			if err := deployments.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("deployments[%d].create: %w", i, err)
 			}
 
 			// reconcile: true
 			if src.Reconcile {
-				if err := orkdeploy.Update(ctx, kube, owner, spec); err != nil {
+				if err := deployments.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("deployments[%d].reconcile: %w", i, err)
 				}
 			}

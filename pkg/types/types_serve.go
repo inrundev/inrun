@@ -19,8 +19,8 @@ const (
 
 // ServeConfig declares serve exposure settings for a CRD entry.
 type ServeConfig struct {
-	// Enabled surfaces this CRD in the Control Center as a self-service form.
-	// Requires gateway.api.enabled: true on the Katalog.
+	// Enabled surfaces this CRD in the Console as a self-service form.
+	// Requires gateway.api.enabled: true on the Catalog.
 	// Default: false.
 	Enabled bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
 
@@ -28,7 +28,7 @@ type ServeConfig struct {
 	// Both default to true for backward compatibility.
 	Modes *ServeModes `yaml:"modes,omitempty" json:"modes,omitempty"`
 
-	// Include is a path (relative to the katalog file) to a YAML file with a
+	// Include is a path (relative to the catalog file) to a YAML file with a
 	// "fields:" map and/or a "labels:" or "annotations:" block (same shape as the
 	// inline equivalents below). Expanded at load time — the result is merged
 	// into Fields, Labels and Annotations respectively, with inline entries
@@ -51,15 +51,15 @@ type ServeConfig struct {
 	// Ignore lists spec field names hidden from the serve form.
 	Ignore []string `yaml:"ignore,omitempty" json:"ignore,omitempty"`
 
-	// Title is the human-readable name shown in the Control Center catalog.
+	// Title is the human-readable name shown in the Console service list.
 	// Defaults to kind when not set.
 	Title string `yaml:"title,omitempty" json:"title,omitempty"`
 
-	// Category is a catalog label used when listing available schemas
+	// Category is a service-list label used when listing available schemas
 	// via GET /api/v1/schema/. Example: "Compute", "Data", "Security".
 	Category string `yaml:"category,omitempty" json:"category,omitempty"`
 
-	// Description is a short human-readable summary shown in the service catalog.
+	// Description is a short human-readable summary shown in the service list.
 	// Falls back to the CRD-level description when not set.
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 
@@ -81,7 +81,7 @@ type ServeConfig struct {
 	// for CRs submitted in full CR mode. Without matchFields, full CR mode
 	// bypasses target-level controls.
 	//
-	// Each target must have a unique match list. ork validate enforces this.
+	// Each target must have a unique match list. inrun validate enforces this.
 	// At least one match field is recommended when cr mode is disabled.
 	//
 	// Maximum: 3 fields
@@ -114,12 +114,12 @@ type ServeConfig struct {
 	// to decide which namespace a new CR is created in — e.g. '{{ teamName }}'.
 	// Same resolution mechanics as Name above, but only applies to namespaced
 	// CRDs, and — unlike Name — is required rather than optional: the
-	// Control Center form and any Gateway API caller never need to render or
+	// Console form and any Gateway API caller never need to render or
 	// submit namespace themselves. A plain literal (no template) is valid
 	// too, for a CRD whose instances always land in one fixed namespace.
 	//
 	// Required when the CRD is namespaced (the default) and serve.enabled is
-	// true — see Katalog.validateServeNamespace. Meaningless, and rejected at
+	// true — see Catalog.validateServeNamespace. Meaningless, and rejected at
 	// load time, on a cluster-scoped CRD (namespaced: false) — there's no
 	// namespace to resolve into.
 	//
@@ -148,7 +148,7 @@ type ServeConfig struct {
 	// Tokens maps gateway token names to the operations they may perform on this
 	// CRD and, optionally, the namespaces they may access.
 	// When empty, any valid gateway token may perform any operation on this CRD.
-	// ork validate confirms every token name here matches an entry in gateway.api.auth.tokens.
+	// inrun validate confirms every token name here matches an entry in gateway.api.auth.tokens.
 	Tokens map[string]ServeTokenPermissions `yaml:"tokens,omitempty" json:"tokens,omitempty"`
 
 	// Clusters is the list of cluster names this CRD is allowed to route to.
@@ -249,7 +249,7 @@ type ServeFieldConfig struct {
 	// as the headline denial reason), so the field a developer sees first is
 	// also the one whose error they see first when several fail at once.
 	// Two fields on the same CRD sharing a non-zero Order is a load-time
-	// error (see Katalog.validateServeFieldOrder) for exactly this reason.
+	// error (see Catalog.validateServeFieldOrder) for exactly this reason.
 	Order int `yaml:"order,omitempty" json:"order,omitempty"`
 
 	// Category is a section heading for visual grouping. Fields sharing a category
@@ -272,8 +272,8 @@ type ServeFieldConfig struct {
 	// the browser enforces this natively (asterisk on the label, form cannot
 	// be submitted while Empty() — and is also enforced server-side: an
 	// implicit exists validation rule is synthesized automatically at
-	// katalog load time (see CRDEntry.RequiredServeFieldRules), covering every
-	// client of the Gateway API, not just the Control Center form. No matching
+	// catalog load time (see CRDEntry.RequiredServeFieldRules), covering every
+	// client of the Gateway API, not just the Console form. No matching
 	// validation.rules entry needs to be hand-written.
 	Required bool `yaml:"required,omitempty" json:"required,omitempty"`
 
@@ -323,7 +323,7 @@ type ServeFieldConfig struct {
 	// Values is a fanout map from dot-notation spec paths to template expressions.
 	// Use when one submitted field must be split into multiple CR spec fields.
 	//
-	// Example — caller submits "image: ghcr.io/myorg/app:v1.2.3"; katalog fans
+	// Example — caller submits "image: ghcr.io/myorg/app:v1.2.3"; catalog fans
 	// it out to image.registry, image.repository, image.tag:
 	//
 	//   values:
@@ -490,7 +490,7 @@ func (c *ServeConfig) TokenAllowed(
 }
 
 // Message returns a human-readable denial message for use in HTTP responses
-// and ork validate output.
+// and inrun validate output.
 func (r ServeDenyReason) Message(tokenName, op, kind, namespace string) string {
 	switch r {
 	case ServeDenyReasonUnknownToken:

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ApplyExclusions strips excluded paths from a response object.
@@ -22,9 +22,9 @@ import (
 // The function handles all three cases.
 func ApplyExclusions(
 	response map[string]interface{},
-	crd *orktypes.CRDEntry,
+	crd *types.CRDEntry,
 	alias string,
-	notes orktypes.NoteRegistry,
+	notes types.NoteRegistry,
 ) {
 	if crd == nil {
 		return
@@ -34,7 +34,7 @@ func ApplyExclusions(
 		return
 	}
 
-	resolver := orktmpl.NewResolverFromMap(response).WithUserNotes(notes)
+	resolver := template.NewResolverFromMap(response).WithUserNotes(notes)
 
 	for _, expr := range cfg.Exclude {
 		if expr == "" {

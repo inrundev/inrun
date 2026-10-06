@@ -1,6 +1,6 @@
 // pkg/types/security.go
 //
-// Security configuration at the Katalog level.
+// Security configuration at the Catalog level.
 //
 // The unified security block covers four concerns:
 //
@@ -13,25 +13,25 @@
 //	security:
 //	  deletionProtection:
 //	    enabled: true            # default: true when block is present
-//	    serviceName: orkestra    # default: ORK_SERVICE_NAME env / "orkestra"
+//	    serviceName: inrun    # default: INRUN_SERVICE_NAME env / "inrun"
 //	    failurePolicy: Fail      # default: Fail
 //
 //	  webhooks:
 //	    admission:
 //	      enabled: true          # default: ENABLE_ADMISSION_WEBHOOK env / false
 //	    failurePolicy: Ignore    # default: WEBHOOKS_FAILURE_POLICY env / "Ignore"
-//	    serviceName: orkestra    # default: ORK_SERVICE_NAME env / "orkestra"
+//	    serviceName: inrun    # default: INRUN_SERVICE_NAME env / "inrun"
 //
 //	  conversion:
 //	    enabled: true            # default: ENABLE_CONVERSION env / false
 //	    conversionWindow: 100    # default: CONVERSION_WINDOW env / 100
 //
-// Precedence: katalog YAML value > ENV value > hard default.
+// Precedence: catalog YAML value > ENV value > hard default.
 // ENV values populate SecurityConfig during Init() and act as defaults.
-// Katalog values are merged on top in KomposeRuntimeKatalog.
+// Catalog values are merged on top in BuildRuntimeCatalog.
 package types
 
-// CertManagerConfig controls Orkestra's built-in TLS certificate lifecycle.
+// CertManagerConfig controls Inrun's built-in TLS certificate lifecycle.
 // Only applies when certificates are auto-generated (no TLS_CERT/TLS_KEY env vars).
 //
 // YAML shape:
@@ -41,12 +41,12 @@ package types
 //	    autoRotate: true           # default: true — rotate cert before expiry
 //	    rotationThreshold: "30d"   # default: 30 days before expiry
 type CertManagerConfig struct {
-	// AutoRotate controls whether Orkestra pre-emptively rotates the TLS certificate
+	// AutoRotate controls whether Inrun pre-emptively rotates the TLS certificate
 	// before it expires. The new certificate takes effect on the next gateway restart.
 	// Default: true. Set to false or TLS_AUTO_ROTATE=false to opt out.
 	AutoRotate *bool `yaml:"autoRotate,omitempty" json:"autoRotate,omitempty"`
 
-	// RotationThreshold is how far before expiry Orkestra rotates the certificate.
+	// RotationThreshold is how far before expiry Inrun rotates the certificate.
 	// Accepts duration strings: "30d", "7d", "2w". Default: "30d".
 	RotationThreshold string `yaml:"rotationThreshold,omitempty" json:"rotationThreshold,omitempty"`
 
@@ -55,23 +55,23 @@ type CertManagerConfig struct {
 	ValidFor string `yaml:"validFor,omitempty" json:"validFor,omitempty"`
 }
 
-// KatalogSecurity holds the full security configuration for a Katalog.
-type KatalogSecurity struct {
-	// ServiceName defines the runtime and gateway service names for the Orkestra deployment.
+// CatalogSecurity holds the full security configuration for a Catalog.
+type CatalogSecurity struct {
+	// ServiceName defines the runtime and gateway service names for the Inrun deployment.
 	ServiceName *ServiceName `yaml:"serviceName,omitempty" json:"serviceName,omitempty"`
 
-	// DeletionProtection controls whether Orkestra registers a webhook that
+	// DeletionProtection controls whether Inrun registers a webhook that
 	// blocks deletion of its managed CRDs, deployment, service, etc.
 	//
 	// When enabled (default when block is present):
 	//   - Registers /deletion-protection endpoint on the HTTPS server
-	//   - Creates ValidatingWebhookConfiguration "orkestra-deletion-protection"
+	//   - Creates ValidatingWebhookConfiguration "inrun-deletion-protection"
 	//   - Entry 1: broad rule for CRDs; handler filters by ProtectedCRDNames()
 	//   - Entry 2: ObjectSelector-gated rule for deployment, service, etc
 	//
 	// To decommission an operator with deletion protection:
 	//   1. Set enabled: false
-	//   2. Redeploy Orkestra (webhook removed on startup)
+	//   2. Redeploy Inrun (webhook removed on startup)
 	//   3. Delete resources normally
 	//
 	// nil pointer: not enabled (not declared in YAML).
@@ -92,11 +92,11 @@ type KatalogSecurity struct {
 	Conversion *ConversionConfig `yaml:"conversion,omitempty" json:"conversion,omitempty"`
 
 	// NamespaceProtection controls the optional validating webhook that prevents
-	// Orkestra-managed CRs from being created or updated in forbidden namespaces.
+	// Inrun-managed CRs from being created or updated in forbidden namespaces.
 	//
 	// This is an admission-time safeguard only. When enabled:
 	//   - Registers /namespace-protection endpoint on the HTTPS server
-	//   - Creates ValidatingWebhookConfiguration "orkestra-namespace-protection"
+	//   - Creates ValidatingWebhookConfiguration "inrun-namespace-protection"
 	//   - Enforces allowedNamespaces / restrictedNamespaces declared by each CRD
 	//
 	// If disabled or omitted, namespace rules are not enforced at apply time.
@@ -105,7 +105,7 @@ type KatalogSecurity struct {
 	// nil pointer: namespace protection not configured; ENV vars drive behavior.
 	NamespaceProtection *NamespaceProtectionConfig `yaml:"namespaceProtection,omitempty" json:"namespaceProtection,omitempty"`
 
-	// CertManager controls the lifecycle of Orkestra's auto-generated TLS certificate.
+	// CertManager controls the lifecycle of Inrun's auto-generated TLS certificate.
 	// Only applies when certificates are auto-generated (TLS_CERT/TLS_KEY not set).
 	//
 	// nil pointer: use ENV defaults (TLS_AUTO_ROTATE, TLS_ROTATION_THRESHOLD).
@@ -113,7 +113,7 @@ type KatalogSecurity struct {
 }
 
 // ServiceName defines the canonical names used to reference a service within
-// Orkestra. Runtime is the internal name used inside the operator, while
+// Inrun. Runtime is the internal name used inside the operator, while
 // Gateway is the externally exposed name used by ingress or gateway layers.
 // Both fields are optional and omitted when empty.
 type ServiceName struct {
@@ -132,14 +132,14 @@ type DeletionProtectionConfig struct {
 	// Default: true when the deletionProtection block is declared.
 	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
 
-	// ServiceName is the Kubernetes Service fronting Orkestra's HTTPS server.
+	// ServiceName is the Kubernetes Service fronting Inrun's HTTPS server.
 	// The API server sends webhook requests to this Service.
-	// Default: ORK_SERVICE_NAME env / "orkestra".
+	// Default: INRUN_SERVICE_NAME env / "inrun".
 	ServiceName string `yaml:"serviceName,omitempty" json:"serviceName,omitempty"`
 
-	// FailurePolicy controls what the API server does when Orkestra is unreachable.
+	// FailurePolicy controls what the API server does when Inrun is unreachable.
 	// "Fail" — reject the DELETE (recommended for protection; this is the default).
-	// "Ignore" — allow the DELETE through when Orkestra cannot be reached.
+	// "Ignore" — allow the DELETE through when Inrun cannot be reached.
 	// Default: "Fail".
 	FailurePolicy string `yaml:"failurePolicy,omitempty" json:"failurePolicy,omitempty"`
 
@@ -150,7 +150,7 @@ type DeletionProtectionConfig struct {
 	// StrictMode controls whether removing the deletion-protection label from a resource
 	// is itself treated as a deletion attempt and blocked.
 	// When true, the only way to remove the label (and thus unprotect a resource) is to
-	// disable strictMode in the Katalog and restart Orkestra Gateway.
+	// disable strictMode in the Catalog and restart Inrun Gateway.
 	// Default: false.
 	StrictMode bool `yaml:"strictMode,omitempty" json:"strictMode,omitempty"`
 }
@@ -161,23 +161,23 @@ type NamespaceProtectionConfig struct {
 	// Default: true when the namespaceProtection block is declared.
 	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
 
-	// ServiceName is the Kubernetes Service fronting Orkestra's HTTPS server.
+	// ServiceName is the Kubernetes Service fronting Inrun's HTTPS server.
 	// The API server sends webhook requests to this Service.
-	// Default: ORK_SERVICE_NAME env / "orkestra".
+	// Default: INRUN_SERVICE_NAME env / "inrun".
 	ServiceName string `yaml:"serviceName,omitempty" json:"serviceName,omitempty"`
 
-	// FailurePolicy controls what the API server does when Orkestra is unreachable.
+	// FailurePolicy controls what the API server does when Inrun is unreachable.
 	// "Fail"   — reject the CREATE/UPDATE (recommended; this is the default).
-	// "Ignore" — allow the request through when Orkestra cannot be reached.
+	// "Ignore" — allow the request through when Inrun cannot be reached.
 	// Default: "Fail".
 	FailurePolicy string `yaml:"failurePolicy,omitempty" json:"failurePolicy,omitempty"`
 
-	// RestrictedNamespaces — deny-list applied to every CRD in this Katalog.
+	// RestrictedNamespaces — deny-list applied to every CRD in this Catalog.
 	// Merged additively with per-CRD restrictedNamespaces — more specific levels
 	// add to, not replace, broader levels.
 	RestrictedNamespaces RestrictedNamespaces `yaml:"restrictedNamespaces,omitempty" json:"restrictedNamespaces,omitempty"`
 
-	// AllowedNamespaces — allow-list applied to every CRD in this Katalog.
+	// AllowedNamespaces — allow-list applied to every CRD in this Catalog.
 	// Merged additively with per-CRD allowedNamespaces.
 	AllowedNamespaces AllowedNamespaces `yaml:"allowedNamespaces,omitempty" json:"allowedNamespaces,omitempty"`
 
@@ -192,14 +192,14 @@ type WebhooksConfig struct {
 	// Admission controls the ValidatingWebhookConfiguration and MutatingWebhookConfiguration.
 	Admission *AdmissionWebhookToggle `yaml:"admission,omitempty" json:"admission,omitempty"`
 
-	// FailurePolicy controls what the API server does when Orkestra is unreachable
+	// FailurePolicy controls what the API server does when Inrun is unreachable
 	// for admission calls. "Fail" or "Ignore".
 	// Default: WEBHOOKS_FAILURE_POLICY env / "Ignore".
 	FailurePolicy string `yaml:"failurePolicy,omitempty" json:"failurePolicy,omitempty"`
 
-	// ServiceName is the Kubernetes Service fronting Orkestra's HTTPS server.
+	// ServiceName is the Kubernetes Service fronting Inrun's HTTPS server.
 	// Shared with deletion protection when both are enabled.
-	// Default: ORK_SERVICE_NAME env / "orkestra".
+	// Default: INRUN_SERVICE_NAME env / "inrun".
 	ServiceName string `yaml:"serviceName,omitempty" json:"serviceName,omitempty"`
 
 	// CleanupOnShutdown controls whether Admission webhook is deleted on graceful shutdown.
@@ -230,7 +230,7 @@ type ConversionConfig struct {
 // ── Effective value helpers ───────────────────────────────────────────────────
 
 // IsDeletionProtectionEnabled returns the effective deletion protection setting.
-func (s *KatalogSecurity) IsDeletionProtectionEnabled() bool {
+func (s *CatalogSecurity) IsDeletionProtectionEnabled() bool {
 	if s == nil || s.DeletionProtection == nil {
 		return false
 	}
@@ -241,7 +241,7 @@ func (s *KatalogSecurity) IsDeletionProtectionEnabled() bool {
 }
 
 // IsAdmissionEnabled returns true when admission webhooks are globally enabled.
-func (s *KatalogSecurity) IsAdmissionEnabled() bool {
+func (s *CatalogSecurity) IsAdmissionEnabled() bool {
 	if s == nil || s.Webhooks == nil || s.Webhooks.Admission == nil {
 		return false
 	}
@@ -252,7 +252,7 @@ func (s *KatalogSecurity) IsAdmissionEnabled() bool {
 }
 
 // IsConversionEnabled returns true when the conversion webhook is globally enabled.
-func (s *KatalogSecurity) IsConversionEnabled() bool {
+func (s *CatalogSecurity) IsConversionEnabled() bool {
 	if s == nil || s.Conversion == nil {
 		return false
 	}
@@ -264,25 +264,25 @@ func (s *KatalogSecurity) IsConversionEnabled() bool {
 
 // DeletionProtectionServiceName returns the effective service name for deletion protection.
 // Falls back to the provided ENV default.
-func (s *KatalogSecurity) DeletionProtectionServiceName(envDefault string) string {
+func (s *CatalogSecurity) DeletionProtectionServiceName(envDefault string) string {
 	if s != nil && s.DeletionProtection != nil && s.DeletionProtection.ServiceName != "" {
 		return s.DeletionProtection.ServiceName
 	}
 	return envDefault
 }
 
-// RuntimeServiceName returns the effective service name for orkestra runtime.
+// RuntimeServiceName returns the effective service name for inrun runtime.
 // Falls back to the provided ENV default.
-func (s *KatalogSecurity) RuntimeServiceName(envDefault string) string {
+func (s *CatalogSecurity) RuntimeServiceName(envDefault string) string {
 	if s != nil && s.ServiceName != nil {
 		return s.ServiceName.Runtime
 	}
 	return envDefault
 }
 
-// GatewayServiceName returns the effective service name for orkestra gateway.
+// GatewayServiceName returns the effective service name for inrun gateway.
 // Falls back to the provided ENV default.
-func (s *KatalogSecurity) GatewayServiceName(envDefault string) string {
+func (s *CatalogSecurity) GatewayServiceName(envDefault string) string {
 	if s != nil && s.ServiceName != nil {
 		return s.ServiceName.Gateway
 	}
@@ -291,7 +291,7 @@ func (s *KatalogSecurity) GatewayServiceName(envDefault string) string {
 
 // DeletionProtectionFailurePolicy returns the effective failure policy string.
 // Falls back to "Fail" when not configured — protecting by default.
-func (s *KatalogSecurity) DeletionProtectionFailurePolicy() string {
+func (s *CatalogSecurity) DeletionProtectionFailurePolicy() string {
 	if s != nil && s.DeletionProtection != nil && s.DeletionProtection.FailurePolicy != "" {
 		return s.DeletionProtection.FailurePolicy
 	}
@@ -299,7 +299,7 @@ func (s *KatalogSecurity) DeletionProtectionFailurePolicy() string {
 }
 
 // IsNamespaceProtectionEnabled returns the effective namespace protection setting.
-func (s *KatalogSecurity) IsNamespaceProtectionEnabled() bool {
+func (s *CatalogSecurity) IsNamespaceProtectionEnabled() bool {
 	if s == nil || s.NamespaceProtection == nil {
 		return false
 	}
@@ -311,7 +311,7 @@ func (s *KatalogSecurity) IsNamespaceProtectionEnabled() bool {
 
 // NamespaceProtectionServiceName returns the effective service name for namespace protection.
 // Falls back to the provided ENV default.
-func (s *KatalogSecurity) NamespaceProtectionServiceName(envDefault string) string {
+func (s *CatalogSecurity) NamespaceProtectionServiceName(envDefault string) string {
 	if s != nil && s.NamespaceProtection != nil && s.NamespaceProtection.ServiceName != "" {
 		return s.NamespaceProtection.ServiceName
 	}
@@ -320,7 +320,7 @@ func (s *KatalogSecurity) NamespaceProtectionServiceName(envDefault string) stri
 
 // NamespaceProtectionFailurePolicy returns the effective failure policy string.
 // Falls back to "Fail" when not configured — protecting by default.
-func (s *KatalogSecurity) NamespaceProtectionFailurePolicy() string {
+func (s *CatalogSecurity) NamespaceProtectionFailurePolicy() string {
 	if s != nil && s.NamespaceProtection != nil && s.NamespaceProtection.FailurePolicy != "" {
 		return s.NamespaceProtection.FailurePolicy
 	}
@@ -329,7 +329,7 @@ func (s *KatalogSecurity) NamespaceProtectionFailurePolicy() string {
 
 // WebhooksServiceName returns the effective service name for admission webhooks.
 // Falls back to the provided ENV default.
-func (s *KatalogSecurity) WebhooksServiceName(envDefault string) string {
+func (s *CatalogSecurity) WebhooksServiceName(envDefault string) string {
 	if s != nil && s.Webhooks != nil && s.Webhooks.ServiceName != "" {
 		return s.Webhooks.ServiceName
 	}
@@ -337,8 +337,8 @@ func (s *KatalogSecurity) WebhooksServiceName(envDefault string) string {
 }
 
 // WebhooksFailurePolicy returns the effective failure policy for admission webhooks.
-// Falls back to "Ignore" — not blocking when Orkestra is unreachable.
-func (s *KatalogSecurity) WebhooksFailurePolicy(envDefault string) string {
+// Falls back to "Ignore" — not blocking when Inrun is unreachable.
+func (s *CatalogSecurity) WebhooksFailurePolicy(envDefault string) string {
 	if s != nil && s.Webhooks != nil && s.Webhooks.FailurePolicy != "" {
 		return s.Webhooks.FailurePolicy
 	}
@@ -350,7 +350,7 @@ func (s *KatalogSecurity) WebhooksFailurePolicy(envDefault string) string {
 
 // IsCertAutoRotateEnabled returns the effective auto-rotate setting.
 // Default: true — rotation is on unless explicitly disabled.
-func (s *KatalogSecurity) IsCertAutoRotateEnabled() bool {
+func (s *CatalogSecurity) IsCertAutoRotateEnabled() bool {
 	if s == nil || s.CertManager == nil || s.CertManager.AutoRotate == nil {
 		return true
 	}
@@ -359,7 +359,7 @@ func (s *KatalogSecurity) IsCertAutoRotateEnabled() bool {
 
 // CertRotationThresholdVal returns the effective rotation threshold string.
 // Falls back to the provided ENV default.
-func (s *KatalogSecurity) CertRotationThresholdVal(envDefault string) string {
+func (s *CatalogSecurity) CertRotationThresholdVal(envDefault string) string {
 	if s != nil && s.CertManager != nil && s.CertManager.RotationThreshold != "" {
 		return s.CertManager.RotationThreshold
 	}
@@ -368,7 +368,7 @@ func (s *KatalogSecurity) CertRotationThresholdVal(envDefault string) string {
 
 // ValidForVal returns the effective validity string.
 // Falls back to the provided ENV default.
-func (s *KatalogSecurity) ValidForVal(envDefault string) string {
+func (s *CatalogSecurity) ValidForVal(envDefault string) string {
 	if s != nil && s.CertManager != nil && s.CertManager.ValidFor != "" {
 		return s.CertManager.ValidFor
 	}

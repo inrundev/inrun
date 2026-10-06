@@ -1,5 +1,5 @@
 expect:
-  - name: deploy Kafka in orkestra-system
+  - name: deploy Kafka in inrun-system
     kubectl:
       apply:
         - inline: |
@@ -7,7 +7,7 @@ expect:
             kind: Deployment
             metadata:
               name: kafka
-              namespace: orkestra-system
+              namespace: inrun-system
             spec:
               replicas: 1
               selector:
@@ -31,7 +31,7 @@ expect:
                         - name: KAFKA_LISTENERS
                           value: PLAINTEXT://:9092,CONTROLLER://:9093
                         - name: KAFKA_ADVERTISED_LISTENERS
-                          value: PLAINTEXT://kafka.orkestra-system.svc:9092
+                          value: PLAINTEXT://kafka.inrun-system.svc:9092
                         - name: KAFKA_CONTROLLER_QUORUM_VOTERS
                           value: 1@localhost:9093
                         - name: KAFKA_CONTROLLER_LISTENER_NAMES
@@ -47,7 +47,7 @@ expect:
             kind: Service
             metadata:
               name: kafka
-              namespace: orkestra-system
+              namespace: inrun-system
             spec:
               selector:
                 app: kafka
@@ -60,7 +60,7 @@ expect:
     resources:
       - kind: Deployment
         name: kafka
-        namespace: orkestra-system
+        namespace: inrun-system
         condition: Available
 
   - name: create events topic (3 partitions)
@@ -71,7 +71,7 @@ expect:
             kind: Job
             metadata:
               name: kafka-init
-              namespace: orkestra-system
+              namespace: inrun-system
             spec:
               ttlSecondsAfterFinished: 60
               template:
@@ -83,7 +83,7 @@ expect:
                       command:
                         - /opt/kafka/bin/kafka-topics.sh
                         - --bootstrap-server
-                        - kafka.orkestra-system.svc:9092
+                        - kafka.inrun-system.svc:9092
                         - --create
                         - --topic
                         - events
@@ -98,7 +98,7 @@ expect:
     resources:
       - kind: Job
         name: kafka-init
-        namespace: orkestra-system
+        namespace: inrun-system
         condition: Complete
 
   - name: Kafka pod is Ready
@@ -106,5 +106,5 @@ expect:
     resources:
       - kind: Deployment
         name: kafka
-        namespace: orkestra-system
+        namespace: inrun-system
         ready: true

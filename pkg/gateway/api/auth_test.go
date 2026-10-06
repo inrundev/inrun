@@ -14,8 +14,8 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	josejwt "github.com/go-jose/go-jose/v4/jwt"
 
-	oidcpkg "github.com/orkspace/orkestra/pkg/gateway/oidc"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	oidcpkg "github.com/inrundev/inrun/pkg/gateway/oidc"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func TestTokenSet_Matches(t *testing.T) {
@@ -186,7 +186,7 @@ func TestTokenSet_MatchesOIDC_ValidToken(t *testing.T) {
 	token := oidcSignToken(t, priv, "k1", map[string]interface{}{
 		"iss":        issuer,
 		"sub":        "repo:myorg/payments:ref:refs/heads/main",
-		"aud":        "orkestra",
+		"aud":        "inrun",
 		"exp":        time.Now().Add(5 * time.Minute).Unix(),
 		"repository": "myorg/payments",
 		"ref":        "refs/heads/main",
@@ -194,11 +194,11 @@ func TestTokenSet_MatchesOIDC_ValidToken(t *testing.T) {
 
 	ts := &TokenSet{
 		oidcCache: oidcpkg.NewCache(time.Minute),
-		oidcEntries: []orktypes.APIToken{{
+		oidcEntries: []types.APIToken{{
 			Name: "ci-oidc",
-			OIDC: &orktypes.OIDCToken{
+			OIDC: &types.OIDCToken{
 				Issuer:   issuer,
-				Audience: "orkestra",
+				Audience: "inrun",
 				Allow:    map[string]string{"repository": "myorg/payments", "ref": "refs/heads/main"},
 			},
 		}},
@@ -227,9 +227,9 @@ func TestTokenSet_MatchesOIDC_ClaimMismatch(t *testing.T) {
 
 	ts := &TokenSet{
 		oidcCache: oidcpkg.NewCache(time.Minute),
-		oidcEntries: []orktypes.APIToken{{
+		oidcEntries: []types.APIToken{{
 			Name: "billing-ci",
-			OIDC: &orktypes.OIDCToken{
+			OIDC: &types.OIDCToken{
 				Issuer: issuer,
 				Allow:  map[string]string{"repository": "myorg/billing"},
 			},
@@ -253,9 +253,9 @@ func TestTokenSet_MatchesOIDC_ExpiredToken(t *testing.T) {
 
 	ts := &TokenSet{
 		oidcCache: oidcpkg.NewCache(time.Minute),
-		oidcEntries: []orktypes.APIToken{{
+		oidcEntries: []types.APIToken{{
 			Name: "ci-oidc",
-			OIDC: &orktypes.OIDCToken{Issuer: issuer},
+			OIDC: &types.OIDCToken{Issuer: issuer},
 		}},
 	}
 
@@ -267,9 +267,9 @@ func TestTokenSet_MatchesOIDC_ExpiredToken(t *testing.T) {
 func TestTokenSet_MatchesOIDC_NotAJWT(t *testing.T) {
 	ts := &TokenSet{
 		oidcCache: oidcpkg.NewCache(time.Minute),
-		oidcEntries: []orktypes.APIToken{{
+		oidcEntries: []types.APIToken{{
 			Name: "ci-oidc",
-			OIDC: &orktypes.OIDCToken{Issuer: "https://example.com"},
+			OIDC: &types.OIDCToken{Issuer: "https://example.com"},
 		}},
 	}
 

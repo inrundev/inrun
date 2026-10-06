@@ -3,8 +3,8 @@ package children
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -14,7 +14,7 @@ import (
 //
 // _loadBalancerIPs: flat list of IP/hostname strings from status.loadBalancer.ingress.
 // _tlsSecrets: list of full Secret objects named in spec.tls[*].secretName.
-func enrichGroupWithIngressData(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry) {
+func enrichGroupWithIngressData(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry) {
 	if !enrichmentEnabled("ingress", crd) {
 		return
 	}

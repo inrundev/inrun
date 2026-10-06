@@ -1,8 +1,0 @@
-apiVersion: demo.orkestra.io/v1
-kind: Microservice
-metadata:
-  name: healthy-app
-  namespace: default
-spec:
-  image: nginx:1.25   # valid image → pods start → Ready → events NOT fetched
-  replicas: 1

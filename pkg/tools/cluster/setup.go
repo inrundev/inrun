@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // HelmInstall installs or upgrades a Helm chart as declared in SetupHelmInstall.
 // Uses helm upgrade --install so the call is idempotent.
-func HelmInstall(ctx context.Context, h orktypes.SetupHelmInstall) error {
+func HelmInstall(ctx context.Context, h types.SetupHelmInstall) error {
 	if err := h.Validate(); err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func HelmInstall(ctx context.Context, h orktypes.SetupHelmInstall) error {
 }
 
 // HelmUninstall removes a Helm release installed by HelmInstall.
-func HelmUninstall(ctx context.Context, h orktypes.SetupHelmInstall) error {
+func HelmUninstall(ctx context.Context, h types.SetupHelmInstall) error {
 	release := h.ReleaseName()
 	namespace := h.EffectiveNamespace()
 	cmd := exec.CommandContext(ctx, "helm", "uninstall", release,
@@ -72,7 +72,7 @@ func HelmUninstall(ctx context.Context, h orktypes.SetupHelmInstall) error {
 
 // WaitForResource polls until the described resource exists (and is ready when
 // w.Ready is true). Times out after w.Timeout (default 30s).
-func WaitForResource(ctx context.Context, w orktypes.SetupWait) error {
+func WaitForResource(ctx context.Context, w types.SetupWait) error {
 	timeout := 30 * time.Second
 	if w.Timeout != "" {
 		if d, err := utils.ParseTimeDuration(w.Timeout); err == nil {

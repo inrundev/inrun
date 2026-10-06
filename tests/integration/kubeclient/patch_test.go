@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	kubeclient "github.com/orkspace/orkestra/pkg/kubeclient"
+	kubeclient "github.com/inrundev/inrun/pkg/kubeclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -15,7 +15,7 @@ import (
 )
 
 var probeGVR = schema.GroupVersionResource{
-	Group:    "integration.orkestra.io",
+	Group:    "integration.inrun.dev",
 	Version:  "v1",
 	Resource: "probes",
 }
@@ -33,7 +33,7 @@ func createProbe(t *testing.T, ctx context.Context, name, namespace string) *uns
 	t.Helper()
 	obj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "integration.orkestra.io/v1",
+			"apiVersion": "integration.inrun.dev/v1",
 			"kind":       "Probe",
 			"metadata": map[string]interface{}{
 				"name":      name,
@@ -62,7 +62,7 @@ func TestPatchFinalizers_AddFinalizer(t *testing.T) {
 	kube := newKube(t)
 	obj := createProbe(t, ctx, "fin-add", "default")
 
-	finalizers := []string{"orkestra.io/cleanup"}
+	finalizers := []string{"inrun.dev/cleanup"}
 	if err := kube.PatchFinalizers(ctx, obj, finalizers, noOpPatchOpts); err != nil {
 		t.Fatalf("PatchFinalizers: %v", err)
 	}
@@ -73,8 +73,8 @@ func TestPatchFinalizers_AddFinalizer(t *testing.T) {
 		t.Fatalf("get after patch: %v", err)
 	}
 	actual := got.GetFinalizers()
-	if len(actual) != 1 || actual[0] != "orkestra.io/cleanup" {
-		t.Errorf("expected finalizer orkestra.io/cleanup, got %v", actual)
+	if len(actual) != 1 || actual[0] != "inrun.dev/cleanup" {
+		t.Errorf("expected finalizer inrun.dev/cleanup, got %v", actual)
 	}
 }
 
@@ -84,7 +84,7 @@ func TestPatchFinalizers_RemoveFinalizer(t *testing.T) {
 	obj := createProbe(t, ctx, "fin-remove", "default")
 
 	// Add first
-	if err := kube.PatchFinalizers(ctx, obj, []string{"orkestra.io/cleanup"}, noOpPatchOpts); err != nil {
+	if err := kube.PatchFinalizers(ctx, obj, []string{"inrun.dev/cleanup"}, noOpPatchOpts); err != nil {
 		t.Fatalf("add: %v", err)
 	}
 
@@ -109,7 +109,7 @@ func TestPatchFinalizers_Idempotent(t *testing.T) {
 	kube := newKube(t)
 	obj := createProbe(t, ctx, "fin-idem", "default")
 
-	finalizers := []string{"orkestra.io/cleanup"}
+	finalizers := []string{"inrun.dev/cleanup"}
 	// Patch twice with same value — must not error
 	if err := kube.PatchFinalizers(ctx, obj, finalizers, noOpPatchOpts); err != nil {
 		t.Fatalf("first patch: %v", err)
@@ -131,7 +131,7 @@ func TestPatchFinalizers_DoesNotTouchOtherFields(t *testing.T) {
 	kube := newKube(t)
 	obj := createProbe(t, ctx, "fin-isolation", "default")
 
-	if err := kube.PatchFinalizers(ctx, obj, []string{"orkestra.io/test"}, noOpPatchOpts); err != nil {
+	if err := kube.PatchFinalizers(ctx, obj, []string{"inrun.dev/test"}, noOpPatchOpts); err != nil {
 		t.Fatalf("patch: %v", err)
 	}
 
@@ -152,7 +152,7 @@ func TestPatchLabels_AddsLabels(t *testing.T) {
 	kube := newKube(t)
 	obj := createProbe(t, ctx, "lbl-add", "default")
 
-	labels := map[string]string{"env": "test", "managed-by": "orkestra"}
+	labels := map[string]string{"env": "test", "managed-by": "inrun"}
 	if err := kube.PatchLabels(ctx, obj, nil, labels, noOpPatchOpts); err != nil {
 		t.Fatalf("PatchLabels: %v", err)
 	}
@@ -172,7 +172,7 @@ func TestPatchLabels_DoesNotRemoveExistingLabels(t *testing.T) {
 
 	// Create with an initial label
 	raw := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": "integration.orkestra.io/v1",
+		"apiVersion": "integration.inrun.dev/v1",
 		"kind":       "Probe",
 		"metadata": map[string]interface{}{
 			"name":      "lbl-preserve",

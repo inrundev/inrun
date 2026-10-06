@@ -1,9 +1,0 @@
-# 03b — cross: application side (observes my-app-db)
-apiVersion: advanced.orkestra.io/v1alpha1
-kind: DatabaseBackedApp
-metadata:
-  name: my-app
-  namespace: default
-spec:
-  image: nginx:1.25
-

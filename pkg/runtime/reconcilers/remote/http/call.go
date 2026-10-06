@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/external"
-	"github.com/orkspace/orkestra/pkg/runtime/reconcilers/remote/contract"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/external"
+	"github.com/inrundev/inrun/pkg/runtime/reconcilers/remote/contract"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/utils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -83,7 +83,7 @@ func (r *Reconciler) resolveEndpoint(req domain.Request) string {
 	if req.Prepared == nil || req.Prepared.Context == nil {
 		return r.decl.Endpoint
 	}
-	resolver, ok := req.Prepared.Context.(*orktmpl.Resolver)
+	resolver, ok := req.Prepared.Context.(*template.Resolver)
 	if !ok {
 		return r.decl.Endpoint
 	}
@@ -140,7 +140,7 @@ func (r *Reconciler) resolveArgs(req domain.Request) map[string]interface{} {
 	if req.Prepared == nil || req.Prepared.Context == nil {
 		return r.decl.Args
 	}
-	resolver, ok := req.Prepared.Context.(*orktmpl.Resolver)
+	resolver, ok := req.Prepared.Context.(*template.Resolver)
 	if !ok {
 		return r.decl.Args
 	}

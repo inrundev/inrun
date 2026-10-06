@@ -69,7 +69,7 @@ type ServeResponseConfig struct {
 	//	exclude:
 	//	  - '{{ toList (getAnnotation . "platform.myorg.io/exclude") }}'
 	//
-	// ork validate catches the case where a path appears in both payload and
+	// inrun validate catches the case where a path appears in both payload and
 	// exclude — exclude wins, but the conflict is surfaced as a warning.
 	Exclude []string `yaml:"exclude,omitempty" json:"exclude,omitempty"`
 

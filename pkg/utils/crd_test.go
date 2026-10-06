@@ -5,7 +5,7 @@ import (
 )
 
 func TestBuildAnnotationPatch(t *testing.T) {
-	patch := BuildAnnotationPatch("orkestra.io/managed-by", "orkestra")
+	patch := BuildAnnotationPatch("inrun.dev/managed-by", "inrun")
 	meta, ok := patch["metadata"].(map[string]interface{})
 	if !ok {
 		t.Fatal("expected metadata map")
@@ -14,8 +14,8 @@ func TestBuildAnnotationPatch(t *testing.T) {
 	if !ok {
 		t.Fatal("expected annotations map")
 	}
-	if ann["orkestra.io/managed-by"] != "orkestra" {
-		t.Errorf("unexpected annotation value: %v", ann["orkestra.io/managed-by"])
+	if ann["inrun.dev/managed-by"] != "inrun" {
+		t.Errorf("unexpected annotation value: %v", ann["inrun.dev/managed-by"])
 	}
 }
 

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 )
 
 // HTTPTransport is the http.RoundTripper used for all external: HTTP calls.
@@ -32,9 +32,9 @@ func ExpandEnv(s string) string {
 // Never panics. Returns an error result on failure.
 func executeHTTPCall(
 	ctx context.Context,
-	spec orktypes.ExternalCallSpec,
+	spec types.ExternalCallSpec,
 	url, body, credential, authHeader string,
-) orktypes.ExternalCallResult {
+) types.ExternalCallResult {
 	timeout := defaultExternalTimeout
 	if spec.Timeout != "" {
 		if d, err := utils.ParseTimeDuration(spec.Timeout); err == nil {
@@ -57,7 +57,7 @@ func executeHTTPCall(
 
 	req, err := http.NewRequestWithContext(callCtx, method, url, bodyReader)
 	if err != nil {
-		return orktypes.ExternalCallResult{
+		return types.ExternalCallResult{
 			Error:  fmt.Sprintf("building request: %v", err),
 			Called: "true",
 		}
@@ -84,7 +84,7 @@ func executeHTTPCall(
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return orktypes.ExternalCallResult{
+		return types.ExternalCallResult{
 			Error:  fmt.Sprintf("executing request: %v", err),
 			Called: "true",
 		}
@@ -93,7 +93,7 @@ func executeHTTPCall(
 
 	rawBody, err := io.ReadAll(io.LimitReader(resp.Body, maxBodyBytes))
 	if err != nil {
-		return orktypes.ExternalCallResult{
+		return types.ExternalCallResult{
 			Status: fmt.Sprintf("%d", resp.StatusCode),
 			Error:  fmt.Sprintf("reading response body: %v", err),
 			Called: "true",
@@ -110,7 +110,7 @@ func executeHTTPCall(
 		callErr = fmt.Sprintf("HTTP %d", resp.StatusCode)
 	}
 
-	return orktypes.ExternalCallResult{
+	return types.ExternalCallResult{
 		Status:          statusCode,
 		StatusCode:      resp.StatusCode,
 		Body:            string(rawBody),

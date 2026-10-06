@@ -1,7 +1,7 @@
 package queue
 
 import (
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 )
 
 // Methods implementation of the Workqueue interface

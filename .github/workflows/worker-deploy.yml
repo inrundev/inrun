@@ -1,4 +1,4 @@
-name: Deploy Installer Worker (get.orkestra.sh)
+name: Deploy Installer Worker (get.inrun.dev)
 
 on:
   push:
@@ -42,9 +42,9 @@ jobs:
         run: |
           echo "Waiting 10 s for edge propagation..."
           sleep 10
-          STATUS=$(curl -sSo /dev/null -w "%{http_code}" https://get.orkestra.sh/install.sh)
+          STATUS=$(curl -sSo /dev/null -w "%{http_code}" https://get.inrun.dev/install.sh)
           if [[ "$STATUS" != "200" ]]; then
-            echo "ERROR: get.orkestra.sh/install.sh returned HTTP $STATUS"
+            echo "ERROR: get.inrun.dev/install.sh returned HTTP $STATUS"
             exit 1
           fi
           echo "Live endpoint OK (HTTP $STATUS)"

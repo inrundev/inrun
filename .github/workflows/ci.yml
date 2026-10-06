@@ -55,9 +55,9 @@ jobs:
 
       - name: Build CLI binary
         run: |
-          go build -o ./bin/ork ./cmd/orkestra/
+          go build -o ./bin/inrun ./cmd/inrun/
           echo "✅ Binary built:"
-          ls -lh ./bin/ork
+          ls -lh ./bin/inrun
 
       - name: Write summary
         if: always()
@@ -145,32 +145,13 @@ jobs:
           cache: true
 
       - name: Build CLI
-        run: go build -o ./bin/ork ./cmd/orkestra/
+        run: go build -o ./bin/inrun ./cmd/inrun/
 
-      - name: Validate Website example
+      - name: Validate examples
         run: |
-          ./bin/ork validate --file examples/website/website-katalog.yaml
-          echo "✅ Website example valid"
-
-      - name: Validate Platform Namespace example
-        run: |
-          ./bin/ork validate --file examples/platform-namespace/platform-namespace-katalog.yaml
-          echo "✅ Platform Namespace example valid"
-
-      - name: Validate Meta Katalog example
-        run: |
-          ./bin/ork validate --file examples/komposer/komposer.yaml
-          echo "✅ Meta Katalog example valid"
-
-      - name: Write summary
-        if: always()
-        run: |
-          echo "## Example validation" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Example | Status |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|---------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Website | ✅ valid |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Platform Namespace | ✅ valid |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Meta Katalog | ✅ valid |" >> "$GITHUB_STEP_SUMMARY"
+          for k in $(find examples -name catalog.yaml | sort); do
+            ./bin/inrun validate --file "$k"
+          done
 
   # ── Summary ────────────────────────────────────────────────────────────────
   summary:

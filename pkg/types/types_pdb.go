@@ -3,7 +3,7 @@ package types
 
 // ── PodDisruptionBudget ───────────────────────────────────────────────────────
 
-// PDBTemplateSource declares one PodDisruptionBudget to be managed by Orkestra.
+// PDBTemplateSource declares one PodDisruptionBudget to be managed by Inrun.
 //
 // Example:
 //

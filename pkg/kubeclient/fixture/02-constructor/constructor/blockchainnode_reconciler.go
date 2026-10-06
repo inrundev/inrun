@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	apiv1 "github.com/orkspace/orkestra-args-constructor/api/v1alpha1"
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orkdeploy "github.com/orkspace/orkestra/pkg/resources/deployments"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
+	apiv1 "github.com/inrundev/inrun-args-constructor/api/v1alpha1"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/resources/deployments"
+	"github.com/inrundev/inrun/pkg/template"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -21,7 +21,7 @@ type BlockchainNodeReconciler struct {
 	kube kubeclient.Interface
 }
 
-// NewBlockchainNodeReconciler is the constructor function registered in the Katalog.
+// NewBlockchainNodeReconciler is the constructor function registered in the Catalog.
 func NewBlockchainNodeReconciler(kube kubeclient.Interface) domain.Reconciler {
 	return &BlockchainNodeReconciler{kube: kube}
 }
@@ -40,14 +40,14 @@ func (r *BlockchainNodeReconciler) Reconcile(ctx context.Context, req domain.Req
 		return domain.Result{}, nil
 	}
 
-	resolver, err := orktmpl.NewResolver(ctx, node)
+	resolver, err := template.NewResolver(ctx, node)
 	if err != nil {
 		return domain.Result{}, fmt.Errorf("building resolver: %w", err)
 	}
 	kube := r.kube.ScopedFor(resolver.TemplateEvaluator())
 
-	// The Katalog declares the flag URL pattern and the business-hours window.
-	// The constructor owns the time check and the HTTP call — the Katalog owns
+	// The Catalog declares the flag URL pattern and the business-hours window.
+	// The constructor owns the time check and the HTTP call — the Catalog owns
 	// the configuration. The binary is identical across environments and schedules.
 	flagUrl := kube.Args().String("flagUrl")
 	start := kube.Args().String("businessHoursStart")
@@ -66,7 +66,7 @@ func (r *BlockchainNodeReconciler) Reconcile(ctx context.Context, req domain.Req
 		replicas = 1
 	}
 
-	spec := orkdeploy.ResolvedDeploymentSpec{
+	spec := deployments.ResolvedDeploymentSpec{
 		Name:      node.Name,
 		Namespace: node.Namespace,
 		Image:     node.Spec.Image,
@@ -75,7 +75,7 @@ func (r *BlockchainNodeReconciler) Reconcile(ctx context.Context, req domain.Req
 			"feature.demo/v2-enabled": annotation,
 		},
 	}
-	if err := orkdeploy.Apply(ctx, kube, node, spec); err != nil {
+	if err := deployments.Apply(ctx, kube, node, spec); err != nil {
 		return domain.Result{}, fmt.Errorf("blockchainnode deployment: %w", err)
 	}
 
@@ -88,7 +88,7 @@ func (r *BlockchainNodeReconciler) Reconcile(ctx context.Context, req domain.Req
 }
 
 // inBusinessHours returns true when the current UTC time is a weekday within
-// the declared window. start and end are "HH:MM" strings from katalog args.
+// the declared window. start and end are "HH:MM" strings from catalog args.
 func (r *BlockchainNodeReconciler) inBusinessHours(start, end string) bool {
 	now := time.Now().UTC()
 	if wd := now.Weekday(); wd == time.Saturday || wd == time.Sunday {

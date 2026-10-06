@@ -1,4 +1,4 @@
-apiVersion: test.orkestra.io/v1alpha1
+apiVersion: test.inrun.dev/v1alpha1
 kind: Tenant
 metadata:
   name: acme

@@ -1,6 +1,6 @@
 # Happy path monitoring workload — all required fields present, no rules fire.
 # The deny or (repoURL) is satisfied; no production warn since environment=staging.
-apiVersion: gateway.fixture.orkestra.io/v1alpha1
+apiVersion: gateway.fixture.inrun.dev/v1alpha1
 kind: PlatformResource
 metadata:
   name: platform-monitor

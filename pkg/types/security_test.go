@@ -1,73 +1,73 @@
-// Tests for KatalogSecurity methods (security.go).
+// Tests for CatalogSecurity methods (security.go).
 package types_test
 
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
 // ── IsDeletionProtectionEnabled ───────────────────────────────────────────────
 
 func TestIsDeletionProtectionEnabled_Nil(t *testing.T) {
-	var s *orktypes.KatalogSecurity
+	var s *types.CatalogSecurity
 	assert.False(t, s.IsDeletionProtectionEnabled())
 }
 
 func TestIsDeletionProtectionEnabled_NilBlock(t *testing.T) {
-	s := &orktypes.KatalogSecurity{}
+	s := &types.CatalogSecurity{}
 	assert.False(t, s.IsDeletionProtectionEnabled())
 }
 
 func TestIsDeletionProtectionEnabled_DeclaredNoEnabled(t *testing.T) {
 	// Declared but no explicit enabled field = enabled by default
-	s := &orktypes.KatalogSecurity{DeletionProtection: &orktypes.DeletionProtectionConfig{}}
+	s := &types.CatalogSecurity{DeletionProtection: &types.DeletionProtectionConfig{}}
 	assert.True(t, s.IsDeletionProtectionEnabled())
 }
 
 func TestIsDeletionProtectionEnabled_ExplicitFalse(t *testing.T) {
 	f := false
-	s := &orktypes.KatalogSecurity{DeletionProtection: &orktypes.DeletionProtectionConfig{Enabled: &f}}
+	s := &types.CatalogSecurity{DeletionProtection: &types.DeletionProtectionConfig{Enabled: &f}}
 	assert.False(t, s.IsDeletionProtectionEnabled())
 }
 
 func TestIsDeletionProtectionEnabled_ExplicitTrue(t *testing.T) {
 	tr := true
-	s := &orktypes.KatalogSecurity{DeletionProtection: &orktypes.DeletionProtectionConfig{Enabled: &tr}}
+	s := &types.CatalogSecurity{DeletionProtection: &types.DeletionProtectionConfig{Enabled: &tr}}
 	assert.True(t, s.IsDeletionProtectionEnabled())
 }
 
 // ── IsAdmissionEnabled ────────────────────────────────────────────────────────
 
 func TestIsAdmissionEnabled_Nil(t *testing.T) {
-	var s *orktypes.KatalogSecurity
+	var s *types.CatalogSecurity
 	assert.False(t, s.IsAdmissionEnabled())
 }
 
 func TestIsAdmissionEnabled_NoWebhooks(t *testing.T) {
-	s := &orktypes.KatalogSecurity{}
+	s := &types.CatalogSecurity{}
 	assert.False(t, s.IsAdmissionEnabled())
 }
 
 func TestIsAdmissionEnabled_NoAdmission(t *testing.T) {
-	s := &orktypes.KatalogSecurity{Webhooks: &orktypes.WebhooksConfig{}}
+	s := &types.CatalogSecurity{Webhooks: &types.WebhooksConfig{}}
 	assert.False(t, s.IsAdmissionEnabled())
 }
 
 func TestIsAdmissionEnabled_NilEnabledField(t *testing.T) {
 	// Admission declared but Enabled not set → false (no default-on for webhooks)
-	s := &orktypes.KatalogSecurity{
-		Webhooks: &orktypes.WebhooksConfig{Admission: &orktypes.AdmissionWebhookToggle{}},
+	s := &types.CatalogSecurity{
+		Webhooks: &types.WebhooksConfig{Admission: &types.AdmissionWebhookToggle{}},
 	}
 	assert.False(t, s.IsAdmissionEnabled())
 }
 
 func TestIsAdmissionEnabled_ExplicitTrue(t *testing.T) {
 	tr := true
-	s := &orktypes.KatalogSecurity{
-		Webhooks: &orktypes.WebhooksConfig{
-			Admission: &orktypes.AdmissionWebhookToggle{Enabled: &tr},
+	s := &types.CatalogSecurity{
+		Webhooks: &types.WebhooksConfig{
+			Admission: &types.AdmissionWebhookToggle{Enabled: &tr},
 		},
 	}
 	assert.True(t, s.IsAdmissionEnabled())
@@ -76,31 +76,31 @@ func TestIsAdmissionEnabled_ExplicitTrue(t *testing.T) {
 // ── IsConversionEnabled ───────────────────────────────────────────────────────
 
 func TestIsConversionEnabled_Nil(t *testing.T) {
-	var s *orktypes.KatalogSecurity
+	var s *types.CatalogSecurity
 	assert.False(t, s.IsConversionEnabled())
 }
 
 func TestIsConversionEnabled_NilConversion(t *testing.T) {
-	s := &orktypes.KatalogSecurity{}
+	s := &types.CatalogSecurity{}
 	assert.False(t, s.IsConversionEnabled())
 }
 
 func TestIsConversionEnabled_ExplicitTrue(t *testing.T) {
 	tr := true
-	s := &orktypes.KatalogSecurity{Conversion: &orktypes.ConversionConfig{Enabled: &tr}}
+	s := &types.CatalogSecurity{Conversion: &types.ConversionConfig{Enabled: &tr}}
 	assert.True(t, s.IsConversionEnabled())
 }
 
 // ── DeletionProtectionFailurePolicy ──────────────────────────────────────────
 
 func TestDeletionProtectionFailurePolicy_DefaultFail(t *testing.T) {
-	var s *orktypes.KatalogSecurity
+	var s *types.CatalogSecurity
 	assert.Equal(t, "Fail", s.DeletionProtectionFailurePolicy())
 }
 
 func TestDeletionProtectionFailurePolicy_Custom(t *testing.T) {
-	s := &orktypes.KatalogSecurity{
-		DeletionProtection: &orktypes.DeletionProtectionConfig{FailurePolicy: "Ignore"},
+	s := &types.CatalogSecurity{
+		DeletionProtection: &types.DeletionProtectionConfig{FailurePolicy: "Ignore"},
 	}
 	assert.Equal(t, "Ignore", s.DeletionProtectionFailurePolicy())
 }
@@ -108,19 +108,19 @@ func TestDeletionProtectionFailurePolicy_Custom(t *testing.T) {
 // ── IsNamespaceProtectionEnabled ──────────────────────────────────────────────
 
 func TestIsNamespaceProtectionEnabled_Nil(t *testing.T) {
-	var s *orktypes.KatalogSecurity
+	var s *types.CatalogSecurity
 	assert.False(t, s.IsNamespaceProtectionEnabled())
 }
 
 func TestIsNamespaceProtectionEnabled_DeclaredNoEnabled(t *testing.T) {
-	s := &orktypes.KatalogSecurity{NamespaceProtection: &orktypes.NamespaceProtectionConfig{}}
+	s := &types.CatalogSecurity{NamespaceProtection: &types.NamespaceProtectionConfig{}}
 	assert.True(t, s.IsNamespaceProtectionEnabled())
 }
 
 func TestIsNamespaceProtectionEnabled_ExplicitFalse(t *testing.T) {
 	f := false
-	s := &orktypes.KatalogSecurity{
-		NamespaceProtection: &orktypes.NamespaceProtectionConfig{Enabled: &f},
+	s := &types.CatalogSecurity{
+		NamespaceProtection: &types.NamespaceProtectionConfig{Enabled: &f},
 	}
 	assert.False(t, s.IsNamespaceProtectionEnabled())
 }
@@ -128,47 +128,47 @@ func TestIsNamespaceProtectionEnabled_ExplicitFalse(t *testing.T) {
 // ── NamespaceProtectionFailurePolicy ─────────────────────────────────────────
 
 func TestNamespaceProtectionFailurePolicy_DefaultFail(t *testing.T) {
-	var s *orktypes.KatalogSecurity
+	var s *types.CatalogSecurity
 	assert.Equal(t, "Fail", s.NamespaceProtectionFailurePolicy())
 }
 
 func TestNamespaceProtectionFailurePolicy_Custom(t *testing.T) {
-	s := &orktypes.KatalogSecurity{
-		NamespaceProtection: &orktypes.NamespaceProtectionConfig{FailurePolicy: "Ignore"},
+	s := &types.CatalogSecurity{
+		NamespaceProtection: &types.NamespaceProtectionConfig{FailurePolicy: "Ignore"},
 	}
 	assert.Equal(t, "Ignore", s.NamespaceProtectionFailurePolicy())
 }
 
-// ── DeletionProtectionServiceName / OrkestraServiceName ──────────────────────
+// ── DeletionProtectionServiceName / InrunServiceName ──────────────────────
 
 func TestDeletionProtectionServiceName_FallsBackToEnvDefault(t *testing.T) {
-	var s *orktypes.KatalogSecurity
-	assert.Equal(t, "orkestra-webhook", s.DeletionProtectionServiceName("orkestra-webhook"))
+	var s *types.CatalogSecurity
+	assert.Equal(t, "inrun-webhook", s.DeletionProtectionServiceName("inrun-webhook"))
 }
 
 func TestDeletionProtectionServiceName_Custom(t *testing.T) {
-	s := &orktypes.KatalogSecurity{
-		DeletionProtection: &orktypes.DeletionProtectionConfig{ServiceName: "my-webhook"},
+	s := &types.CatalogSecurity{
+		DeletionProtection: &types.DeletionProtectionConfig{ServiceName: "my-webhook"},
 	}
 	assert.Equal(t, "my-webhook", s.DeletionProtectionServiceName("default"))
 }
 
 func TestRuntimeServiceName_FallsBackToEnvDefault(t *testing.T) {
-	var s *orktypes.KatalogSecurity
-	assert.Equal(t, "orkestra-runtime", s.RuntimeServiceName("orkestra-runtime"))
+	var s *types.CatalogSecurity
+	assert.Equal(t, "inrun-runtime", s.RuntimeServiceName("inrun-runtime"))
 }
 
 func TestRuntimeServiceName_Custom(t *testing.T) {
-	s := &orktypes.KatalogSecurity{ServiceName: &orktypes.ServiceName{Runtime: "my-runtime"}}
+	s := &types.CatalogSecurity{ServiceName: &types.ServiceName{Runtime: "my-runtime"}}
 	assert.Equal(t, "my-runtime", s.RuntimeServiceName("default"))
 }
 
 func TestGatewayServiceName_FallsBackToEnvDefault(t *testing.T) {
-	var s *orktypes.KatalogSecurity
-	assert.Equal(t, "orkestra-gateway", s.GatewayServiceName("orkestra-gateway"))
+	var s *types.CatalogSecurity
+	assert.Equal(t, "inrun-gateway", s.GatewayServiceName("inrun-gateway"))
 }
 
 func TestGatewayServiceName_Custom(t *testing.T) {
-	s := &orktypes.KatalogSecurity{ServiceName: &orktypes.ServiceName{Gateway: "my-gateway"}}
+	s := &types.CatalogSecurity{ServiceName: &types.ServiceName{Gateway: "my-gateway"}}
 	assert.Equal(t, "my-gateway", s.GatewayServiceName("default"))
 }

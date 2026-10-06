@@ -1,6 +1,6 @@
 // pkg/migrate/migrate.go
 //
-// Rewrites a controller-runtime Reconcile method to the Orkestra constructor
+// Rewrites a controller-runtime Reconcile method to the Inrun constructor
 // signature. It is intentionally a starting point — the output compiles but
 // still requires review for status updates, event recording, and informer
 // cache lookups.
@@ -28,7 +28,7 @@ func Rewrite(src []byte, mode Mode) (*Result, error) {
 }
 
 // rewriteToClient performs the minimal migration: removes SetupWithManager and
-// injects a constructor using orkadapter.ToClient + domain.ReconcilerFrom.
+// injects a constructor using adapter.ToClient + domain.ReconcilerFrom.
 // The Reconcile signature, struct fields, and all call sites are untouched.
 func rewriteToClient(src []byte) (*Result, error) {
 	fset, f, res, _, err := prepareRewrite(src, ModeToClient)
@@ -131,7 +131,7 @@ func rewriteNative(src []byte) (*Result, error) {
 			reps = append(reps, replacement{
 				start: off(fset, call.Pos()),
 				end:   off(fset, call.End()),
-				text:  "nil /* TODO(ork migrate): replace with r.kube.PatchStatus(ctx, obj, map[string]interface{}{...}) */",
+				text:  "nil /* TODO(inrun migrate): replace with r.kube.PatchStatus(ctx, obj, map[string]interface{}{...}) */",
 			})
 			res.Warnings = append(res.Warnings, "r.Status().Update() flagged — replace with r.kube.PatchStatus")
 		}
@@ -227,11 +227,11 @@ func rewriteImports(src []byte, addStrings bool) []byte {
 		result = injectImport(result, `"strings"`)
 	}
 
-	// Inject Orkestra import hints as a block comment so the user knows exactly what to add.
+	// Inject Inrun import hints as a block comment so the user knows exactly what to add.
 	result = injectImport(result,
-		"// TODO(ork migrate): add these imports:\n"+
-			"//   \"github.com/orkspace/orkestra/domain\"\n"+
-			"//   \"github.com/orkspace/orkestra/pkg/kubeclient\"")
+		"// TODO(inrun migrate): add these imports:\n"+
+			"//   \"github.com/inrundev/inrun/domain\"\n"+
+			"//   \"github.com/inrundev/inrun/pkg/kubeclient\"")
 
 	return result
 }

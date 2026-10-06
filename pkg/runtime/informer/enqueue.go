@@ -9,10 +9,10 @@ package informer
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/runtime/queue"
-	"github.com/orkspace/orkestra/pkg/runtime/sentinel"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/runtime/queue"
+	"github.com/inrundev/inrun/pkg/runtime/sentinel"
 )
 
 // ComputeSentinelsOptions provides sentinel declarations for event evaluation.
@@ -69,14 +69,14 @@ func eventsFromObservation(observation *ObservationContext) map[string]interface
 
 // ComputeSentinels derives event-time sentinel values from an informer update.
 //
-// Declarations normally come from Katalog. Callers may provide declarations
+// Declarations normally come from Catalog. Callers may provide declarations
 // explicitly for secondary watches.
 func (f *Factory) ComputeSentinels(
 	gvkStr string,
 	oldObj, newObj interface{},
 	opts ...ComputeSentinelsOptions,
 ) map[string]string {
-	if f.katalog == nil {
+	if f.catalog == nil {
 		return nil
 	}
 
@@ -90,7 +90,7 @@ func (f *Factory) ComputeSentinels(
 	if len(opts) > 0 && len(opts[0].DeclaredSentinels) > 0 {
 		declared = opts[0].DeclaredSentinels
 	} else {
-		declared = f.katalog.GetPreReconcileSentinels(newDomain, gvkStr)
+		declared = f.catalog.GetPreReconcileSentinels(newDomain, gvkStr)
 	}
 
 	if len(declared) == 0 {
@@ -149,13 +149,13 @@ func (f *Factory) allowEnqueue(
 		return true
 	}
 
-	if f.katalog == nil {
+	if f.catalog == nil {
 		return true
 	}
 
 	// Queue behaviour conditions.
 	if wq.NeedsBehaviourEval() {
-		if !f.katalog.EvaluateQueueBehaviourConditions(ctx, gvkStr, domObj, domain.EvaluateOptions{Sentinels: sentinels}) {
+		if !f.catalog.EvaluateQueueBehaviourConditions(ctx, gvkStr, domObj, domain.EvaluateOptions{Sentinels: sentinels}) {
 			return false
 		}
 	}
@@ -168,7 +168,7 @@ func (f *Factory) allowEnqueue(
 			return true
 		}
 
-		return f.katalog.EvaluateWatchEnqueueFilter(
+		return f.catalog.EvaluateWatchEnqueueFilter(
 			ctx,
 			gvkStr,
 			opts.WatchSecondaryGVK,
@@ -185,7 +185,7 @@ func (f *Factory) allowEnqueue(
 			return true
 		}
 
-		return f.katalog.EvaluateEventEnqueueFilter(
+		return f.catalog.EvaluateEventEnqueueFilter(
 			ctx,
 			gvkStr,
 			opts.SourceName,
@@ -199,7 +199,7 @@ func (f *Factory) allowEnqueue(
 	}
 
 	// Primary informers evaluate preReconcile.enqueueGate.
-	if !f.katalog.EvaluateEnqueueFilter(ctx, gvkStr, domObj, f.cs, domain.EvaluateOptions{Sentinels: sentinels}) {
+	if !f.catalog.EvaluateEnqueueFilter(ctx, gvkStr, domObj, f.cs, domain.EvaluateOptions{Sentinels: sentinels}) {
 		logger.Debug().
 			Str("gvk", gvkStr).
 			Str("name", domObj.GetName()).
@@ -257,8 +257,8 @@ func (f *Factory) enqueueKey(
 	}
 
 	eventAware := false
-	if f.katalog != nil {
-		eventAware = f.katalog.IsEventAware(domObj, gvkStr)
+	if f.catalog != nil {
+		eventAware = f.catalog.IsEventAware(domObj, gvkStr)
 	}
 
 	if secondary {

@@ -1,8 +1,0 @@
-apiVersion: demo.orkestra.io/v1
-kind: Microservice
-metadata:
-  name: broken-app
-  namespace: default
-spec:
-  image: nginx:does-not-exist   # bad tag → ImagePullBackOff → Degraded → events fetched
-  replicas: 1

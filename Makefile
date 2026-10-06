@@ -1,9 +1,9 @@
-.PHONY: build orkcc clean test test-unit test-controlcenter test-race test-integration test-all test-coverage test-coverage-text vet vuln vuln-orkestra vuln-controlcenter vuln-runtime vuln-gateway certs docs docs-sync docs-build docs-serve hugo-install generate-notes generate-e2e-example generate-resource-docs test-fixture-note test-fixture-reconciler ork-gateway-linux docker-gateway gateway-reload runtime-reload controlcenter-reload reload docker-devserver release-devserver devserver-reload
+.PHONY: build inrun-console clean test test-unit test-console test-race test-integration test-all test-coverage test-coverage-text vet vuln vuln-inrun vuln-console vuln-runtime vuln-gateway certs docs docs-sync docs-build docs-serve hugo-install generate-notes generate-e2e-example generate-resource-docs test-fixture-note test-fixture-reconciler inrun-gateway-linux docker-gateway gateway-reload runtime-reload console-reload reload docker-devserver release-devserver devserver-reload
 
 # ── Configuration ────────────────────────────────────────────────────────────
-ORKESTRA_DIR := .
-CONTROL_CENTER_DIR := ./cmd/controlcenter
-OUTPUT_DIR := $(HOME)/.orkestra/bin
+INRUN_DIR := .
+CONSOLE_DIR := ./cmd/console
+OUTPUT_DIR := $(HOME)/.inrun/bin
 BUILD_TAGS ?=
 
 # Version stamping — reads from git; matches what CI/CD injects via ldflags.
@@ -11,66 +11,66 @@ GIT_VERSION := $(shell git describe --tags --always 2>/dev/null || echo "dev")
 GIT_COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 GIT_DATE    := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-ORK_LDFLAGS := -X github.com/orkspace/orkestra/pkg/version.Version=$(GIT_VERSION) \
-               -X github.com/orkspace/orkestra/pkg/version.Commit=$(GIT_COMMIT) \
-               -X github.com/orkspace/orkestra/pkg/version.Date=$(GIT_DATE)
+INRUN_LDFLAGS := -X github.com/inrundev/inrun/pkg/version.Version=$(GIT_VERSION) \
+               -X github.com/inrundev/inrun/pkg/version.Commit=$(GIT_COMMIT) \
+               -X github.com/inrundev/inrun/pkg/version.Date=$(GIT_DATE)
 
-CC_LDFLAGS  := -X github.com/orkspace/orkestra-cc/version.Version=$(GIT_VERSION) \
-               -X github.com/orkspace/orkestra-cc/version.Commit=$(GIT_COMMIT) \
-               -X github.com/orkspace/orkestra-cc/version.Date=$(GIT_DATE)
+CONSOLE_LDFLAGS  := -X github.com/inrundev/inrun/console/version.Version=$(GIT_VERSION) \
+               -X github.com/inrundev/inrun/console/version.Commit=$(GIT_COMMIT) \
+               -X github.com/inrundev/inrun/console/version.Date=$(GIT_DATE)
 
 # ── Local build ───────────────────────────────────────────────────────────
 generate-notes:
-	@echo "Generating note catalog..."
+	@echo "Generating note list..."
 	go run ./hack/generate-notes
-	@echo "✅ Note catalog generated at pkg/note/catalog_generated.go"
+	@echo "✅ Note list generated at pkg/note/list_generated.go"
 
 generate-e2e-example:
 	@echo "Generating e2e complete example doc..."
 	@bash scripts/generate-e2e-example.sh
-	@echo "✅ documentation/reference/schema/04-e2e/08-complete-example.md updated"
+	@echo "✅ docs/reference/schema/04-e2e/08-complete-example.md updated"
 
 generate-resource-docs:
 	@echo "Generating resource schema docs..."
 	go run ./hack/generate-resource-docs
-	@echo "✅ documentation/reference/schema/06-resources/*.md updated"
+	@echo "✅ docs/reference/schema/06-resources/*.md updated"
 
-ork: generate-notes generate-e2e-example generate-resource-docs
-	@echo "Building Orkestra..."
+inrun: generate-notes generate-e2e-example generate-resource-docs
+	@echo "Building Inrun..."
 	@mkdir -p $(OUTPUT_DIR)
-	cd $(ORKESTRA_DIR) && gofmt -w .
-	cd $(ORKESTRA_DIR) && go build -ldflags "$(ORK_LDFLAGS)" -o $(OUTPUT_DIR)/ork ./cmd/orkestra
-	@echo "✅ Orkestra built successfully"
-	@python3 scripts/fix-bare-fences.py documentation/
+	cd $(INRUN_DIR) && gofmt -w .
+	cd $(INRUN_DIR) && go build -ldflags "$(INRUN_LDFLAGS)" -o $(OUTPUT_DIR)/inrun ./cmd/inrun
+	@echo "✅ Inrun built successfully"
+	@python3 scripts/fix-bare-fences.py docs/
 
-orkcc:
-	@echo "Building Orkestra Control Center..."
+inrun-console:
+	@echo "Building Inrun Console..."
 	@mkdir -p $(OUTPUT_DIR)
-	cd $(CONTROL_CENTER_DIR) && gofmt -w .
-	cd $(CONTROL_CENTER_DIR) && go build -ldflags "$(CC_LDFLAGS)" -o $(OUTPUT_DIR)/orkcc .
-	@echo "✅ Orkestra Control Center built successfully"
+	cd $(CONSOLE_DIR) && gofmt -w .
+	cd $(CONSOLE_DIR) && go build -ldflags "$(CONSOLE_LDFLAGS)" -o $(OUTPUT_DIR)/inrun-console .
+	@echo "✅ Inrun Console built successfully"
 
-build: ork orkcc
-	@echo "✅ Both Orkestra and Control Center built successfully"
+build: inrun inrun-console
+	@echo "✅ Both Inrun and Console built successfully"
 
 clean:
 	@echo "Cleaning binaries..."
-	rm -f $(OUTPUT_DIR)/ork
-	rm -f $(OUTPUT_DIR)/orkcc
+	rm -f $(OUTPUT_DIR)/inrun
+	rm -f $(OUTPUT_DIR)/inrun-console
 	@echo "✅ Clean complete"
 
 # ── Install to system PATH (requires sudo) ───────────────────────────────────
 install: build
 	@echo "Installing to /usr/local/bin..."
-	sudo cp $(OUTPUT_DIR)/ork /usr/local/bin/
-	sudo cp $(OUTPUT_DIR)/orkcc /usr/local/bin/
+	sudo cp $(OUTPUT_DIR)/inrun /usr/local/bin/
+	sudo cp $(OUTPUT_DIR)/inrun-console /usr/local/bin/
 	@echo "✅ Installed successfully"
 
 # ── Uninstall from system ────────────────────────────────────────────────────
 uninstall:
 	@echo "Removing from /usr/local/bin..."
-	sudo rm -f /usr/local/bin/ork
-	sudo rm -f /usr/local/bin/orkcc
+	sudo rm -f /usr/local/bin/inrun
+	sudo rm -f /usr/local/bin/inrun-console
 	@echo "✅ Uninstalled successfully"
 
 # ── Add to PATH helper ───────────────────────────────────────────────────────
@@ -84,140 +84,140 @@ path-help:
 # Fail explicitly if not in a Git repo
 GIT_COMMIT := $(shell git rev-parse --short HEAD)
 ifeq ($(GIT_COMMIT),)
-  $(error "Not a Git repository. Set ORK_IMAGE and ORK_CC_IMAGE manually.")
+  $(error "Not a Git repository. Set INRUN_IMAGE and INRUN_CONSOLE_IMAGE manually.")
 endif
 
-ORK_IMAGE ?= ghcr.io/orkspace/orkestra:$(GIT_COMMIT)
-ORK_CC_IMAGE ?= ghcr.io/orkspace/orkestra-cc:$(GIT_COMMIT)
-ORK_GATEWAY_IMAGE ?= ghcr.io/orkspace/orkestra-gateway:$(GIT_COMMIT)
-ORK_DEVSERVER_IMAGE ?= ghcr.io/orkspace/orkestra-dev-server:latest
+INRUN_IMAGE ?= ghcr.io/inrundev/inrun:$(GIT_COMMIT)
+INRUN_CONSOLE_IMAGE ?= ghcr.io/inrundev/inrun-console:$(GIT_COMMIT)
+INRUN_GATEWAY_IMAGE ?= ghcr.io/inrundev/inrun-gateway:$(GIT_COMMIT)
+INRUN_DEVSERVER_IMAGE ?= ghcr.io/inrundev/inrun-dev-server:latest
 
 # Target architectures
-ORK_AMD64_TARGET="ork-amd64"
-ORK_ARM64_TARGET="ork-arm64"
-ORK_CC_AMD64_TARGET="orkcc-amd64"
-ORK_CC_ARM64_TARGET="orkcc-arm64"
-ORK_GATEWAY_AMD64_TARGET="ork-amd64"
+INRUN_AMD64_TARGET="inrun-amd64"
+INRUN_ARM64_TARGET="inrun-arm64"
+INRUN_CONSOLE_AMD64_TARGET="inrun-console-amd64"
+INRUN_CONSOLE_ARM64_TARGET="inrun-console-arm64"
+INRUN_GATEWAY_AMD64_TARGET="inrun-amd64"
 
 # Intermediate directory for docker builds — isolated from $(OUTPUT_DIR) so
-# docker builds never overwrite the developer's local ork CLI binary.
-DOCKER_TMP := /tmp/ork-docker-build
+# docker builds never overwrite the developer's local inrun CLI binary.
+DOCKER_TMP := /tmp/inrun-docker-build
 
 # Path where the built binary lives
-BIN := $(OUTPUT_DIR)/ork
+BIN := $(OUTPUT_DIR)/inrun
 
 # ── Linux Build Targets (for Docker) ──────────────────────────────────────────
 
-ork-linux: generate-notes
-	@echo "Building Orkestra (Linux amd64)..."
+inrun-linux: generate-notes
+	@echo "Building Inrun (Linux amd64)..."
 	@mkdir -p $(OUTPUT_DIR)
 	gofmt -w . && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
 		-tags "$(BUILD_TAGS)" \
-		-ldflags "$(ORK_LDFLAGS)" \
-		-o $(OUTPUT_DIR)/ork ./cmd/orkestra
-	@echo "✅ Linux Orkestra binary built: $(OUTPUT_DIR)/ork"
+		-ldflags "$(INRUN_LDFLAGS)" \
+		-o $(OUTPUT_DIR)/inrun ./cmd/inrun
+	@echo "✅ Linux Inrun binary built: $(OUTPUT_DIR)/inrun"
 
-orkcc-linux:
-	@echo "Building Orkestra Control Center (Linux amd64)..."
+inrun-console-linux:
+	@echo "Building Inrun Console (Linux amd64)..."
 	@mkdir -p $(OUTPUT_DIR)
-	cd $(CONTROL_CENTER_DIR) && gofmt -w . && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $(OUTPUT_DIR)/orkcc .
-	@echo "✅ Linux Control Center binary built: $(OUTPUT_DIR)/orkcc"
+	cd $(CONSOLE_DIR) && gofmt -w . && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $(OUTPUT_DIR)/inrun-console .
+	@echo "✅ Linux Console binary built: $(OUTPUT_DIR)/inrun-console"
 
-ork-gateway-linux: generate-notes
-	@echo "Building Orkestra Gateway (Linux amd64)..."
+inrun-gateway-linux: generate-notes
+	@echo "Building Inrun Gateway (Linux amd64)..."
 	@mkdir -p $(OUTPUT_DIR)
 	gofmt -w . && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
 		-tags "gateway" \
-		-ldflags "$(ORK_LDFLAGS)" \
-		-o $(OUTPUT_DIR)/ork-gateway ./cmd/orkestra
-	@echo "✅ Linux Gateway binary built: $(OUTPUT_DIR)/ork-gateway"
+		-ldflags "$(INRUN_LDFLAGS)" \
+		-o $(OUTPUT_DIR)/inrun-gateway ./cmd/inrun
+	@echo "✅ Linux Gateway binary built: $(OUTPUT_DIR)/inrun-gateway"
 
 # ── Docker Build ──────────────────────────────────────────────────────────────
 # These targets build Linux binaries to DOCKER_TMP (not OUTPUT_DIR) so they
-# never overwrite the developer's local ork CLI binary in ~/.orkestra/bin.
+# never overwrite the developer's local inrun CLI binary in ~/.inrun/bin.
 
 docker: generate-notes
 	@mkdir -p $(DOCKER_TMP)
-	@echo "Building Orkestra runtime (Linux amd64) → $(DOCKER_TMP)/ork..."
+	@echo "Building Inrun runtime (Linux amd64) → $(DOCKER_TMP)/inrun..."
 	gofmt -w . && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
 		-tags "runtime" \
-		-ldflags "$(ORK_LDFLAGS)" \
-		-o $(DOCKER_TMP)/ork ./cmd/orkestra
-	@echo "Building Docker image: $(ORK_IMAGE)"
-	@cp $(DOCKER_TMP)/ork ./$(ORK_AMD64_TARGET)
-	docker build -t $(ORK_IMAGE) .
-	@rm -f ./$(ORK_AMD64_TARGET) $(DOCKER_TMP)/ork
-	@echo "✔ Docker image built: $(ORK_IMAGE)"
+		-ldflags "$(INRUN_LDFLAGS)" \
+		-o $(DOCKER_TMP)/inrun ./cmd/inrun
+	@echo "Building Docker image: $(INRUN_IMAGE)"
+	@cp $(DOCKER_TMP)/inrun ./$(INRUN_AMD64_TARGET)
+	docker build -t $(INRUN_IMAGE) .
+	@rm -f ./$(INRUN_AMD64_TARGET) $(DOCKER_TMP)/inrun
+	@echo "✔ Docker image built: $(INRUN_IMAGE)"
 
-docker-cc:
+docker-console:
 	@mkdir -p $(DOCKER_TMP)
-	@echo "Building Control Center (Linux amd64) → $(DOCKER_TMP)/orkcc..."
-	cd $(CONTROL_CENTER_DIR) && gofmt -w . && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
-		-ldflags "$(CC_LDFLAGS)" \
-		-o $(DOCKER_TMP)/orkcc .
-	@echo "Building Docker image: $(ORK_CC_IMAGE)"
-	cp $(DOCKER_TMP)/orkcc $(CONTROL_CENTER_DIR)/$(ORK_CC_AMD64_TARGET)
-	cd $(CONTROL_CENTER_DIR) && docker build -t $(ORK_CC_IMAGE) . && rm -f ./$(ORK_CC_AMD64_TARGET)
-	@rm -f $(DOCKER_TMP)/orkcc
-	@echo "✔ Docker image built: $(ORK_CC_IMAGE)"
+	@echo "Building Console (Linux amd64) → $(DOCKER_TMP)/inrun-console..."
+	cd $(CONSOLE_DIR) && gofmt -w . && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
+		-ldflags "$(CONSOLE_LDFLAGS)" \
+		-o $(DOCKER_TMP)/inrun-console .
+	@echo "Building Docker image: $(INRUN_CONSOLE_IMAGE)"
+	cp $(DOCKER_TMP)/inrun-console $(CONSOLE_DIR)/$(INRUN_CONSOLE_AMD64_TARGET)
+	cd $(CONSOLE_DIR) && docker build -t $(INRUN_CONSOLE_IMAGE) . && rm -f ./$(INRUN_CONSOLE_AMD64_TARGET)
+	@rm -f $(DOCKER_TMP)/inrun-console
+	@echo "✔ Docker image built: $(INRUN_CONSOLE_IMAGE)"
 
 docker-gateway: generate-notes
 	@mkdir -p $(DOCKER_TMP)
-	@echo "Building Orkestra gateway (Linux amd64) → $(DOCKER_TMP)/ork-gateway..."
+	@echo "Building Inrun gateway (Linux amd64) → $(DOCKER_TMP)/inrun-gateway..."
 	gofmt -w . && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
 		-tags "gateway" \
-		-ldflags "$(ORK_LDFLAGS)" \
-		-o $(DOCKER_TMP)/ork-gateway ./cmd/orkestra
-	@echo "Building Docker image: $(ORK_GATEWAY_IMAGE)"
-	@cp $(DOCKER_TMP)/ork-gateway ./$(ORK_GATEWAY_AMD64_TARGET)
-	docker build -t $(ORK_GATEWAY_IMAGE) .
-	@rm -f ./$(ORK_GATEWAY_AMD64_TARGET) $(DOCKER_TMP)/ork-gateway
-	@echo "✔ Docker image built: $(ORK_GATEWAY_IMAGE)"
+		-ldflags "$(INRUN_LDFLAGS)" \
+		-o $(DOCKER_TMP)/inrun-gateway ./cmd/inrun
+	@echo "Building Docker image: $(INRUN_GATEWAY_IMAGE)"
+	@cp $(DOCKER_TMP)/inrun-gateway ./$(INRUN_GATEWAY_AMD64_TARGET)
+	docker build -t $(INRUN_GATEWAY_IMAGE) .
+	@rm -f ./$(INRUN_GATEWAY_AMD64_TARGET) $(DOCKER_TMP)/inrun-gateway
+	@echo "✔ Docker image built: $(INRUN_GATEWAY_IMAGE)"
 
 # ── Docker Push ───────────────────────────────────────────────────────────────
 
 docker-push:
-	@echo "Pushing Docker image: $(ORK_IMAGE)"
-	docker push $(ORK_IMAGE)
-	@echo "✔ Docker image pushed: $(ORK_IMAGE)"
-	@echo "Pushing Docker image: $(ORK_CC_IMAGE)"
-	docker push $(ORK_CC_IMAGE)
-	@echo "✔ Docker image pushed: $(ORK_CC_IMAGE)"
-	@echo "Pushing Docker image: $(ORK_GATEWAY_IMAGE)"
-	docker push $(ORK_GATEWAY_IMAGE)
-	@echo "✔ Docker image pushed: $(ORK_GATEWAY_IMAGE)"
+	@echo "Pushing Docker image: $(INRUN_IMAGE)"
+	docker push $(INRUN_IMAGE)
+	@echo "✔ Docker image pushed: $(INRUN_IMAGE)"
+	@echo "Pushing Docker image: $(INRUN_CONSOLE_IMAGE)"
+	docker push $(INRUN_CONSOLE_IMAGE)
+	@echo "✔ Docker image pushed: $(INRUN_CONSOLE_IMAGE)"
+	@echo "Pushing Docker image: $(INRUN_GATEWAY_IMAGE)"
+	docker push $(INRUN_GATEWAY_IMAGE)
+	@echo "✔ Docker image pushed: $(INRUN_GATEWAY_IMAGE)"
 
 # ── Docker Release (build + push) ─────────────────────────────────────────────
 
-docker-release: docker docker-cc docker-gateway docker-devserver docker-push
+docker-release: docker docker-console docker-gateway docker-devserver docker-push
 	@echo "✔ Docker release complete"
 
 # ── Dev Server Docker ─────────────────────────────────────────────────────────
 
 docker-devserver:
 	@mkdir -p $(DOCKER_TMP)
-	@echo "Building dev server (Linux amd64) → $(DOCKER_TMP)/ork-devserver..."
+	@echo "Building dev server (Linux amd64) → $(DOCKER_TMP)/inrun-devserver..."
 	gofmt -w . && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
-		-trimpath -ldflags "-s -w $(ORK_LDFLAGS)" \
-		-o $(DOCKER_TMP)/ork-devserver ./cmd/devserver
-	@echo "Building Docker image: $(ORK_DEVSERVER_IMAGE)"
-	@cp $(DOCKER_TMP)/ork-devserver ./$(ORK_AMD64_TARGET)
-	docker build -t $(ORK_DEVSERVER_IMAGE) .
-	@rm -f ./$(ORK_AMD64_TARGET) $(DOCKER_TMP)/ork-devserver
-	@echo "✔ Docker image built: $(ORK_DEVSERVER_IMAGE)"
+		-trimpath -ldflags "-s -w $(INRUN_LDFLAGS)" \
+		-o $(DOCKER_TMP)/inrun-devserver ./cmd/devserver
+	@echo "Building Docker image: $(INRUN_DEVSERVER_IMAGE)"
+	@cp $(DOCKER_TMP)/inrun-devserver ./$(INRUN_AMD64_TARGET)
+	docker build -t $(INRUN_DEVSERVER_IMAGE) .
+	@rm -f ./$(INRUN_AMD64_TARGET) $(DOCKER_TMP)/inrun-devserver
+	@echo "✔ Docker image built: $(INRUN_DEVSERVER_IMAGE)"
 
 release-devserver: docker-devserver
-	@echo "Pushing Docker image: $(ORK_DEVSERVER_IMAGE)"
-	docker push $(ORK_DEVSERVER_IMAGE)
-	@echo "✔ Dev server image released: $(ORK_DEVSERVER_IMAGE)"
+	@echo "Pushing Docker image: $(INRUN_DEVSERVER_IMAGE)"
+	docker push $(INRUN_DEVSERVER_IMAGE)
+	@echo "✔ Dev server image released: $(INRUN_DEVSERVER_IMAGE)"
 
 # ── Runtime Reload (local dev) ────────────────────────────────────────────────
 
-KIND_CLUSTER ?= orkestra-playground
+KIND_CLUSTER ?= inrun-playground
 
-DEVSERVER_DEPLOYMENT ?= orkestra-dev-server
+DEVSERVER_DEPLOYMENT ?= inrun-dev-server
 DEVSERVER_CONTAINER_NAME ?= dev-server
-DEVSERVER_NAMESPACE ?= orkestra-system
+DEVSERVER_NAMESPACE ?= inrun-system
 
 devserver-reload: docker-devserver
 	@echo "Generating unique tag..."
@@ -225,20 +225,20 @@ devserver-reload: docker-devserver
 	@echo "Tag: $(DEVSERVER_TAG)"
 
 	@echo "Retagging image..."
-	docker tag $(ORK_DEVSERVER_IMAGE) $(ORK_DEVSERVER_IMAGE)-$(DEVSERVER_TAG)
+	docker tag $(INRUN_DEVSERVER_IMAGE) $(INRUN_DEVSERVER_IMAGE)-$(DEVSERVER_TAG)
 
 	@echo "Loading image into kind cluster: $(KIND_CLUSTER)"
-	kind load docker-image $(ORK_DEVSERVER_IMAGE)-$(DEVSERVER_TAG) --name $(KIND_CLUSTER)
+	kind load docker-image $(INRUN_DEVSERVER_IMAGE)-$(DEVSERVER_TAG) --name $(KIND_CLUSTER)
 	@echo "✔ Image loaded"
 
 	@echo "Updating deployment $(DEVSERVER_DEPLOYMENT) in namespace $(DEVSERVER_NAMESPACE)..."
 	kubectl -n $(DEVSERVER_NAMESPACE) set image deploy/$(DEVSERVER_DEPLOYMENT) \
-        $(DEVSERVER_CONTAINER_NAME)=$(ORK_DEVSERVER_IMAGE)-$(DEVSERVER_TAG)
+        $(DEVSERVER_CONTAINER_NAME)=$(INRUN_DEVSERVER_IMAGE)-$(DEVSERVER_TAG)
 
-	@echo "✔ Dev server updated to image: $(ORK_DEVSERVER_IMAGE)-$(DEVSERVER_TAG)"
-RUNTIME_DEPLOYMENT ?= orkestra-runtime
+	@echo "✔ Dev server updated to image: $(INRUN_DEVSERVER_IMAGE)-$(DEVSERVER_TAG)"
+RUNTIME_DEPLOYMENT ?= inrun-runtime
 RUNTIME_CONTAINER_NAME ?= runtime
-RUNTIME_NAMESPACE  ?= orkestra-system
+RUNTIME_NAMESPACE  ?= inrun-system
 
 runtime-reload: docker
 	@echo "Generating unique tag..."
@@ -246,43 +246,43 @@ runtime-reload: docker
 	@echo "Tag: $(RUNTIME_TAG)"
 
 	@echo "Retagging image..."
-	docker tag $(ORK_IMAGE) $(ORK_IMAGE)-$(RUNTIME_TAG)
+	docker tag $(INRUN_IMAGE) $(INRUN_IMAGE)-$(RUNTIME_TAG)
 
 	@echo "Loading image into kind cluster: $(KIND_CLUSTER)"
-	kind load docker-image $(ORK_IMAGE)-$(RUNTIME_TAG) --name $(KIND_CLUSTER)
+	kind load docker-image $(INRUN_IMAGE)-$(RUNTIME_TAG) --name $(KIND_CLUSTER)
 	@echo "✔ Image loaded"
 
 	@echo "Updating deployment $(RUNTIME_DEPLOYMENT) in namespace $(RUNTIME_NAMESPACE)..."
 	kubectl -n $(RUNTIME_NAMESPACE) set image deploy/$(RUNTIME_DEPLOYMENT) \
-        $(RUNTIME_CONTAINER_NAME)=$(ORK_IMAGE)-$(RUNTIME_TAG)
+        $(RUNTIME_CONTAINER_NAME)=$(INRUN_IMAGE)-$(RUNTIME_TAG)
 
-	@echo "✔ Runtime updated to image: $(ORK_IMAGE)-$(RUNTIME_TAG)"
+	@echo "✔ Runtime updated to image: $(INRUN_IMAGE)-$(RUNTIME_TAG)"
 
-CONTROL_CENTER_DEPLOYMENT ?= orkestra-cc
-CONTROL_CENTER_CONTAINER_NAME ?= controlcenter
-CONTROL_CENTER_NAMESPACE ?= orkestra-system
+CONSOLE_DEPLOYMENT ?= inrun-console
+CONSOLE_CONTAINER_NAME ?= console
+CONSOLE_NAMESPACE ?= inrun-system
 
-controlcenter-reload: docker-cc
+console-reload: docker-console
 	@echo "Generating unique tag..."
-	$(eval CC_TAG := $(shell date +%s))
-	@echo "Tag: $(CC_TAG)"
+	$(eval CONSOLE_TAG := $(shell date +%s))
+	@echo "Tag: $(CONSOLE_TAG)"
 
 	@echo "Retagging image..."
-	docker tag $(ORK_CC_IMAGE) $(ORK_CC_IMAGE)-$(CC_TAG)
+	docker tag $(INRUN_CONSOLE_IMAGE) $(INRUN_CONSOLE_IMAGE)-$(CONSOLE_TAG)
 
 	@echo "Loading image into kind cluster: $(KIND_CLUSTER)"
-	kind load docker-image $(ORK_CC_IMAGE)-$(CC_TAG) --name $(KIND_CLUSTER)
+	kind load docker-image $(INRUN_CONSOLE_IMAGE)-$(CONSOLE_TAG) --name $(KIND_CLUSTER)
 	@echo "✔ Image loaded"
 
-	@echo "Updating deployment $(CONTROL_CENTER_DEPLOYMENT) in namespace $(CONTROL_CENTER_NAMESPACE)..."
-	kubectl -n $(CONTROL_CENTER_NAMESPACE) set image deploy/$(CONTROL_CENTER_DEPLOYMENT) \
-        $(CONTROL_CENTER_CONTAINER_NAME)=$(ORK_CC_IMAGE)-$(CC_TAG)
+	@echo "Updating deployment $(CONSOLE_DEPLOYMENT) in namespace $(CONSOLE_NAMESPACE)..."
+	kubectl -n $(CONSOLE_NAMESPACE) set image deploy/$(CONSOLE_DEPLOYMENT) \
+        $(CONSOLE_CONTAINER_NAME)=$(INRUN_CONSOLE_IMAGE)-$(CONSOLE_TAG)
 
-	@echo "✔ Control Center updated to image: $(ORK_CC_IMAGE)-$(CC_TAG)"
+	@echo "✔ Console updated to image: $(INRUN_CONSOLE_IMAGE)-$(CONSOLE_TAG)"
 
-GATEWAY_DEPLOYMENT ?= orkestra-gateway
+GATEWAY_DEPLOYMENT ?= inrun-gateway
 GATEWAY_CONTAINER_NAME ?= gateway
-GATEWAY_NAMESPACE ?= orkestra-system
+GATEWAY_NAMESPACE ?= inrun-system
 
 gateway-reload: docker-gateway
 	@echo "Generating unique tag..."
@@ -290,25 +290,25 @@ gateway-reload: docker-gateway
 	@echo "Tag: $(GATEWAY_TAG)"
 
 	@echo "Retagging image..."
-	docker tag $(ORK_GATEWAY_IMAGE) $(ORK_GATEWAY_IMAGE)-$(GATEWAY_TAG)
+	docker tag $(INRUN_GATEWAY_IMAGE) $(INRUN_GATEWAY_IMAGE)-$(GATEWAY_TAG)
 
 	@echo "Loading image into kind cluster: $(KIND_CLUSTER)"
-	kind load docker-image $(ORK_GATEWAY_IMAGE)-$(GATEWAY_TAG) --name $(KIND_CLUSTER)
+	kind load docker-image $(INRUN_GATEWAY_IMAGE)-$(GATEWAY_TAG) --name $(KIND_CLUSTER)
 	@echo "✔ Image loaded"
 
 	@echo "Updating deployment $(GATEWAY_DEPLOYMENT) in namespace $(GATEWAY_NAMESPACE)..."
 	kubectl -n $(GATEWAY_NAMESPACE) set image deploy/$(GATEWAY_DEPLOYMENT) \
-        $(GATEWAY_CONTAINER_NAME)=$(ORK_GATEWAY_IMAGE)-$(GATEWAY_TAG)
+        $(GATEWAY_CONTAINER_NAME)=$(INRUN_GATEWAY_IMAGE)-$(GATEWAY_TAG)
 
-	@echo "✔ Gateway updated to image: $(ORK_GATEWAY_IMAGE)-$(GATEWAY_TAG)"
+	@echo "✔ Gateway updated to image: $(INRUN_GATEWAY_IMAGE)-$(GATEWAY_TAG)"
 
-reload: runtime-reload gateway-reload controlcenter-reload
-	@echo "✔ Runtime, Gateway, and Control Center reloaded successfully"
+reload: runtime-reload gateway-reload console-reload
+	@echo "✔ Runtime, Gateway, and Console reloaded successfully"
 
 # ── Primary targets ───────────────────────────────────────────────────────────
 
 # Default: vet + unit tests (both modules). Fast, no external dependencies.
-test: vet test-unit test-controlcenter
+test: vet check-brand test-unit test-console
 
 # ── Unit tests ────────────────────────────────────────────────────────────────
 # All tests under pkg/ that are not guarded by //go:build integration.
@@ -319,11 +319,11 @@ test-unit:
 	@echo "Running unit tests..."
 	go test ./pkg/... -v -short -count=1
 
-# Control Center is a separate Go module (github.com/orkspace/orkestra-cc) —
+# Console is a separate Go module (github.com/inrundev/inrun/console) —
 # its own go.mod, so it needs its own `go test` invocation from its directory.
-test-controlcenter:
-	@echo "Running Control Center unit tests..."
-	cd $(CONTROL_CENTER_DIR) && go test ./... -v -short -count=1
+test-console:
+	@echo "Running Console unit tests..."
+	cd $(CONSOLE_DIR) && go test ./... -v -short -count=1
 
 # ── Race detector ─────────────────────────────────────────────────────────────
 # Same as test-unit with Go's race detector enabled.
@@ -349,7 +349,7 @@ test-integration:
 	go test ./tests/integration/... -v -tags=integration -count=1 -timeout=120s
 
 # ── Full suite ────────────────────────────────────────────────────────────────
-test-all: test-unit test-controlcenter test-integration
+test-all: test-unit test-console test-integration
 
 # ── Coverage ──────────────────────────────────────────────────────────────────
 # HTML report written to coverage.html — open with: xdg-open coverage.html
@@ -366,20 +366,20 @@ test-coverage-text:
 	@go tool cover -func=coverage.out | tail -5
 
 # ── Fixture tests (kind cluster required) ────────────────────────────────────
-# Each target spins up a dedicated kind cluster, installs Orkestra via Helm,
-# applies the fixture katalog + CR, asserts resources exist, then tears down.
-# Requires: kind, helm, kubectl, ork — all on $PATH.
+# Each target spins up a dedicated kind cluster, installs Inrun via Helm,
+# applies the fixture catalog + CR, asserts resources exist, then tears down.
+# Requires: kind, helm, kubectl, inrun — all on $PATH.
 
-FIXTURE_NOTE_CLUSTER      := orkestra-note-fixture
-FIXTURE_RECONCILER_CLUSTER := orkestra-reconciler-fixture
-HELM_CHART                := ./charts/orkestra
+FIXTURE_NOTE_CLUSTER      := inrun-note-fixture
+FIXTURE_RECONCILER_CLUSTER := inrun-reconciler-fixture
+HELM_CHART                := ./charts/inrun
 
 test-fixture-note:
 	@echo "── Note fixture test ──────────────────────────────────────────"
 	@bash scripts/setup-kind.sh $(FIXTURE_NOTE_CLUSTER)
 	@kubectl apply -f pkg/note/fixture/crd.yaml
-	@ork generate bundle --file pkg/note/fixture/katalog.yaml | kubectl apply -f -
-	@helm install orkestra $(HELM_CHART) --namespace orkestra-system --wait --timeout 120s
+	@inrun generate bundle --file pkg/note/fixture/catalog.yaml | kubectl apply -f -
+	@helm install inrun $(HELM_CHART) --namespace inrun-system --wait --timeout 120s
 	@kubectl apply -f pkg/note/fixture/cr.yaml
 	@kubectl wait reconcilerprobe/my-probe --for=jsonpath='{.status.phase}'=Ready \
 	    --timeout=120s 2>/dev/null || kubectl wait noteprobe/my-probe \
@@ -392,8 +392,8 @@ test-fixture-reconciler:
 	@echo "── Reconciler fixture test ────────────────────────────────────"
 	@bash scripts/setup-kind.sh $(FIXTURE_RECONCILER_CLUSTER)
 	@kubectl apply -f pkg/runtime/reconciler/fixture/crd.yaml
-	@ork generate bundle --file pkg/runtime/reconciler/fixture/katalog.yaml | kubectl apply -f -
-	@helm install orkestra $(HELM_CHART) --namespace orkestra-system --wait --timeout 120s
+	@inrun generate bundle --file pkg/runtime/reconciler/fixture/catalog.yaml | kubectl apply -f -
+	@helm install inrun $(HELM_CHART) --namespace inrun-system --wait --timeout 120s
 	@kubectl apply -f pkg/runtime/reconciler/fixture/cr.yaml
 	@kubectl wait reconcilerprobe/probe --for=jsonpath='{.status.tier}'=premium \
 	    --timeout=120s || kubectl get reconcilerprobe probe -o yaml
@@ -431,7 +431,7 @@ hugo-install:
 	echo "✅ Hugo installed: $$(hugo version)"
 
 docs-sync:
-	@echo "Syncing documentation/ → website/content/docs/ ..."
+	@echo "Syncing docs/ → website/content/docs/ ..."
 	@bash website/scripts/sync-docs.sh
 	@echo "✅ Docs synced"
 
@@ -457,20 +457,20 @@ vet:
 	go vet ./...
 
 # Known, verified-non-exploitable findings as of this writing, in
-# vuln-orkestra only — it's manually triggered (see .github/workflows/vuln-orkestra.yml), so
+# vuln-inrun only — it's manually triggered (see .github/workflows/vuln-inrun.yml), so
 # these don't need continue-on-error to avoid blocking merges, but the
 # reasoning stays here for whoever re-triggers it. Re-verify before
 # dismissing a finding as one of these; don't assume a new CVE ID is the
 # same story.
 #
-# Neither finding below reaches vuln-controlcenter (separate module, never
+# Neither finding below reaches vuln-console (separate module, never
 # imported Helm or ORAS), vuln-runtime, or vuln-gateway: Helm
 # (pkg/merger/helm.go, pkg/merger/helm_cache.go) and ORAS
-# (pkg/registry/client.go, pkg/registry/motif/pull.go) are both build-tag
+# (pkg/registry/client.go, pkg/registry/module/pull.go) are both build-tag
 # excluded from the runtime and gateway binaries — see the comments atop
-# those files. Both are authoring-time-only (ork push/pull/generate bundle);
-# the runtime and gateway only ever read an already-merged katalog.yaml key
-# from a ConfigMap. validate-pr.yml's vuln-check (controlcenter/runtime/
+# those files. Both are authoring-time-only (inrun push/pull/generate bundle);
+# the runtime and gateway only ever read an already-merged catalog.yaml key
+# from a ConfigMap. validate-pr.yml's vuln-check (console/runtime/
 # gateway) has no known findings left to accept — it runs as a hard gate.
 #
 #   - GO-2026-5932 (golang.org/x/crypto/openpgp, no fix — package is
@@ -478,37 +478,44 @@ vet:
 #     resolveRemoteChart, via Helm SDK's action.Pull chart-signature
 #     verification. Verified in helm.sh/helm/v3/pkg/action/pull.go that
 #     NewPullWithOpts starts from a zero-value Pull{} (Verify defaults to
-#     false), and Orkestra's own call site never sets pull.Verify = true —
+#     false), and Inrun's own call site never sets pull.Verify = true —
 #     so the verification code path that would invoke openpgp is never
-#     exercised, regardless of what a Katalog's HelmSource points at.
+#     exercised, regardless of what a Catalog's HelmSource points at.
 #   - GO-2026-5622 / GO-2026-5338 / GO-2026-5064 (github.com/containerd/containerd,
 #     no fix yet): all three are specifically about CRI checkpoint/restore, a
 #     container-runtime feature nothing in this codebase calls. containerd is
 #     a transitive dependency of Helm's OCI-artifact getter package, pulled
 #     in for unrelated image/content/compression handling.
-vuln: vuln-orkestra vuln-controlcenter vuln-runtime vuln-gateway
+vuln: vuln-inrun vuln-console vuln-runtime vuln-gateway
 
 # Scans the whole module under Go's default build config — which is actually
 # cmd/cli/run_dev.go's dev-CLI build (no tags set), not either production
 # binary. Broadest net: also catches issues in dev-only tooling, which still
 # matters (a compromised dev machine, supply-chain risk in what contributors
 # run locally) even though it never ships.
-vuln-orkestra:
+vuln-inrun:
 	go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
 
-# Control Center is a separate Go module — its own go.mod, own dependency
+# Console is a separate Go module — its own go.mod, own dependency
 # tree — so it needs its own govulncheck invocation from its directory.
-vuln-controlcenter:
-	cd $(CONTROL_CENTER_DIR) && go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
+vuln-console:
+	cd $(CONSOLE_DIR) && go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
 
 # These two scope govulncheck to exactly what's reachable in the two
 # binaries that actually run in a cluster — same -tags used to build them
-# (see ork-linux / ork-gateway-linux below) — rather than vuln-orkestra's
+# (see inrun-linux / inrun-gateway-linux below) — rather than vuln-inrun's
 # whole-module, default-build-config scan. A finding here means the shipped
-# binary is actually affected; a finding only in vuln-orkestra means it's
+# binary is actually affected; a finding only in vuln-inrun means it's
 # confined to dev tooling.
 vuln-runtime:
-	go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 -tags runtime ./cmd/orkestra/...
+	go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 -tags runtime ./cmd/inrun/...
 
 vuln-gateway:
-	go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 -tags gateway ./cmd/orkestra/...
+	go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 -tags gateway ./cmd/inrun/...
+
+# The console embeds its own copy of the brand SVGs (go:embed can't reach
+# docs/); keep the copies identical to docs/assets.
+.PHONY: check-brand
+check-brand:
+	@cmp -s docs/assets/inrun-wordmark.svg cmd/console/web/assets/static/inrun-wordmark.svg || { echo "inrun-wordmark.svg differs between docs/assets and the console"; exit 1; }
+	@cmp -s docs/assets/inrun-mark.svg cmd/console/web/assets/static/inrun-mark.svg || { echo "inrun-mark.svg differs between docs/assets and the console"; exit 1; }

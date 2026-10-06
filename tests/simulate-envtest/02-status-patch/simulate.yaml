@@ -1,4 +1,4 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: probe-status-patch
@@ -9,7 +9,7 @@ metadata:
     real API server enforces the subresource boundary and the patch still succeeds.
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   cr: ../cr.yaml
   crd: ../crd.yaml
   cycles: 3

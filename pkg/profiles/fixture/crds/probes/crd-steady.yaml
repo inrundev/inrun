@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: profileprobesteadies.profiles.orkestra.io
+  name: profileprobesteadies.profiles.inrun.dev
 spec:
-  group: profiles.orkestra.io
+  group: profiles.inrun.dev
   names:
     kind: ProfileProbeSteady
     plural: profileprobesteadies

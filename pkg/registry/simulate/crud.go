@@ -6,16 +6,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// CRUD stubs — record operations. Get always returns NotFound so the reconciler
-// takes the Create path on every simulated cycle, producing visible create ops.
+// CRUD stubs — record operations. Get returns the objects the harness seeded
+// (the CR under simulation) and NotFound for everything else, so a reconciler
+// can read its own CR and still takes the Create path for its children.
 
 func (f *FakeKubeclient) Get(_ context.Context, key domain.ObjectKey, obj domain.Object, opts metav1.GetOptions) error {
 	f.shared.mu.Lock()
@@ -28,7 +31,39 @@ func (f *FakeKubeclient) Get(_ context.Context, key domain.ObjectKey, obj domain
 		At:        time.Now(),
 	})
 	f.shared.mu.Unlock()
+	if f.getSeeded(key, obj) {
+		return nil
+	}
 	return fakeNotFound(key.Name)
+}
+
+// getSeeded copies a seeded object matching obj's kind and key into obj.
+func (f *FakeKubeclient) getSeeded(key domain.ObjectKey, obj domain.Object) bool {
+	if f.tracker == nil {
+		return false
+	}
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	if gvk.Empty() {
+		kinds, _, err := f.scheme.ObjectKinds(obj)
+		if err != nil || len(kinds) == 0 {
+			return false
+		}
+		gvk = kinds[0]
+	}
+	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
+	found, err := f.tracker.Get(gvr, key.Namespace, key.Name)
+	if err != nil {
+		return false
+	}
+	u, ok := found.(*unstructured.Unstructured)
+	if !ok {
+		return false
+	}
+	if dst, ok := obj.(*unstructured.Unstructured); ok {
+		dst.Object = u.DeepCopy().Object
+		return true
+	}
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, obj) == nil
 }
 
 func (f *FakeKubeclient) Create(_ context.Context, obj domain.Object, opts metav1.CreateOptions) error {
@@ -150,3 +185,41 @@ func (f *FakeKubeclient) IsObjectNamespaced(obj runtime.Object) (bool, error) {
 
 // compile-time check
 var _ kubeclient.Interface = (*FakeKubeclient)(nil)
+
+// Subresource stubs — record writes, as the controller-runtime adapter's
+// Status() and SubResource() use them.
+
+var _ kubeclient.Subresource = (*FakeKubeclient)(nil)
+
+func (f *FakeKubeclient) GetSubResource(_ context.Context, obj domain.Object, _ domain.Object, subresource string, _ metav1.GetOptions) error {
+	return fakeNotFound(obj.GetName())
+}
+
+func (f *FakeKubeclient) CreateSubResource(_ context.Context, obj domain.Object, _ domain.Object, subresource string, _ metav1.CreateOptions) error {
+	f.recordSubresource("create", obj, subresource)
+	return nil
+}
+
+func (f *FakeKubeclient) UpdateSubResource(_ context.Context, obj domain.Object, subresource string, _ metav1.UpdateOptions) error {
+	f.recordSubresource("update", obj, subresource)
+	return nil
+}
+
+func (f *FakeKubeclient) PatchSubResource(_ context.Context, obj domain.Object, _ kubeclient.Patch, subresource string, _ metav1.PatchOptions) error {
+	f.recordSubresource("patch", obj, subresource)
+	return nil
+}
+
+func (f *FakeKubeclient) recordSubresource(verb string, obj domain.Object, subresource string) {
+	f.shared.mu.Lock()
+	defer f.shared.mu.Unlock()
+	f.shared.ops = append(f.shared.ops, Op{
+		Cycle:       f.shared.currentCycle,
+		Verb:        verb,
+		Resource:    resourceNameFromObject(obj),
+		Subresource: subresource,
+		Name:        obj.GetName(),
+		Namespace:   obj.GetNamespace(),
+		At:          time.Now(),
+	})
+}

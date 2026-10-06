@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,8 +26,8 @@ func TestApplyExclusions(t *testing.T) {
 
 	t.Run("no exclude declared is a no-op", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{},
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{},
 		}
 		response := map[string]interface{}{"a": "b"}
 		ApplyExclusions(response, crd, "", noopNotes())
@@ -36,8 +36,8 @@ func TestApplyExclusions(t *testing.T) {
 
 	t.Run("single static path removed", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Exclude: []string{"metadata.managedFields"},
 			},
 		}
@@ -56,8 +56,8 @@ func TestApplyExclusions(t *testing.T) {
 
 	t.Run("multiple entries each remove their own path", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Exclude: []string{"metadata.managedFields", "status.observedGeneration"},
 			},
 		}
@@ -82,8 +82,8 @@ func TestApplyExclusions(t *testing.T) {
 
 	t.Run("comma separated string in a single entry removes multiple paths", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Exclude: []string{"metadata.managedFields,status.observedGeneration"},
 			},
 		}
@@ -106,8 +106,8 @@ func TestApplyExclusions(t *testing.T) {
 
 	t.Run("dynamic list from annotation via toList", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Exclude: []string{`{{ toList (getAnnotation . "platform.myorg.io/exclude") }}`},
 			},
 		}
@@ -135,8 +135,8 @@ func TestApplyExclusions(t *testing.T) {
 
 	t.Run("path that does not exist is a no-op, not an error", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Exclude: []string{"spec.nonexistent.deeply.nested"},
 			},
 		}
@@ -149,8 +149,8 @@ func TestApplyExclusions(t *testing.T) {
 
 	t.Run("empty entry is skipped", func(t *testing.T) {
 		crd := appCRD()
-		crd.Serve.Config = &orktypes.ServeConfigSettings{
-			Response: &orktypes.ServeResponseConfig{
+		crd.Serve.Config = &types.ServeConfigSettings{
+			Response: &types.ServeResponseConfig{
 				Exclude: []string{""},
 			},
 		}

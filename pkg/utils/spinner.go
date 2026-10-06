@@ -12,21 +12,26 @@ var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "�
 // Spinner animates a terminal progress indicator with a message.
 type Spinner struct {
 	message   string
+	initial   string // message at start; non-TTY Success prints only if it changed
+	tty       bool
 	stop      chan struct{}
 	mu        sync.Mutex
 	running   bool
 	finalized bool
 }
 
-// StartSpinner begins the spinner; on non-TTY it prints once and finalizes.
+// StartSpinner begins the spinner. On non-TTY it prints msg once and does
+// not animate; Failure, and Success after an Update, print a final line.
 func StartSpinner(msg string) *Spinner {
-	if !isTerminal() {
+	if !IsTerminal() {
 		fmt.Println(msg)
-		return &Spinner{finalized: true}
+		return &Spinner{message: msg, initial: msg}
 	}
 
 	s := &Spinner{
 		message: msg,
+		initial: msg,
+		tty:     true,
 		stop:    make(chan struct{}),
 		running: true,
 	}
@@ -70,7 +75,8 @@ func (s *Spinner) Stop() {
 	fmt.Print("\r\x1b[K")
 }
 
-// Success prints a green ✓ and finalizes the spinner.
+// Success prints a green ✓ and finalizes the spinner. On non-TTY the start
+// line already said it, so it prints only if Update changed the message.
 func (s *Spinner) Success() {
 	s.mu.Lock()
 	if s.finalized {
@@ -79,7 +85,11 @@ func (s *Spinner) Success() {
 	}
 	s.finalized = true
 	msg := s.message
+	quiet := !s.tty && msg == s.initial
 	s.mu.Unlock()
+	if quiet {
+		return
+	}
 	s.Stop()
 	fmt.Printf("  %s %s\n", SuccessMark(), msg)
 }
@@ -105,7 +115,7 @@ func (s *Spinner) Update(msg string) {
 	s.message = msg
 }
 
-func isTerminal() bool {
+func IsTerminal() bool {
 	info, err := os.Stdout.Stat()
 	if err != nil {
 		return false

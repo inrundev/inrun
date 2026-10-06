@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // ProtocolClient executes one external call and returns the result map to
@@ -14,22 +14,22 @@ import (
 // HTTP clients return: status, body, error, called + auto-parsed JSON keys.
 // Non-HTTP clients return: result, raw, error, called + protocol-specific keys.
 type ProtocolClient interface {
-	Fetch(ctx context.Context, spec orktypes.ExternalCallSpec, resolvedURL, resolvedQuery, resolvedBody, credential string) (map[string]interface{}, error)
+	Fetch(ctx context.Context, spec types.ExternalCallSpec, resolvedURL, resolvedQuery, resolvedBody, credential string) (map[string]interface{}, error)
 }
 
-func newProtocolClient(protocol orktypes.ExternalProtocol) ProtocolClient {
+func newProtocolClient(protocol types.ExternalProtocol) ProtocolClient {
 	switch protocol {
-	case "", orktypes.ProtocolHTTP:
+	case "", types.ProtocolHTTP:
 		return &httpProtocolClient{}
-	case orktypes.ProtocolPrometheus:
+	case types.ProtocolPrometheus:
 		return &prometheusClient{}
-	case orktypes.ProtocolRedis:
+	case types.ProtocolRedis:
 		return &redisClient{}
-	case orktypes.ProtocolPostgres:
+	case types.ProtocolPostgres:
 		return &postgresClient{}
-	case orktypes.ProtocolMongo:
+	case types.ProtocolMongo:
 		return &mongoClient{}
-	case orktypes.ProtocolKafka:
+	case types.ProtocolKafka:
 		return &kafkaClient{}
 	default:
 		return &httpProtocolClient{} // unknown protocol falls through to HTTP; validate catches it

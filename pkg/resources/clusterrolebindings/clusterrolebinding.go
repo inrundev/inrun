@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/labels"
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/labels"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/shared"
+	"github.com/inrundev/inrun/pkg/types"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +35,7 @@ type ResolvedClusterRoleBindingSpec struct {
 
 // Create creates a ClusterRoleBinding if it does not already exist.
 // Idempotent — skips if the ClusterRoleBinding already exists.
-// ClusterRoleBindings are cluster-scoped; ownership is tracked via the orkestra.io/owner label.
+// ClusterRoleBindings are cluster-scoped; ownership is tracked via the inrun.dev/owner label.
 func Create(ctx context.Context, kube kubeclient.Interface, owner domain.Object, spec ResolvedClusterRoleBindingSpec) error {
 	if err := validateSpec(spec); err != nil {
 		return fmt.Errorf("clusterrolebinding.Create: invalid spec: %w", err)
@@ -88,7 +88,7 @@ func Apply(ctx context.Context, kube kubeclient.Interface, owner domain.Object, 
 
 	if _, err = kube.Clientset().RbacV1().ClusterRoleBindings().Patch(
 		ctx, spec.Name, k8stypes.ApplyPatchType, body,
-		metav1.PatchOptions{FieldManager: konfig.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
+		metav1.PatchOptions{FieldManager: config.FieldManagerRuntime, Force: shared.ResolveForceConflict(kube, spec.ForceConflict)},
 	); err != nil {
 		if errors.IsInvalid(err) {
 			// roleRef is immutable — delete and recreate.
@@ -147,7 +147,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 		}
 		return err
 	}
-	if existing.Labels[labels.OrkestraOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
+	if existing.Labels[labels.InrunOwner] != labels.EffectiveOwnerKey(owner.GetName(), owner.GetAnnotations()) {
 		return nil
 	}
 	return kube.Clientset().RbacV1().ClusterRoleBindings().Delete(ctx, name, metav1.DeleteOptions{})
@@ -155,7 +155,7 @@ func DeleteIfOwned(ctx context.Context, kube kubeclient.Interface,
 
 // Resolve builds a ResolvedClusterRoleBindingSpec from a ClusterRoleBindingTemplateSource.
 // Template expressions must already be evaluated by template.Resolver before calling.
-func Resolve(src orktypes.ClusterRoleBindingTemplateSource, ownerName string) ResolvedClusterRoleBindingSpec {
+func Resolve(src types.ClusterRoleBindingTemplateSource, ownerName string) ResolvedClusterRoleBindingSpec {
 	spec := ResolvedClusterRoleBindingSpec{
 		Name:          src.Name,
 		Labels:        make(map[string]string),
@@ -195,7 +195,7 @@ func Resolve(src orktypes.ClusterRoleBindingTemplateSource, ownerName string) Re
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 func buildClusterRoleBinding(owner domain.Object, spec ResolvedClusterRoleBindingSpec) *rbacv1.ClusterRoleBinding {
-	spec.Labels = labels.StampOrkestraLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
+	spec.Labels = labels.StampInrunLabels(spec.Labels, owner.GetName(), owner.GetAnnotations())
 	crb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   spec.Name,

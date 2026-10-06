@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -21,17 +21,17 @@ import (
 // ForwardTarget describes one component to port-forward.
 type ForwardTarget struct {
 	Label     string // display name, e.g. "Runtime"
-	Komponent string // KomponentRuntime | KomponentCC | KomponentGateway — empty when ServiceName is set
-	// ServiceName looks up a Service by exact name instead of the komponent
-	// label — for non-Orkestra komponents like the devserver. Takes precedence
-	// over Komponent when set.
+	Component string // ComponentRuntime | ComponentConsole | ComponentGateway — empty when ServiceName is set
+	// ServiceName looks up a Service by exact name instead of the component
+	// label — for non-Inrun components like the devserver. Takes precedence
+	// over Component when set.
 	ServiceName string
 	Namespace   string
 	LocalPort   int
 	Scheme      string // "http" or "https"
 	ViaLease    bool   // true for Runtime: resolve pod from Lease, probe health before declaring connected
 	// FlagName is the CLI flag suffix used in "use --<FlagName>-port" hints
-	// (e.g. "cc" for --cc-port). Falls back to Komponent when empty.
+	// (e.g. "cc" for --console-port). Falls back to Component when empty.
 	FlagName string
 }
 
@@ -127,7 +127,7 @@ func resolveTarget(ctx context.Context, cs kubernetes.Interface, t ForwardTarget
 	if t.ServiceName != "" {
 		svc, err = FindServiceByName(ctx, cs, t.Namespace, t.ServiceName)
 	} else {
-		svc, err = FindService(ctx, cs, t.Namespace, t.Komponent)
+		svc, err = FindService(ctx, cs, t.Namespace, t.Component)
 	}
 	if err != nil {
 		return "", "", err
@@ -152,12 +152,12 @@ func resolveTarget(ctx context.Context, cs kubernetes.Interface, t ForwardTarget
 
 // resolveRemotePort returns the container port for the target.
 func resolveRemotePort(t ForwardTarget) int32 {
-	switch t.Komponent {
-	case KomponentRuntime:
+	switch t.Component {
+	case ComponentRuntime:
 		return 8080
-	case KomponentCC:
+	case ComponentConsole:
 		return 8081
-	case KomponentGateway:
+	case ComponentGateway:
 		return 8080
 	case DevServer:
 		return 9999

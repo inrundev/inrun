@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OWNER="orkspace"
-REPO="orkestra"
+OWNER="inrundev"
+REPO="inrun"
 OLDER_THAN_HOURS="${1:-2}"   # optional first argument, default 2 hours
 
 now=$(date +%s)

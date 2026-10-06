@@ -1,9 +1,0 @@
-apiVersion: infra.example.io/v1alpha1
-kind: Platform
-metadata:
-  name: prod-platform
-  namespace: default
-spec:
-  size: large
-  owner: sre-team
-  region: us-east-1

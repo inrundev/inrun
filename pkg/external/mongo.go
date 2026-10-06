@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
-	"github.com/orkspace/orkestra/pkg/utils"
+	"github.com/inrundev/inrun/pkg/types"
+	"github.com/inrundev/inrun/pkg/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -30,7 +30,7 @@ import (
 //	called      — "true"
 type mongoClient struct{}
 
-func (c *mongoClient) Fetch(ctx context.Context, spec orktypes.ExternalCallSpec, resolvedURL, resolvedQuery, _, credential string) (map[string]interface{}, error) {
+func (c *mongoClient) Fetch(ctx context.Context, spec types.ExternalCallSpec, resolvedURL, resolvedQuery, _, credential string) (map[string]interface{}, error) {
 	if resolvedQuery == "" {
 		return errorResult("mongo: query: is required (e.g. \"mydb.mycollection\" or \"mydb.mycollection {\\\"status\\\":\\\"active\\\"}\")"), nil
 	}

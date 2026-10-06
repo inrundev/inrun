@@ -3,7 +3,7 @@
 # All three provenance fields are surfaced so platform tooling can
 # reason about how and where the intent was delivered.
 tokens:
-  control-center:
+  console:
     permissions:
       global: [get, list, create, update, delete]
 

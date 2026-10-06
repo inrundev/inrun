@@ -3,8 +3,8 @@ package note
 import "strings"
 
 // NoteInfo holds discoverable metadata for one note function.
-// Populated from BuiltinNotes (catalog_generated.go) which is produced by
-// make generate-notes — do not edit catalog_generated.go directly.
+// Populated from BuiltinNotes (list_generated.go) which is produced by
+// make generate-notes — do not edit list_generated.go directly.
 type NoteInfo struct {
 	Name        string   // template function name, e.g. "cronToMap"
 	Domain      string   // note family, e.g. "cron", "strings", "kubernetes"

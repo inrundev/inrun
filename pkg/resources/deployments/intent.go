@@ -3,8 +3,8 @@ package deployments
 import (
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/resources/shared"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/resources/shared"
 	corev1 "k8s.io/api/core/v1"
 )
 

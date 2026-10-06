@@ -3,8 +3,8 @@ package profiles_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func TestProbeProfiles(t *testing.T) {
@@ -70,8 +70,8 @@ func TestDefaultProbeTimingsMatchStandard(t *testing.T) {
 }
 
 func TestProbeProfileUserDefined(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		Probes: []orktypes.ProbeProfileDef{
+	reg := types.ProfileRegistry{
+		Probes: []types.ProbeProfileDef{
 			{Name: "aggressive", InitialDelaySeconds: 2, PeriodSeconds: 5, FailureThreshold: 1, SuccessThreshold: 1, TimeoutSeconds: 3},
 		},
 	}
@@ -89,8 +89,8 @@ func TestProbeProfileUserDefined(t *testing.T) {
 }
 
 func TestProbeProfileUserDefinedOverridesBuiltIn(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		Probes: []orktypes.ProbeProfileDef{
+	reg := types.ProfileRegistry{
+		Probes: []types.ProbeProfileDef{
 			{Name: "fast", InitialDelaySeconds: 99, PeriodSeconds: 99},
 		},
 	}

@@ -1,8 +1,0 @@
-apiVersion: autoscale.orkestra.io/v1alpha1
-kind: Ingestor
-metadata:
-  name: my-ingestor
-  namespace: default
-spec:
-  image: nginx:stable-alpine
-  replicas: 1

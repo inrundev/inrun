@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/event"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator/post"
-	"github.com/orkspace/orkestra/pkg/runtime/kordinator/prepare"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/event"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator/post"
+	"github.com/inrundev/inrun/pkg/runtime/coordinator/prepare"
+	"github.com/inrundev/inrun/pkg/template"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 )
@@ -56,10 +56,10 @@ func runLoop(ctx context.Context, r domain.Reconciler, kube loopKube, key string
 		}
 		_, cycleResult.Error = r.Reconcile(ctx, req)
 
-		// Post-reconcile: status patch + emit — mirrors the kordinator worker.
+		// Post-reconcile: status patch + emit — mirrors the coordinator worker.
 		// Status patching lives in post.Apply; without this call the CR's status
 		// fields would never be written and status-subresource assertions would fail.
-		if resolver, ok := prepared.Context.(*orktmpl.Resolver); ok {
+		if resolver, ok := prepared.Context.(*template.Resolver); ok {
 			box := prepare.BoxFrom(prepared)
 			post.Apply(ctx, post.Input{
 				CRD:      prepInput.Entry.CRD,

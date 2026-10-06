@@ -184,7 +184,7 @@ func (s *ServeTargetValue) UnmarshalJSON(data []byte) error {
 // Used for both the primary entry (Primary: true) and aliases (Primary: false).
 //
 // The primary entry is identified by Primary: true. Exactly one entry per CRD
-// must carry this flag — enforced by ork validate. The primary entry acts as
+// must carry this flag — enforced by inrun validate. The primary entry acts as
 // config authority (source of CRD-level defaults for tokens and response) even
 // when its Enabled flag is false (surface disabled but config still applies).
 //
@@ -194,12 +194,12 @@ func (s *ServeTargetValue) UnmarshalJSON(data []byte) error {
 type ServeTargetConfig struct {
 	// Primary marks this as the primary target entry.
 	// Exactly one entry in the map must be true.
-	// Validated by ork validate — not enforced at parse time.
+	// Validated by inrun validate — not enforced at parse time.
 	Primary bool `yaml:"primary,omitempty" json:"primary,omitempty"`
 
 	// Enabled controls whether this surface is reachable by callers.
 	// nil and true are equivalent — the surface is active.
-	// false hides the entry from callers, the schema catalog, and lookups.
+	// false hides the entry from callers, the service list, and lookups.
 	// The primary's config authority role is unaffected by Enabled.
 	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
 
@@ -211,7 +211,7 @@ type ServeTargetConfig struct {
 	// This is a selector — like Service → Pod selection.
 	//
 	// Each target must have a unique combination of fieldSelectors.
-	// ork validate enforces this. Max 3 selectors per target.
+	// inrun validate enforces this. Max 3 selectors per target.
 	//
 	// Example:
 	//   fieldSelector:
@@ -227,7 +227,7 @@ type ServeTargetConfig struct {
 	// Modes controls which apply modes are allowed for this target.
 	Modes *ServeModes `yaml:"modes,omitempty" json:"modes,omitempty"`
 
-	// Include is a path (relative to the katalog file) to a YAML file with
+	// Include is a path (relative to the catalog file) to a YAML file with
 	// tokens: and/or config: keys. Inline fields take precedence on merge.
 	Include string `yaml:"include,omitempty" json:"include,omitempty"`
 
@@ -242,7 +242,7 @@ type ServeTargetConfig struct {
 	// Clusters scopes the fan-out for this target to a subset of serve.clusters.
 	// Each entry is either a static name or a template expression resolved at apply time.
 	// When absent, fan-out goes to all of serve.clusters.
-	// Each name must appear in serve.clusters (validated by ork validate).
+	// Each name must appear in serve.clusters (validated by inrun validate).
 	Clusters []string `yaml:"clusters,omitempty" json:"clusters,omitempty"`
 }
 

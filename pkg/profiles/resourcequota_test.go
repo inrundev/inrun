@@ -3,12 +3,12 @@ package profiles_test
 import (
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/profiles"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/profiles"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func TestResourceQuotaProfiles(t *testing.T) {
-	var empty *orktypes.ProfileRegistry
+	var empty *types.ProfileRegistry
 
 	tests := []struct {
 		name      string
@@ -52,8 +52,8 @@ func TestResourceQuotaProfiles(t *testing.T) {
 }
 
 func TestResourceQuotaProfileUserDefined(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		ResourceQuotas: []orktypes.ResourceQuotaProfileDef{
+	reg := types.ProfileRegistry{
+		ResourceQuotas: []types.ResourceQuotaProfileDef{
 			{
 				Name: "ci",
 				Hard: map[string]string{
@@ -78,8 +78,8 @@ func TestResourceQuotaProfileUserDefined(t *testing.T) {
 }
 
 func TestResourceQuotaProfileUserDefinedOverridesBuiltIn(t *testing.T) {
-	reg := orktypes.ProfileRegistry{
-		ResourceQuotas: []orktypes.ResourceQuotaProfileDef{
+	reg := types.ProfileRegistry{
+		ResourceQuotas: []types.ResourceQuotaProfileDef{
 			{Name: "small", Hard: map[string]string{"pods": "999"}},
 		},
 	}

@@ -1,7 +1,7 @@
 package types
 
 // EnrichmentOutcome describes what happened when enrichment was attempted
-// for a CRD entry. Used by ork validate to print clear, actionable output.
+// for a CRD entry. Used by inrun validate to print clear, actionable output.
 type EnrichmentOutcome int
 
 const (

@@ -1,7 +1,7 @@
 // pkg/utils/file_cache.go
 //
 // SHA256-keyed disk cache for remote file fetches (https://).
-// Cache layout: ~/.orkestra/files/<sha256hex>
+// Cache layout: ~/.inrun/files/<sha256hex>
 // A hit is any file that exists at the expected path.
 // Callers are responsible for bypassing the cache on --refresh.
 package utils
@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 )
 
-const fileCacheBase = ".orkestra/files"
+const fileCacheBase = ".inrun/files"
 
 // fileCachePath returns the local path for a cached remote URL.
 func fileCachePath(url string) (string, error) {

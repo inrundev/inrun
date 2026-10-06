@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -17,8 +17,8 @@ import (
 // ownerKind filters pods to only those whose immediate ownerReference matches
 // the expected controller kind — e.g. "ReplicaSet" for Deployments, "StatefulSet"
 // for StatefulSets. This prevents job pods from appearing in a Deployment's
-// pod list when both share the same orkestra-owner label selector.
-func enrichGroupWithPods(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry, ownerKind string) {
+// pod list when both share the same inrun-owner label selector.
+func enrichGroupWithPods(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry, ownerKind string) {
 	if !enrichmentEnabled("pods", crd) {
 		return
 	}

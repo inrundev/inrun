@@ -5,7 +5,7 @@ package types
 //
 // All template source types use a single flat field layout.
 //
-// Instead, Orkestra uses:
+// Instead, Inrun uses:
 //
 //	Any string field containing "{{" → treated as a Go text/template expression.
 //	                                    Evaluated against the live CR at reconcile time.
@@ -121,11 +121,11 @@ type ValueFrom struct {
 // EnvFromRef is one secretRef/configMapRef entry under envFrom.
 //
 // Name, Prefix, and Optional map directly onto Kubernetes' own EnvFromSource /
-// SecretEnvSource / ConfigMapEnvSource fields. Keys and Suffix are Orkestra
+// SecretEnvSource / ConfigMapEnvSource fields. Keys and Suffix are Inrun
 // extensions with no Kubernetes equivalent — Kubernetes' envFrom is a blanket
 // import with no per-key rename mechanism, so a ref that sets Keys is expanded
 // into individual env entries at build time instead of a native envFrom source.
-// Suffix without Keys is a validation error — see pkg/katalog/validate_envfrom.go.
+// Suffix without Keys is a validation error — see pkg/catalog/validate_envfrom.go.
 type EnvFromRef struct {
 	Name     string   `yaml:"name" json:"name" validate:"required"`
 	Prefix   string   `yaml:"prefix,omitempty" json:"prefix,omitempty"`

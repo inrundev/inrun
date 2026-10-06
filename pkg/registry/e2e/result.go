@@ -59,7 +59,7 @@ func (r *Result) Markdown() string {
 }
 
 // Result holds the outcome of a complete E2E run.
-// It is returned by Run and consumed by ork push to embed
+// It is returned by Run and consumed by inrun push to embed
 // verification metadata into OCI annotations.
 type Result struct {
 	Name    string
@@ -144,7 +144,7 @@ type ImportResult struct {
 	// Result is the structured outcome. Nil when the import failed to load or
 	// the runner itself errored before producing any expectations.
 	Result *Result
-	// Err is non-nil when the import failed (load error, Orkestra not ready,
+	// Err is non-nil when the import failed (load error, Inrun not ready,
 	// or one or more expectations failed).
 	Err error
 }

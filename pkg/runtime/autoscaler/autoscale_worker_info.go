@@ -1,9 +1,9 @@
 // pkg/autoscaler/autoscale_worker_info.go
 //
 // WorkerInfo — the complete picture of an operatorbox's worker state.
-// Returned by the CRD handler endpoint and shown in the Control Center.
+// Returned by the CRD handler endpoint and shown in the Console.
 //
-// The Control Center shows:
+// The Console shows:
 //
 //	Configured: 4      ← CRD declared workers (always the baseline)
 //	Effective:  12     ← current semaphore capacity (may be overridden)
@@ -70,7 +70,7 @@ type WorkerInfo struct {
 }
 
 // BuildWorkerInfo constructs the WorkerInfo from the live operatorbox state.
-// Called by the CRD handler on every /katalog/{crd} request — reads are O(1).
+// Called by the CRD handler on every /catalog/{crd} request — reads are O(1).
 func BuildWorkerInfo(
 	sem *ResizableSemaphore,
 	metrics *AutoMetrics,

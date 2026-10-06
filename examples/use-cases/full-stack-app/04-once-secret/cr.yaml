@@ -1,8 +1,0 @@
-# 04 — once: idempotent secret generation
-apiVersion: advanced.orkestra.io/v1alpha1
-kind: SecureApp
-metadata:
-  name: my-secure-app
-  namespace: default
-spec:
-  image: nginx:1.25

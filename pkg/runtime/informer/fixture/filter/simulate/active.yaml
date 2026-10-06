@@ -1,11 +1,11 @@
-apiVersion: orkestra.orkspace.io/v1
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: filter-probe-active
   description: spec.active true — filter passes, reconciler runs, ConfigMap created
 
 spec:
-  katalog: ../katalog.yaml
+  catalog: ../catalog.yaml
   crd: ../crd.yaml
   cr: ../cr-active.yaml
   cycles: 2

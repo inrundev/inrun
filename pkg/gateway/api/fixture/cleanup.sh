@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-helm uninstall orkestra --namespace orkestra-system 2>/dev/null || true
+helm uninstall inrun --namespace inrun-system 2>/dev/null || true
 kubectl delete -f bundle.yaml --ignore-not-found
 kubectl delete -f crd.yaml --ignore-not-found
 kubectl delete namespace team-payments --ignore-not-found

@@ -2,7 +2,7 @@
 //
 // ResizableSemaphore — a weighted semaphore whose capacity can be changed at runtime.
 //
-// The worker pool in Orkestra is gated by this semaphore rather than being a
+// The worker pool in Inrun is gated by this semaphore rather than being a
 // fixed goroutine count. All worker goroutines run continuously in a loop;
 // the semaphore controls how many may enter the reconcile section simultaneously.
 //

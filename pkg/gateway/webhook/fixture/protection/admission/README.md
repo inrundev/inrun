@@ -12,5 +12,5 @@ message in stderr.
 ## Run
 
 ```sh
-ork e2e pkg/gateway/webhook/fixture/protection/admission/e2e.yaml
+inrun e2e pkg/gateway/webhook/fixture/protection/admission/e2e.yaml
 ```

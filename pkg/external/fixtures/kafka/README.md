@@ -10,7 +10,7 @@ One call is declared:
 
 ```sh
 docker compose -f pkg/external/fixtures/kafka/docker-compose.yaml up -d
-ork run -f pkg/external/fixtures/kafka/katalog.yaml
+inrun -f pkg/external/fixtures/kafka/catalog.yaml
 ```
 
 ## Check the Status
@@ -21,8 +21,8 @@ kubectl get webapp my-app -oyaml
 
 ## E2e
 
-Deploys a single-node Kafka instance in `orkestra-system` before the CR is applied.
+Deploys a single-node Kafka instance in `inrun-system` before the CR is applied.
 
 ```sh
-ork e2e pkg/external/fixtures/kafka/e2e.yaml
+inrun e2e pkg/external/fixtures/kafka/e2e.yaml
 ```

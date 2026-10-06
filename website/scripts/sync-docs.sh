@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# sync-docs.sh — Copy ../documentation/ into content/docs/, injecting Hugo front matter
+# sync-docs.sh — Copy ../docs/ into content/docs/, injecting Hugo front matter
 # and converting MkDocs admonitions (!!!  note/warning/etc.) to callout shortcodes.
 # Performs a clean sync: destination directories are wiped before each run so stale
 # files from deleted source pages never survive.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SRC_DIR="$(realpath "$SCRIPT_DIR/../../documentation")"
+SRC_DIR="$(realpath "$SCRIPT_DIR/../../docs")"
 DST_DIR="$SCRIPT_DIR/../content/docs"
 BLOG_DIR="$SCRIPT_DIR/../content/blog"
 PUB_DIR="$SCRIPT_DIR/../content/publications"

@@ -5,14 +5,14 @@ import (
 	"strconv"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // BuildDeploymentRollingUpdateStrategy converts a RollingUpdateBehavior into an
 // appsv1.DeploymentStrategy. Both MaxSurge and MaxUnavailable are applied.
-func BuildDeploymentRollingUpdateStrategy(r *orktypes.RollingUpdateBehavior) appsv1.DeploymentStrategy {
+func BuildDeploymentRollingUpdateStrategy(r *types.RollingUpdateBehavior) appsv1.DeploymentStrategy {
 	strategy := appsv1.DeploymentStrategy{
 		Type:          appsv1.RollingUpdateDeploymentStrategyType,
 		RollingUpdate: &appsv1.RollingUpdateDeployment{},
@@ -31,7 +31,7 @@ func BuildDeploymentRollingUpdateStrategy(r *orktypes.RollingUpdateBehavior) app
 // BuildStatefulSetUpdateStrategy converts a RollingUpdateBehavior into an
 // appsv1.StatefulSetUpdateStrategy. Only MaxUnavailable applies — StatefulSets
 // do not support MaxSurge.
-func BuildStatefulSetUpdateStrategy(r *orktypes.RollingUpdateBehavior) appsv1.StatefulSetUpdateStrategy {
+func BuildStatefulSetUpdateStrategy(r *types.RollingUpdateBehavior) appsv1.StatefulSetUpdateStrategy {
 	strategy := appsv1.StatefulSetUpdateStrategy{
 		Type:          appsv1.RollingUpdateStatefulSetStrategyType,
 		RollingUpdate: &appsv1.RollingUpdateStatefulSetStrategy{},

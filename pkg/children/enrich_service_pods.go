@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -17,7 +17,7 @@ import (
 // Unlike Deployment/StatefulSet, Service uses spec.selector (a flat label map),
 // not spec.selector.matchLabels. Headless and ExternalName services with no
 // selector are skipped.
-func enrichGroupWithBackingPods(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd orktypes.CRDEntry) {
+func enrichGroupWithBackingPods(ctx context.Context, kube kubeclient.Interface, m map[string]interface{}, crd types.CRDEntry) {
 	if !enrichmentEnabled("backingpods", crd) {
 		return
 	}

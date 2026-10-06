@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/orkspace/orkestra/pkg/logger"
+	"github.com/inrundev/inrun/pkg/logger"
 )
 
 func registerHandlers(mux *http.ServeMux) {
@@ -433,8 +433,8 @@ func flagsHandler(w http.ResponseWriter, r *http.Request) {
 
 // autoscaleMetricsHandler serves GET /autoscale-metrics.
 // Returns a baseline (low load) or overloaded (high load) metrics payload
-// depending on the current flip state. The payload shape mirrors the Orkestra
-// /katalog/{crd} metrics response so that cross.<crd>.metrics.* conditions
+// depending on the current flip state. The payload shape mirrors the Inrun
+// /catalog/{crd} metrics response so that cross.<crd>.metrics.* conditions
 // can resolve against it directly.
 func autoscaleMetricsHandler(w http.ResponseWriter, _ *http.Request) {
 	autoscaleMu.Lock()

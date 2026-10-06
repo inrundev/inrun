@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orksa "github.com/orkspace/orkestra/pkg/resources/serviceaccounts"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/serviceaccounts"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunServiceAccounts resolves and applies ServiceAccount template declarations.
@@ -24,15 +24,15 @@ import (
 func RunServiceAccounts(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.ServiceAccountTemplateSource,
+	srcs []types.ServiceAccountTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -45,7 +45,7 @@ func RunServiceAccounts(
 
 	for i, src := range srcs {
 		// 1. Evaluate conditions BEFORE resolving templates
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		// Early name/ns resolution — needed for guard check and DeleteIfOwned cleanup.
 		name, _ := resolver.Resolve(src.Name)
@@ -62,7 +62,7 @@ func RunServiceAccounts(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orksa.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := serviceaccounts.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("serviceAccounts[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -82,10 +82,10 @@ func RunServiceAccounts(
 		}
 
 		// 3. Build registry spec and apply
-		spec := orksa.Resolve(resolved, resolver.OwnerName())
+		spec := serviceaccounts.Resolve(resolved, resolver.OwnerName())
 
 		// Always create — ServiceAccounts have no meaningful drift to correct
-		if err := orksa.Create(ctx, kube, owner, spec); err != nil {
+		if err := serviceaccounts.Create(ctx, kube, owner, spec); err != nil {
 			return fmt.Errorf("serviceaccounts[%d].create: %w", i, err)
 		}
 	}

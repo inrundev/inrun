@@ -1,13 +1,13 @@
 # Public deployment values.
-# Applied to cluster-01 (the instance that runs the Control Center).
-# cluster-02 and cluster-03 pass --set controlCenter.enabled=false.
+# Applied to cluster-01 (the instance that runs the Console).
+# cluster-02 and cluster-03 pass --set console.enabled=false.
 #
 # PUBLIC_DEPLOYMENT=true disables password login and runtime manager
-# in the control center — safe for public access.
+# in the console — safe for public access.
 
 runtime:
   image:
-    tag: 0.7.18
+    tag: 0.1.0
   resources:
     requests:
       cpu: 50m
@@ -18,20 +18,20 @@ runtime:
 
 gateway:
   image:
-    tag: 0.7.18
+    tag: 0.1.0
 
-controlCenter:
+console:
   replicaCount: 2
   image:
-    tag: 0.7.18
+    tag: 0.1.0
   config:
-    orkestraURLs:
-      - http://orkestra-runtime.orkestra-system-01.svc.cluster.local:8080
-      - http://orkestra-runtime.orkestra-system-02.svc.cluster.local:8080
-      - http://orkestra-runtime.orkestra-system-03.svc.cluster.local:8080
-      - http://orkestra-runtime.orkestra-system-04.svc.cluster.local:8080
-      - http://orkestra-runtime.orkestra-system-05.svc.cluster.local:8080
-      - http://orkestra-runtime.orkestra-system-06.svc.cluster.local:8080
+    inrunURLs:
+      - http://inrun-runtime.inrun-system-01.svc.cluster.local:8080
+      - http://inrun-runtime.inrun-system-02.svc.cluster.local:8080
+      - http://inrun-runtime.inrun-system-03.svc.cluster.local:8080
+      - http://inrun-runtime.inrun-system-04.svc.cluster.local:8080
+      - http://inrun-runtime.inrun-system-05.svc.cluster.local:8080
+      - http://inrun-runtime.inrun-system-06.svc.cluster.local:8080
   extraEnv:
     - name: PUBLIC_DEPLOYMENT
       value: "true"
@@ -39,7 +39,7 @@ controlCenter:
     enabled: true
     className: nginx
     hosts:
-      - host: cc.orkestra.sh
+      - host: cc.inrun.dev
         paths:
           - path: /
             pathType: Prefix

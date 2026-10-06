@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/orkspace/orkestra/pkg/logger"
-	"github.com/orkspace/orkestra/pkg/metrics"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/metrics"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -80,7 +80,7 @@ func (ws *WebhookServer) validationHandler(w http.ResponseWriter, r *http.Reques
 
 	for _, w := range warnings {
 		resp.Warnings = append(resp.Warnings,
-			fmt.Sprintf("orkestra: field %q: %s", w.Field, w.Message))
+			fmt.Sprintf("inrun: field %q: %s", w.Field, w.Message))
 	}
 
 	duration := time.Since(start)
@@ -122,7 +122,7 @@ func (ws *WebhookServer) validationHandler(w http.ResponseWriter, r *http.Reques
 		}
 		resp.Status = &AdmissionStatus{
 			Message: fmt.Sprintf(
-				"\n\n[Orkestra Validation] validation failed\n\n"+
+				"\n\n[Inrun Validation] validation failed\n\n"+
 					"%s/%s/%s was blocked due to the following policies:\n"+
 					" %s\n\n", req.Kind.Kind, req.Name, req.Namespace, strings.Join(msgs, "; ")),
 			Code:    400,

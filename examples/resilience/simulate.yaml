@@ -1,9 +1,0 @@
-apiVersion: orkestra.orkspace.io/v1
-kind: Simulate
-metadata:
-  name: resilience-simulate
-
-imports:
-  - ./admission-protection/simulate.yaml
-  - ./crd-missing-recovery/simulate.yaml
-  - ./leader-failover/simulate.yaml

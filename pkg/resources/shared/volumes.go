@@ -3,13 +3,13 @@ package shared
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // BuildVolumes converts a slice of VolumeSource declarations into Kubernetes
 // corev1.Volume objects ready to set on PodSpec.Volumes.
 // Returns nil when the input is empty.
-func BuildVolumes(vols []orktypes.VolumeSource) []corev1.Volume {
+func BuildVolumes(vols []types.VolumeSource) []corev1.Volume {
 	if len(vols) == 0 {
 		return nil
 	}
@@ -60,7 +60,7 @@ func BuildVolumes(vols []orktypes.VolumeSource) []corev1.Volume {
 // BuildVolumeMounts converts a slice of VolumeMount declarations into
 // Kubernetes corev1.VolumeMount objects ready to set on a Container.
 // Returns nil when the input is empty.
-func BuildVolumeMounts(mounts []orktypes.VolumeMount) []corev1.VolumeMount {
+func BuildVolumeMounts(mounts []types.VolumeMount) []corev1.VolumeMount {
 	if len(mounts) == 0 {
 		return nil
 	}

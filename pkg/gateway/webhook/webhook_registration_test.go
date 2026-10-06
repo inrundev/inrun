@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/orkspace/orkestra/pkg/katalog"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/catalog"
+	"github.com/inrundev/inrun/pkg/types"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -26,20 +26,20 @@ func TestRegisterAdmissionWebhooks_CreatesValidatingAndMutating(t *testing.T) {
 	defer os.Remove(tmpCert)
 
 	// Fake admission registry
-	gvr := katalog.GVREntry{
-		Key:        "demo.orkestra.io/v1alpha1/websites",
-		Group:      "demo.orkestra.io",
+	gvr := catalog.GVREntry{
+		Key:        "demo.inrun.dev/v1alpha1/websites",
+		Group:      "demo.inrun.dev",
 		Version:    "v1alpha1",
 		Resource:   "websites",
 		Operations: []string{"CREATE", "UPDATE"},
 	}
 
-	reg := katalog.NewInMemoryAdmissionRegistry()
-	reg.AddValidationGVR(gvr, &orktypes.ValidationConfig{})
-	reg.AddMutationGVR(gvr, &orktypes.MutationConfig{})
+	reg := catalog.NewInMemoryAdmissionRegistry()
+	reg.AddValidationGVR(gvr, &types.ValidationConfig{})
+	reg.AddMutationGVR(gvr, &types.MutationConfig{})
 
 	opts := WebhookRegistrationOptions{
-		ServiceName:      "orkestra",
+		ServiceName:      "inrun",
 		ServiceNamespace: "default",
 		Port:             8443,
 		FailurePolicy:    admissionv1.Ignore,
@@ -79,7 +79,7 @@ func TestRegisterAdmissionWebhooks_CreatesValidatingAndMutating(t *testing.T) {
 
 	// Validate service reference
 	vsvc := vwc.Webhooks[0].ClientConfig.Service
-	if vsvc.Name != "orkestra" || vsvc.Namespace != "default" {
+	if vsvc.Name != "inrun" || vsvc.Namespace != "default" {
 		t.Fatalf("unexpected service reference: %+v", vsvc)
 	}
 
@@ -94,7 +94,7 @@ func TestRegisterAdmissionWebhooks_CreatesValidatingAndMutating(t *testing.T) {
 	}
 
 	rule := vwc.Webhooks[0].Rules[0]
-	if rule.APIGroups[0] != "demo.orkestra.io" ||
+	if rule.APIGroups[0] != "demo.inrun.dev" ||
 		rule.APIVersions[0] != "v1alpha1" ||
 		rule.Resources[0] != "websites" {
 		t.Fatalf("unexpected rule: %+v", rule)

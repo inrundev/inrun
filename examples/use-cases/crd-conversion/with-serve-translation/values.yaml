@@ -1,5 +1,0 @@
-gateway:
-  enabled: true
-  extraEnv:
-    - name: DEV_TOKEN
-      value: "dev-token"

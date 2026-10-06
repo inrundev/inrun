@@ -1,7 +1,7 @@
 // pkg/types/types_networkpolicy.go
 package types
 
-// NetworkPolicyTemplateSource declares one NetworkPolicy to be managed by Orkestra.
+// NetworkPolicyTemplateSource declares one NetworkPolicy to be managed by Inrun.
 //
 // Usage patterns:
 //
@@ -55,7 +55,7 @@ type NetworkPolicyTemplateSource struct {
 	ToNamespaces []string `yaml:"toNamespaces,omitempty" json:"toNamespaces,omitempty"`
 
 	// FromNetworkPolicy — name of an existing NetworkPolicy to copy spec from.
-	// When set, Orkestra reads this NetworkPolicy at reconcile time and copies its spec.
+	// When set, Inrun reads this NetworkPolicy at reconcile time and copies its spec.
 	FromNetworkPolicy string `yaml:"fromNetworkPolicy,omitempty" json:"fromNetworkPolicy,omitempty"`
 
 	// FromNamespace — namespace where FromNetworkPolicy lives.

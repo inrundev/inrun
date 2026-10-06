@@ -11,41 +11,41 @@ import (
 const (
 	healthCheckTimeout    = 200 * time.Second
 	resourceExistsTimeout = 10 * time.Second
-	controlCenterDeploy   = OrkestraControlCenter
-	runtimeLogDir         = "/tmp/orkestra"
-	runtimeLogPath        = "/tmp/orkestra/runtime.log"
-	gatewayLogDir         = "/tmp/orkestra"
-	gatewayLogPath        = "/tmp/orkestra/gateway.log"
-	controlCenterLogPath  = "/tmp/orkestra/controlcenter.log"
+	consoleDeploy         = InrunConsole
+	runtimeLogDir         = "/tmp/inrun"
+	runtimeLogPath        = "/tmp/inrun/runtime.log"
+	gatewayLogDir         = "/tmp/inrun"
+	gatewayLogPath        = "/tmp/inrun/gateway.log"
+	consoleLogPath        = "/tmp/inrun/console.log"
 )
 
-// RuntimeInstalled reports whether the Orkestra runtime Deployment exists.
+// RuntimeInstalled reports whether the Inrun runtime Deployment exists.
 func RuntimeInstalled() bool {
-	return ResourceExists("deploy", OrkestraRuntime, OrkestraNamespace)
+	return ResourceExists("deploy", InrunRuntime, InrunNamespace)
 }
 
-// GatewayInstalled reports whether the Orkestra gateway Deployment exists.
+// GatewayInstalled reports whether the Inrun gateway Deployment exists.
 func GatewayInstalled() bool {
-	return ResourceExists("deploy", OrkestraGateway, OrkestraNamespace)
+	return ResourceExists("deploy", InrunGateway, InrunNamespace)
 }
 
-// CheckRuntimeHealth waits up to healthCheckTimeout for the Orkestra runtime
+// CheckRuntimeHealth waits up to healthCheckTimeout for the Inrun runtime
 // Deployment to have at least one ready replica. It polls every 2 seconds.
 // Returns immediately if pods are in CrashLoopBackOff.
 var (
-	runtimeChecker       = DeploymentHealthChecker{Name: OrkestraRuntime, Namespace: OrkestraNamespace}
-	gatewayChecker       = DeploymentHealthChecker{Name: OrkestraGateway, Namespace: OrkestraNamespace}
-	controlCenterChecker = DeploymentHealthChecker{Name: controlCenterDeploy, Namespace: OrkestraNamespace}
+	runtimeChecker = DeploymentHealthChecker{Name: InrunRuntime, Namespace: InrunNamespace}
+	gatewayChecker = DeploymentHealthChecker{Name: InrunGateway, Namespace: InrunNamespace}
+	consoleChecker = DeploymentHealthChecker{Name: consoleDeploy, Namespace: InrunNamespace}
 )
 
-// CheckRuntimeHealth waits up to healthCheckTimeout for the Orkestra runtime to be ready
+// CheckRuntimeHealth waits up to healthCheckTimeout for the Inrun runtime to be ready
 func CheckRuntimeHealth() DeploymentStatus {
 	return runtimeChecker.CheckHealth(healthCheckTimeout, func(ctx context.Context) string {
 		return crashLoopReason(ctx)
 	})
 }
 
-// CheckGatewayHealth waits up to healthCheckTimeout for the Orkestra gateway to be ready
+// CheckGatewayHealth waits up to healthCheckTimeout for the Inrun gateway to be ready
 func CheckGatewayHealth() DeploymentStatus {
 	return gatewayChecker.CheckHealth(healthCheckTimeout, nil)
 }
@@ -55,25 +55,25 @@ func FetchGatewayLogs() (tail string, err error) {
 	return gatewayChecker.FetchLogs(100, gatewayLogDir, gatewayLogPath)
 }
 
-// FetchControlCenterLogsIfNeeded fetches control center logs only if the deployment exists but has no ready replicas
-func FetchControlCenterLogsIfNeeded() error {
-	if !controlCenterChecker.Exists() {
+// FetchConsoleLogsIfNeeded fetches console logs only if the deployment exists but has no ready replicas
+func FetchConsoleLogsIfNeeded() error {
+	if !consoleChecker.Exists() {
 		return nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if !controlCenterChecker.HasReadyReplicas(ctx) {
-		_, err := controlCenterChecker.FetchLogs(100, runtimeLogDir, controlCenterLogPath)
+	if !consoleChecker.HasReadyReplicas(ctx) {
+		_, err := consoleChecker.FetchLogs(100, runtimeLogDir, consoleLogPath)
 		return err
 	}
 	return nil
 }
 
-// FetchRuntimeLogs saves the last 100 log lines from the Orkestra runtime to
-// /tmp/orkestra/runtime.log. If the Control Center Deployment exists but has
-// no ready replicas, its logs are saved to /tmp/orkestra/controlcenter.log.
+// FetchRuntimeLogs saves the last 100 log lines from the Inrun runtime to
+// /tmp/inrun/runtime.log. If the Console Deployment exists but has
+// no ready replicas, its logs are saved to /tmp/inrun/console.log.
 // Returns the last 10 lines of the runtime log for inline display.
 func FetchRuntimeLogs() (tail string, err error) {
 	tail, err = runtimeChecker.FetchLogs(100, runtimeLogDir, runtimeLogPath)
@@ -81,32 +81,32 @@ func FetchRuntimeLogs() (tail string, err error) {
 		return "", err
 	}
 
-	// Optionally fetch control center logs if needed
-	_ = FetchControlCenterLogsIfNeeded()
+	// Optionally fetch console logs if needed
+	_ = FetchConsoleLogsIfNeeded()
 
 	return tail, nil
 }
 
-// SyncRuntime restarts the Orkestra runtime Deployment and waits for rollout.
+// SyncRuntime restarts the Inrun runtime Deployment and waits for rollout.
 func SyncRuntime() error {
-	return SyncDeployment(OrkestraRuntime, OrkestraNamespace, 3*time.Minute)
+	return SyncDeployment(InrunRuntime, InrunNamespace, 3*time.Minute)
 }
 
-// SyncGateway restarts the Orkestra gateway Deployment and waits for rollout.
+// SyncGateway restarts the Inrun gateway Deployment and waits for rollout.
 func SyncGateway() error {
-	return SyncDeployment(OrkestraGateway, OrkestraNamespace, 3*time.Minute)
+	return SyncDeployment(InrunGateway, InrunNamespace, 3*time.Minute)
 }
 
-// KatalogChanged returns true when .orkestra/katalog.yaml has uncommitted
+// CatalogChanged returns true when .inrun/catalog.yaml has uncommitted
 // changes or was touched by the most recent commit.
-func KatalogChanged(dir string) bool {
-	katalogPath := filepath.Join(".orkestra", "katalog.yaml")
-	if out, err := exec.Command("git", "-C", dir, "diff", "HEAD", "--", katalogPath).Output(); err == nil {
+func CatalogChanged(dir string) bool {
+	catalogPath := filepath.Join(".inrun", "catalog.yaml")
+	if out, err := exec.Command("git", "-C", dir, "diff", "HEAD", "--", catalogPath).Output(); err == nil {
 		if len(bytes.TrimSpace(out)) > 0 {
 			return true
 		}
 	}
-	if out, err := exec.Command("git", "-C", dir, "diff", "HEAD~1", "HEAD", "--", katalogPath).Output(); err == nil {
+	if out, err := exec.Command("git", "-C", dir, "diff", "HEAD~1", "HEAD", "--", catalogPath).Output(); err == nil {
 		if len(bytes.TrimSpace(out)) > 0 {
 			return true
 		}

@@ -1,7 +1,7 @@
 // pkg/types/types_pvc.go
 package types
 
-// PVCTemplateSource declares one PersistentVolumeClaim to be managed by Orkestra.
+// PVCTemplateSource declares one PersistentVolumeClaim to be managed by Inrun.
 //
 // Example:
 //
@@ -93,7 +93,7 @@ type PVCTemplateSource struct {
 	ForceConflict *bool `yaml:"forceConflict,omitempty" json:"forceConflict,omitempty"`
 }
 
-// PVTemplateSource declares one PersistentVolume to be managed by Orkestra.
+// PVTemplateSource declares one PersistentVolume to be managed by Inrun.
 // PersistentVolumes are cluster-scoped — Namespace is ignored.
 //
 // Example (local/dev, HostPath):

@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orkreplicaset "github.com/orkspace/orkestra/pkg/resources/replicasets"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/replicasets"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 // RunReplicaSets resolves and applies ReplicaSet template declarations.
@@ -24,9 +24,9 @@ import (
 func RunReplicaSets(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.ReplicaSetTemplateSource,
+	srcs []types.ReplicaSetTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
@@ -34,7 +34,7 @@ func RunReplicaSets(
 	// Track active names for conditional cleanup
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
@@ -48,7 +48,7 @@ func RunReplicaSets(
 	for i, src := range srcs {
 
 		// 1. Evaluate conditions BEFORE resolving templates
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		// Early name/ns resolution — needed for guard check and DeleteIfOwned cleanup.
 		name, _ := resolver.Resolve(src.Name)
@@ -75,7 +75,7 @@ func RunReplicaSets(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orkreplicaset.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := replicasets.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("replicasets[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -89,20 +89,20 @@ func RunReplicaSets(
 			return fmt.Errorf("replicasets[%d]: %w", i, err)
 		}
 
-		spec := orkreplicaset.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
+		spec := replicasets.Resolve(resolved, resolver.OwnerName(), resolver.Profiles())
 
 		if update {
-			if err := orkreplicaset.Update(ctx, kube, owner, spec); err != nil {
+			if err := replicasets.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("replicasets[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orkreplicaset.Create(ctx, kube, owner, spec); err != nil {
+			if err := replicasets.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("replicasets[%d].create: %w", i, err)
 			}
 
 			// reconcile: true
 			if src.Reconcile {
-				if err := orkreplicaset.Update(ctx, kube, owner, spec); err != nil {
+				if err := replicasets.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("replicasets[%d].reconcile: %w", i, err)
 				}
 			}

@@ -1,5 +1,0 @@
-# intent-invalid.yaml
-target: cronjob-tutorial
-name: daily-backup
-schedule: "0 25 * * 1-5"
-image: "gcr.io/google-containers/busybox:latest"

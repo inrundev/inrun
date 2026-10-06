@@ -1,12 +1,12 @@
-# Schema reference: https://orkestra.sh/docs/reference/schema/simulate/
-apiVersion: orkestra.orkspace.io/v1
+# Schema reference: https://inrun.dev/docs/reference/schema/simulate/
+apiVersion: inrun.dev/v1
 kind: Simulate
 metadata:
   name: <operator-name>-sim
   description: <what this simulation verifies>
 
 spec:
-  katalog: ./katalog.yaml
+  catalog: ./catalog.yaml
   cr: ./cr.yaml
   cycles: 5            # number of reconcile cycles to run
 

@@ -3,7 +3,7 @@ package kubeclient
 import (
 	"context"
 
-	"github.com/orkspace/orkestra/domain"
+	"github.com/inrundev/inrun/domain"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,7 +31,7 @@ type Interface interface {
 	RestConfig() *rest.Config
 	Scheme() *runtime.Scheme
 
-	// Args returns the args declared under hooks.args or constructor.args in katalog.yaml.
+	// Args returns the args declared under hooks.args or constructor.args in catalog.yaml.
 	// Returns an empty Args map when no args were declared.
 	Args() Args
 

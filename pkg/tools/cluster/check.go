@@ -5,20 +5,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/pkg/types"
 	"gopkg.in/yaml.v3"
 )
 
 // clustersFile is the on-disk shape emitted by bootstrap --out and consumed
 // by clusters check --config.
 type clustersFile struct {
-	Clusters map[string]orktypes.GatewayClusterConfig `yaml:"clusters"`
+	Clusters map[string]types.GatewayClusterConfig `yaml:"clusters"`
 }
 
 // LoadClustersFile reads a clusters.yaml (or .json) file and returns the
 // map of cluster name → GatewayClusterConfig. The file format is identical
-// to the gateway.clusters include file used by the katalog.
-func LoadClustersFile(path string) (map[string]orktypes.GatewayClusterConfig, error) {
+// to the gateway.clusters include file used by the catalog.
+func LoadClustersFile(path string) (map[string]types.GatewayClusterConfig, error) {
 	data, err := readLocal(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading clusters file: %w", err)

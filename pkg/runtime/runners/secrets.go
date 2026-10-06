@@ -1,7 +1,7 @@
 // pkg/runners/secrets.go
 //
 // Adds to the previous version:
-//   - orktypes.EvaluateConditions instead of evaluateConditions (fixes or: being ignored)
+//   - types.EvaluateConditions instead of evaluateConditions (fixes or: being ignored)
 //   - rotateAfter: <duration> support — time-based credential rotation
 //   - tls: {...} support — self-signed CA + signed certificate generation
 //
@@ -22,33 +22,33 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/orkspace/orkestra/domain"
-	"github.com/orkspace/orkestra/pkg/gateway/certmanager"
-	"github.com/orkspace/orkestra/pkg/konfig"
-	"github.com/orkspace/orkestra/pkg/kubeclient"
-	"github.com/orkspace/orkestra/pkg/logger"
-	orksecrets "github.com/orkspace/orkestra/pkg/resources/secrets"
-	orktmpl "github.com/orkspace/orkestra/pkg/template"
-	orktypes "github.com/orkspace/orkestra/pkg/types"
+	"github.com/inrundev/inrun/domain"
+	"github.com/inrundev/inrun/pkg/config"
+	"github.com/inrundev/inrun/pkg/gateway/certmanager"
+	"github.com/inrundev/inrun/pkg/kubeclient"
+	"github.com/inrundev/inrun/pkg/logger"
+	"github.com/inrundev/inrun/pkg/resources/secrets"
+	"github.com/inrundev/inrun/pkg/template"
+	"github.com/inrundev/inrun/pkg/types"
 )
 
 func RunSecrets(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	srcs []orktypes.SecretTemplateSource,
+	srcs []types.SecretTemplateSource,
 	update bool,
 	guard func(ctx context.Context, obj domain.Object, ns string) bool,
 ) error {
 	activeNames := make(map[string]bool, len(srcs))
 	for _, s := range srcs {
-		if !orktypes.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
+		if !types.EvaluateConditions(resolver.Data(), s.Conditions, s.Or, resolver.TemplateEvaluator()) {
 			continue
 		}
 		n, _ := resolver.Resolve(s.Name)
 		if n == "" && s.TLS != nil {
-			n = owner.GetName() + "-" + konfig.DefaultWorkloadSecretName()
+			n = owner.GetName() + "-" + config.DefaultWorkloadSecretName()
 		}
 		nsp, _ := resolver.Resolve(s.Namespace)
 		if nsp == "" {
@@ -63,15 +63,15 @@ func RunSecrets(
 		// IMPORTANT: must use resolver.Data() not the owner object directly.
 		// resolver.Data() includes .children.*, .external.*, .cross.* — the owner
 		// object alone does not have these injected fields.
-		conditionPassed := orktypes.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
+		conditionPassed := types.EvaluateConditions(resolver.Data(), src.Conditions, src.Or, resolver.TemplateEvaluator())
 
 		// Resolve name and namespace early — needed for guard check, once: checks,
 		// and DeleteIfOwned cleanup. ResolveSecretTemplate resolves these again
 		// internally — intentional, cheap.
 		name, _ := resolver.Resolve(src.Name)
 		if name == "" && src.TLS != nil {
-			// TLS secrets default to "orkestra-tls" when no name declared
-			name = owner.GetName() + "-" + konfig.DefaultWorkloadSecretName()
+			// TLS secrets default to "inrun-tls" when no name declared
+			name = owner.GetName() + "-" + config.DefaultWorkloadSecretName()
 		}
 		ns, _ := resolver.Resolve(src.Namespace)
 		if ns == "" {
@@ -86,7 +86,7 @@ func RunSecrets(
 		if !conditionPassed {
 			if update || src.Reconcile {
 				if !activeNames[ns+"/"+name] {
-					if err := orksecrets.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
+					if err := secrets.DeleteIfOwned(ctx, kube, owner, name, ns); err != nil {
 						return fmt.Errorf("secrets[%d]: conditional cleanup: %w", i, err)
 					}
 				}
@@ -174,7 +174,7 @@ func RunSecrets(
 		}
 
 		// ── Step 5: apply ────────────────────────────────────────────────────────
-		spec := orksecrets.Resolve(resolved, resolver.OwnerName())
+		spec := secrets.Resolve(resolved, resolver.OwnerName())
 
 		// Attach rotation annotation when rotateAfter is declared
 		if src.RotateAfter != "" && spec.Annotations == nil {
@@ -195,11 +195,11 @@ func RunSecrets(
 				nsSpec := spec
 				nsSpec.Namespace = targetNs
 				if shouldSync {
-					if err := orksecrets.Update(ctx, kube, owner, nsSpec); err != nil {
+					if err := secrets.Update(ctx, kube, owner, nsSpec); err != nil {
 						return fmt.Errorf("secrets[%d].sync namespace=%s: %w", i, targetNs, err)
 					}
 				} else {
-					if err := orksecrets.Create(ctx, kube, owner, nsSpec); err != nil {
+					if err := secrets.Create(ctx, kube, owner, nsSpec); err != nil {
 						return fmt.Errorf("secrets[%d].create namespace=%s: %w", i, targetNs, err)
 					}
 				}
@@ -208,15 +208,15 @@ func RunSecrets(
 		}
 
 		if update {
-			if err := orksecrets.Update(ctx, kube, owner, spec); err != nil {
+			if err := secrets.Update(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("secrets[%d].update: %w", i, err)
 			}
 		} else {
-			if err := orksecrets.Create(ctx, kube, owner, spec); err != nil {
+			if err := secrets.Create(ctx, kube, owner, spec); err != nil {
 				return fmt.Errorf("secrets[%d].create: %w", i, err)
 			}
 			if src.Reconcile {
-				if err := orksecrets.Update(ctx, kube, owner, spec); err != nil {
+				if err := secrets.Update(ctx, kube, owner, spec); err != nil {
 					return fmt.Errorf("secrets[%d].reconcile: %w", i, err)
 				}
 			}
@@ -230,9 +230,9 @@ func RunSecrets(
 func RunTLSSecret(
 	ctx context.Context,
 	kube kubeclient.Interface,
-	resolver *orktmpl.Resolver,
+	resolver *template.Resolver,
 	owner domain.Object,
-	src orktypes.SecretTemplateSource,
+	src types.SecretTemplateSource,
 	name, namespace string,
 	update bool,
 ) error {

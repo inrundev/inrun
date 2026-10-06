@@ -1,6 +1,0 @@
-{
-  "target": "cronjob-tutorial",
-  "name": "daily-backup",
-  "schedule": "0 2 * * 1-5",
-  "image": "gcr.io/google-containers/busybox:latest"
-}

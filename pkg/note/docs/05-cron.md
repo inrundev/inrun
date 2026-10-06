@@ -158,7 +158,7 @@ Keywords: cron, schedule, normalize, macro, expand, sanitize
 
 ### `cronDescribe`
 
-Return a human-readable description of a cron expression. Useful in `status.fields` for the Control Center UI.
+Return a human-readable description of a cron expression. Useful in `status.fields` for the Console UI.
 
 Keywords: cron, schedule, describe, human-readable, display, status
 
